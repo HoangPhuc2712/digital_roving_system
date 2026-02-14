@@ -256,7 +256,7 @@ function formatReportDateTime(iso?: string) {
           </div>
         </div>
 
-        <div class="flex gap-2 shrink-0">
+        <!-- <div class="flex gap-2 shrink-0">
           <BaseButton
             v-if="mode === 'view' && model?.pr_id"
             label="Edit"
@@ -273,7 +273,7 @@ function formatReportDateTime(iso?: string) {
             :disabled="!canDelete"
             @click="onDelete"
           />
-        </div>
+        </div> -->
       </div>
 
       <div class="bg-white border border-slate-200 rounded-xl">

@@ -194,11 +194,12 @@ async function handleCheckpointFormSubmit(payload: {
   } catch (e: any) {
     const msg = String(e?.message ?? '')
 
-    if (msg === 'MISSING_FIELDS') {
+    if (msg.startsWith('MISSING_FIELDS:')) {
+      const fields = msg.replace('MISSING_FIELDS:', '').trim()
       toast.add({
         severity: 'warn',
         summary: 'Validation',
-        detail: 'Please fill Scan Point Code, Scan Point Name, and Area.',
+        detail: fields ? `Please fill: ${fields}.` : 'Please fill required fields.',
         life: 3200,
       })
       return
@@ -214,12 +215,12 @@ async function handleCheckpointFormSubmit(payload: {
       return
     }
 
-    if (msg === 'CHECKPOINT_CODE_EXISTS_IN_AREA') {
+    if (msg === 'MISSING_QR') {
       toast.add({
         severity: 'warn',
-        summary: 'Duplicate',
-        detail: 'Scan Point Code already exists in the selected Area.',
-        life: 3500,
+        summary: 'Validation',
+        detail: 'Please choose a QR image.',
+        life: 3200,
       })
       return
     }

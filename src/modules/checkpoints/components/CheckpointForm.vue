@@ -126,26 +126,30 @@ async function onChooseQr(e: Event) {
 }
 
 function submit() {
-  const code = (form.cp_code ?? '').trim()
-  const name = (form.cp_name ?? '').trim()
-  const desc = (form.cp_description ?? '').trim()
-  const areaId = Number(form.area_id ?? 0)
-  const priority = Number(form.cp_priority_text ?? 0)
-  const qr = (form.cp_qr ?? '').trim()
-
-  if (!code || !name || !areaId) {
-    throw new Error('MISSING_FIELDS')
-  }
-
-  if (!Number.isFinite(priority) || priority < 1) {
-    throw new Error('PRIORITY_MIN_1')
-  }
-
-  // Nếu bạn muốn bắt buộc QR khi tạo mới:
-  // if (props.mode === 'new' && !qr) throw new Error('MISSING_QR')
-
   emit('submit', {
     submit: async (actor_id: string) => {
+      const code = (form.cp_code ?? '').trim()
+      const name = (form.cp_name ?? '').trim()
+      const desc = (form.cp_description ?? '').trim()
+      const areaId = Number(form.area_id ?? 0)
+      const priority = Number(form.cp_priority_text ?? 0)
+      const qr = (form.cp_qr ?? '').trim()
+
+      const missing: string[] = []
+      if (!code) missing.push('Scan Point Code')
+      if (!name) missing.push('Scan Point Name')
+      if (!areaId) missing.push('Area')
+
+      if (missing.length) {
+        throw new Error(`MISSING_FIELDS:${missing.join(', ')}`)
+      }
+
+      if (!Number.isFinite(priority) || priority < 1) {
+        throw new Error('PRIORITY_MIN_1')
+      }
+
+      if (props.mode === 'new' && !qr) throw new Error('MISSING_QR')
+
       if (props.mode === 'new') {
         await createCheckpointMock({
           cp_code: code,
@@ -156,21 +160,22 @@ function submit() {
           area_id: areaId,
           actor_id,
         })
-      } else {
-        if (!form.cp_id) throw new Error('CHECKPOINT_NOT_FOUND')
-
-        await updateCheckpointMock({
-          cp_id: form.cp_id,
-          cp_code: code,
-          cp_name: name,
-          cp_qr: qr,
-          cp_description: desc,
-          cp_priority: priority,
-          area_id: areaId,
-          cp_status: form.cp_status,
-          actor_id,
-        })
+        return
       }
+
+      if (!form.cp_id) throw new Error('CHECKPOINT_NOT_FOUND')
+
+      await updateCheckpointMock({
+        cp_id: form.cp_id,
+        cp_code: code,
+        cp_name: name,
+        cp_qr: qr,
+        cp_description: desc,
+        cp_priority: priority,
+        area_id: areaId,
+        cp_status: form.cp_status,
+        actor_id,
+      })
     },
   })
 }

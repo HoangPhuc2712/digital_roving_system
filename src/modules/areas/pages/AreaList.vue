@@ -211,12 +211,13 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
   } catch (e: any) {
     const msg = String(e?.message ?? '')
 
-    if (msg === 'MISSING_FIELDS') {
+    if (msg.startsWith('MISSING_FIELDS:')) {
+      const fields = msg.replace('MISSING_FIELDS:', '').trim()
       toast.add({
         severity: 'warn',
         summary: 'Validation',
-        detail: 'Please fill Area Code and Area Name.',
-        life: 3000,
+        detail: fields ? `Please fill: ${fields}.` : 'Please fill required fields.',
+        life: 3200,
       })
       return
     }

@@ -71,32 +71,37 @@ function close() {
 }
 
 function submit() {
-  const code = (form.area_code ?? '').trim()
-  const name = (form.area_name ?? '').trim()
-
-  if (!code || !name) {
-    throw new Error('MISSING_FIELDS')
-  }
-
   emit('submit', {
     submit: async (actor_id: string) => {
+      const code = (form.area_code ?? '').trim()
+      const name = (form.area_name ?? '').trim()
+
+      const missing: string[] = []
+      if (!code) missing.push('Area Code')
+      if (!name) missing.push('Area Name')
+
+      if (missing.length) {
+        throw new Error(`MISSING_FIELDS:${missing.join(', ')}`)
+      }
+
       if (props.mode === 'new') {
         await createAreaMock({
           area_code: code,
           area_name: name,
           actor_id,
         })
-      } else {
-        if (!form.area_id) throw new Error('AREA_NOT_FOUND')
-
-        await updateAreaMock({
-          area_id: form.area_id,
-          area_code: code,
-          area_name: name,
-          area_status: form.area_status,
-          actor_id,
-        })
+        return
       }
+
+      if (!form.area_id) throw new Error('AREA_NOT_FOUND')
+
+      await updateAreaMock({
+        area_id: form.area_id,
+        area_code: code,
+        area_name: name,
+        area_status: form.area_status,
+        actor_id,
+      })
     },
   })
 }

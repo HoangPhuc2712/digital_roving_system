@@ -411,7 +411,7 @@ async function onFormSubmit(payload: ReportFormSubmitPayload) {
       </div>
     </div>
 
-    <div class="bg-white border border-slate-200 rounded-xl">
+    <div>
       <BaseDataTable
         title=""
         :value="store.filteredRows"
