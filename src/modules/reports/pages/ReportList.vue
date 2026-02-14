@@ -479,7 +479,7 @@ async function onFormSubmit(payload: ReportFormSubmitPayload) {
 
         <Column header="Photo" style="min-width: 10rem">
           <template #body="{ data }">
-            <div class="flex items-center justify-center gap-2">
+            <div class="flex items-center justify-start gap-2">
               <BaseButton
                 :label="
                   getImageCount(data.pr_id) > 0 ? `View (${getImageCount(data.pr_id)})` : 'View (0)'
