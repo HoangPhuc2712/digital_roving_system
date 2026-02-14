@@ -1,0 +1,31 @@
+/* .p-inputtext,
+.p-password input.p-inputtext {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+.p-inputtext::placeholder {
+  color: #94a3b8 !important;
+}
+
+.page-reports .p-paginator .p-paginator-page.p-highlight {
+  background: #0f172a !important;
+  border-color: #0f172a !important;
+  color: #ffffff !important;
+}
+
+.page-reports .p-paginator .p-paginator-page:not(.p-highlight):hover {
+  background: #f1f5f9 !important;
+}
+
+.page-reports .p-paginator .p-paginator-prev:not(.p-disabled):hover,
+.page-reports .p-paginator .p-paginator-next:not(.p-disabled):hover,
+.page-reports .p-paginator .p-paginator-first:not(.p-disabled):hover,
+.page-reports .p-paginator .p-paginator-last:not(.p-disabled):hover {
+  background: #f1f5f9 !important;
+} */
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+}
