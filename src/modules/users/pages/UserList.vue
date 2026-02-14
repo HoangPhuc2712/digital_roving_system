@@ -1,15 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
 
-import DataTable, { type DataTablePageEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
-import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
 import Tag from 'primevue/tag'
-
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
+
+import BaseDataTable from '@/components/common/BaseDataTable.vue'
+import BaseButton from '@/components/common/buttons/BaseButton.vue'
+import BaseInput from '@/components/common/inputs/BaseInput.vue'
 
 import { useUsersStore } from '@/modules/users/users.store'
 import { useAuthStore } from '@/stores/auth.store'
@@ -17,14 +16,21 @@ import type { UserRow } from '@/modules/users/users.types'
 import { deleteUserMock } from '@/modules/users/users.api'
 
 import UserFilters from '../components/UserFilters.vue'
+import UserForm, {
+  type UserFormModel,
+  type UserFormMode,
+  type UserFormSubmitPayload,
+} from '../components/UserForm.vue'
 
-const router = useRouter()
 const toast = useToast()
 const confirm = useConfirm()
 
 const store = useUsersStore()
 const auth = useAuthStore()
 
+const canManage = computed(() => auth.canAccess('users.manage'))
+
+// search debounce giữ nguyên logic cũ
 const searchDraft = ref(store.searchText)
 let searchTimer: number | undefined
 
@@ -44,10 +50,6 @@ onMounted(async () => {
   await store.load()
 })
 
-function onPage(e: DataTablePageEvent) {
-  store.setFirst(e.first)
-}
-
 function statusLabel(s: number) {
   return s === 1 ? 'Active' : 'Inactive'
 }
@@ -56,21 +58,48 @@ function statusSeverity(s: number) {
   return s === 1 ? 'success' : 'secondary'
 }
 
-function onCreate() {
-  router.push({ name: 'users-create' })
+// ✅ selection cho multiple delete
+const selectedUsers = ref<UserRow[] | null>(null)
+
+// ✅ Dialog + Form
+const formVisible = ref(false)
+const formMode = ref<UserFormMode>('view')
+const formModel = ref<UserFormModel | null>(null)
+
+function mapRowToFormModel(row: UserRow): UserFormModel {
+  return {
+    user_id: row.user_id,
+    user_name: row.user_name,
+    user_code: row.user_code,
+    user_role_id: row.user_role_id,
+    user_status: row.user_status,
+    // password chỉ dùng khi create / hoặc update nếu nhập
+    user_password: '',
+  }
 }
 
-function onView(row: UserRow) {
-  toast.add({
-    severity: 'info',
-    summary: 'View',
-    detail: 'View is not implemented yet.',
-    life: 2000,
-  })
+function openNew() {
+  formMode.value = 'new'
+  formModel.value = {
+    user_name: '',
+    user_code: '',
+    user_role_id: store.roleOptions[0]?.value ?? 0,
+    user_status: 1,
+    user_password: '',
+  }
+  formVisible.value = true
 }
 
-function onEdit(row: UserRow) {
-  router.push({ name: 'users-edit', params: { id: row.user_id } })
+function openView(row: UserRow) {
+  formMode.value = 'view'
+  formModel.value = mapRowToFormModel(row)
+  formVisible.value = true
+}
+
+function openEdit(row: UserRow) {
+  formMode.value = 'edit'
+  formModel.value = mapRowToFormModel(row)
+  formVisible.value = true
 }
 
 async function onDelete(row: UserRow) {
@@ -83,6 +112,7 @@ async function onDelete(row: UserRow) {
       try {
         await deleteUserMock({ user_id: row.user_id, actor_id: auth.user?.user_id ?? '' })
         await store.load()
+        selectedUsers.value = null
         toast.add({
           severity: 'success',
           summary: 'Deleted',
@@ -101,12 +131,70 @@ async function onDelete(row: UserRow) {
   })
 }
 
+function confirmDeleteSelected() {
+  const items = selectedUsers.value ?? []
+  if (!items.length) return
+
+  confirm.require({
+    header: 'Confirm Delete',
+    message: `Delete ${items.length} selected user(s)?`,
+    acceptLabel: 'Delete',
+    rejectLabel: 'Cancel',
+    accept: async () => {
+      try {
+        const actor = auth.user?.user_id ?? ''
+        for (const u of items) {
+          await deleteUserMock({ user_id: u.user_id, actor_id: actor })
+        }
+        await store.load()
+        selectedUsers.value = null
+        toast.add({
+          severity: 'success',
+          summary: 'Deleted',
+          detail: 'Selected users have been deleted.',
+          life: 2000,
+        })
+      } catch (e: any) {
+        toast.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: e?.message ?? 'Failed to delete users.',
+          life: 3000,
+        })
+      }
+    },
+  })
+}
+
 function clearAll() {
   store.clearFilters()
   searchDraft.value = ''
+  selectedUsers.value = null
 }
 
-const canManage = computed(() => auth.canAccess('users.manage'))
+// ✅ submit từ UserForm (new/edit)
+async function handleSubmit(payload: UserFormSubmitPayload) {
+  try {
+    const actor = auth.user?.user_id ?? ''
+    await payload.submit(actor)
+    await store.load()
+    selectedUsers.value = null
+    formVisible.value = false
+
+    toast.add({
+      severity: 'success',
+      summary: 'Saved',
+      detail: formMode.value === 'new' ? 'User has been created.' : 'User has been updated.',
+      life: 2000,
+    })
+  } catch (e: any) {
+    const msg =
+      e?.message === 'USER_CODE_EXISTS'
+        ? 'User code already exists.'
+        : (e?.message ?? 'Failed to save user.')
+    toast.add({ severity: 'error', summary: 'Error', detail: msg, life: 3000 })
+  }
+}
 </script>
 
 <template>
@@ -117,6 +205,7 @@ const canManage = computed(() => auth.canAccess('users.manage'))
       <div class="w-full max-w-md">
         <BaseInput
           v-model="searchDraft"
+          label=""
           class="w-full"
           placeholder="Search name / user code / role"
         />
@@ -132,76 +221,90 @@ const canManage = computed(() => auth.canAccess('users.manage'))
       @clear="clearAll"
     />
 
-    <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
-      <DataTable
-        :value="store.filteredRows"
-        :loading="store.loading"
-        dataKey="user_id"
-        paginator
-        :rows="store.rowsPerPage"
-        :first="store.first"
-        @page="onPage"
-        stripedRows
-        rowHover
-        responsiveLayout="scroll"
-        class="p-datatable-sm"
-      >
-        <template #empty>
-          <div class="p-4 text-slate-600">No users found.</div>
+    <BaseDataTable
+      title="Users"
+      :value="store.filteredRows"
+      :loading="store.loading"
+      dataKey="user_id"
+      v-model:selection="selectedUsers"
+      :rows="store.rowsPerPage"
+    >
+      <template #toolbar-start>
+        <div class="flex gap-2">
+          <BaseButton label="New" severity="success" :disabled="!canManage" @click="openNew" />
+          <BaseButton
+            label="Delete"
+            severity="danger"
+            outlined
+            :disabled="!canManage || !selectedUsers || selectedUsers.length === 0"
+            @click="confirmDeleteSelected"
+          />
+        </div>
+      </template>
+
+      <template #toolbar-end>
+        <!-- Import/Export -->
+      </template>
+
+      <Column selectionMode="multiple" style="width: 3rem" :exportable="false" />
+
+      <Column field="user_name" header="Name" style="min-width: 14rem" />
+      <Column field="user_code" header="User Code" style="min-width: 10rem" />
+
+      <Column header="Role" style="min-width: 12rem">
+        <template #body="{ data }">
+          <div class="text-slate-800">{{ data.role_name }}</div>
         </template>
+      </Column>
 
-        <Column field="user_name" header="Name" />
-        <Column field="user_code" header="User Code" />
+      <Column header="Status" style="min-width: 10rem">
+        <template #body="{ data }">
+          <Tag
+            :value="statusLabel(data.user_status)"
+            :severity="statusSeverity(data.user_status)"
+          />
+        </template>
+      </Column>
 
-        <Column header="Role">
-          <template #body="{ data }">
-            <div class="text-slate-800">{{ data.role_name }}</div>
-          </template>
-        </Column>
-
-        <Column header="Status">
-          <template #body="{ data }">
-            <Tag
-              :value="statusLabel(data.user_status)"
-              :severity="statusSeverity(data.user_status)"
+      <Column header="Action" style="width: 260px">
+        <template #body="{ data }">
+          <div class="flex gap-2 justify-end">
+            <BaseButton
+              label="View"
+              size="small"
+              severity="secondary"
+              outlined
+              @click="openView(data)"
             />
-          </template>
-        </Column>
+            <BaseButton
+              label="Edit"
+              size="small"
+              severity="success"
+              outlined
+              :disabled="!canManage"
+              @click="openEdit(data)"
+            />
+            <BaseButton
+              label="Delete"
+              size="small"
+              severity="danger"
+              outlined
+              :disabled="!canManage"
+              @click="onDelete(data)"
+            />
+          </div>
+        </template>
+      </Column>
+    </BaseDataTable>
 
-        <Column header="Action" style="width: 240px">
-          <template #body="{ data }">
-            <div class="flex gap-2 justify-end">
-              <BaseButton
-                label="View"
-                size="small"
-                severity="secondary"
-                outlined
-                @click="onView(data)"
-              />
-              <BaseButton
-                label="Edit"
-                size="small"
-                severity="warning"
-                outlined
-                :disabled="!canManage"
-                @click="onEdit(data)"
-              />
-              <BaseButton
-                label="Delete"
-                size="small"
-                severity="danger"
-                outlined
-                :disabled="!canManage"
-                @click="onDelete(data)"
-              />
-            </div>
-          </template>
-        </Column>
-      </DataTable>
-    </div>
-
-    <div class="flex justify-end">
-      <BaseButton label="Create User" severity="success" :disabled="!canManage" @click="onCreate" />
-    </div>
+    <!-- Dialog Form -->
+    <UserForm
+      v-model:visible="formVisible"
+      :mode="formMode"
+      :model="formModel"
+      :roleOptions="store.roleOptions"
+      @submit="handleSubmit"
+      @close="formVisible = false"
+    />
   </div>
 </template>

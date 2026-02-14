@@ -45,12 +45,12 @@ export type CheckPoint = {
   cp_name: string
   cp_qr: string
   cp_description: string
-  cp_priority: number // New column
+  cp_priority: number
   area_id: number
   created_at: string
-  created_by: string // UUID
+  created_by: string
   updated_at: string
-  updated_by: string // UUID
+  updated_by: string
 }
 
 export type PointReport = {

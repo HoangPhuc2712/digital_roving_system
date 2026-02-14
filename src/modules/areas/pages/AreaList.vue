@@ -1,30 +1,34 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
-
-import DataTable, { type DataTablePageEvent } from 'primevue/datatable'
-import Column from 'primevue/column'
-import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import Dropdown from 'primevue/dropdown'
-import Tag from 'primevue/tag'
-
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
+
+import Column from 'primevue/column'
+import Dropdown from 'primevue/dropdown'
+import Tag from 'primevue/tag'
 
 import { useAreasStore } from '@/modules/areas/areas.store'
 import { useAuthStore } from '@/stores/auth.store'
 import type { AreaRow } from '@/modules/areas/areas.types'
 import { deleteAreaMock } from '@/modules/areas/areas.api'
+
 import BaseInput from '@/components/common/inputs/BaseInput.vue'
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
+import BaseDataTable from '@/components/common/BaseDataTable.vue'
 
-const router = useRouter()
+import AreaForm, {
+  type AreaFormMode,
+  type AreaFormModel,
+  type AreaFormSubmitPayload,
+} from '@/modules/areas/components/AreaForm.vue'
+
 const toast = useToast()
 const confirm = useConfirm()
 
 const store = useAreasStore()
 const auth = useAuthStore()
+
+const canManage = computed(() => auth.canAccess('areas.manage'))
 
 const searchDraft = ref(store.searchText)
 let searchTimer: number | undefined
@@ -45,17 +49,11 @@ onMounted(async () => {
   await store.load()
 })
 
-const canManage = computed(() => auth.canAccess('areas.manage'))
-
 const statusOptions = [
   { label: 'All', value: 'ALL' },
   { label: 'Active', value: 'ACTIVE' },
   { label: 'Inactive', value: 'INACTIVE' },
 ]
-
-function onPage(e: DataTablePageEvent) {
-  store.setFirst(e.first)
-}
 
 function statusLabel(s: number) {
   return s === 1 ? 'Active' : 'Inactive'
@@ -70,12 +68,45 @@ function clearAll() {
   searchDraft.value = ''
 }
 
-function onCreate() {
-  router.push({ name: 'areas-create' })
+const selectedAreas = ref<AreaRow[] | null>(null)
+
+const formVisible = ref(false)
+const formMode = ref<AreaFormMode>('view')
+const formModel = ref<AreaFormModel | null>(null)
+
+function mapRowToFormModel(row: AreaRow): AreaFormModel {
+  return {
+    area_id: row.area_id,
+    area_code: row.area_code,
+    area_name: row.area_name,
+    area_status: row.area_status,
+  }
 }
 
-function onEdit(row: AreaRow) {
-  router.push({ name: 'areas-edit', params: { id: row.area_id } })
+function openNew() {
+  formMode.value = 'new'
+  formModel.value = {
+    area_code: '',
+    area_name: '',
+    area_status: 1,
+  }
+  formVisible.value = true
+}
+
+function openView(row: AreaRow) {
+  formMode.value = 'view'
+  formModel.value = mapRowToFormModel(row)
+  formVisible.value = true
+}
+
+function openEdit(row: AreaRow) {
+  formMode.value = 'edit'
+  formModel.value = mapRowToFormModel(row)
+  formVisible.value = true
+}
+
+async function doDeleteOne(row: AreaRow) {
+  await deleteAreaMock({ area_id: row.area_id, actor_id: auth.user?.user_id ?? '' })
 }
 
 async function onDelete(row: AreaRow) {
@@ -86,8 +117,9 @@ async function onDelete(row: AreaRow) {
     rejectLabel: 'Cancel',
     accept: async () => {
       try {
-        await deleteAreaMock({ area_id: row.area_id, actor_id: auth.user?.user_id ?? '' })
+        await doDeleteOne(row)
         await store.load()
+        selectedAreas.value = null
         toast.add({
           severity: 'success',
           summary: 'Deleted',
@@ -101,12 +133,11 @@ async function onDelete(row: AreaRow) {
           toast.add({
             severity: 'warn',
             summary: 'Cannot Delete',
-            detail: `Can't delete Area ${row.area_code} because it has ${n} active scan points`,
+            detail: `Can't delete Area ${row.area_code} because it has ${n} scan points`,
             life: 3500,
           })
           return
         }
-
         toast.add({
           severity: 'error',
           summary: 'Error',
@@ -116,6 +147,97 @@ async function onDelete(row: AreaRow) {
       }
     },
   })
+}
+
+function onDeleteSelected() {
+  const sel = selectedAreas.value ?? []
+  if (!sel.length) return
+
+  confirm.require({
+    header: 'Confirm Delete',
+    message: `Delete ${sel.length} selected areas?`,
+    acceptLabel: 'Delete',
+    rejectLabel: 'Cancel',
+    accept: async () => {
+      try {
+        for (const row of sel) {
+          await doDeleteOne(row)
+        }
+        await store.load()
+        selectedAreas.value = null
+        toast.add({
+          severity: 'success',
+          summary: 'Deleted',
+          detail: 'Selected areas have been deleted.',
+          life: 2000,
+        })
+      } catch (e: any) {
+        const msg = String(e?.message ?? '')
+        if (msg.startsWith('AREA_HAS_SCAN_POINTS:')) {
+          const n = Number(msg.split(':')[1] ?? 0)
+          toast.add({
+            severity: 'warn',
+            summary: 'Cannot Delete',
+            detail: `Can't delete because one selected Area has ${n} scan points`,
+            life: 3500,
+          })
+          return
+        }
+        toast.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: msg || 'Failed to delete areas.',
+          life: 3000,
+        })
+      }
+    },
+  })
+}
+
+async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Promise<void> }) {
+  const actor = auth.user?.user_id ?? ''
+  if (!actor) return
+
+  try {
+    await payload.submit(actor)
+    await store.load()
+
+    toast.add({
+      severity: 'success',
+      summary: 'Saved',
+      detail: 'Area has been saved.',
+      life: 2000,
+    })
+  } catch (e: any) {
+    const msg = String(e?.message ?? '')
+
+    if (msg === 'MISSING_FIELDS') {
+      toast.add({
+        severity: 'warn',
+        summary: 'Validation',
+        detail: 'Please fill Area Code and Area Name.',
+        life: 3000,
+      })
+      return
+    }
+
+    if (msg === 'AREA_CODE_EXISTS') {
+      toast.add({
+        severity: 'warn',
+        summary: 'Duplicate',
+        detail: 'Area Code already exists.',
+        life: 3000,
+      })
+      return
+    }
+
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: msg || 'Failed to save area.',
+      life: 3500,
+    })
+  }
 }
 </script>
 
@@ -149,63 +271,85 @@ async function onDelete(row: AreaRow) {
       </div>
     </div>
 
-    <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
-      <DataTable
-        :value="store.filteredRows"
-        :loading="store.loading"
-        dataKey="area_id"
-        paginator
-        :rows="store.rowsPerPage"
-        :first="store.first"
-        @page="onPage"
-        stripedRows
-        rowHover
-        responsiveLayout="scroll"
-        class="p-datatable-sm"
-      >
-        <template #empty>
-          <div class="p-4 text-slate-600">No areas found.</div>
+    <BaseDataTable
+      title="Areas"
+      :value="store.filteredRows"
+      :loading="store.loading"
+      dataKey="area_id"
+      v-model:selection="selectedAreas"
+      :rows="store.rowsPerPage"
+    >
+      <template #toolbar-start>
+        <BaseButton label="New" severity="success" :disabled="!canManage" @click="openNew" />
+        <BaseButton
+          label="Delete"
+          severity="danger"
+          outlined
+          class="ml-2"
+          :disabled="!canManage || !(selectedAreas && selectedAreas.length)"
+          @click="onDeleteSelected"
+        />
+      </template>
+
+      <template #toolbar-end>
+        <!-- để trống hoặc sau này thêm Export -->
+      </template>
+
+      <template #header-right>
+        <!-- giữ header-right trống vì search đang nằm phía trên theo design hiện tại -->
+      </template>
+
+      <Column selectionMode="multiple" style="width: 3rem" :exportable="false" />
+
+      <Column field="area_code" header="Area Code" style="min-width: 10rem" />
+      <Column field="area_name" header="Area Name" style="min-width: 14rem" />
+
+      <Column header="Status" style="min-width: 10rem">
+        <template #body="{ data }">
+          <Tag
+            :value="statusLabel(data.area_status)"
+            :severity="statusSeverity(data.area_status)"
+          />
         </template>
+      </Column>
 
-        <Column field="area_code" header="Area Code" />
-        <Column field="area_name" header="Area Name" />
-
-        <Column header="Status">
-          <template #body="{ data }">
-            <Tag
-              :value="statusLabel(data.area_status)"
-              :severity="statusSeverity(data.area_status)"
+      <Column header="Action" :exportable="false" style="min-width: 16rem">
+        <template #body="{ data }">
+          <div class="flex gap-2 justify-end">
+            <BaseButton
+              label="View"
+              size="small"
+              severity="secondary"
+              outlined
+              @click="openView(data)"
             />
-          </template>
-        </Column>
+            <BaseButton
+              label="Edit"
+              size="small"
+              severity="success"
+              outlined
+              :disabled="!canManage"
+              @click="openEdit(data)"
+            />
+            <BaseButton
+              label="Delete"
+              size="small"
+              severity="danger"
+              outlined
+              :disabled="!canManage"
+              @click="onDelete(data)"
+            />
+          </div>
+        </template>
+      </Column>
+    </BaseDataTable>
 
-        <Column header="Action" style="width: 180px">
-          <template #body="{ data }">
-            <div class="flex gap-2 justify-end">
-              <BaseButton
-                label="Edit"
-                size="small"
-                severity="success"
-                outlined
-                :disabled="!canManage"
-                @click="onEdit(data)"
-              />
-              <BaseButton
-                label="Delete"
-                size="small"
-                severity="danger"
-                outlined
-                :disabled="!canManage"
-                @click="onDelete(data)"
-              />
-            </div>
-          </template>
-        </Column>
-      </DataTable>
-    </div>
-
-    <div class="flex justify-end">
-      <BaseButton label="Create Area" severity="success" :disabled="!canManage" @click="onCreate" />
-    </div>
+    <AreaForm
+      v-model:visible="formVisible"
+      :mode="formMode"
+      :model="formModel"
+      @submit="handleAreaFormSubmit"
+      @close="formModel = null"
+    />
   </div>
 </template>

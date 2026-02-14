@@ -83,6 +83,14 @@ function getNextPriId() {
   return maxId + 1
 }
 
+function getNextPrId() {
+  let maxId = 0
+  for (const x of pointReports) {
+    if (x.pr_id > maxId) maxId = x.pr_id
+  }
+  return maxId + 1
+}
+
 export async function updateReportMock(payload: {
   pr_id: number
   pr_check: boolean
@@ -124,4 +132,43 @@ export async function updateReportMock(payload: {
   }
 
   return true
+}
+
+export async function createReportMock(payload: {
+  cp_id: number
+  pr_check: boolean
+  pr_note: string
+  add_images: string[]
+  actor_id: string
+}) {
+  const cp = checkPoints.find((x) => x.cp_id === payload.cp_id)
+  if (!cp) throw new Error('CHECKPOINT_NOT_FOUND')
+
+  const pr_id = getNextPrId()
+  const now = new Date().toISOString()
+
+  pointReports.push({
+    pr_id,
+    pr_check: payload.pr_check,
+    pr_note: payload.pr_note,
+    cp_id: payload.cp_id,
+    created_at: now,
+    created_by: payload.actor_id,
+  })
+
+  let nextId = getNextPriId()
+  for (const img of payload.add_images ?? []) {
+    const s = (img ?? '').trim()
+    if (!s) continue
+
+    pointReportImages.push({
+      pri_id: nextId++,
+      pr_id,
+      pri_image: s,
+      created_at: now,
+      created_by: payload.actor_id,
+    })
+  }
+
+  return pr_id
 }

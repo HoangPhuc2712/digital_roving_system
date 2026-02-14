@@ -91,7 +91,14 @@ export const useReportsStore = defineStore('reports', {
 
       return this.visibleRows.filter((r) => {
         if (q) {
-          const haystack = [r.area_code, r.area_name, r.cp_name, r.user_code, r.user_name]
+          const haystack = [
+            r.area_code,
+            r.area_name,
+            r.cp_name,
+            r.cp_description,
+            r.user_code,
+            r.user_name,
+          ]
             .join(' ')
             .toLowerCase()
 
