@@ -47,7 +47,7 @@ const toast = useToast()
 const isView = computed(() => props.mode === 'view')
 const isNew = computed(() => props.mode === 'new')
 const title = computed(() =>
-  props.mode === 'new' ? 'New User' : props.mode === 'edit' ? 'Edit User' : 'User Detail',
+  props.mode === 'new' ? 'Create New User' : props.mode === 'edit' ? 'Edit User' : 'User Detail',
 )
 
 const form = reactive<UserFormState>({
