@@ -270,7 +270,7 @@ function onViewPatrolPath(row: UserRow) {
         </template>
       </Column>
 
-      <Column header="Patrol Path" style="min-width: 12rem" :exportable="false">
+      <Column header="Patrol Route" style="min-width: 12rem" :exportable="false">
         <template #body="{ data }">
           <div class="flex justify-start">
             <BaseButton

@@ -414,7 +414,7 @@ function formatReportDateTime(iso?: string) {
               </div>
             </div>
 
-            <div v-else class="text-sm text-slate-500">View images using the button above.</div>
+            <!-- <div v-else class="text-sm text-slate-500">View images using the button above.</div> -->
           </div>
         </div>
       </div>
