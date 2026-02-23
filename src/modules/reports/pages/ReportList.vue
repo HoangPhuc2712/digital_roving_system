@@ -7,6 +7,7 @@ import Column from 'primevue/column'
 import Dropdown from 'primevue/dropdown'
 import Calendar from 'primevue/calendar'
 import Tag from 'primevue/tag'
+import Checkbox from 'primevue/checkbox'
 
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
@@ -80,11 +81,11 @@ watch(
     store.filterResult,
     store.filterRoleCode,
     store.filterGuardId,
+    store.filterMultiDays,
+    store.filterDate,
     store.filterDateRange,
   ],
-  () => {
-    store.setFirst(0)
-  },
+  () => store.setFirst(0),
 )
 
 watch(
@@ -114,6 +115,24 @@ watch(
   },
 )
 
+watch(
+  () => store.filterMultiDays,
+  (v) => {
+    if (v) {
+      if (
+        store.filterDate &&
+        (!store.filterDateRange || (!store.filterDateRange[0] && !store.filterDateRange[1]))
+      ) {
+        store.filterDateRange = [store.filterDate, store.filterDate]
+      }
+    } else {
+      const start = store.filterDateRange?.[0] ?? null
+      if (start) store.filterDate = start
+      store.filterDateRange = null
+    }
+  },
+)
+
 function onPage(e: DataTablePageEvent) {
   store.setFirst(e.first)
 }
@@ -129,17 +148,17 @@ function formatDateTime(iso: string) {
   }).format(d)
 }
 
-function onView(row: ReportRow) {
-  router.push({ name: 'report-detail', params: { id: row.pr_id } })
-}
+// function onView(row: ReportRow) {
+//   router.push({ name: 'report-detail', params: { id: row.pr_id } })
+// }
 
-function onEdit(row: ReportRow) {
-  router.push({
-    name: 'report-detail',
-    params: { id: row.pr_id },
-    query: { edit: '1' },
-  })
-}
+// function onEdit(row: ReportRow) {
+//   router.push({
+//     name: 'report-detail',
+//     params: { id: row.pr_id },
+//     query: { edit: '1' },
+//   })
+// }
 
 function onDelete(row: ReportRow) {
   confirm.require({
@@ -242,15 +261,15 @@ function onDeleteSelected() {
   })
 }
 
-function openNew() {
-  formMode.value = 'new'
-  formModel.value = {
-    pr_check: true,
-    pr_note: '',
-    images: [],
-  }
-  formVisible.value = true
-}
+// function openNew() {
+//   formMode.value = 'new'
+//   formModel.value = {
+//     pr_check: true,
+//     pr_note: '',
+//     images: [],
+//   }
+//   formVisible.value = true
+// }
 
 function openView(row: ReportRow) {
   formMode.value = 'view'
@@ -339,7 +358,7 @@ async function onFormSubmit(payload: ReportFormSubmitPayload) {
     </div>
 
     <div class="bg-white border border-slate-200 rounded-xl p-3">
-      <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+      <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-start">
         <div class="md:col-span-1">
           <label class="block text-sm text-slate-600 mb-1">Area</label>
           <Dropdown
@@ -395,7 +414,19 @@ async function onFormSubmit(payload: ReportFormSubmitPayload) {
 
         <div class="md:col-span-1">
           <label class="block text-sm text-slate-600 mb-1">Select Date</label>
+
           <Calendar
+            v-if="!store.filterMultiDays"
+            v-model="store.filterDate"
+            class="w-full"
+            selectionMode="single"
+            dateFormat="yy-mm-dd"
+            placeholder="Select date"
+            showButtonBar
+          />
+
+          <Calendar
+            v-else
             v-model="store.filterDateRange"
             class="w-full"
             selectionMode="range"
@@ -403,6 +434,11 @@ async function onFormSubmit(payload: ReportFormSubmitPayload) {
             placeholder="From - To"
             showButtonBar
           />
+
+          <div class="flex items-center gap-2 mt-2">
+            <Checkbox v-model="store.filterMultiDays" :binary="true" inputId="multiDays" />
+            <label for="multiDays" class="text-xs text-slate-600">Select multiple days</label>
+          </div>
         </div>
       </div>
 
