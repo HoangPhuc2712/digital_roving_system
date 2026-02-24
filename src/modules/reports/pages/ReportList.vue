@@ -21,6 +21,7 @@ import { pointReportImages } from '@/mocks/db'
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import ReportForm, { type ReportFormModel } from '@/modules/reports/components/ReportForm.vue'
 import { createReportMock, updateReportMock } from '@/modules/reports/reports.api'
+import { exportPatrolReportXlsx } from '@/services/export/patrolReport.export'
 
 type BaseImageItem = {
   id: string | number
@@ -62,6 +63,7 @@ const formVisible = ref(false)
 const formMode = ref<'new' | 'view' | 'edit'>('view')
 const formModel = ref<ReportFormModel | null>(null)
 const submitting = ref(false)
+const exporting = ref(false)
 
 function applyLockedFilters() {
   if (!lockRoleGuard.value) return
@@ -345,6 +347,71 @@ async function onFormSubmit(payload: ReportFormSubmitPayload) {
     submitting.value = false
   }
 }
+
+function pad2(n: number) {
+  return String(n).padStart(2, '0')
+}
+
+function formatDdMmYyyy(d: Date) {
+  return `${pad2(d.getDate())}-${pad2(d.getMonth() + 1)}-${d.getFullYear()}`
+}
+
+function onExport() {
+  const d = store.filterDate // Date | null
+  if (!d) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Missing Date',
+      detail: 'Please select a date before exporting.',
+      life: 2500,
+    })
+    return
+  }
+
+  const rows = store.filteredRows
+  if (!rows.length) {
+    toast.add({
+      severity: 'info',
+      summary: 'No Data',
+      detail: `No reports found for ${formatDdMmYyyy(d)}.`,
+      life: 2500,
+    })
+    return
+  }
+
+  const dateStr = formatDdMmYyyy(d)
+
+  confirm.require({
+    header: 'Confirm Export',
+    message: `You are about to export ${rows.length} report(s) for ${dateStr}. Continue?`,
+    acceptLabel: 'Export',
+    rejectLabel: 'Cancel',
+    accept: async () => {
+      try {
+        exporting.value = true
+        await exportPatrolReportXlsx({
+          rows,
+          fileName: `PatrolReport_${dateStr}.xlsx`,
+        })
+        toast.add({
+          severity: 'success',
+          summary: 'Exported',
+          detail: `Excel file generated for ${dateStr}.`,
+          life: 2000,
+        })
+      } catch (e: any) {
+        toast.add({
+          severity: 'error',
+          summary: 'Export Failed',
+          detail: e?.message ?? 'Failed to export Excel.',
+          life: 3000,
+        })
+      } finally {
+        exporting.value = false
+      }
+    },
+  })
+}
 </script>
 
 <template>
@@ -470,7 +537,15 @@ async function onFormSubmit(payload: ReportFormSubmitPayload) {
           </div>
         </template>
         <template #toolbar-end>
-          <!-- Import/Export -->
+          <div class="flex justify-end gap-2">
+            <BaseButton
+              label="Export"
+              severity="secondary"
+              outlined
+              :disabled="exporting"
+              @click="onExport"
+            />
+          </div>
         </template>
         <template #empty>
           <div class="p-4 text-slate-600 flex justify-center">No reports found.</div>
