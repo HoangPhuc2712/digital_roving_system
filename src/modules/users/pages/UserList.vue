@@ -315,7 +315,6 @@ function onViewPatrolPath(row: UserRow) {
       </Column>
     </BaseDataTable>
 
-    <!-- Dialog Form -->
     <UserForm
       v-model:visible="formVisible"
       :mode="formMode"
