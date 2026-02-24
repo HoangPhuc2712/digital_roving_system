@@ -22,6 +22,7 @@ import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import ReportForm, { type ReportFormModel } from '@/modules/reports/components/ReportForm.vue'
 import { createReportMock, updateReportMock } from '@/modules/reports/reports.api'
 import { exportPatrolReportXlsx } from '@/services/export/patrolReport.export'
+import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 
 type BaseImageItem = {
   id: string | number
@@ -510,7 +511,13 @@ function onExport() {
       </div>
 
       <div class="mt-3 flex justify-end">
-        <BaseButton label="Clear Filters" severity="secondary" outlined @click="onClearFilters" />
+        <BaseIconButton
+          icon="pi pi-filter-slash"
+          label="Clear Filters"
+          severity="secondary"
+          outlined
+          @click="onClearFilters"
+        />
       </div>
     </div>
 
@@ -527,7 +534,8 @@ function onExport() {
       >
         <template #toolbar-start>
           <div class="flex justify-start gap-2">
-            <BaseButton
+            <BaseIconButton
+              icon="pi pi-trash"
               label="Delete"
               severity="danger"
               outlined
@@ -538,7 +546,8 @@ function onExport() {
         </template>
         <template #toolbar-end>
           <div class="flex justify-end gap-2">
-            <BaseButton
+            <BaseIconButton
+              icon="pi pi-download"
               label="Export"
               severity="secondary"
               outlined
@@ -616,14 +625,16 @@ function onExport() {
         <Column header="Action" style="width: 220px">
           <template #body="{ data }">
             <div class="flex gap-2 justify-end">
-              <BaseButton
+              <BaseIconButton
+                icon="pi pi-eye"
                 label="View"
                 size="small"
                 severity="secondary"
                 outlined
                 @click="openView(data)"
               />
-              <BaseButton
+              <BaseIconButton
+                icon="pi pi-pencil"
                 label="Edit"
                 size="small"
                 severity="success"
@@ -631,7 +642,8 @@ function onExport() {
                 :disabled="!canEdit"
                 @click="openEdit(data)"
               />
-              <BaseButton
+              <BaseIconButton
+                icon="pi pi-trash"
                 label="Delete"
                 size="small"
                 severity="danger"

@@ -10,12 +10,10 @@ function stripDataUrl(s: string) {
 }
 
 function colWidthToPx(w: number) {
-  // xấp xỉ Excel column width -> px
   return Math.round(w * 7 + 5)
 }
 
 function rowHeightToPx(hPt: number) {
-  // point -> px
   return Math.round((hPt * 96) / 72)
 }
 
@@ -50,36 +48,29 @@ async function addImageToCell(
     base64: dataUrl,
   })
 
-  // --- cell size ---
   const colW = ws.getColumn(c).width ?? 22
-  const rowH = ws.getRow(r).height ?? 72 // points
+  const rowH = ws.getRow(r).height ?? 72
   const cellWpx = colWidthToPx(colW)
   const cellHpx = rowHeightToPx(rowH)
 
-  // --- image natural size ---
   const { w: iw, h: ih } = await getImgSize(dataUrl)
 
-  const borderPx = 2
-  const paddingPx = 12
-  const margin = borderPx + paddingPx
-
-  const availW = Math.max(10, cellWpx - margin * 2)
-  const availH = Math.max(10, cellHpx - margin * 2)
+  const INSET_PX = 8
+  const availW = Math.max(10, cellWpx - INSET_PX * 2)
+  const availH = Math.max(10, cellHpx - INSET_PX * 2)
 
   const scale = Math.min(availW / iw, availH / ih, 1)
   const drawW = Math.floor(iw * scale)
   const drawH = Math.floor(ih * scale)
 
-  const offX = margin + Math.floor((availW - drawW) / 2)
-  const offY = margin + Math.floor((availH - drawH) / 2)
+  const offX = Math.max(0, Math.floor((cellWpx - drawW) / 2))
+  const offY = Math.max(0, Math.floor((cellHpx - drawH) / 2))
+
+  const offsetCol = offX / Math.max(1, cellWpx)
+  const offsetRow = offY / Math.max(1, cellHpx)
 
   ws.addImage(imgId, {
-    tl: {
-      col: c - 1,
-      row: r - 1,
-      colOff: offX * EMU_PER_PX,
-      rowOff: offY * EMU_PER_PX,
-    },
+    tl: { col: c - 1 + offsetCol, row: r - 1 + offsetRow },
     ext: { width: drawW, height: drawH },
     editAs: 'oneCell',
   } as any)
