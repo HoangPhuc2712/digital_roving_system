@@ -22,6 +22,7 @@ import UserForm, {
   type UserFormMode,
   type UserFormSubmitPayload,
 } from '../components/UserForm.vue'
+import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 
 const toast = useToast()
 const confirm = useConfirm()
@@ -32,7 +33,6 @@ const router = useRouter()
 
 const canManage = computed(() => auth.canAccess('users.manage'))
 
-// search debounce giữ nguyên logic cũ
 const searchDraft = ref(store.searchText)
 let searchTimer: number | undefined
 
@@ -60,10 +60,8 @@ function statusSeverity(s: number) {
   return s === 1 ? 'success' : 'secondary'
 }
 
-// ✅ selection cho multiple delete
 const selectedUsers = ref<UserRow[] | null>(null)
 
-// ✅ Dialog + Form
 const formVisible = ref(false)
 const formMode = ref<UserFormMode>('view')
 const formModel = ref<UserFormModel | null>(null)
@@ -207,12 +205,7 @@ function onViewPatrolPath(row: UserRow) {
       <div class="text-xl font-semibold text-slate-800">Users Management</div>
 
       <div class="w-full max-w-md">
-        <BaseInput
-          v-model="searchDraft"
-          label=""
-          class="w-full"
-          placeholder="Search name / user code / role"
-        />
+        <BaseInput v-model="searchDraft" label="" class="w-full" placeholder="Search..." />
       </div>
     </div>
 
@@ -235,8 +228,15 @@ function onViewPatrolPath(row: UserRow) {
     >
       <template #toolbar-start>
         <div class="flex gap-2">
-          <BaseButton label="New" severity="success" :disabled="!canManage" @click="openNew" />
-          <BaseButton
+          <BaseIconButton
+            icon="pi pi-plus"
+            label="New"
+            severity="success"
+            :disabled="!canManage"
+            @click="openNew"
+          />
+          <BaseIconButton
+            icon="pi pi-trash"
             label="Delete"
             severity="danger"
             outlined
@@ -273,7 +273,8 @@ function onViewPatrolPath(row: UserRow) {
       <Column header="Patrol Routes" style="min-width: 12rem" :exportable="false">
         <template #body="{ data }">
           <div class="flex justify-start">
-            <BaseButton
+            <BaseIconButton
+              icon="pi pi-eye"
               label="View"
               size="small"
               severity="secondary"
@@ -287,14 +288,16 @@ function onViewPatrolPath(row: UserRow) {
       <Column header="Action" style="width: 260px">
         <template #body="{ data }">
           <div class="flex gap-2 justify-end">
-            <BaseButton
+            <BaseIconButton
+              icon="pi pi-eye"
               label="View"
               size="small"
               severity="secondary"
               outlined
               @click="openView(data)"
             />
-            <BaseButton
+            <BaseIconButton
+              icon="pi pi-pencil"
               label="Edit"
               size="small"
               severity="success"
@@ -302,7 +305,8 @@ function onViewPatrolPath(row: UserRow) {
               :disabled="!canManage"
               @click="openEdit(data)"
             />
-            <BaseButton
+            <BaseIconButton
+              icon="pi pi-trash"
               label="Delete"
               size="small"
               severity="danger"

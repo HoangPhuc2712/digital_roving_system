@@ -21,6 +21,7 @@ import AreaForm, {
   type AreaFormModel,
   type AreaFormSubmitPayload,
 } from '@/modules/areas/components/AreaForm.vue'
+import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 
 const toast = useToast()
 const confirm = useConfirm()
@@ -267,7 +268,13 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
         </div>
 
         <div class="md:col-span-3 flex justify-end">
-          <BaseButton label="Clear Filters" severity="secondary" outlined @click="clearAll" />
+          <BaseIconButton
+            icon="pi pi-filter-slash"
+            label="Clear Filters"
+            severity="secondary"
+            outlined
+            @click="clearAll"
+          />
         </div>
       </div>
     </div>
@@ -281,8 +288,15 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
       :rows="store.rowsPerPage"
     >
       <template #toolbar-start>
-        <BaseButton label="New" severity="success" :disabled="!canManage" @click="openNew" />
-        <BaseButton
+        <BaseIconButton
+          icon="pi pi-plus"
+          label="New"
+          severity="success"
+          :disabled="!canManage"
+          @click="openNew"
+        />
+        <BaseIconButton
+          icon="pi pi-trash"
           label="Delete"
           severity="danger"
           outlined
@@ -294,10 +308,6 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
 
       <template #toolbar-end>
         <!-- để trống hoặc sau này thêm Export -->
-      </template>
-
-      <template #header-right>
-        <!-- giữ header-right trống vì search đang nằm phía trên theo design hiện tại -->
       </template>
 
       <Column selectionMode="multiple" style="width: 3rem" :exportable="false" />
@@ -317,14 +327,16 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
       <Column header="Action" :exportable="false" style="min-width: 16rem">
         <template #body="{ data }">
           <div class="flex gap-2 justify-end">
-            <BaseButton
+            <BaseIconButton
+              icon="pi pi-eye"
               label="View"
               size="small"
               severity="secondary"
               outlined
               @click="openView(data)"
             />
-            <BaseButton
+            <BaseIconButton
+              icon="pi pi-pencil"
               label="Edit"
               size="small"
               severity="success"
@@ -332,7 +344,8 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
               :disabled="!canManage"
               @click="openEdit(data)"
             />
-            <BaseButton
+            <BaseIconButton
+              icon="pi pi-trash"
               label="Delete"
               size="small"
               severity="danger"

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Dropdown from 'primevue/dropdown'
 import Button from 'primevue/button'
+import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 
 type StatusOption = { label: string; value: 'ALL' | 'ACTIVE' | 'INACTIVE' }
 
@@ -55,7 +56,13 @@ const statusOptions: StatusOption[] = [
     </div>
 
     <div class="mt-3 flex justify-end">
-      <BaseButton label="Clear Filters" severity="secondary" outlined @click="emit('clear')" />
+      <BaseIconButton
+        icon="pi pi-filter-slash"
+        label="Clear Filters"
+        severity="secondary"
+        outlined
+        @click="emit('clear')"
+      />
     </div>
   </div>
 </template>

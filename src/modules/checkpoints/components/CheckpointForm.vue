@@ -288,7 +288,7 @@ function submit() {
       </div>
 
       <div class="flex justify-end gap-2 pt-3 border-t border-slate-200">
-        <BaseButton label="Cancel" severity="secondary" outlined @click="close" />
+        <BaseButton label="Cancel" severity="danger" outlined @click="close" />
         <BaseButton v-if="!isView" label="Submit" severity="success" @click="submit" />
       </div>
     </div>
