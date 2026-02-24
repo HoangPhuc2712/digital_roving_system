@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 
 import Column from 'primevue/column'
 import Tag from 'primevue/tag'
@@ -27,6 +28,7 @@ const confirm = useConfirm()
 
 const store = useUsersStore()
 const auth = useAuthStore()
+const router = useRouter()
 
 const canManage = computed(() => auth.canAccess('users.manage'))
 
@@ -73,7 +75,6 @@ function mapRowToFormModel(row: UserRow): UserFormModel {
     user_code: row.user_code,
     user_role_id: row.user_role_id,
     user_status: row.user_status,
-    // password chỉ dùng khi create / hoặc update nếu nhập
     user_password: '',
   }
 }
@@ -172,7 +173,6 @@ function clearAll() {
   selectedUsers.value = null
 }
 
-// ✅ submit từ UserForm (new/edit)
 async function handleSubmit(payload: UserFormSubmitPayload) {
   try {
     const actor = auth.user?.user_id ?? ''
@@ -194,6 +194,10 @@ async function handleSubmit(payload: UserFormSubmitPayload) {
         : (e?.message ?? 'Failed to save user.')
     toast.add({ severity: 'error', summary: 'Error', detail: msg, life: 3000 })
   }
+}
+
+function onViewPatrolPath(row: UserRow) {
+  router.push({ name: 'user-patrol-path', params: { id: row.user_id } })
 }
 </script>
 
@@ -266,6 +270,20 @@ async function handleSubmit(payload: UserFormSubmitPayload) {
         </template>
       </Column>
 
+      <Column header="Patrol Routes" style="min-width: 12rem" :exportable="false">
+        <template #body="{ data }">
+          <div class="flex justify-start">
+            <BaseButton
+              label="View"
+              size="small"
+              severity="secondary"
+              outlined
+              @click="onViewPatrolPath(data)"
+            />
+          </div>
+        </template>
+      </Column>
+
       <Column header="Action" style="width: 260px">
         <template #body="{ data }">
           <div class="flex gap-2 justify-end">
@@ -297,7 +315,6 @@ async function handleSubmit(payload: UserFormSubmitPayload) {
       </Column>
     </BaseDataTable>
 
-    <!-- Dialog Form -->
     <UserForm
       v-model:visible="formVisible"
       :mode="formMode"

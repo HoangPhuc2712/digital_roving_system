@@ -87,9 +87,9 @@ const isNew = computed(() => props.mode === 'new')
 
 const headerTitle = computed(() => {
   const cp = props.model?.cp_name || 'Report'
-  if (isNew.value) return `New ${cp}`
-  if (isEdit.value) return `${cp} Edit`
-  return `${cp} Detail`
+  if (isNew.value) return `New Report ${cp}`
+  if (isEdit.value) return `${cp} Report Edit`
+  return `${cp} Report Detail`
 })
 
 function close() {
@@ -414,7 +414,7 @@ function formatReportDateTime(iso?: string) {
               </div>
             </div>
 
-            <div v-else class="text-sm text-slate-500">View images using the button above.</div>
+            <!-- <div v-else class="text-sm text-slate-500">View images using the button above.</div> -->
           </div>
         </div>
       </div>

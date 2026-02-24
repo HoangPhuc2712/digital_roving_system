@@ -16,6 +16,8 @@ export const useReportsStore = defineStore('reports', {
     filterResult: 'ALL' as ResultFilter,
     filterRoleCode: '' as string,
     filterGuardId: '' as string,
+    filterMultiDays: false as boolean,
+    filterDate: null as Date | null,
     filterDateRange: null as (Date | null)[] | null,
 
     first: 0,
@@ -85,7 +87,18 @@ export const useReportsStore = defineStore('reports', {
     filteredRows(): ReportRow[] {
       const q = this.searchText.trim().toLowerCase()
 
-      const [start, end] = this.filterDateRange ?? [null, null]
+      let start: Date | null = null
+      let end: Date | null = null
+
+      if (this.filterMultiDays) {
+        start = this.filterDateRange?.[0] ?? null
+        end = this.filterDateRange?.[1] ?? null
+        if (start && !end) end = start
+      } else {
+        start = this.filterDate ?? null
+        end = this.filterDate ?? null
+      }
+
       const startTime = start ? startOfDay(start).getTime() : null
       const endTime = end ? endOfDay(end).getTime() : null
 
@@ -146,6 +159,8 @@ export const useReportsStore = defineStore('reports', {
       this.filterResult = 'ALL'
       this.filterRoleCode = ''
       this.filterGuardId = ''
+      this.filterMultiDays = false
+      this.filterDate = null
       this.filterDateRange = null
       this.first = 0
     },

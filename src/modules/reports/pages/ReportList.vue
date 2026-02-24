@@ -7,6 +7,7 @@ import Column from 'primevue/column'
 import Dropdown from 'primevue/dropdown'
 import Calendar from 'primevue/calendar'
 import Tag from 'primevue/tag'
+import Checkbox from 'primevue/checkbox'
 
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
@@ -20,6 +21,8 @@ import { pointReportImages } from '@/mocks/db'
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import ReportForm, { type ReportFormModel } from '@/modules/reports/components/ReportForm.vue'
 import { createReportMock, updateReportMock } from '@/modules/reports/reports.api'
+import { exportPatrolReportXlsx } from '@/services/export/patrolReport.export'
+import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 
 type BaseImageItem = {
   id: string | number
@@ -61,6 +64,7 @@ const formVisible = ref(false)
 const formMode = ref<'new' | 'view' | 'edit'>('view')
 const formModel = ref<ReportFormModel | null>(null)
 const submitting = ref(false)
+const exporting = ref(false)
 
 function applyLockedFilters() {
   if (!lockRoleGuard.value) return
@@ -80,11 +84,11 @@ watch(
     store.filterResult,
     store.filterRoleCode,
     store.filterGuardId,
+    store.filterMultiDays,
+    store.filterDate,
     store.filterDateRange,
   ],
-  () => {
-    store.setFirst(0)
-  },
+  () => store.setFirst(0),
 )
 
 watch(
@@ -114,6 +118,24 @@ watch(
   },
 )
 
+watch(
+  () => store.filterMultiDays,
+  (v) => {
+    if (v) {
+      if (
+        store.filterDate &&
+        (!store.filterDateRange || (!store.filterDateRange[0] && !store.filterDateRange[1]))
+      ) {
+        store.filterDateRange = [store.filterDate, store.filterDate]
+      }
+    } else {
+      const start = store.filterDateRange?.[0] ?? null
+      if (start) store.filterDate = start
+      store.filterDateRange = null
+    }
+  },
+)
+
 function onPage(e: DataTablePageEvent) {
   store.setFirst(e.first)
 }
@@ -129,17 +151,17 @@ function formatDateTime(iso: string) {
   }).format(d)
 }
 
-function onView(row: ReportRow) {
-  router.push({ name: 'report-detail', params: { id: row.pr_id } })
-}
+// function onView(row: ReportRow) {
+//   router.push({ name: 'report-detail', params: { id: row.pr_id } })
+// }
 
-function onEdit(row: ReportRow) {
-  router.push({
-    name: 'report-detail',
-    params: { id: row.pr_id },
-    query: { edit: '1' },
-  })
-}
+// function onEdit(row: ReportRow) {
+//   router.push({
+//     name: 'report-detail',
+//     params: { id: row.pr_id },
+//     query: { edit: '1' },
+//   })
+// }
 
 function onDelete(row: ReportRow) {
   confirm.require({
@@ -242,15 +264,15 @@ function onDeleteSelected() {
   })
 }
 
-function openNew() {
-  formMode.value = 'new'
-  formModel.value = {
-    pr_check: true,
-    pr_note: '',
-    images: [],
-  }
-  formVisible.value = true
-}
+// function openNew() {
+//   formMode.value = 'new'
+//   formModel.value = {
+//     pr_check: true,
+//     pr_note: '',
+//     images: [],
+//   }
+//   formVisible.value = true
+// }
 
 function openView(row: ReportRow) {
   formMode.value = 'view'
@@ -326,6 +348,71 @@ async function onFormSubmit(payload: ReportFormSubmitPayload) {
     submitting.value = false
   }
 }
+
+function pad2(n: number) {
+  return String(n).padStart(2, '0')
+}
+
+function formatDdMmYyyy(d: Date) {
+  return `${pad2(d.getDate())}-${pad2(d.getMonth() + 1)}-${d.getFullYear()}`
+}
+
+function onExport() {
+  const d = store.filterDate // Date | null
+  if (!d) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Missing Date',
+      detail: 'Please select a date before exporting.',
+      life: 2500,
+    })
+    return
+  }
+
+  const rows = store.filteredRows
+  if (!rows.length) {
+    toast.add({
+      severity: 'info',
+      summary: 'No Data',
+      detail: `No reports found for ${formatDdMmYyyy(d)}.`,
+      life: 2500,
+    })
+    return
+  }
+
+  const dateStr = formatDdMmYyyy(d)
+
+  confirm.require({
+    header: 'Confirm Export',
+    message: `You are about to export ${rows.length} report(s) for ${dateStr}. Continue?`,
+    acceptLabel: 'Export',
+    rejectLabel: 'Cancel',
+    accept: async () => {
+      try {
+        exporting.value = true
+        await exportPatrolReportXlsx({
+          rows,
+          fileName: `PatrolReport_${dateStr}.xlsx`,
+        })
+        toast.add({
+          severity: 'success',
+          summary: 'Exported',
+          detail: `Excel file generated for ${dateStr}.`,
+          life: 2000,
+        })
+      } catch (e: any) {
+        toast.add({
+          severity: 'error',
+          summary: 'Export Failed',
+          detail: e?.message ?? 'Failed to export Excel.',
+          life: 3000,
+        })
+      } finally {
+        exporting.value = false
+      }
+    },
+  })
+}
 </script>
 
 <template>
@@ -339,7 +426,7 @@ async function onFormSubmit(payload: ReportFormSubmitPayload) {
     </div>
 
     <div class="bg-white border border-slate-200 rounded-xl p-3">
-      <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+      <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-start">
         <div class="md:col-span-1">
           <label class="block text-sm text-slate-600 mb-1">Area</label>
           <Dropdown
@@ -395,7 +482,19 @@ async function onFormSubmit(payload: ReportFormSubmitPayload) {
 
         <div class="md:col-span-1">
           <label class="block text-sm text-slate-600 mb-1">Select Date</label>
+
           <Calendar
+            v-if="!store.filterMultiDays"
+            v-model="store.filterDate"
+            class="w-full"
+            selectionMode="single"
+            dateFormat="yy-mm-dd"
+            placeholder="Select date"
+            showButtonBar
+          />
+
+          <Calendar
+            v-else
             v-model="store.filterDateRange"
             class="w-full"
             selectionMode="range"
@@ -403,11 +502,22 @@ async function onFormSubmit(payload: ReportFormSubmitPayload) {
             placeholder="From - To"
             showButtonBar
           />
+
+          <div class="flex items-center gap-2 mt-2">
+            <Checkbox v-model="store.filterMultiDays" :binary="true" inputId="multiDays" />
+            <label for="multiDays" class="text-xs text-slate-600">Select multiple days</label>
+          </div>
         </div>
       </div>
 
       <div class="mt-3 flex justify-end">
-        <BaseButton label="Clear Filters" severity="secondary" outlined @click="onClearFilters" />
+        <BaseIconButton
+          icon="pi pi-filter-slash"
+          label="Clear Filters"
+          severity="secondary"
+          outlined
+          @click="onClearFilters"
+        />
       </div>
     </div>
 
@@ -424,7 +534,8 @@ async function onFormSubmit(payload: ReportFormSubmitPayload) {
       >
         <template #toolbar-start>
           <div class="flex justify-start gap-2">
-            <BaseButton
+            <BaseIconButton
+              icon="pi pi-trash"
               label="Delete"
               severity="danger"
               outlined
@@ -434,7 +545,16 @@ async function onFormSubmit(payload: ReportFormSubmitPayload) {
           </div>
         </template>
         <template #toolbar-end>
-          <!-- Import/Export -->
+          <div class="flex justify-end gap-2">
+            <BaseIconButton
+              icon="pi pi-download"
+              label="Export"
+              severity="secondary"
+              outlined
+              :disabled="exporting"
+              @click="onExport"
+            />
+          </div>
         </template>
         <template #empty>
           <div class="p-4 text-slate-600 flex justify-center">No reports found.</div>
@@ -505,14 +625,16 @@ async function onFormSubmit(payload: ReportFormSubmitPayload) {
         <Column header="Action" style="width: 220px">
           <template #body="{ data }">
             <div class="flex gap-2 justify-end">
-              <BaseButton
+              <BaseIconButton
+                icon="pi pi-eye"
                 label="View"
                 size="small"
                 severity="secondary"
                 outlined
                 @click="openView(data)"
               />
-              <BaseButton
+              <BaseIconButton
+                icon="pi pi-pencil"
                 label="Edit"
                 size="small"
                 severity="success"
@@ -520,7 +642,8 @@ async function onFormSubmit(payload: ReportFormSubmitPayload) {
                 :disabled="!canEdit"
                 @click="openEdit(data)"
               />
-              <BaseButton
+              <BaseIconButton
+                icon="pi pi-trash"
                 label="Delete"
                 size="small"
                 severity="danger"

@@ -58,7 +58,9 @@ async function onLogin() {
         ? 'User not found'
         : e?.message === 'INVALID_PASSWORD'
           ? 'Invalid password'
-          : 'Login failed'
+          : e?.message === 'USER_INACTIVE'
+            ? 'Your account is not activated'
+            : 'Login failed'
 
     toast.add({ severity: 'error', summary: 'Login', detail: msg, life: 2500 })
   }

@@ -48,7 +48,7 @@ import FloatLabel from 'primevue/floatlabel'
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
-import BaseMessage from '../messages/baseMessage.vue'
+import BaseMessage from '@/components/common/messages/BaseMessage.vue'
 
 const props = withDefaults(
   defineProps<{

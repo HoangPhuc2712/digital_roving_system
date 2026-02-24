@@ -8,6 +8,7 @@ import BaseInput from '@/components/common/inputs/BaseInput.vue'
 
 import QrPreview from '@/modules/checkpoints/components/QrPreview.vue'
 import { createCheckpointMock, updateCheckpointMock } from '@/modules/checkpoints/checkpoints.api'
+import FileUpload, { type FileUploadSelectEvent } from 'primevue/fileupload'
 
 export type CheckpointFormMode = 'new' | 'view' | 'edit'
 
@@ -103,10 +104,6 @@ function normalizeQr(src: string) {
   return `data:image/png;base64,${s}`
 }
 
-function openQrPicker() {
-  qrFileEl.value?.click()
-}
-
 async function fileToDataUrl(f: File) {
   return await new Promise<string>((resolve, reject) => {
     const r = new FileReader()
@@ -116,11 +113,8 @@ async function fileToDataUrl(f: File) {
   })
 }
 
-async function onChooseQr(e: Event) {
-  const input = e.target as HTMLInputElement
-  const files = Array.from(input.files ?? [])
-  input.value = ''
-  const f = files[0]
+async function onChooseQrSelect(e: FileUploadSelectEvent) {
+  const f = e.files?.[0] as File | undefined
   if (!f) return
   form.cp_qr = await fileToDataUrl(f)
 }
@@ -194,109 +188,101 @@ function submit() {
     <div v-if="!model" class="text-slate-500">No data.</div>
 
     <div v-else class="space-y-4">
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div class="lg:col-span-2 space-y-4">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm text-slate-600 mb-1">Scan Point Code</label>
-              <BaseInput
-                v-model="form.cp_code"
-                label=""
-                placeholder="Enter code"
-                :disabled="isView"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm text-slate-600 mb-1">Scan Point Name</label>
-              <BaseInput
-                v-model="form.cp_name"
-                label=""
-                placeholder="Enter name"
-                :disabled="isView"
-              />
-            </div>
-
-            <div class="md:col-span-2">
-              <label class="block text-sm text-slate-600 mb-1">Description</label>
-              <BaseInput
-                v-model="form.cp_description"
-                label=""
-                placeholder="Enter description"
-                :disabled="isView"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm text-slate-600 mb-1">Area</label>
-              <Dropdown
-                v-model="form.area_id"
-                class="w-full"
-                :options="areaOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Select area"
-                :disabled="isView"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm text-slate-600 mb-1">Priority</label>
-              <BaseInput
-                v-model="form.cp_priority_text"
-                label=""
-                placeholder="Enter priority"
-                :disabled="isView"
-              />
-            </div>
-
-            <div v-if="!isNew">
-              <label class="block text-sm text-slate-600 mb-1">Status</label>
-              <Dropdown
-                v-model="form.cp_status"
-                class="w-full"
-                :options="[
-                  { label: 'Active', value: 1 },
-                  { label: 'Inactive', value: 0 },
-                ]"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Select status"
-                :disabled="isView"
-              />
-            </div>
+      <div class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">Scan Point Code</label>
+            <BaseInput
+              v-model="form.cp_code"
+              label=""
+              placeholder="Enter code"
+              :disabled="isView"
+            />
           </div>
 
           <div>
-            <label class="block text-sm text-slate-600 mb-1">QR Image</label>
+            <label class="block text-sm text-slate-600 mb-1">Scan Point Name</label>
+            <BaseInput
+              v-model="form.cp_name"
+              label=""
+              placeholder="Enter name"
+              :disabled="isView"
+            />
+          </div>
 
-            <div class="flex items-center gap-3">
-              <input
-                v-if="!isView"
-                ref="qrFileEl"
-                type="file"
-                accept="image/*"
-                class="hidden"
-                @change="onChooseQr"
-              />
-              <BaseButton
-                v-if="!isView"
-                label="Choose QR"
-                severity="secondary"
-                outlined
-                @click="openQrPicker"
-              />
-              <div class="text-xs text-slate-500">
-                {{ form.cp_qr ? 'QR selected' : 'No QR selected' }}
-              </div>
-            </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm text-slate-600 mb-1">Description</label>
+            <BaseInput
+              v-model="form.cp_description"
+              label=""
+              placeholder="Enter description"
+              :disabled="isView"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">Area</label>
+            <Dropdown
+              v-model="form.area_id"
+              class="w-full"
+              :options="areaOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Select area"
+              :disabled="isView"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">Priority</label>
+            <BaseInput
+              v-model="form.cp_priority_text"
+              label=""
+              placeholder="Enter priority"
+              :disabled="isView"
+            />
+          </div>
+
+          <div v-if="!isNew">
+            <label class="block text-sm text-slate-600 mb-1">Status</label>
+            <Dropdown
+              v-model="form.cp_status"
+              class="w-full"
+              :options="[
+                { label: 'Active', value: 1 },
+                { label: 'Inactive', value: 0 },
+              ]"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Select status"
+              :disabled="isView"
+            />
           </div>
         </div>
 
-        <div class="lg:col-span-1">
-          <div class="border border-slate-200 rounded-xl p-3 bg-white">
-            <div class="text-sm font-medium text-slate-700 mb-2">Preview</div>
-            <QrPreview :value="normalizeQr(form.cp_qr)" />
+        <div>
+          <label class="block text-sm text-slate-600 mb-2">QR Image</label>
+
+          <!-- Preview nằm ngay trên Choose QR -->
+          <div class="mb-3">
+            <QrPreview :value="normalizeQr(form.cp_qr)" :size="72" />
+          </div>
+
+          <div class="flex items-center gap-3">
+            <FileUpload
+              v-if="!isView"
+              mode="basic"
+              name="qr"
+              accept="image/*"
+              customUpload
+              :auto="false"
+              :multiple="false"
+              chooseLabel="Choose QR"
+              @select="onChooseQrSelect"
+            />
+            <div class="text-xs text-slate-500">
+              {{ form.cp_qr ? 'QR selected' : 'No QR selected' }}
+            </div>
           </div>
         </div>
       </div>

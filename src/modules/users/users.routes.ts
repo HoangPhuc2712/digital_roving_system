@@ -6,15 +6,9 @@ export const usersRoutes = [
     meta: { requiresAuth: true, permission: 'users.manage' },
   },
   {
-    path: '/users/create',
-    name: 'users-create',
-    component: () => import('./pages/UserForm.vue'),
-    meta: { requiresAuth: true, permission: 'users.manage' },
-  },
-  {
-    path: '/users/:id/edit',
-    name: 'users-edit',
-    component: () => import('./pages/UserForm.vue'),
+    path: '/users/:id/patrol-path',
+    name: 'user-patrol-path',
+    component: () => import('@/modules/users/pages/UserPatrolPath.vue'),
     meta: { requiresAuth: true, permission: 'users.manage' },
   },
 ]
