@@ -31,7 +31,7 @@ watch(
             class="lg:hidden px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50"
             @click="sidebarOpen = true"
           >
-            <i class="pi pi-align-justify"></i>
+            <i class="pi pi-bars"></i>
           </button>
 
           <div class="text-sm text-slate-600">Digital Patrol System</div>

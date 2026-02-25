@@ -78,74 +78,213 @@ async function addImageToCell(
 
 export async function exportPatrolReportXlsx(params: { rows: ReportRow[]; fileName: string }) {
   const wb = new ExcelJS.Workbook()
-  const ws = wb.addWorksheet('Patrol Report')
 
-  ws.columns = [
-    { header: 'Area', key: 'area', width: 18 },
-    { header: 'Scan Point', key: 'cp', width: 26 },
-    { header: 'Inspection Result', key: 'result', width: 18 },
-    { header: 'Note', key: 'note', width: 32 },
-    { header: 'Photo', key: 'photo', width: 22 },
-  ]
+  // ---------- helpers ----------
+  const pad2 = (n: number) => String(n).padStart(2, '0')
 
-  ws.getRow(1).font = { bold: true }
-  ws.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' }
-  ws.getRow(1).height = 22
+  function formatYMD(d: Date) {
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+  }
 
-  let rowCursor = 2
-  const sorted = [...params.rows].sort((a, b) => (a.created_at < b.created_at ? -1 : 1))
+  function formatHM(d: Date) {
+    return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`
+  }
 
-  for (const r of sorted) {
-    const imgs = await fetchReportImagesByReportId(r.pr_id)
-    const imgList = (imgs ?? []).map((x) => (x.pri_image ?? '').trim()).filter(Boolean)
+  function sanitizeSheetName(name: string) {
+    // Excel sheet name max 31 chars, and cannot contain: \ / ? * [ ]
+    const cleaned = (name ?? '')
+      .replace(/[\\\/\?\*\[\]]/g, ' ')
+      .replace(/:+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
 
-    const blockRows = Math.max(1, imgList.length)
-    const startRow = rowCursor
-    const endRow = rowCursor + blockRows - 1
+    return cleaned.length > 31 ? cleaned.slice(0, 31).trim() : cleaned || 'Sheet'
+  }
 
-    for (let rr = startRow; rr <= endRow; rr++) ws.getRow(rr).height = 72
+  function uniqueSheetName(base: string) {
+    let name = sanitizeSheetName(base)
+    if (!wb.getWorksheet(name)) return name
 
-    const areaText = [r.area_code, r.area_name].filter(Boolean).join('\n')
-    const cpText = [r.cp_name, r.cp_description].filter(Boolean).join('\n')
-    const resultText = r.pr_check ? 'OK' : 'NOT OK'
-    const noteText = (r.pr_note ?? '').trim() || '-'
-
-    ws.getCell(startRow, 1).value = areaText
-    ws.getCell(startRow, 2).value = cpText
-    ws.getCell(startRow, 3).value = resultText
-    ws.getCell(startRow, 4).value = noteText
-
-    if (blockRows > 1) {
-      ws.mergeCells(startRow, 1, endRow, 1)
-      ws.mergeCells(startRow, 2, endRow, 2)
-      ws.mergeCells(startRow, 3, endRow, 3)
-      ws.mergeCells(startRow, 4, endRow, 4)
+    for (let i = 2; i < 1000; i++) {
+      const candidate = sanitizeSheetName(`${base} (${i})`)
+      if (!wb.getWorksheet(candidate)) return candidate
     }
+    return sanitizeSheetName(`${base}-${Date.now()}`)
+  }
 
-    for (let c = 1; c <= 4; c++) {
-      ws.getCell(startRow, c).alignment = { wrapText: true, vertical: 'top', horizontal: 'left' }
+  // ---------- group by guard ----------
+  const groups = new Map<
+    string,
+    { guardKey: string; guardName: string; guardCode: string; rows: ReportRow[] }
+  >()
+
+  for (const r of params.rows ?? []) {
+    const key = String(r.user_id || r.created_by || 'unknown')
+    const g = groups.get(key) ?? {
+      guardKey: key,
+      guardName: String(r.user_name ?? '').trim() || '—',
+      guardCode: String(r.user_code ?? '').trim() || '',
+      rows: [],
     }
+    g.rows.push(r)
+    groups.set(key, g)
+  }
 
-    if (imgList.length > 0) {
-      for (let i = 0; i < imgList.length; i++) {
-        await addImageToCell(ws, wb, startRow + i, 5, imgList[i]!)
-      }
-    }
+  // Nếu không có data thì vẫn tạo 1 sheet trống để user biết
+  if (groups.size === 0) {
+    wb.addWorksheet('Patrol Report')
+  }
 
-    for (let rr = startRow; rr <= endRow; rr++) {
-      for (let cc = 1; cc <= 5; cc++) {
-        ws.getCell(rr, cc).border = {
-          top: { style: 'thin' },
-          left: { style: 'thin' },
-          bottom: { style: 'thin' },
-          right: { style: 'thin' },
+  // build sheets
+  for (const g of groups.values()) {
+    const sorted = [...g.rows].sort((a, b) => (a.created_at < b.created_at ? -1 : 1))
+
+    const times = sorted
+      .map((x) => new Date(x.created_at).getTime())
+      .filter((t) => Number.isFinite(t))
+
+    const startDt = times.length ? new Date(Math.min(...times)) : null
+    const finishDt = times.length ? new Date(Math.max(...times)) : null
+    const rovingDate = startDt ? formatYMD(startDt) : '—'
+    const startTime = startDt ? formatHM(startDt) : '—'
+    const finishTime = finishDt ? formatHM(finishDt) : '—'
+
+    const guardLabel = g.guardCode ? `${g.guardName} (${g.guardCode})` : g.guardName
+    const sheetName = uniqueSheetName(`${guardLabel} - ${rovingDate}`)
+    const ws = wb.addWorksheet(sheetName)
+
+    // columns
+    ws.columns = [
+      { key: 'area', width: 12 },
+      { key: 'cp', width: 22 },
+      { key: 'location', width: 32 },
+      { key: 'result', width: 18 },
+      { key: 'note', width: 32 },
+      { key: 'photo', width: 22 },
+    ]
+    // Guard Patrol information title
+    ws.mergeCells(1, 1, 3, 3)
+    ws.mergeCells(1, 4, 1, 6)
+    ws.mergeCells(2, 4, 2, 6)
+    ws.mergeCells(3, 4, 3, 6)
+
+    ws.getCell(1, 1).value = `Name of the guard: ${guardLabel}`
+    ws.getCell(1, 4).value = `Roving date: ${rovingDate}`
+    ws.getCell(2, 4).value = `Start time: ${startTime}`
+    ws.getCell(3, 4).value = `Finish time: ${finishTime}`
+
+    for (const r of [1, 2, 3]) ws.getRow(r).height = 20
+
+    // style info rows
+    for (let rr = 1; rr <= 3; rr++) {
+      for (let cc = 1; cc <= 6; cc++) {
+        const cell = ws.getCell(rr, cc)
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } }
+        cell.font = { bold: true, color: { argb: 'FF0F172A' } }
+        const alignRight = cc >= 4
+        cell.alignment = {
+          vertical: 'middle',
+          horizontal: alignRight ? 'right' : 'left',
+          wrapText: true,
         }
       }
     }
+    ws.getCell(1, 1).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }
 
-    rowCursor += blockRows
+    // Table headr
+    const headerRowIdx = 4
+    const headers = ['Area', 'Scan Point', 'Location', 'Inspection Result', 'Note', 'Photo']
+    for (let i = 0; i < headers.length; i++) {
+      ws.getCell(headerRowIdx, i + 1).value = headers[i]
+    }
+    ws.getRow(headerRowIdx).height = 22
+
+    for (let cc = 1; cc <= 6; cc++) {
+      const cell = ws.getCell(headerRowIdx, cc)
+      cell.font = { bold: true, color: { argb: 'FF0F172A' } }
+      cell.alignment = { vertical: 'middle', horizontal: 'center' }
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } } // xám nhạt hơn
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      }
+    }
+    ws.views = [{ state: 'frozen', ySplit: headerRowIdx }]
+
+    // Data Table
+    let rowCursor = headerRowIdx + 1
+
+    for (const r of sorted) {
+      const imgs = await fetchReportImagesByReportId(r.pr_id)
+      const imgList = (imgs ?? []).map((x) => (x.pri_image ?? '').trim()).filter(Boolean)
+
+      const blockRows = Math.max(1, imgList.length)
+      const startRow = rowCursor
+      const endRow = rowCursor + blockRows - 1
+
+      for (let rr = startRow; rr <= endRow; rr++) ws.getRow(rr).height = 72
+      const areaText = (r.area_code ?? '').trim()
+      const cpText = (r.cp_name ?? '').trim()
+      const locationText = (r.cp_description ?? '').trim() || '-'
+      const resultText = r.pr_check ? 'OK' : 'NOT OK'
+      const noteText = (r.pr_note ?? '').trim() || '-'
+
+      ws.getCell(startRow, 1).value = areaText
+      ws.getCell(startRow, 2).value = cpText
+      ws.getCell(startRow, 3).value = locationText
+      ws.getCell(startRow, 4).value = resultText
+      ws.getCell(startRow, 5).value = noteText
+
+      if (blockRows > 1) {
+        ws.mergeCells(startRow, 1, endRow, 1)
+        ws.mergeCells(startRow, 2, endRow, 2)
+        ws.mergeCells(startRow, 3, endRow, 3)
+        ws.mergeCells(startRow, 4, endRow, 4)
+        ws.mergeCells(startRow, 5, endRow, 5)
+      }
+
+      for (let rr = startRow; rr <= endRow; rr++) {
+        for (let cc = 1; cc <= 6; cc++) {
+          ws.getCell(rr, cc).alignment = {
+            vertical: 'middle',
+            horizontal: 'center',
+            wrapText: cc !== 6,
+          }
+        }
+      }
+
+      const resultCell = ws.getCell(startRow, 4)
+      resultCell.font = { bold: true, color: { argb: 'FFFFFFFF' } }
+      resultCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: r.pr_check ? 'FF16A34A' : 'FFDC2626' },
+      }
+
+      if (imgList.length > 0) {
+        for (let i = 0; i < imgList.length; i++) {
+          await addImageToCell(ws, wb, startRow + i, 6, imgList[i]!)
+        }
+      }
+
+      for (let rr = startRow; rr <= endRow; rr++) {
+        for (let cc = 1; cc <= 6; cc++) {
+          ws.getCell(rr, cc).border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' },
+          }
+        }
+      }
+
+      rowCursor += blockRows
+    }
   }
 
+  // Download
   const buf = await wb.xlsx.writeBuffer()
   const blob = new Blob([buf], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

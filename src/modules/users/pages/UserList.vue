@@ -270,7 +270,7 @@ function onViewPatrolPath(row: UserRow) {
         </template>
       </Column>
 
-      <Column header="Patrol Routes" style="min-width: 12rem" :exportable="false">
+      <!-- <Column header="Patrol Routes" style="min-width: 12rem" :exportable="false">
         <template #body="{ data }">
           <div class="flex justify-start">
             <BaseIconButton
@@ -283,15 +283,15 @@ function onViewPatrolPath(row: UserRow) {
             />
           </div>
         </template>
-      </Column>
+      </Column> -->
 
       <Column header="Action" style="width: 260px">
         <template #body="{ data }">
-          <div class="flex gap-2 justify-end">
+          <div class="flex gap-2 justify-start">
             <BaseIconButton
               icon="pi pi-eye"
               size="small"
-              severity="secondary"
+              severity="info"
               outlined
               rounded
               @click="openView(data)"
@@ -299,7 +299,7 @@ function onViewPatrolPath(row: UserRow) {
             <BaseIconButton
               icon="pi pi-pencil"
               size="small"
-              severity="success"
+              severity="secondary"
               outlined
               rounded
               :disabled="!canManage"

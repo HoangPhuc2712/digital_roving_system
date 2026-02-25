@@ -363,7 +363,7 @@ function onExport() {
     toast.add({
       severity: 'warn',
       summary: 'Missing Date',
-      detail: 'Please select a date before exporting.',
+      detail: 'Please filter before exporting.',
       life: 2500,
     })
     return
@@ -549,7 +549,7 @@ function onExport() {
             <BaseIconButton
               icon="pi pi-download"
               label="Export"
-              severity="info"
+              severity="secondary"
               outlined
               :disabled="exporting"
               @click="onExport"
@@ -600,7 +600,8 @@ function onExport() {
         <Column header="Photo" style="min-width: 10rem">
           <template #body="{ data }">
             <div class="flex items-center justify-start gap-2">
-              <BaseButton
+              <BaseIconButton
+                icon="pi pi-eye"
                 :label="
                   getImageCount(data.pr_id) > 0 ? `View (${getImageCount(data.pr_id)})` : 'View (0)'
                 "
@@ -624,11 +625,11 @@ function onExport() {
 
         <Column header="Action" style="width: 220px">
           <template #body="{ data }">
-            <div class="flex gap-2 justify-end">
+            <div class="flex gap-2 justify-start">
               <BaseIconButton
                 icon="pi pi-eye"
                 size="small"
-                severity="secondary"
+                severity="info"
                 outlined
                 rounded
                 @click="openView(data)"
@@ -636,7 +637,7 @@ function onExport() {
               <BaseIconButton
                 icon="pi pi-pencil"
                 size="small"
-                severity="success"
+                severity="secondary"
                 outlined
                 rounded
                 :disabled="!canEdit"

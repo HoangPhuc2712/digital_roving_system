@@ -324,11 +324,11 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
 
       <Column header="Action" :exportable="false" style="min-width: 16rem">
         <template #body="{ data }">
-          <div class="flex gap-2 justify-end">
+          <div class="flex gap-2 justify-start">
             <BaseIconButton
               icon="pi pi-eye"
               size="small"
-              severity="secondary"
+              severity="info"
               outlined
               rounded
               @click="openView(data)"
@@ -336,7 +336,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
             <BaseIconButton
               icon="pi pi-pencil"
               size="small"
-              severity="success"
+              severity="secondary"
               outlined
               rounded
               :disabled="!canManage"

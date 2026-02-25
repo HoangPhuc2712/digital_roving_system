@@ -333,7 +333,7 @@ function normalizeQr(src: string) {
 
       <Column header="QR Image" style="min-width: 10rem">
         <template #body="{ data }">
-          <div class="flex justify-center">
+          <div class="flex justify-start">
             <QrPreview :value="normalizeQr(data.cp_qr)" />
           </div>
         </template>
@@ -359,11 +359,11 @@ function normalizeQr(src: string) {
 
       <Column header="Action" :exportable="false" style="min-width: 16rem">
         <template #body="{ data }">
-          <div class="flex gap-2 justify-end">
+          <div class="flex gap-2 justify-start">
             <BaseIconButton
               icon="pi pi-eye"
               size="small"
-              severity="secondary"
+              severity="info"
               outlined
               rounded
               @click="openView(data)"
@@ -371,7 +371,7 @@ function normalizeQr(src: string) {
             <BaseIconButton
               icon="pi pi-pencil"
               size="small"
-              severity="success"
+              severity="secondary"
               outlined
               rounded
               :disabled="!canManage"
