@@ -481,7 +481,13 @@ function onExport() {
         </div>
 
         <div class="md:col-span-1">
-          <label class="block text-sm text-slate-600 mb-1">Select Date</label>
+          <div class="flex justify-between">
+            <label class="block text-sm text-slate-600 mb-1">Select Date</label>
+            <div class="flex items-center gap-1 mb-1">
+              <Checkbox v-model="store.filterMultiDays" :binary="true" inputId="multiDays" />
+              <label for="multiDays" class="text-xs text-slate-600">Select multiple days</label>
+            </div>
+          </div>
 
           <Calendar
             v-if="!store.filterMultiDays"
@@ -502,11 +508,6 @@ function onExport() {
             placeholder="From - To"
             showButtonBar
           />
-
-          <div class="flex items-center gap-2 mt-2">
-            <Checkbox v-model="store.filterMultiDays" :binary="true" inputId="multiDays" />
-            <label for="multiDays" class="text-xs text-slate-600">Select multiple days</label>
-          </div>
         </div>
       </div>
 
