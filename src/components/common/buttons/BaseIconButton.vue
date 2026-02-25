@@ -11,7 +11,7 @@
     :plain="plain"
     :loading="loading"
     :disabled="disabled"
-    @click="handleClick"
+    @click="$emit('click', $event)"
   />
 </template>
 

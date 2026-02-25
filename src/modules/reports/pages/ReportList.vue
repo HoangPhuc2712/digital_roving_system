@@ -418,7 +418,7 @@ function onExport() {
 <template>
   <div class="page-reports space-y-3">
     <div class="flex items-center justify-between gap-3">
-      <div class="text-xl font-semibold text-slate-800">Roving Reports</div>
+      <div class="text-xl font-semibold text-slate-800">Patrol Reports</div>
 
       <div class="w-full max-w-md">
         <BaseInput v-model="store.searchText" class="w-full" placeholder="Search..." />
@@ -549,7 +549,7 @@ function onExport() {
             <BaseIconButton
               icon="pi pi-download"
               label="Export"
-              severity="secondary"
+              severity="info"
               outlined
               :disabled="exporting"
               @click="onExport"
@@ -562,7 +562,7 @@ function onExport() {
 
         <Column selectionMode="multiple" headerStyle="width: 3rem" />
 
-        <Column header="Area" style="min-width: 12rem">
+        <Column header="Area" style="min-width: 10rem">
           <template #body="{ data }">
             <div class="flex flex-col">
               <div class="text-slate-800 font-bold">{{ data.area_code }}</div>
@@ -627,27 +627,27 @@ function onExport() {
             <div class="flex gap-2 justify-end">
               <BaseIconButton
                 icon="pi pi-eye"
-                label="View"
                 size="small"
                 severity="secondary"
                 outlined
+                rounded
                 @click="openView(data)"
               />
               <BaseIconButton
                 icon="pi pi-pencil"
-                label="Edit"
                 size="small"
                 severity="success"
                 outlined
+                rounded
                 :disabled="!canEdit"
                 @click="openEdit(data)"
               />
               <BaseIconButton
                 icon="pi pi-trash"
-                label="Delete"
                 size="small"
                 severity="danger"
                 outlined
+                rounded
                 :disabled="!canDelete"
                 @click="onDelete(data)"
               />

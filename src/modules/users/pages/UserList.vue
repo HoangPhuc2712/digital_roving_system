@@ -290,27 +290,27 @@ function onViewPatrolPath(row: UserRow) {
           <div class="flex gap-2 justify-end">
             <BaseIconButton
               icon="pi pi-eye"
-              label="View"
               size="small"
               severity="secondary"
               outlined
+              rounded
               @click="openView(data)"
             />
             <BaseIconButton
               icon="pi pi-pencil"
-              label="Edit"
               size="small"
               severity="success"
               outlined
+              rounded
               :disabled="!canManage"
               @click="openEdit(data)"
             />
             <BaseIconButton
               icon="pi pi-trash"
-              label="Delete"
               size="small"
               severity="danger"
               outlined
+              rounded
               :disabled="!canManage"
               @click="onDelete(data)"
             />

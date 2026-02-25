@@ -34,7 +34,7 @@ watch(
             <i class="pi pi-align-justify"></i>
           </button>
 
-          <div class="text-sm text-slate-600">Digital Roving System</div>
+          <div class="text-sm text-slate-600">Digital Patrol System</div>
         </div>
       </header>
 
