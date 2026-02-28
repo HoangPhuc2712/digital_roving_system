@@ -72,7 +72,6 @@ function mapRowToFormModel(row: UserRow): UserFormModel {
     user_name: row.user_name,
     user_code: row.user_code,
     user_role_id: row.user_role_id,
-    user_status: row.user_status,
     user_password: '',
   }
 }
@@ -83,7 +82,6 @@ function openNew() {
     user_name: '',
     user_code: '',
     user_role_id: store.roleOptions[0]?.value ?? 0,
-    user_status: 1,
     user_password: '',
   }
   formVisible.value = true
@@ -254,6 +252,11 @@ function onViewPatrolPath(row: UserRow) {
 
       <Column field="user_name" header="Name" style="min-width: 14rem" />
       <Column field="user_code" header="User Code" style="min-width: 10rem" />
+      <Column header="Area" style="min-width: 14rem">
+        <template #body="{ data }">
+          <div class="text-slate-800">{{ data.area_name }}</div>
+        </template>
+      </Column>
 
       <Column header="Role" style="min-width: 12rem">
         <template #body="{ data }">

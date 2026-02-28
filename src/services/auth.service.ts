@@ -121,7 +121,7 @@ export async function mockMe(token: string) {
     if (!userId) throw new Error('INVALID_TOKEN')
 
     // Lấy lại user từ UserView/getlist theo userId
-    const res = await http.post(endpoints.user.userViewGetList, { userId })
+    const res = await http.post(endpoints.userView.getList, { userId })
     const payload = res?.data
 
     if (!payload?.success) throw new Error('INVALID_TOKEN')

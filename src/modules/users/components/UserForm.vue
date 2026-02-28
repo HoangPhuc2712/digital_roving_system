@@ -17,7 +17,6 @@ export type UserFormModel = {
   user_name: string
   user_code: string
   user_role_id: number
-  user_status: number
   user_password?: string
 }
 
@@ -55,7 +54,6 @@ const form = reactive<UserFormState>({
   user_name: '',
   user_code: '',
   user_role_id: 0,
-  user_status: 1,
   user_password: '',
   confirm_password: '',
 })
@@ -68,7 +66,6 @@ watch(
     form.user_name = m.user_name ?? ''
     form.user_code = m.user_code ?? ''
     form.user_role_id = m.user_role_id ?? props.roleOptions[0]?.value ?? 0
-    form.user_status = m.user_status ?? 1
     form.user_password = ''
     form.confirm_password = ''
   },
@@ -126,9 +123,8 @@ function submit() {
           user_id: form.user_id,
           user_name: name,
           user_code: code,
-          user_password: (form.user_password ?? '').trim() || undefined, // blank = keep
+          user_password: (form.user_password ?? '').trim() || undefined,
           user_role_id: form.user_role_id,
-          user_status: form.user_status,
           actor_id,
         })
       }
@@ -224,22 +220,6 @@ function mapValidationError(code: string) {
             optionLabel="label"
             optionValue="value"
             placeholder="Select role"
-            :disabled="isView"
-          />
-        </div>
-
-        <div v-if="!isNew">
-          <label class="block text-sm text-slate-600 mb-1">Status</label>
-          <Dropdown
-            v-model="form.user_status"
-            class="w-full"
-            :options="[
-              { label: 'Active', value: 1 },
-              { label: 'Inactive', value: 0 },
-            ]"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Select status"
             :disabled="isView"
           />
         </div>
