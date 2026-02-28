@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { UserRow, UserStatusFilter } from './users.types'
+import type { UserRow } from './users.types'
 import { fetchRoleOptions, fetchUserRows } from './users.api'
 
 export const useUsersStore = defineStore('users', {
@@ -9,9 +9,10 @@ export const useUsersStore = defineStore('users', {
 
     searchText: '' as string,
     filterRoleId: null as number | null,
-    filterStatus: 'ALL' as UserStatusFilter,
+    filterAreaId: null as number | null,
 
     roleOptions: [] as { label: string; value: number }[],
+    areaOptions: [] as { label: string; value: number }[],
 
     first: 0,
     rowsPerPage: 10,
@@ -25,9 +26,7 @@ export const useUsersStore = defineStore('users', {
         if (q && (!r._q || !r._q.includes(q))) return false
 
         if (state.filterRoleId != null && r.user_role_id !== state.filterRoleId) return false
-
-        if (state.filterStatus === 'ACTIVE' && r.user_status !== 1) return false
-        if (state.filterStatus === 'INACTIVE' && r.user_status !== 0) return false
+        if (state.filterAreaId != null && r.user_area_id !== state.filterAreaId) return false
 
         return true
       })
@@ -41,6 +40,17 @@ export const useUsersStore = defineStore('users', {
         const [roles, rows] = await Promise.all([fetchRoleOptions(), fetchUserRows()])
         this.roleOptions = roles
         this.rows = rows
+
+        const map = new Map<number, string>()
+        for (const r of rows) {
+          const id = r.user_area_id
+          if (!id) continue
+          const label = r.area_name || r.area_code || String(id)
+          if (!map.has(id)) map.set(id, label)
+        }
+        this.areaOptions = Array.from(map.entries())
+          .map(([value, label]) => ({ value, label }))
+          .sort((a, b) => a.label.localeCompare(b.label))
       } finally {
         this.loading = false
       }
@@ -49,7 +59,7 @@ export const useUsersStore = defineStore('users', {
     clearFilters() {
       this.searchText = ''
       this.filterRoleId = null
-      this.filterStatus = 'ALL'
+      this.filterAreaId = null
       this.first = 0
     },
 

@@ -208,6 +208,7 @@ export async function createUserMock(payload: {
   user_code: string
   user_password: string
   user_role_id: number
+  user_area_id: number
   actor_id: string
 }) {
   const areaId = await resolveUserAreaId(payload.actor_id)
@@ -240,6 +241,7 @@ export async function updateUserMock(payload: {
   user_code: string
   user_password?: string
   user_role_id: number
+  user_area_id: number
   actor_id: string
 }) {
   const currentEntity = await safeGetUserEntity(payload.user_id)

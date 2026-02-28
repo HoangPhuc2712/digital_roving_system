@@ -3,8 +3,8 @@ export const endpoints = {
     getList: '/User/getlist',
     getOne: (userId: string) => `/User/getone/${userId}`,
     validate: '/User/validate',
-    create: '/User/created',
-    update: (userId: string) => `/User/updated/${userId}`,
+    create: '/User/create',
+    update: (userId: string) => `/User/update/${userId}`,
     delete: (userId: string) => `/User/delete/${userId}`,
   },
   userBaseView: {

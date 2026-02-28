@@ -44,7 +44,7 @@ watch(searchDraft, (val) => {
 })
 
 watch(
-  () => [store.searchText, store.filterRoleId, store.filterStatus],
+  () => [store.searchText, store.filterRoleId, store.filterAreaId],
   () => store.setFirst(0),
 )
 
@@ -72,6 +72,7 @@ function mapRowToFormModel(row: UserRow): UserFormModel {
     user_name: row.user_name,
     user_code: row.user_code,
     user_role_id: row.user_role_id,
+    user_area_id: row.user_area_id,
     user_password: '',
   }
 }
@@ -82,6 +83,7 @@ function openNew() {
     user_name: '',
     user_code: '',
     user_role_id: store.roleOptions[0]?.value ?? 0,
+    user_area_id: store.areaOptions[0]?.value ?? 0,
     user_password: '',
   }
   formVisible.value = true
@@ -209,10 +211,11 @@ function onViewPatrolPath(row: UserRow) {
 
     <UserFilters
       :roleOptions="store.roleOptions"
+      :areaOptions="store.areaOptions"
       :modelRoleId="store.filterRoleId"
-      :modelStatus="store.filterStatus"
+      :modelAreaId="store.filterAreaId"
       @update:modelRoleId="store.filterRoleId = $event"
-      @update:modelStatus="store.filterStatus = $event"
+      @update:modelAreaId="store.filterAreaId = $event"
       @clear="clearAll"
     />
 
@@ -327,6 +330,7 @@ function onViewPatrolPath(row: UserRow) {
       :mode="formMode"
       :model="formModel"
       :roleOptions="store.roleOptions"
+      :areaOptions="store.areaOptions"
       @submit="handleSubmit"
       @close="formVisible = false"
     />
