@@ -3,6 +3,7 @@ export type PermissionKey =
   | 'reports.view_mine'
   | 'reports.edit'
   | 'reports.delete'
+  | 'roles.manage'
   | 'users.manage'
   | 'areas.manage'
   | 'checkpoints.manage'
@@ -13,6 +14,7 @@ const ALL_KEYS: PermissionKey[] = [
   'reports.view_mine',
   'reports.edit',
   'reports.delete',
+  'roles.manage',
   'users.manage',
   'areas.manage',
   'checkpoints.manage',
