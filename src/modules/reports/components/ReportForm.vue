@@ -422,7 +422,7 @@ function formatReportDateTime(iso?: string) {
 
     <template #footer>
       <div class="w-full flex justify-end gap-2">
-        <BaseButton label="Cancel" severity="secondary" outlined @click="close" />
+        <BaseButton label="Cancel" severity="danger" outlined @click="close" />
         <BaseButton
           v-if="mode === 'new' || mode === 'edit'"
           label="Submit"

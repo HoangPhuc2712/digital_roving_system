@@ -23,6 +23,7 @@ import CheckpointForm, {
   type CheckpointFormModel,
   type CheckpointFormSubmitPayload,
 } from '@/modules/checkpoints/components/CheckpointForm.vue'
+import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 
 const toast = useToast()
 const confirm = useConfirm()
@@ -285,7 +286,13 @@ function normalizeQr(src: string) {
         </div>
 
         <div class="md:col-span-1 flex justify-end">
-          <BaseButton label="Clear Filters" severity="secondary" outlined @click="clearAll" />
+          <BaseIconButton
+            icon="pi pi-filter-slash"
+            label="Clear Filters"
+            severity="secondary"
+            outlined
+            @click="clearAll"
+          />
         </div>
       </div>
     </div>
@@ -301,8 +308,15 @@ function normalizeQr(src: string) {
       @page="(e) => store.setFirst(e.first)"
     >
       <template #toolbar-start>
-        <BaseButton label="New" severity="success" :disabled="!canManage" @click="openNew" />
-        <BaseButton
+        <BaseIconButton
+          icon="pi pi-plus"
+          label="New"
+          severity="success"
+          :disabled="!canManage"
+          @click="openNew"
+        />
+        <BaseIconButton
+          icon="pi pi-trash"
           label="Delete"
           severity="danger"
           outlined
@@ -319,7 +333,7 @@ function normalizeQr(src: string) {
 
       <Column header="QR Image" style="min-width: 10rem">
         <template #body="{ data }">
-          <div class="flex justify-center">
+          <div class="flex justify-start">
             <QrPreview :value="normalizeQr(data.cp_qr)" />
           </div>
         </template>
@@ -345,27 +359,30 @@ function normalizeQr(src: string) {
 
       <Column header="Action" :exportable="false" style="min-width: 16rem">
         <template #body="{ data }">
-          <div class="flex gap-2 justify-end">
-            <BaseButton
-              label="View"
+          <div class="flex gap-2 justify-start">
+            <BaseIconButton
+              icon="pi pi-eye"
+              size="small"
+              severity="info"
+              outlined
+              rounded
+              @click="openView(data)"
+            />
+            <BaseIconButton
+              icon="pi pi-pencil"
               size="small"
               severity="secondary"
               outlined
-              @click="openView(data)"
-            />
-            <BaseButton
-              label="Edit"
-              size="small"
-              severity="success"
-              outlined
+              rounded
               :disabled="!canManage"
               @click="openEdit(data)"
             />
-            <BaseButton
-              label="Delete"
+            <BaseIconButton
+              icon="pi pi-trash"
               size="small"
               severity="danger"
               outlined
+              rounded
               :disabled="!canManage"
               @click="onDelete(data)"
             />

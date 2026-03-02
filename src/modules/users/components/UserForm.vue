@@ -17,7 +17,7 @@ export type UserFormModel = {
   user_name: string
   user_code: string
   user_role_id: number
-  user_status: number
+  user_area_id: number
   user_password?: string
 }
 
@@ -35,6 +35,7 @@ const props = defineProps<{
   mode: UserFormMode
   model: UserFormModel | null
   roleOptions: { label: string; value: number }[]
+  areaOptions: { label: string; value: number }[]
 }>()
 
 const emit = defineEmits<{
@@ -55,7 +56,7 @@ const form = reactive<UserFormState>({
   user_name: '',
   user_code: '',
   user_role_id: 0,
-  user_status: 1,
+  user_area_id: 0,
   user_password: '',
   confirm_password: '',
 })
@@ -68,7 +69,7 @@ watch(
     form.user_name = m.user_name ?? ''
     form.user_code = m.user_code ?? ''
     form.user_role_id = m.user_role_id ?? props.roleOptions[0]?.value ?? 0
-    form.user_status = m.user_status ?? 1
+    form.user_area_id = m.user_area_id ?? props.areaOptions[0]?.value ?? 0
     form.user_password = ''
     form.confirm_password = ''
   },
@@ -84,7 +85,7 @@ function submit() {
   const name = (form.user_name ?? '').trim()
   const code = (form.user_code ?? '').trim()
 
-  if (!name || !code || !form.user_role_id) {
+  if (!name || !code || !form.user_role_id || !form.user_area_id) {
     toastError(mapValidationError('MISSING_FIELDS'))
     return
   }
@@ -117,6 +118,7 @@ function submit() {
           user_code: code,
           user_password: pwd,
           user_role_id: form.user_role_id,
+          user_area_id: form.user_area_id,
           actor_id,
         })
       } else {
@@ -126,9 +128,9 @@ function submit() {
           user_id: form.user_id,
           user_name: name,
           user_code: code,
-          user_password: (form.user_password ?? '').trim() || undefined, // blank = keep
+          user_password: (form.user_password ?? '').trim() || undefined,
           user_role_id: form.user_role_id,
-          user_status: form.user_status,
+          user_area_id: form.user_area_id,
           actor_id,
         })
       }
@@ -228,25 +230,22 @@ function mapValidationError(code: string) {
           />
         </div>
 
-        <div v-if="!isNew">
-          <label class="block text-sm text-slate-600 mb-1">Status</label>
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Area</label>
           <Dropdown
-            v-model="form.user_status"
+            v-model="form.user_area_id"
             class="w-full"
-            :options="[
-              { label: 'Active', value: 1 },
-              { label: 'Inactive', value: 0 },
-            ]"
+            :options="areaOptions"
             optionLabel="label"
             optionValue="value"
-            placeholder="Select status"
+            placeholder="Select area"
             :disabled="isView"
           />
         </div>
       </div>
 
       <div class="flex justify-end gap-2 pt-3 border-t border-slate-200">
-        <BaseButton label="Cancel" severity="secondary" outlined @click="close" />
+        <BaseButton label="Cancel" severity="danger" outlined @click="close" />
         <BaseButton v-if="!isView" label="Submit" severity="success" @click="submit" />
       </div>
     </div>

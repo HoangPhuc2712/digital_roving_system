@@ -9,9 +9,15 @@ export type UserRow = {
   user_id: string
   user_name: string
   user_code: string
+
   user_role_id: number
   role_name: string
   role_code: string
+
+  user_area_id: number
+  area_name: string
+  area_code: string
+
   user_status: number
   created_date: string
   updated_date: string

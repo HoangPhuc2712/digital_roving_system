@@ -4,6 +4,7 @@ import { usersRoutes } from '@/modules/users/users.routes'
 import { areasRoutes } from '@/modules/areas/areas.routes'
 import { checkpointsRoutes } from '@/modules/checkpoints/checkpoints.routes'
 import { reportsRoutes } from '@/modules/reports/reports.routes'
+import { rolesRoutes } from '@/modules/roles/roles.routes'
 
 export const routes = [
   ...authRoutes,
@@ -15,6 +16,7 @@ export const routes = [
       { path: '', redirect: '/reports' },
       ...reportsRoutes,
       ...usersRoutes,
+      ...rolesRoutes,
       ...areasRoutes,
       ...checkpointsRoutes,
       {

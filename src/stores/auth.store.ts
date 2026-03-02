@@ -46,7 +46,6 @@ export const useAuthStore = defineStore('auth', {
     },
 
     logout() {
-      // sau này nếu có API logout thì gọi ở đây
       this.clearSession()
     },
 

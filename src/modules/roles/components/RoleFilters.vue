@@ -3,47 +3,51 @@ import Dropdown from 'primevue/dropdown'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 
 const props = defineProps<{
-  roleOptions: { label: string; value: number }[]
-  areaOptions: { label: string; value: number }[]
-  modelRoleId: number | null
-  modelAreaId: number | null
+  menuOptions: { label: string; value: number }[]
+  modelStatus: 'ALL' | 'ACTIVE' | 'INACTIVE'
+  modelMenuId: number | null
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:modelRoleId', v: number | null): void
-  (e: 'update:modelAreaId', v: number | null): void
+  (e: 'update:modelStatus', v: 'ALL' | 'ACTIVE' | 'INACTIVE'): void
+  (e: 'update:modelMenuId', v: number | null): void
   (e: 'clear'): void
 }>()
+
+const statusOptions = [
+  { label: 'All', value: 'ALL' },
+  { label: 'Active', value: 'ACTIVE' },
+  { label: 'Inactive', value: 'INACTIVE' },
+]
 </script>
 
 <template>
   <div class="bg-white border border-slate-200 rounded-xl p-3">
     <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
       <div class="md:col-span-3">
-        <label class="block text-sm text-slate-600 mb-1">Role</label>
+        <label class="block text-sm text-slate-600 mb-1">Status</label>
         <Dropdown
-          :modelValue="props.modelRoleId"
+          :modelValue="props.modelStatus"
           class="w-full"
-          :options="props.roleOptions"
+          :options="statusOptions"
           optionLabel="label"
           optionValue="value"
           placeholder="All"
-          showClear
-          @update:modelValue="emit('update:modelRoleId', $event)"
+          @update:modelValue="emit('update:modelStatus', $event)"
         />
       </div>
 
       <div class="md:col-span-3">
-        <label class="block text-sm text-slate-600 mb-1">Area</label>
+        <label class="block text-sm text-slate-600 mb-1">Permission</label>
         <Dropdown
-          :modelValue="props.modelAreaId"
+          :modelValue="props.modelMenuId"
           class="w-full"
-          :options="props.areaOptions"
+          :options="props.menuOptions"
           optionLabel="label"
           optionValue="value"
           placeholder="All"
           showClear
-          @update:modelValue="emit('update:modelAreaId', $event)"
+          @update:modelValue="emit('update:modelMenuId', $event)"
         />
       </div>
     </div>

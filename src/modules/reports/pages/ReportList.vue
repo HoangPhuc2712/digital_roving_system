@@ -15,7 +15,6 @@ import { useConfirm } from 'primevue/useconfirm'
 import { useReportsStore } from '@/modules/reports/reports.store'
 import { useAuthStore } from '@/stores/auth.store'
 import type { ReportRow } from '@/modules/reports/reports.types'
-import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import BaseImageViewer from '@/components/common/BaseImageViewer.vue'
 import { pointReportImages } from '@/mocks/db'
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
@@ -363,7 +362,7 @@ function onExport() {
     toast.add({
       severity: 'warn',
       summary: 'Missing Date',
-      detail: 'Please select a date before exporting.',
+      detail: 'Please filter before exporting.',
       life: 2500,
     })
     return
@@ -418,7 +417,7 @@ function onExport() {
 <template>
   <div class="page-reports space-y-3">
     <div class="flex items-center justify-between gap-3">
-      <div class="text-xl font-semibold text-slate-800">Roving Reports</div>
+      <div class="text-xl font-semibold text-slate-800">Patrol Reports</div>
 
       <div class="w-full max-w-md">
         <BaseInput v-model="store.searchText" class="w-full" placeholder="Search..." />
@@ -481,7 +480,13 @@ function onExport() {
         </div>
 
         <div class="md:col-span-1">
-          <label class="block text-sm text-slate-600 mb-1">Select Date</label>
+          <div class="flex justify-between">
+            <label class="block text-sm text-slate-600 mb-1">Select Date</label>
+            <div class="flex items-center gap-1 mb-1">
+              <Checkbox v-model="store.filterMultiDays" :binary="true" inputId="multiDays" />
+              <label for="multiDays" class="text-xs text-slate-600">Select multiple days</label>
+            </div>
+          </div>
 
           <Calendar
             v-if="!store.filterMultiDays"
@@ -502,11 +507,6 @@ function onExport() {
             placeholder="From - To"
             showButtonBar
           />
-
-          <div class="flex items-center gap-2 mt-2">
-            <Checkbox v-model="store.filterMultiDays" :binary="true" inputId="multiDays" />
-            <label for="multiDays" class="text-xs text-slate-600">Select multiple days</label>
-          </div>
         </div>
       </div>
 
@@ -562,7 +562,7 @@ function onExport() {
 
         <Column selectionMode="multiple" headerStyle="width: 3rem" />
 
-        <Column header="Area" style="min-width: 12rem">
+        <Column header="Area" style="min-width: 10rem">
           <template #body="{ data }">
             <div class="flex flex-col">
               <div class="text-slate-800 font-bold">{{ data.area_code }}</div>
@@ -600,7 +600,8 @@ function onExport() {
         <Column header="Photo" style="min-width: 10rem">
           <template #body="{ data }">
             <div class="flex items-center justify-start gap-2">
-              <BaseButton
+              <BaseIconButton
+                icon="pi pi-eye"
                 :label="
                   getImageCount(data.pr_id) > 0 ? `View (${getImageCount(data.pr_id)})` : 'View (0)'
                 "
@@ -624,30 +625,30 @@ function onExport() {
 
         <Column header="Action" style="width: 220px">
           <template #body="{ data }">
-            <div class="flex gap-2 justify-end">
+            <div class="flex gap-2 justify-start">
               <BaseIconButton
                 icon="pi pi-eye"
-                label="View"
                 size="small"
-                severity="secondary"
+                severity="info"
                 outlined
+                rounded
                 @click="openView(data)"
               />
               <BaseIconButton
                 icon="pi pi-pencil"
-                label="Edit"
                 size="small"
-                severity="success"
+                severity="secondary"
                 outlined
+                rounded
                 :disabled="!canEdit"
                 @click="openEdit(data)"
               />
               <BaseIconButton
                 icon="pi pi-trash"
-                label="Delete"
                 size="small"
                 severity="danger"
                 outlined
+                rounded
                 :disabled="!canDelete"
                 @click="onDelete(data)"
               />
