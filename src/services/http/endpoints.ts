@@ -38,4 +38,16 @@ export const endpoints = {
     getList: '/AreaView/getlist',
     getOne: (areaId: number | string) => `/AreaView/getone/${areaId}`,
   },
+  checkPoint: {
+    getList: '/CheckPoint/getlist',
+    getOne: (cpId: number | string) => `/CheckPoint/getone/${cpId}`,
+    create: '/CheckPoint/create',
+    update: (cpId: number | string) => `/CheckPoint/update/${cpId}`,
+    delete: (cpId: number | string) => `/CheckPoint/delete/${cpId}`,
+    getBaseList: '/CheckPoint/getbaselist',
+  },
+  checkPointView: {
+    getList: '/CheckPointView/getlist',
+    getOne: (cpwId: number | string) => `/CheckPointView/getone/${cpwId}`,
+  },
 }

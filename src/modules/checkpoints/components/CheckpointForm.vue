@@ -8,7 +8,6 @@ import BaseInput from '@/components/common/inputs/BaseInput.vue'
 
 import QrPreview from '@/modules/checkpoints/components/QrPreview.vue'
 import { createCheckpointMock, updateCheckpointMock } from '@/modules/checkpoints/checkpoints.api'
-import FileUpload, { type FileUploadSelectEvent } from 'primevue/fileupload'
 
 export type CheckpointFormMode = 'new' | 'view' | 'edit'
 
@@ -20,7 +19,6 @@ export type CheckpointFormModel = {
   cp_description: string
   cp_priority: number
   area_id: number
-  cp_status: number
 }
 
 type FormState = {
@@ -31,7 +29,6 @@ type FormState = {
   cp_description: string
   cp_priority_text: string
   area_id: number
-  cp_status: number
 }
 
 export type CheckpointFormSubmitPayload = {
@@ -72,7 +69,6 @@ const form = reactive<FormState>({
   cp_description: '',
   cp_priority_text: '1',
   area_id: 0,
-  cp_status: 1,
 })
 
 watch(
@@ -86,7 +82,6 @@ watch(
     form.cp_description = m.cp_description ?? ''
     form.cp_priority_text = String(m.cp_priority ?? 1)
     form.area_id = Number(m.area_id ?? props.areaOptions[0]?.value ?? 0)
-    form.cp_status = Number(m.cp_status ?? 1)
   },
   { immediate: true },
 )
@@ -111,12 +106,6 @@ async function fileToDataUrl(f: File) {
     r.onerror = () => reject(new Error('READ_FILE_FAILED'))
     r.readAsDataURL(f)
   })
-}
-
-async function onChooseQrSelect(e: FileUploadSelectEvent) {
-  const f = e.files?.[0] as File | undefined
-  if (!f) return
-  form.cp_qr = await fileToDataUrl(f)
 }
 
 function submit() {
@@ -148,7 +137,6 @@ function submit() {
         await createCheckpointMock({
           cp_code: code,
           cp_name: name,
-          cp_qr: qr,
           cp_description: desc,
           cp_priority: priority,
           area_id: areaId,
@@ -163,11 +151,9 @@ function submit() {
         cp_id: form.cp_id,
         cp_code: code,
         cp_name: name,
-        cp_qr: qr,
         cp_description: desc,
         cp_priority: priority,
         area_id: areaId,
-        cp_status: form.cp_status,
         actor_id,
       })
     },
@@ -242,47 +228,12 @@ function submit() {
               :disabled="isView"
             />
           </div>
-
-          <div v-if="!isNew">
-            <label class="block text-sm text-slate-600 mb-1">Status</label>
-            <Dropdown
-              v-model="form.cp_status"
-              class="w-full"
-              :options="[
-                { label: 'Active', value: 1 },
-                { label: 'Inactive', value: 0 },
-              ]"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Select status"
-              :disabled="isView"
-            />
-          </div>
         </div>
 
         <div>
           <label class="block text-sm text-slate-600 mb-2">QR Image</label>
-
-          <!-- Preview nằm ngay trên Choose QR -->
           <div class="mb-3">
             <QrPreview :value="normalizeQr(form.cp_qr)" :size="72" />
-          </div>
-
-          <div class="flex items-center gap-3">
-            <FileUpload
-              v-if="!isView"
-              mode="basic"
-              name="qr"
-              accept="image/*"
-              customUpload
-              :auto="false"
-              :multiple="false"
-              chooseLabel="Choose QR"
-              @select="onChooseQrSelect"
-            />
-            <div class="text-xs text-slate-500">
-              {{ form.cp_qr ? 'QR selected' : 'No QR selected' }}
-            </div>
           </div>
         </div>
       </div>
