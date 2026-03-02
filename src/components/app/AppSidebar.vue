@@ -98,7 +98,7 @@ function logout() {
             <RouterLink to="/roles" v-slot="{ isActive }">
               <a :class="itemClass(isActive || isActivePath('/roles'))" @click="closeMobile">
                 <span class="flex items-center gap-3">
-                  <i class="pi pi-users"></i>
+                  <i class="pi pi-database"></i>
                   <span>Roles</span>
                 </span>
               </a>
@@ -109,7 +109,7 @@ function logout() {
             <RouterLink to="/areas" v-slot="{ isActive }">
               <a :class="itemClass(isActive || isActivePath('/areas'))" @click="closeMobile">
                 <span class="flex items-center gap-3">
-                  <i class="pi pi-warehouse"></i>
+                  <i class="pi pi-map-marker"></i>
                   <span>Areas</span>
                 </span>
               </a>
