@@ -28,4 +28,14 @@ export const endpoints = {
   roleMenuCategoryView: {
     getList: '/RoleMenuCategoryView/getlist',
   },
+  area: {
+    create: '/Area/create',
+    update: (areaId: number | string) => `/Area/update/${areaId}`,
+    delete: (areaId: number | string) => `/Area/delete/${areaId}`,
+    getBaseList: '/Area/getbaselist',
+  },
+  areaView: {
+    getList: '/AreaView/getlist',
+    getOne: (areaId: number | string) => `/AreaView/getone/${areaId}`,
+  },
 }

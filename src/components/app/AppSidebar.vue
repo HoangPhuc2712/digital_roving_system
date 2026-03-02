@@ -98,7 +98,7 @@ function logout() {
             <RouterLink to="/roles" v-slot="{ isActive }">
               <a :class="itemClass(isActive || isActivePath('/roles'))" @click="closeMobile">
                 <span class="flex items-center gap-3">
-                  <i class="pi pi-database"></i>
+                  <i class="pi pi-key"></i>
                   <span>Roles</span>
                 </span>
               </a>

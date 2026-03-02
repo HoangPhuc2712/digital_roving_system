@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue'
 import Dialog from 'primevue/dialog'
-import Dropdown from 'primevue/dropdown'
+// import Dropdown from 'primevue/dropdown'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import BaseInput from '@/components/common/inputs/BaseInput.vue'
@@ -14,14 +14,12 @@ export type AreaFormModel = {
   area_id?: number
   area_code: string
   area_name: string
-  area_status: number
 }
 
 type AreaFormState = {
   area_id?: number
   area_code: string
   area_name: string
-  area_status: number
 }
 
 export type AreaFormSubmitPayload = {
@@ -50,7 +48,6 @@ const form = reactive<AreaFormState>({
   area_id: undefined,
   area_code: '',
   area_name: '',
-  area_status: 1,
 })
 
 watch(
@@ -60,7 +57,6 @@ watch(
     form.area_id = m.area_id
     form.area_code = m.area_code ?? ''
     form.area_name = m.area_name ?? ''
-    form.area_status = m.area_status ?? 1
   },
   { immediate: true },
 )
@@ -99,7 +95,6 @@ function submit() {
         area_id: form.area_id,
         area_code: code,
         area_name: name,
-        area_status: form.area_status,
         actor_id,
       })
     },
@@ -137,22 +132,6 @@ function submit() {
             v-model="form.area_name"
             label=""
             placeholder="Enter name"
-            :disabled="isView"
-          />
-        </div>
-
-        <div v-if="!isNew">
-          <label class="block text-sm text-slate-600 mb-1">Status</label>
-          <Dropdown
-            v-model="form.area_status"
-            class="w-full"
-            :options="[
-              { label: 'Active', value: 1 },
-              { label: 'Inactive', value: 0 },
-            ]"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Select status"
             :disabled="isView"
           />
         </div>

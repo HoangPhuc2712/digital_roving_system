@@ -80,7 +80,6 @@ function mapRowToFormModel(row: AreaRow): AreaFormModel {
     area_id: row.area_id,
     area_code: row.area_code,
     area_name: row.area_name,
-    area_status: row.area_status,
   }
 }
 
@@ -89,7 +88,6 @@ function openNew() {
   formModel.value = {
     area_code: '',
     area_name: '',
-    area_status: 1,
   }
   formVisible.value = true
 }
@@ -202,6 +200,10 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
   try {
     await payload.submit(actor)
     await store.load()
+
+    formVisible.value = false
+    formModel.value = null
+    selectedAreas.value = null
 
     toast.add({
       severity: 'success',

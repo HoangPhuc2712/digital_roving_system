@@ -5,6 +5,7 @@ export type AreaRow = {
   area_code: string
   area_name: string
   area_status: number // 1 active, 0 inactive
+  checkpoint_count: number
   created_date: string
   updated_date: string
 
