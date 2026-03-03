@@ -38,7 +38,6 @@ const emit = defineEmits<{
 const toast = useToast()
 
 const isView = computed(() => props.mode === 'view')
-const isNew = computed(() => props.mode === 'new')
 const title = computed(() =>
   props.mode === 'new' ? 'Create New Role' : props.mode === 'edit' ? 'Edit Role' : 'Role Detail',
 )
@@ -61,6 +60,11 @@ watch(
   },
   { immediate: true },
 )
+
+const permissionLabels = computed(() => {
+  const ids = new Set<number>((form.mc_ids ?? []).map((x) => Number(x)))
+  return (props.menuOptions ?? []).filter((x) => ids.has(Number(x.value))).map((x) => x.label)
+})
 
 function close() {
   emit('update:visible', false)
@@ -126,27 +130,26 @@ function submit() {
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label class="block text-sm text-slate-600 mb-1">Role Code</label>
-          <BaseInput
-            v-model="form.role_code"
-            label=""
-            placeholder="Enter code"
-            :disabled="isView"
-          />
+          <div v-if="isView" class="text-slate-800 font-semibold">{{ form.role_code }}</div>
+          <BaseInput v-else v-model="form.role_code" label="" placeholder="Enter code" />
         </div>
 
         <div>
           <label class="block text-sm text-slate-600 mb-1">Role Name</label>
-          <BaseInput
-            v-model="form.role_name"
-            label=""
-            placeholder="Enter name"
-            :disabled="isView"
-          />
+          <div v-if="isView" class="text-slate-800 font-semibold">{{ form.role_name }}</div>
+          <BaseInput v-else v-model="form.role_name" label="" placeholder="Enter name" />
         </div>
 
         <div class="md:col-span-2">
           <label class="block text-sm text-slate-600 mb-1">Permissions</label>
+
+          <div v-if="isView" class="text-slate-800 font-semibold">
+            <span v-if="permissionLabels.length">{{ permissionLabels.join(', ') }}</span>
+            <span v-else class="text-slate-500 font-normal">—</span>
+          </div>
+
           <MultiSelect
+            v-else
             v-model="form.mc_ids"
             class="w-full"
             :options="menuOptions"
@@ -154,7 +157,6 @@ function submit() {
             optionValue="value"
             placeholder="Select permissions"
             display="chip"
-            :disabled="isView"
           />
         </div>
       </div>

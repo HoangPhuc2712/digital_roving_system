@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue'
 import Dialog from 'primevue/dialog'
-// import Dropdown from 'primevue/dropdown'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import BaseInput from '@/components/common/inputs/BaseInput.vue'
@@ -39,7 +38,6 @@ const emit = defineEmits<{
 }>()
 
 const isView = computed(() => props.mode === 'view')
-const isNew = computed(() => props.mode === 'new')
 const title = computed(() =>
   props.mode === 'new' ? 'New Area' : props.mode === 'edit' ? 'Edit Area' : 'Area Detail',
 )
@@ -118,22 +116,14 @@ function submit() {
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label class="block text-sm text-slate-600 mb-1">Area Code</label>
-          <BaseInput
-            v-model="form.area_code"
-            label=""
-            placeholder="Enter code"
-            :disabled="isView"
-          />
+          <div v-if="isView" class="text-slate-800 font-semibold">{{ form.area_code }}</div>
+          <BaseInput v-else v-model="form.area_code" label="" placeholder="Enter code" />
         </div>
 
         <div>
           <label class="block text-sm text-slate-600 mb-1">Area Name</label>
-          <BaseInput
-            v-model="form.area_name"
-            label=""
-            placeholder="Enter name"
-            :disabled="isView"
-          />
+          <div v-if="isView" class="text-slate-800 font-semibold">{{ form.area_name }}</div>
+          <BaseInput v-else v-model="form.area_name" label="" placeholder="Enter name" />
         </div>
       </div>
 

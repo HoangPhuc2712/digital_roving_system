@@ -67,6 +67,12 @@ const title = computed(() =>
   props.mode === 'new' ? 'Create New Route' : props.mode === 'edit' ? 'Edit Route' : 'Route Detail',
 )
 
+const areaLabel = computed(() => {
+  return (
+    props.areaOptions.find((x) => x.value === form.area_id)?.label ?? String(form.area_id ?? '')
+  )
+})
+
 const scanPointOptions = ref<ScanPointOption[]>([])
 const scanLoading = ref(false)
 
@@ -288,40 +294,33 @@ function submit() {
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label class="block text-sm text-slate-600 mb-1">Route Code</label>
-          <BaseInput
-            v-model="form.route_code"
-            label=""
-            placeholder="Enter code"
-            :disabled="isView"
-          />
+          <div v-if="isView" class="text-slate-800 font-semibold">{{ form.route_code }}</div>
+          <BaseInput v-else v-model="form.route_code" label="" placeholder="Enter code" />
         </div>
 
         <div>
           <label class="block text-sm text-slate-600 mb-1">Route Name</label>
-          <BaseInput
-            v-model="form.route_name"
-            label=""
-            placeholder="Enter name"
-            :disabled="isView"
-          />
+          <div v-if="isView" class="text-slate-800 font-semibold">{{ form.route_name }}</div>
+          <BaseInput v-else v-model="form.route_name" label="" placeholder="Enter name" />
         </div>
-
         <div>
           <label class="block text-sm text-slate-600 mb-1">Area</label>
+          <div v-if="isView" class="text-slate-800 font-semibold">{{ areaLabel }}</div>
           <Dropdown
+            v-else
             v-model="form.area_id"
             class="w-full"
             :options="areaOptions"
             optionLabel="label"
             optionValue="value"
             placeholder="Select area"
-            :disabled="isView"
           />
         </div>
 
         <div>
           <label class="block text-sm text-slate-600 mb-1">Route Priority</label>
-          <InputNumber v-model="form.route_priority" class="w-full" :min="1" :disabled="isView" />
+          <div v-if="isView" class="text-slate-800 font-semibold">{{ form.route_priority }}</div>
+          <InputNumber v-else v-model="form.route_priority" class="w-full" :min="1" />
         </div>
 
         <div class="md:col-span-2">

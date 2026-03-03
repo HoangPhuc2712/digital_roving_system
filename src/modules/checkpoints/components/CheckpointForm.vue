@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, watch, ref } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import Dialog from 'primevue/dialog'
 import Dropdown from 'primevue/dropdown'
 
@@ -48,8 +48,6 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
-const qrFileEl = ref<HTMLInputElement | null>(null)
-
 const isView = computed(() => props.mode === 'view')
 const isNew = computed(() => props.mode === 'new')
 
@@ -86,6 +84,12 @@ watch(
   { immediate: true },
 )
 
+const areaLabel = computed(() => {
+  return (
+    props.areaOptions.find((x) => x.value === form.area_id)?.label ?? String(form.area_id ?? '')
+  )
+})
+
 function close() {
   emit('update:visible', false)
   emit('close')
@@ -99,15 +103,6 @@ function normalizeQr(src: string) {
   return `data:image/png;base64,${s}`
 }
 
-async function fileToDataUrl(f: File) {
-  return await new Promise<string>((resolve, reject) => {
-    const r = new FileReader()
-    r.onload = () => resolve(String(r.result ?? ''))
-    r.onerror = () => reject(new Error('READ_FILE_FAILED'))
-    r.readAsDataURL(f)
-  })
-}
-
 function submit() {
   emit('submit', {
     submit: async (actor_id: string) => {
@@ -116,7 +111,6 @@ function submit() {
       const desc = (form.cp_description ?? '').trim()
       const areaId = Number(form.area_id ?? 0)
       const priority = Number(form.cp_priority_text ?? 0)
-      const qr = (form.cp_qr ?? '').trim()
 
       const missing: string[] = []
       if (!code) missing.push('Scan Point Code')
@@ -131,7 +125,7 @@ function submit() {
         throw new Error('PRIORITY_MIN_1')
       }
 
-      if (props.mode === 'new' && !qr) throw new Error('MISSING_QR')
+      // Backend create/update không nhận cpQr -> không validate MISSING_QR nữa
 
       if (props.mode === 'new') {
         await createCheckpointMock({
@@ -174,66 +168,60 @@ function submit() {
     <div v-if="!model" class="text-slate-500">No data.</div>
 
     <div v-else class="space-y-4">
-      <div class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm text-slate-600 mb-1">Scan Point Code</label>
-            <BaseInput
-              v-model="form.cp_code"
-              label=""
-              placeholder="Enter code"
-              :disabled="isView"
-            />
-          </div>
-
-          <div>
-            <label class="block text-sm text-slate-600 mb-1">Scan Point Name</label>
-            <BaseInput
-              v-model="form.cp_name"
-              label=""
-              placeholder="Enter name"
-              :disabled="isView"
-            />
-          </div>
-
-          <div class="md:col-span-2">
-            <label class="block text-sm text-slate-600 mb-1">Description</label>
-            <BaseInput
-              v-model="form.cp_description"
-              label=""
-              placeholder="Enter description"
-              :disabled="isView"
-            />
-          </div>
-
-          <div>
-            <label class="block text-sm text-slate-600 mb-1">Area</label>
-            <Dropdown
-              v-model="form.area_id"
-              class="w-full"
-              :options="areaOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Select area"
-              :disabled="isView"
-            />
-          </div>
-
-          <div>
-            <label class="block text-sm text-slate-600 mb-1">Priority</label>
-            <BaseInput
-              v-model="form.cp_priority_text"
-              label=""
-              placeholder="Enter priority"
-              :disabled="isView"
-            />
-          </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Scan Point Code</label>
+          <div v-if="isView" class="text-slate-800 font-semibold">{{ form.cp_code }}</div>
+          <BaseInput v-else v-model="form.cp_code" label="" placeholder="Enter code" />
         </div>
 
         <div>
-          <label class="block text-sm text-slate-600 mb-2">QR Image</label>
-          <div class="mb-3">
-            <QrPreview :value="normalizeQr(form.cp_qr)" :size="72" />
+          <label class="block text-sm text-slate-600 mb-1">Scan Point Name</label>
+          <div v-if="isView" class="text-slate-800 font-semibold">{{ form.cp_name }}</div>
+          <BaseInput v-else v-model="form.cp_name" label="" placeholder="Enter name" />
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-sm text-slate-600 mb-1">Description</label>
+          <div v-if="isView" class="text-slate-800 font-semibold">
+            {{ form.cp_description || '—' }}
+          </div>
+          <BaseInput
+            v-else
+            v-model="form.cp_description"
+            label=""
+            placeholder="Enter description"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Area</label>
+          <div v-if="isView" class="text-slate-800 font-semibold">{{ areaLabel }}</div>
+          <Dropdown
+            v-else
+            v-model="form.area_id"
+            class="w-full"
+            :options="areaOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Select area"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Priority</label>
+          <div v-if="isView" class="text-slate-800 font-semibold">{{ form.cp_priority_text }}</div>
+          <BaseInput v-else v-model="form.cp_priority_text" label="" placeholder="Enter priority" />
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm text-slate-600 mb-2">QR Image</label>
+
+        <div class="mb-3">
+          <QrPreview v-if="normalizeQr(form.cp_qr)" :value="normalizeQr(form.cp_qr)" :size="72" />
+          <div v-else class="text-sm text-slate-500">
+            {{ isNew ? 'QR will be generated after saving.' : 'No QR available.' }}
           </div>
         </div>
       </div>
