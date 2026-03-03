@@ -5,6 +5,7 @@ import { areasRoutes } from '@/modules/areas/areas.routes'
 import { checkpointsRoutes } from '@/modules/checkpoints/checkpoints.routes'
 import { reportsRoutes } from '@/modules/reports/reports.routes'
 import { rolesRoutes } from '@/modules/roles/roles.routes'
+import { routesRoutes } from '@/modules/routes/routes.routes'
 
 export const routes = [
   ...authRoutes,
@@ -19,6 +20,7 @@ export const routes = [
       ...rolesRoutes,
       ...areasRoutes,
       ...checkpointsRoutes,
+      ...routesRoutes,
       {
         path: '403',
         name: 'forbidden',

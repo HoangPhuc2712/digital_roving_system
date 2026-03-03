@@ -61,6 +61,20 @@ const form = reactive<UserFormState>({
   confirm_password: '',
 })
 
+const roleLabel = computed(() => {
+  return (
+    props.roleOptions.find((x) => x.value === form.user_role_id)?.label ??
+    String(form.user_role_id ?? '')
+  )
+})
+
+const areaLabel = computed(() => {
+  return (
+    props.areaOptions.find((x) => x.value === form.user_area_id)?.label ??
+    String(form.user_area_id ?? '')
+  )
+})
+
 watch(
   () => props.model,
   (m) => {
@@ -179,7 +193,9 @@ function mapValidationError(code: string) {
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label class="block text-sm text-slate-600 mb-1">User Name</label>
+          <div v-if="isView" class="text-slate-800 font-semibold">{{ form.user_name }}</div>
           <BaseInput
+            v-if="!isView"
             v-model="form.user_name"
             label=""
             placeholder="Enter Name"
@@ -189,7 +205,9 @@ function mapValidationError(code: string) {
 
         <div>
           <label class="block text-sm text-slate-600 mb-1">User Code</label>
+          <div v-if="isView" class="text-slate-800 font-semibold">{{ form.user_code }}</div>
           <BaseInput
+            v-if="!isView"
             v-model="form.user_code"
             label=""
             placeholder="Enter code"
@@ -219,7 +237,11 @@ function mapValidationError(code: string) {
 
         <div>
           <label class="block text-sm text-slate-600 mb-1">Role</label>
+          <div v-if="isView" class="text-slate-800 font-semibold">
+            {{ roleLabel }}
+          </div>
           <Dropdown
+            v-if="!isView"
             v-model="form.user_role_id"
             class="w-full"
             :options="roleOptions"
@@ -232,7 +254,11 @@ function mapValidationError(code: string) {
 
         <div>
           <label class="block text-sm text-slate-600 mb-1">Area</label>
+          <div v-if="isView" class="text-slate-800 font-semibold">
+            {{ areaLabel }}
+          </div>
           <Dropdown
+            v-if="!isView"
             v-model="form.user_area_id"
             class="w-full"
             :options="areaOptions"

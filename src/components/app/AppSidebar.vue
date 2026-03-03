@@ -126,6 +126,17 @@ function logout() {
               </a>
             </RouterLink>
           </li>
+
+          <li>
+            <RouterLink to="/routes" v-slot="{ isActive }">
+              <a :class="itemClass(isActive || isActivePath('/routes'))" @click="closeMobile">
+                <span class="flex items-center gap-3">
+                  <i class="pi pi-map"></i>
+                  <span>Patrol Routes</span>
+                </span>
+              </a>
+            </RouterLink>
+          </li>
         </template>
       </ul>
     </nav>

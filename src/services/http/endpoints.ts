@@ -50,4 +50,14 @@ export const endpoints = {
     getList: '/CheckPointView/getlist',
     getOne: (cpwId: number | string) => `/CheckPointView/getone/${cpwId}`,
   },
+  route: {
+    create: '/Route/create',
+    update: (routeId: number | string) => `/Route/update/${routeId}`,
+    delete: (routeId: number | string) => `/Route/delete/${routeId}`,
+  },
+
+  routeView: {
+    getList: '/RouteView/getlist',
+    getOne: (routeId: number | string) => `/RouteView/getone/${routeId}`,
+  },
 }
