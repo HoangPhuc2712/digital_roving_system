@@ -9,7 +9,6 @@ import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 
 import BaseInput from '@/components/common/inputs/BaseInput.vue'
-import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 
 import { useAuthStore } from '@/stores/auth.store'
@@ -21,7 +20,6 @@ import QrPreview from '@/modules/checkpoints/components/QrPreview.vue'
 import CheckpointForm, {
   type CheckpointFormMode,
   type CheckpointFormModel,
-  type CheckpointFormSubmitPayload,
 } from '@/modules/checkpoints/components/CheckpointForm.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 
@@ -79,7 +77,6 @@ function mapRowToFormModel(row: CheckpointRow): CheckpointFormModel {
     cp_description: row.cp_description,
     cp_priority: row.cp_priority,
     area_id: row.area_id,
-    cp_status: row.cp_status,
   }
 }
 
@@ -92,7 +89,6 @@ function openNew() {
     cp_description: '',
     cp_priority: 1,
     area_id: store.areaOptions[0]?.value ?? 0,
-    cp_status: 1,
   }
   formVisible.value = true
 }
@@ -211,16 +207,6 @@ async function handleCheckpointFormSubmit(payload: {
         severity: 'warn',
         summary: 'Validation',
         detail: 'Priority must be 1 or greater.',
-        life: 3200,
-      })
-      return
-    }
-
-    if (msg === 'MISSING_QR') {
-      toast.add({
-        severity: 'warn',
-        summary: 'Validation',
-        detail: 'Please choose a QR image.',
         life: 3200,
       })
       return

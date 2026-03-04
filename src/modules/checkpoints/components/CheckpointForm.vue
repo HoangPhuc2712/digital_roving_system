@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, watch, ref } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import Dialog from 'primevue/dialog'
 import Dropdown from 'primevue/dropdown'
 
@@ -8,7 +8,6 @@ import BaseInput from '@/components/common/inputs/BaseInput.vue'
 
 import QrPreview from '@/modules/checkpoints/components/QrPreview.vue'
 import { createCheckpointMock, updateCheckpointMock } from '@/modules/checkpoints/checkpoints.api'
-import FileUpload, { type FileUploadSelectEvent } from 'primevue/fileupload'
 
 export type CheckpointFormMode = 'new' | 'view' | 'edit'
 
@@ -20,7 +19,6 @@ export type CheckpointFormModel = {
   cp_description: string
   cp_priority: number
   area_id: number
-  cp_status: number
 }
 
 type FormState = {
@@ -31,7 +29,6 @@ type FormState = {
   cp_description: string
   cp_priority_text: string
   area_id: number
-  cp_status: number
 }
 
 export type CheckpointFormSubmitPayload = {
@@ -50,8 +47,6 @@ const emit = defineEmits<{
   (e: 'submit', payload: CheckpointFormSubmitPayload): void
   (e: 'close'): void
 }>()
-
-const qrFileEl = ref<HTMLInputElement | null>(null)
 
 const isView = computed(() => props.mode === 'view')
 const isNew = computed(() => props.mode === 'new')
@@ -72,7 +67,6 @@ const form = reactive<FormState>({
   cp_description: '',
   cp_priority_text: '1',
   area_id: 0,
-  cp_status: 1,
 })
 
 watch(
@@ -86,10 +80,15 @@ watch(
     form.cp_description = m.cp_description ?? ''
     form.cp_priority_text = String(m.cp_priority ?? 1)
     form.area_id = Number(m.area_id ?? props.areaOptions[0]?.value ?? 0)
-    form.cp_status = Number(m.cp_status ?? 1)
   },
   { immediate: true },
 )
+
+const areaLabel = computed(() => {
+  return (
+    props.areaOptions.find((x) => x.value === form.area_id)?.label ?? String(form.area_id ?? '')
+  )
+})
 
 function close() {
   emit('update:visible', false)
@@ -104,21 +103,6 @@ function normalizeQr(src: string) {
   return `data:image/png;base64,${s}`
 }
 
-async function fileToDataUrl(f: File) {
-  return await new Promise<string>((resolve, reject) => {
-    const r = new FileReader()
-    r.onload = () => resolve(String(r.result ?? ''))
-    r.onerror = () => reject(new Error('READ_FILE_FAILED'))
-    r.readAsDataURL(f)
-  })
-}
-
-async function onChooseQrSelect(e: FileUploadSelectEvent) {
-  const f = e.files?.[0] as File | undefined
-  if (!f) return
-  form.cp_qr = await fileToDataUrl(f)
-}
-
 function submit() {
   emit('submit', {
     submit: async (actor_id: string) => {
@@ -127,7 +111,6 @@ function submit() {
       const desc = (form.cp_description ?? '').trim()
       const areaId = Number(form.area_id ?? 0)
       const priority = Number(form.cp_priority_text ?? 0)
-      const qr = (form.cp_qr ?? '').trim()
 
       const missing: string[] = []
       if (!code) missing.push('Scan Point Code')
@@ -142,13 +125,12 @@ function submit() {
         throw new Error('PRIORITY_MIN_1')
       }
 
-      if (props.mode === 'new' && !qr) throw new Error('MISSING_QR')
+      // Backend create/update không nhận cpQr -> không validate MISSING_QR nữa
 
       if (props.mode === 'new') {
         await createCheckpointMock({
           cp_code: code,
           cp_name: name,
-          cp_qr: qr,
           cp_description: desc,
           cp_priority: priority,
           area_id: areaId,
@@ -163,11 +145,9 @@ function submit() {
         cp_id: form.cp_id,
         cp_code: code,
         cp_name: name,
-        cp_qr: qr,
         cp_description: desc,
         cp_priority: priority,
         area_id: areaId,
-        cp_status: form.cp_status,
         actor_id,
       })
     },
@@ -188,101 +168,60 @@ function submit() {
     <div v-if="!model" class="text-slate-500">No data.</div>
 
     <div v-else class="space-y-4">
-      <div class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm text-slate-600 mb-1">Scan Point Code</label>
-            <BaseInput
-              v-model="form.cp_code"
-              label=""
-              placeholder="Enter code"
-              :disabled="isView"
-            />
-          </div>
-
-          <div>
-            <label class="block text-sm text-slate-600 mb-1">Scan Point Name</label>
-            <BaseInput
-              v-model="form.cp_name"
-              label=""
-              placeholder="Enter name"
-              :disabled="isView"
-            />
-          </div>
-
-          <div class="md:col-span-2">
-            <label class="block text-sm text-slate-600 mb-1">Description</label>
-            <BaseInput
-              v-model="form.cp_description"
-              label=""
-              placeholder="Enter description"
-              :disabled="isView"
-            />
-          </div>
-
-          <div>
-            <label class="block text-sm text-slate-600 mb-1">Area</label>
-            <Dropdown
-              v-model="form.area_id"
-              class="w-full"
-              :options="areaOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Select area"
-              :disabled="isView"
-            />
-          </div>
-
-          <div>
-            <label class="block text-sm text-slate-600 mb-1">Priority</label>
-            <BaseInput
-              v-model="form.cp_priority_text"
-              label=""
-              placeholder="Enter priority"
-              :disabled="isView"
-            />
-          </div>
-
-          <div v-if="!isNew">
-            <label class="block text-sm text-slate-600 mb-1">Status</label>
-            <Dropdown
-              v-model="form.cp_status"
-              class="w-full"
-              :options="[
-                { label: 'Active', value: 1 },
-                { label: 'Inactive', value: 0 },
-              ]"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Select status"
-              :disabled="isView"
-            />
-          </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Scan Point Code</label>
+          <div v-if="isView" class="text-slate-800 font-semibold">{{ form.cp_code }}</div>
+          <BaseInput v-else v-model="form.cp_code" label="" placeholder="Enter code" />
         </div>
 
         <div>
-          <label class="block text-sm text-slate-600 mb-2">QR Image</label>
+          <label class="block text-sm text-slate-600 mb-1">Scan Point Name</label>
+          <div v-if="isView" class="text-slate-800 font-semibold">{{ form.cp_name }}</div>
+          <BaseInput v-else v-model="form.cp_name" label="" placeholder="Enter name" />
+        </div>
 
-          <!-- Preview nằm ngay trên Choose QR -->
-          <div class="mb-3">
-            <QrPreview :value="normalizeQr(form.cp_qr)" :size="72" />
+        <div class="md:col-span-2">
+          <label class="block text-sm text-slate-600 mb-1">Description</label>
+          <div v-if="isView" class="text-slate-800 font-semibold">
+            {{ form.cp_description || '—' }}
           </div>
+          <BaseInput
+            v-else
+            v-model="form.cp_description"
+            label=""
+            placeholder="Enter description"
+          />
+        </div>
 
-          <div class="flex items-center gap-3">
-            <FileUpload
-              v-if="!isView"
-              mode="basic"
-              name="qr"
-              accept="image/*"
-              customUpload
-              :auto="false"
-              :multiple="false"
-              chooseLabel="Choose QR"
-              @select="onChooseQrSelect"
-            />
-            <div class="text-xs text-slate-500">
-              {{ form.cp_qr ? 'QR selected' : 'No QR selected' }}
-            </div>
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Area</label>
+          <div v-if="isView" class="text-slate-800 font-semibold">{{ areaLabel }}</div>
+          <Dropdown
+            v-else
+            v-model="form.area_id"
+            class="w-full"
+            :options="areaOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Select area"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Priority</label>
+          <div v-if="isView" class="text-slate-800 font-semibold">{{ form.cp_priority_text }}</div>
+          <BaseInput v-else v-model="form.cp_priority_text" label="" placeholder="Enter priority" />
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm text-slate-600 mb-2">QR Image</label>
+
+        <div class="mb-3">
+          <QrPreview v-if="normalizeQr(form.cp_qr)" :value="normalizeQr(form.cp_qr)" :size="72" />
+          <div v-else class="text-sm text-slate-500">
+            {{ isNew ? 'QR will be generated after saving.' : 'No QR available.' }}
           </div>
         </div>
       </div>

@@ -28,4 +28,36 @@ export const endpoints = {
   roleMenuCategoryView: {
     getList: '/RoleMenuCategoryView/getlist',
   },
+  area: {
+    create: '/Area/create',
+    update: (areaId: number | string) => `/Area/update/${areaId}`,
+    delete: (areaId: number | string) => `/Area/delete/${areaId}`,
+    getBaseList: '/Area/getbaselist',
+  },
+  areaView: {
+    getList: '/AreaView/getlist',
+    getOne: (areaId: number | string) => `/AreaView/getone/${areaId}`,
+  },
+  checkPoint: {
+    getList: '/CheckPoint/getlist',
+    getOne: (cpId: number | string) => `/CheckPoint/getone/${cpId}`,
+    create: '/CheckPoint/create',
+    update: (cpId: number | string) => `/CheckPoint/update/${cpId}`,
+    delete: (cpId: number | string) => `/CheckPoint/delete/${cpId}`,
+    getBaseList: '/CheckPoint/getbaselist',
+  },
+  checkPointView: {
+    getList: '/CheckPointView/getlist',
+    getOne: (cpwId: number | string) => `/CheckPointView/getone/${cpwId}`,
+  },
+  route: {
+    create: '/Route/create',
+    update: (routeId: number | string) => `/Route/update/${routeId}`,
+    delete: (routeId: number | string) => `/Route/delete/${routeId}`,
+  },
+
+  routeView: {
+    getList: '/RouteView/getlist',
+    getOne: (routeId: number | string) => `/RouteView/getone/${routeId}`,
+  },
 }

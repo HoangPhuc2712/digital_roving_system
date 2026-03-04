@@ -1,42 +1,90 @@
-import { areas, checkPoints } from '@/mocks/db'
+import type { AxiosError } from 'axios'
+import { http } from '@/services/http/axios'
+import { endpoints } from '@/services/http/endpoints'
 import type { AreaRow } from './areas.types'
+
+type ApiEnvelope<T> = {
+  data: T
+  success: boolean
+  message: string
+}
+
+type ApiCheckPointLite = {
+  cpId: number
+  cpCode: string
+  cpName: string
+  areaId: number
+}
+
+type ApiAreaView = {
+  areaId: number
+  areaStatus: number
+  areaKeyword?: string
+  areaCode: string
+  areaName: string
+  createdAt?: string
+  updatedAt?: string
+  createdBy?: string
+  updatedBy?: string
+  createdName?: string
+  updatedName?: string
+  checkPoints?: ApiCheckPointLite[]
+}
 
 function nowIso() {
   return new Date().toISOString()
 }
 
-function normalizeSearch(a: { area_code: string; area_name: string }) {
-  return `${a.area_code} ${a.area_name}`.toLowerCase()
+function ensureSuccess<T>(payload: any): ApiEnvelope<T> {
+  const e = payload as ApiEnvelope<T>
+  if (!e || typeof e !== 'object' || !('success' in e)) throw new Error('API_ERROR')
+  if (!e.success) throw new Error(String((e as any).message ?? 'API_ERROR') || 'API_ERROR')
+  return e
+}
+
+// Backend: 0 = Active. UI: 1 = Active.
+function apiStatusToUi(status?: number) {
+  if (status == null) return 1
+  return status === 0 ? 1 : 0
 }
 
 export async function fetchAreaRows(): Promise<AreaRow[]> {
-  const rows: AreaRow[] = areas
-    .filter((a) => a.area_status >= 0)
-    .map((a) => ({
-      area_id: a.area_id,
-      area_code: a.area_code,
-      area_name: a.area_name,
-      area_status: a.area_status,
-      created_date: a.created_date,
-      updated_date: a.updated_date,
-      _q: normalizeSearch({ area_code: a.area_code, area_name: a.area_name }),
-    }))
-    .sort((x, y) => x.area_code.localeCompare(y.area_code))
+  const res = await http.post(endpoints.areaView.getList, {})
+  const views = ensureSuccess<ApiAreaView[]>(res.data).data ?? []
 
-  return rows
+  return views
+    .map((v) => {
+      const cps = Array.isArray(v.checkPoints) ? v.checkPoints : []
+      const q = String(v.areaKeyword ?? `${v.areaCode} ${v.areaName}`).toLowerCase()
+
+      return {
+        area_id: v.areaId,
+        area_code: v.areaCode,
+        area_name: v.areaName,
+        area_status: apiStatusToUi(v.areaStatus),
+        checkpoint_count: cps.length,
+        created_date: v.createdAt ?? nowIso(),
+        updated_date: v.updatedAt ?? nowIso(),
+        _q: q,
+      }
+    })
+    .sort((a, b) => a.area_name.localeCompare(b.area_name))
 }
 
 export async function fetchAreaById(area_id: number) {
-  const a = areas.find((x) => x.area_id === area_id && x.area_status >= 0)
-  if (!a) return null
+  const res = await http.get(endpoints.areaView.getOne(area_id))
+  const view = ensureSuccess<ApiAreaView>(res.data).data
 
+  const cps = Array.isArray(view.checkPoints) ? view.checkPoints : []
   return {
-    area_id: a.area_id,
-    area_code: a.area_code,
-    area_name: a.area_name,
-    area_status: a.area_status,
-    created_date: a.created_date,
-    updated_date: a.updated_date,
+    area_id: view.areaId,
+    area_code: view.areaCode,
+    area_name: view.areaName,
+    area_status: apiStatusToUi(view.areaStatus),
+    checkpoint_count: cps.length,
+    created_date: view.createdAt ?? nowIso(),
+    updated_date: view.updatedAt ?? nowIso(),
+    _q: String(view.areaKeyword ?? `${view.areaCode} ${view.areaName}`).toLowerCase(),
   }
 }
 
@@ -45,78 +93,74 @@ export async function createAreaMock(payload: {
   area_name: string
   actor_id: string
 }) {
-  const code = payload.area_code.trim()
-  const name = payload.area_name.trim()
+  const body = {
+    areaCode: payload.area_code.trim(),
+    areaName: payload.area_name.trim(),
+    createdBy: payload.actor_id,
+    updatedBy: payload.actor_id,
+  }
 
-  const existed = areas.some(
-    (a) => a.area_status >= 0 && a.area_code.toLowerCase() === code.toLowerCase(),
-  )
-  if (existed) throw new Error('AREA_CODE_EXISTS')
-
-  const maxId = areas.reduce((m, x) => Math.max(m, x.area_id), 0)
-  const id = maxId + 1
-  const t = nowIso()
-
-  areas.push({
-    area_id: id,
-    area_status: 1,
-    area_code: code,
-    area_name: name,
-    created_date: t,
-    created_by: payload.actor_id,
-    updated_date: t,
-    updated_by: payload.actor_id,
-  })
-
-  return true
+  try {
+    const res = await http.post(endpoints.area.create, body)
+    const env = ensureSuccess<boolean>(res.data)
+    return env.data === true
+  } catch (e) {
+    const err = e as AxiosError<any>
+    const msg = String(err?.response?.data?.message ?? '')
+    if (msg) throw new Error(msg)
+    throw e
+  }
 }
 
 export async function updateAreaMock(payload: {
   area_id: number
   area_code: string
   area_name: string
-  area_status: number
   actor_id: string
 }) {
-  const a = areas.find((x) => x.area_id === payload.area_id)
-  if (!a) throw new Error('AREA_NOT_FOUND')
+  const body = {
+    areaCode: payload.area_code.trim(),
+    areaName: payload.area_name.trim(),
+    updatedBy: payload.actor_id,
+  }
 
-  const code = payload.area_code.trim()
-  const name = payload.area_name.trim()
-
-  const existed = areas.some(
-    (x) =>
-      x.area_id !== payload.area_id &&
-      x.area_status >= 0 &&
-      x.area_code.toLowerCase() === code.toLowerCase(),
-  )
-  if (existed) throw new Error('AREA_CODE_EXISTS')
-
-  a.area_code = code
-  a.area_name = name
-  a.area_status = payload.area_status
-
-  a.updated_date = nowIso()
-  a.updated_by = payload.actor_id
-
-  return true
+  try {
+    const res = await http.patch(endpoints.area.update(payload.area_id), body)
+    const env = ensureSuccess<boolean>(res.data)
+    return env.data === true
+  } catch (e) {
+    const err = e as AxiosError<any>
+    const msg = String(err?.response?.data?.message ?? '')
+    if (msg) throw new Error(msg)
+    throw e
+  }
 }
 
 export async function deleteAreaMock(payload: { area_id: number; actor_id: string }) {
-  const a = areas.find((x) => x.area_id === payload.area_id)
-  if (!a) throw new Error('AREA_NOT_FOUND')
+  const body = { updatedBy: payload.actor_id }
 
-  const count = checkPoints.filter(
-    (cp) => cp.cp_status >= 0 && cp.area_id === payload.area_id,
-  ).length
-
-  if (count > 0) {
-    throw new Error(`AREA_HAS_SCAN_POINTS:${count}`)
+  try {
+    const res = await http.delete(endpoints.area.delete(payload.area_id), { data: body })
+    const env = ensureSuccess<boolean>(res.data)
+    return env.data === true
+  } catch (e) {
+    const err = e as AxiosError<any>
+    const msg = String(err?.response?.data?.message ?? '')
+    if (msg) throw new Error(msg)
+    throw e
   }
+}
 
-  a.area_status = -1
-  a.updated_date = nowIso()
-  a.updated_by = payload.actor_id
+export async function fetchAreaOptions() {
+  // dùng GET /Area/getbaselist nếu bạn muốn dropdown area đầy đủ
+  const res = await http.get(endpoints.area.getBaseList)
+  const env = ensureSuccess<any[]>(res.data)
+  const list = env.data ?? []
 
-  return true
+  return list
+    .map((a: any) => ({
+      label: a.areaName ?? a.areaCode ?? String(a.areaId),
+      value: a.areaId,
+    }))
+    .sort((x: any, y: any) => String(x.label).localeCompare(String(y.label)))
 }

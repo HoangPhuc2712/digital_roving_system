@@ -1,174 +1,214 @@
-import { checkPoints, areas } from '@/mocks/db'
+import type { AxiosError } from 'axios'
+import { http } from '@/services/http/axios'
+import { endpoints } from '@/services/http/endpoints'
 import type { CheckpointRow, AreaOption } from './checkpoints.types'
+
+type ApiEnvelope<T> = { data: T; success: boolean; message: string }
+
+type ApiCheckPointView = {
+  cpId: number
+  cpKeyword?: string
+  cpCode: string
+  cpName: string
+  cpQr?: string
+  cpDescription?: string
+  cpPriority: number
+  createdAt?: string
+  createdBy?: string
+  updatedAt?: string
+  updatedBy?: string
+  areaId: number
+  areaCode?: string
+  areaName?: string
+}
+
+type ApiCheckPointEntity = {
+  cpId: number
+  cpStatus?: number
+  cpKeyword?: string
+  cpCode: string
+  cpName: string
+  cpQr?: string
+  cpDescription?: string
+  cpPriority: number
+  areaId: number
+  createdAt?: string
+  createdBy?: string
+  updatedAt?: string
+  updatedBy?: string
+}
 
 function nowIso() {
   return new Date().toISOString()
 }
 
+function ensureSuccess<T>(payload: any): ApiEnvelope<T> {
+  const e = payload as ApiEnvelope<T>
+  if (!e || typeof e !== 'object' || !('success' in e)) throw new Error('API_ERROR')
+  if (!e.success) throw new Error(String(e.message ?? 'API_ERROR') || 'API_ERROR')
+  return e
+}
+
+// Backend: 0 = Active. UI: 1 = Active.
+function apiStatusToUi(status?: number) {
+  if (status == null) return 1
+  return status === 0 ? 1 : 0
+}
+
 function normalizeSearch(x: {
+  cp_keyword: string
   cp_code: string
   cp_name: string
   cp_description: string
   area_code: string
   area_name: string
 }) {
-  return `${x.cp_code} ${x.cp_name} ${x.cp_description} ${x.area_code} ${x.area_name}`.toLowerCase()
+  return `${x.cp_keyword} ${x.cp_code} ${x.cp_name} ${x.cp_description} ${x.area_code} ${x.area_name}`
+    .toLowerCase()
+    .trim()
 }
 
 export async function fetchAreaOptions(): Promise<AreaOption[]> {
-  return areas
-    .filter((a) => a.area_status >= 0)
-    .sort((a, b) => a.area_code.localeCompare(b.area_code))
-    .map((a) => ({ label: `${a.area_code} - ${a.area_name}`, value: a.area_id }))
+  // tận dụng Area base list (đã có trong backend)
+  const res = await http.get(endpoints.area.getBaseList)
+  const env = ensureSuccess<any[]>(res.data)
+  const list = env.data ?? []
+
+  return list
+    .map((a: any) => ({
+      label: a.areaName ?? a.areaCode ?? String(a.areaId),
+      value: Number(a.areaId ?? 0),
+    }))
+    .filter((x: AreaOption) => !!x.value)
+    .sort((a: AreaOption, b: AreaOption) => String(a.label).localeCompare(String(b.label)))
 }
 
 export async function fetchCheckpointRows(): Promise<CheckpointRow[]> {
-  const areaMap = new Map<number, (typeof areas)[number]>()
-  for (const a of areas) areaMap.set(a.area_id, a)
+  const [viewRes, entityRes] = await Promise.all([
+    http.post(endpoints.checkPointView.getList, {}),
+    // cố gắng lấy status từ entity list (nếu backend trả cpStatus)
+    http.post(endpoints.checkPoint.getList, {}).catch(() => null as any),
+  ])
 
-  const rows: CheckpointRow[] = checkPoints
-    .filter((cp) => cp.cp_status >= 0)
-    .map((cp) => {
-      const a = areaMap.get(cp.area_id)
-      const areaCode = a?.area_code ?? ''
-      const areaName = a?.area_name ?? ''
+  const views = ensureSuccess<ApiCheckPointView[]>(viewRes.data).data ?? []
+
+  const statusMap = new Map<number, number>()
+  if (entityRes?.data) {
+    try {
+      const entities = ensureSuccess<ApiCheckPointEntity[]>(entityRes.data).data ?? []
+      for (const e of entities) {
+        if (!e?.cpId) continue
+        if (typeof e.cpStatus === 'number') statusMap.set(e.cpId, apiStatusToUi(e.cpStatus))
+      }
+    } catch {
+      // ignore nếu backend getlist không trả đúng shape
+    }
+  }
+
+  return views
+    .map((v) => {
+      const status = statusMap.get(v.cpId) ?? 1
+      const keyword = String(v.cpKeyword ?? '')
+      const areaCode = String(v.areaCode ?? '')
+      const areaName = String(v.areaName ?? '')
 
       return {
-        cp_id: cp.cp_id,
-        cp_code: cp.cp_code,
-        cp_name: cp.cp_name,
-        cp_qr: cp.cp_qr,
-        cp_description: cp.cp_description,
-        cp_priority: cp.cp_priority,
-        cp_status: cp.cp_status,
-        area_id: cp.area_id,
+        cp_id: v.cpId,
+        cp_code: v.cpCode,
+        cp_name: v.cpName,
+        cp_qr: String(v.cpQr ?? ''),
+        cp_description: String(v.cpDescription ?? ''),
+        cp_priority: Number(v.cpPriority ?? 1),
+        cp_status: status,
+        area_id: Number(v.areaId ?? 0),
         area_code: areaCode,
         area_name: areaName,
-        created_at: cp.created_at,
-        updated_at: cp.updated_at,
+        created_at: v.createdAt ?? nowIso(),
+        updated_at: v.updatedAt ?? nowIso(),
         _q: normalizeSearch({
-          cp_code: cp.cp_code,
-          cp_name: cp.cp_name,
-          cp_description: cp.cp_description,
+          cp_keyword: keyword,
+          cp_code: v.cpCode,
+          cp_name: v.cpName,
+          cp_description: String(v.cpDescription ?? ''),
           area_code: areaCode,
           area_name: areaName,
         }),
       }
     })
-    .sort((a, b) => {
-      const c = a.area_code.localeCompare(b.area_code)
-      if (c !== 0) return c
-      const p = (a.cp_priority ?? 0) - (b.cp_priority ?? 0)
-      if (p !== 0) return p
-      return a.cp_code.localeCompare(b.cp_code)
-    })
-
-  return rows
-}
-
-export async function fetchCheckpointById(cp_id: number) {
-  const cp = checkPoints.find((x) => x.cp_id === cp_id && x.cp_status >= 0)
-  if (!cp) return null
-
-  return {
-    cp_id: cp.cp_id,
-    cp_code: cp.cp_code,
-    cp_name: cp.cp_name,
-    cp_qr: cp.cp_qr,
-    cp_description: cp.cp_description,
-    cp_priority: cp.cp_priority,
-    cp_status: cp.cp_status,
-    area_id: cp.area_id,
-    created_at: cp.created_at,
-    updated_at: cp.updated_at,
-  }
+    .sort((a, b) => a.cp_code.localeCompare(b.cp_code))
 }
 
 export async function createCheckpointMock(payload: {
   cp_code: string
   cp_name: string
-  cp_qr: string
   cp_description: string
   cp_priority: number
   area_id: number
   actor_id: string
 }) {
-  const code = payload.cp_code.trim()
-  const existed = checkPoints.some(
-    (x) =>
-      x.cp_status >= 0 &&
-      x.area_id === payload.area_id &&
-      x.cp_code.toLowerCase() === code.toLowerCase(),
-  )
-  if (existed) throw new Error('CHECKPOINT_CODE_EXISTS_IN_AREA')
+  const body = {
+    cpCode: payload.cp_code.trim(),
+    cpName: payload.cp_name.trim(),
+    cpDescription: payload.cp_description.trim(),
+    cpPriority: Number(payload.cp_priority ?? 1),
+    areaId: Number(payload.area_id ?? 0),
+    createdBy: payload.actor_id,
+    updatedBy: payload.actor_id,
+  }
 
-  const maxId = checkPoints.reduce((m, x) => Math.max(m, x.cp_id), 0)
-  const id = maxId + 1
-  const t = nowIso()
-
-  checkPoints.push({
-    cp_id: id,
-    cp_status: 1,
-    cp_code: code,
-    cp_name: payload.cp_name.trim(),
-    cp_qr: payload.cp_qr,
-    cp_description: payload.cp_description.trim(),
-    cp_priority: payload.cp_priority,
-    area_id: payload.area_id,
-    created_at: t,
-    created_by: payload.actor_id,
-    updated_at: t,
-    updated_by: payload.actor_id,
-  })
-
-  return true
+  try {
+    const res = await http.post(endpoints.checkPoint.create, body)
+    const env = ensureSuccess<boolean>(res.data)
+    return env.data === true
+  } catch (e) {
+    const err = e as AxiosError<any>
+    const msg = String(err?.response?.data?.message ?? '')
+    if (msg) throw new Error(msg)
+    throw e
+  }
 }
 
 export async function updateCheckpointMock(payload: {
   cp_id: number
   cp_code: string
   cp_name: string
-  cp_qr: string
   cp_description: string
   cp_priority: number
   area_id: number
-  cp_status: number
   actor_id: string
 }) {
-  const cp = checkPoints.find((x) => x.cp_id === payload.cp_id)
-  if (!cp) throw new Error('CHECKPOINT_NOT_FOUND')
+  const body = {
+    cpCode: payload.cp_code.trim(),
+    cpName: payload.cp_name.trim(),
+    cpDescription: payload.cp_description.trim(),
+    cpPriority: Number(payload.cp_priority ?? 1),
+    areaId: Number(payload.area_id ?? 0),
+    updatedBy: payload.actor_id,
+  }
 
-  const code = payload.cp_code.trim()
-  const existed = checkPoints.some(
-    (x) =>
-      x.cp_id !== payload.cp_id &&
-      x.cp_status >= 0 &&
-      x.area_id === payload.area_id &&
-      x.cp_code.toLowerCase() === code.toLowerCase(),
-  )
-  if (existed) throw new Error('CHECKPOINT_CODE_EXISTS_IN_AREA')
-
-  cp.cp_code = code
-  cp.cp_name = payload.cp_name.trim()
-  cp.cp_qr = payload.cp_qr
-  cp.cp_description = payload.cp_description.trim()
-  cp.cp_priority = payload.cp_priority
-  cp.area_id = payload.area_id
-  cp.cp_status = payload.cp_status
-
-  cp.updated_at = nowIso()
-  cp.updated_by = payload.actor_id
-
-  return true
+  try {
+    const res = await http.patch(endpoints.checkPoint.update(payload.cp_id), body)
+    const env = ensureSuccess<boolean>(res.data)
+    return env.data === true
+  } catch (e) {
+    const err = e as AxiosError<any>
+    const msg = String(err?.response?.data?.message ?? '')
+    if (msg) throw new Error(msg)
+    throw e
+  }
 }
 
 export async function deleteCheckpointMock(payload: { cp_id: number; actor_id: string }) {
-  const cp = checkPoints.find((x) => x.cp_id === payload.cp_id)
-  if (!cp) throw new Error('CHECKPOINT_NOT_FOUND')
+  const body = { updatedBy: payload.actor_id }
 
-  cp.cp_status = -1
-  cp.updated_at = nowIso()
-  cp.updated_by = payload.actor_id
-
-  return true
+  try {
+    const res = await http.delete(endpoints.checkPoint.delete(payload.cp_id), { data: body })
+    const env = ensureSuccess<boolean>(res.data)
+    return env.data === true
+  } catch (e) {
+    const err = e as AxiosError<any>
+    const msg = String(err?.response?.data?.message ?? '')
+    if (msg) throw new Error(msg)
+    throw e
+  }
 }
