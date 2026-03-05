@@ -60,13 +60,13 @@ function formatSeconds(sec: number) {
 function issueStatusLabel(s: number) {
   switch (s) {
     case 0:
-      return 'Đang chờ xử lý'
+      return 'Pending'
     case 1:
-      return 'Đang xử lý'
+      return 'In Progress'
     case 2:
-      return 'Đã xử lý'
+      return 'Completed'
     case 3:
-      return 'Chưa xử lý được'
+      return 'Incompleted'
     default:
       return '—'
   }

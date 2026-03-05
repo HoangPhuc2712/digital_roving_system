@@ -27,10 +27,10 @@ const resultOptions = [
 
 const issueStatusOptions = [
   { label: 'All', value: null },
-  { label: 'Đang chờ xử lý', value: 0 },
-  { label: 'Đang xử lý', value: 1 },
-  { label: 'Đã xử lý', value: 2 },
-  { label: 'Chưa xử lý được', value: 3 },
+  { label: 'Pending', value: 0 },
+  { label: 'In Progress', value: 1 },
+  { label: 'Completed', value: 2 },
+  { label: 'Incompleted', value: 3 },
 ]
 
 const exporting = ref(false)
@@ -70,13 +70,13 @@ function formatDateTime(iso: string) {
 function issueStatusLabel(s: number) {
   switch (s) {
     case 0:
-      return 'Đang chờ xử lý'
+      return 'Pending'
     case 1:
-      return 'Đang xử lý'
+      return 'In Progress'
     case 2:
-      return 'Đã xử lý'
+      return 'Completed'
     case 3:
-      return 'Chưa xử lý được'
+      return 'Incompleted'
     default:
       return '—'
   }
