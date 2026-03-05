@@ -60,4 +60,19 @@ export const endpoints = {
     getList: '/RouteView/getlist',
     getOne: (routeId: number | string) => `/RouteView/getone/${routeId}`,
   },
+  pointReportView: {
+    getList: '/pointreportview/getlist',
+    getOne: (prId: number | string) => `/pointreportview/getone/${prId}`,
+  },
+  pointReportImage: {
+    getListByReportId: (prId: number | string) => `/pointreportimage/getlistbyreportid/${prId}`,
+  },
+  reportNoteCategory: {
+    getList: '/reportnotecategory/getlist',
+    getTreeData: '/reportnotecategory/gettreedata',
+    getOne: (rncId: number | string) => `/reportnotecategory/getone/${rncId}`,
+    create: '/reportnotecategory/create',
+    update: (rncId: number | string) => `/reportnotecategory/update/${rncId}`,
+    delete: (rncId: number | string) => `/reportnotecategory/delete/${rncId}`,
+  },
 }

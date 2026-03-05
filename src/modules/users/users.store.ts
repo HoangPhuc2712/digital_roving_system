@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import type { UserRow } from './users.types'
-import { fetchRoleOptions, fetchUserRows } from './users.api'
+import { fetchAreaOptions, fetchRoleOptions, fetchUserRows } from './users.api'
 
 export const useUsersStore = defineStore('users', {
   state: () => ({
@@ -37,20 +37,15 @@ export const useUsersStore = defineStore('users', {
     async load() {
       this.loading = true
       try {
-        const [roles, rows] = await Promise.all([fetchRoleOptions(), fetchUserRows()])
-        this.roleOptions = roles
-        this.rows = rows
+        const [roles, areas, rows] = await Promise.all([
+          fetchRoleOptions(),
+          fetchAreaOptions(),
+          fetchUserRows(),
+        ])
 
-        const map = new Map<number, string>()
-        for (const r of rows) {
-          const id = r.user_area_id
-          if (!id) continue
-          const label = r.area_name || r.area_code || String(id)
-          if (!map.has(id)) map.set(id, label)
-        }
-        this.areaOptions = Array.from(map.entries())
-          .map(([value, label]) => ({ value, label }))
-          .sort((a, b) => a.label.localeCompare(b.label))
+        this.roleOptions = roles
+        this.areaOptions = areas
+        this.rows = rows
       } finally {
         this.loading = false
       }
