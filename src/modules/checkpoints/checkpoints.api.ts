@@ -1,7 +1,7 @@
 import type { AxiosError } from 'axios'
 import { http } from '@/services/http/axios'
 import { endpoints } from '@/services/http/endpoints'
-import type { CheckpointRow, AreaOption } from './checkpoints.types'
+import type { CheckpointRow, AreaOption, RoleOption } from './checkpoints.types'
 
 type ApiEnvelope<T> = { data: T; success: boolean; message: string }
 
@@ -20,6 +20,7 @@ type ApiCheckPointView = {
   areaId: number
   areaCode?: string
   areaName?: string
+  roleIdStr?: string
 }
 
 type ApiCheckPointEntity = {
@@ -36,6 +37,12 @@ type ApiCheckPointEntity = {
   createdBy?: string
   updatedAt?: string
   updatedBy?: string
+}
+
+type ApiRoleBase = {
+  roleId: number
+  roleCode?: string
+  roleName?: string
 }
 
 function nowIso() {
@@ -62,14 +69,26 @@ function normalizeSearch(x: {
   cp_description: string
   area_code: string
   area_name: string
+  role_names: string[]
 }) {
-  return `${x.cp_keyword} ${x.cp_code} ${x.cp_name} ${x.cp_description} ${x.area_code} ${x.area_name}`
+  return `${x.cp_keyword} ${x.cp_code} ${x.cp_name} ${x.cp_description} ${x.area_code} ${x.area_name} ${x.role_names.join(' ')}`
     .toLowerCase()
     .trim()
 }
 
+function parseRoleIds(roleIdStr?: string): number[] {
+  return String(roleIdStr ?? '')
+    .split(/[;,|\s]+/)
+    .map((x) => Number(x.trim()))
+    .filter((x) => Number.isFinite(x) && x > 0)
+}
+
+function buildRoleNames(roleIds: number[], roleOptions: RoleOption[]) {
+  const map = new Map(roleOptions.map((x) => [x.value, x.label]))
+  return roleIds.map((id) => map.get(id) ?? String(id))
+}
+
 export async function fetchAreaOptions(): Promise<AreaOption[]> {
-  // tận dụng Area base list (đã có trong backend)
   const res = await http.get(endpoints.area.getBaseList)
   const env = ensureSuccess<any[]>(res.data)
   const list = env.data ?? []
@@ -83,10 +102,24 @@ export async function fetchAreaOptions(): Promise<AreaOption[]> {
     .sort((a: AreaOption, b: AreaOption) => String(a.label).localeCompare(String(b.label)))
 }
 
-export async function fetchCheckpointRows(): Promise<CheckpointRow[]> {
+export async function fetchRoleOptions(): Promise<RoleOption[]> {
+  const res = await http.get(endpoints.role.getBaseList)
+  const list = ensureSuccess<ApiRoleBase[]>(res.data).data ?? []
+
+  return list
+    .map((r) => ({
+      value: Number(r.roleId ?? 0),
+      label: String(r.roleName ?? r.roleCode ?? r.roleId),
+    }))
+    .filter((x) => x.value > 0)
+    .sort((a, b) => a.label.localeCompare(b.label))
+}
+
+export async function fetchCheckpointRows(
+  roleOptions: RoleOption[] = [],
+): Promise<CheckpointRow[]> {
   const [viewRes, entityRes] = await Promise.all([
     http.post(endpoints.checkPointView.getList, {}),
-    // cố gắng lấy status từ entity list (nếu backend trả cpStatus)
     http.post(endpoints.checkPoint.getList, {}).catch(() => null as any),
   ])
 
@@ -111,6 +144,9 @@ export async function fetchCheckpointRows(): Promise<CheckpointRow[]> {
       const keyword = String(v.cpKeyword ?? '')
       const areaCode = String(v.areaCode ?? '')
       const areaName = String(v.areaName ?? '')
+      const roleIdStr = String(v.roleIdStr ?? '').trim()
+      const roleIds = parseRoleIds(roleIdStr)
+      const roleNames = buildRoleNames(roleIds, roleOptions)
 
       return {
         cp_id: v.cpId,
@@ -123,6 +159,9 @@ export async function fetchCheckpointRows(): Promise<CheckpointRow[]> {
         area_id: Number(v.areaId ?? 0),
         area_code: areaCode,
         area_name: areaName,
+        role_id_str: roleIdStr,
+        role_ids: roleIds,
+        role_names: roleNames,
         created_at: v.createdAt ?? nowIso(),
         updated_at: v.updatedAt ?? nowIso(),
         _q: normalizeSearch({
@@ -132,26 +171,50 @@ export async function fetchCheckpointRows(): Promise<CheckpointRow[]> {
           cp_description: String(v.cpDescription ?? ''),
           area_code: areaCode,
           area_name: areaName,
+          role_names: roleNames,
         }),
       }
     })
     .sort((a, b) => a.cp_code.localeCompare(b.cp_code))
 }
 
+export async function fetchCheckpointById(cp_id: number, roleOptions: RoleOption[] = []) {
+  const res = await http.get(endpoints.checkPointView.getOne(cp_id))
+  const v = ensureSuccess<ApiCheckPointView>(res.data).data
+  const roleIdStr = String(v.roleIdStr ?? '').trim()
+  const roleIds = parseRoleIds(roleIdStr)
+  const roleNames = buildRoleNames(roleIds, roleOptions)
+
+  return {
+    cp_id: v.cpId,
+    cp_code: String(v.cpCode ?? ''),
+    cp_name: String(v.cpName ?? ''),
+    cp_qr: String(v.cpQr ?? ''),
+    cp_description: String(v.cpDescription ?? ''),
+    cp_priority: Number(v.cpPriority ?? 1),
+    area_id: Number(v.areaId ?? 0),
+    area_code: String(v.areaCode ?? ''),
+    area_name: String(v.areaName ?? ''),
+    role_id_str: roleIdStr,
+    role_ids: roleIds,
+    role_names: roleNames,
+  }
+}
+
 export async function createCheckpointMock(payload: {
-  cp_code: string
   cp_name: string
   cp_description: string
   cp_priority: number
   area_id: number
+  role_ids: number[]
   actor_id: string
 }) {
   const body = {
-    cpCode: payload.cp_code.trim(),
     cpName: payload.cp_name.trim(),
     cpDescription: payload.cp_description.trim(),
     cpPriority: Number(payload.cp_priority ?? 1),
     areaId: Number(payload.area_id ?? 0),
+    roleIdStr: payload.role_ids.map((x) => String(x)).join(','),
     createdBy: payload.actor_id,
     updatedBy: payload.actor_id,
   }
@@ -170,19 +233,19 @@ export async function createCheckpointMock(payload: {
 
 export async function updateCheckpointMock(payload: {
   cp_id: number
-  cp_code: string
   cp_name: string
   cp_description: string
   cp_priority: number
   area_id: number
+  role_ids: number[]
   actor_id: string
 }) {
   const body = {
-    cpCode: payload.cp_code.trim(),
     cpName: payload.cp_name.trim(),
     cpDescription: payload.cp_description.trim(),
     cpPriority: Number(payload.cp_priority ?? 1),
     areaId: Number(payload.area_id ?? 0),
+    roleIdStr: payload.role_ids.map((x) => String(x)).join(','),
     updatedBy: payload.actor_id,
   }
 

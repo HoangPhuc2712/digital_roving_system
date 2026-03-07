@@ -15,7 +15,7 @@ import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import { useAuthStore } from '@/stores/auth.store'
 import { useCheckpointsStore } from '@/modules/checkpoints/checkpoints.store'
 import type { CheckpointRow } from '@/modules/checkpoints/checkpoints.types'
-import { deleteCheckpointMock } from '@/modules/checkpoints/checkpoints.api'
+import { deleteCheckpointMock, fetchCheckpointById } from '@/modules/checkpoints/checkpoints.api'
 
 import QrPreview from '@/modules/checkpoints/components/QrPreview.vue'
 import CheckpointForm, {
@@ -114,6 +114,8 @@ function mapRowToFormModel(row: CheckpointRow): CheckpointFormModel {
     cp_description: row.cp_description,
     cp_priority: row.cp_priority,
     area_id: row.area_id,
+    role_ids: row.role_ids,
+    role_names: row.role_names,
   }
 }
 
@@ -126,19 +128,51 @@ function openNew() {
     cp_description: '',
     cp_priority: 1,
     area_id: lockedAreaId.value ?? store.areaOptions[0]?.value ?? 0,
+    role_ids: [],
+    role_names: [],
   }
   formVisible.value = true
 }
 
-function openView(row: CheckpointRow) {
+async function openView(row: CheckpointRow) {
   formMode.value = 'view'
-  formModel.value = mapRowToFormModel(row)
+  try {
+    const detail = await fetchCheckpointById(row.cp_id, store.roleOptions)
+    formModel.value = {
+      cp_id: detail.cp_id,
+      cp_code: detail.cp_code,
+      cp_name: detail.cp_name,
+      cp_qr: detail.cp_qr,
+      cp_description: detail.cp_description,
+      cp_priority: detail.cp_priority,
+      area_id: detail.area_id,
+      role_ids: detail.role_ids,
+      role_names: detail.role_names,
+    }
+  } catch {
+    formModel.value = mapRowToFormModel(row)
+  }
   formVisible.value = true
 }
 
-function openEdit(row: CheckpointRow) {
+async function openEdit(row: CheckpointRow) {
   formMode.value = 'edit'
-  formModel.value = mapRowToFormModel(row)
+  try {
+    const detail = await fetchCheckpointById(row.cp_id, store.roleOptions)
+    formModel.value = {
+      cp_id: detail.cp_id,
+      cp_code: detail.cp_code,
+      cp_name: detail.cp_name,
+      cp_qr: detail.cp_qr,
+      cp_description: detail.cp_description,
+      cp_priority: detail.cp_priority,
+      area_id: detail.area_id,
+      role_ids: detail.role_ids,
+      role_names: detail.role_names,
+    }
+  } catch {
+    formModel.value = mapRowToFormModel(row)
+  }
   formVisible.value = true
 }
 
@@ -282,7 +316,7 @@ function normalizeQr(src: string) {
 
     <div class="bg-white border border-slate-200 rounded-xl p-3">
       <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
-        <div class="md:col-span-4">
+        <div class="md:col-span-3">
           <label class="block text-sm text-slate-600 mb-1">Status</label>
           <Dropdown
             v-model="store.filterStatus"
@@ -298,7 +332,7 @@ function normalizeQr(src: string) {
           />
         </div>
 
-        <div class="md:col-span-2 flex justify-end">
+        <div class="md:col-span-3 flex justify-end">
           <BaseIconButton
             icon="pi pi-filter-slash"
             label="Clear Filters"
@@ -409,6 +443,7 @@ function normalizeQr(src: string) {
       :mode="formMode"
       :model="formModel"
       :areaOptions="store.areaOptions"
+      :roleOptions="store.roleOptions"
       @submit="handleCheckpointFormSubmit"
       @close="formModel = null"
     />
