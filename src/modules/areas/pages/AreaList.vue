@@ -344,7 +344,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
             :label="`View (${data.checkpoint_count})`"
             severity="secondary"
             outlined
-            @click="getCheckpointCount(data)"
+            @click="goToAreaCheckPoints(data)"
           />
         </template>
       </Column>

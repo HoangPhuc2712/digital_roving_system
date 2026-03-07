@@ -59,7 +59,7 @@ export const useReportsStore = defineStore('reports', {
         const guardId = (r.created_by ?? '').trim()
         if (!guardId) continue
         if (!seen.has(guardId)) {
-          const label = (r.created_name ?? '').trim() || guardId
+          const label = (r.report_name ?? '').trim() || guardId
           seen.set(guardId, label)
         }
       }
@@ -98,7 +98,7 @@ export const useReportsStore = defineStore('reports', {
               r.cp_code,
               r.cp_name,
               r.cp_description,
-              r.created_name,
+              r.report_name,
               r.pr_note,
             ].join(' ')
           ).toLowerCase()

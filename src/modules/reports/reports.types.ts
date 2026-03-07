@@ -23,7 +23,7 @@ export type ReportRow = {
   scan_at: string
   created_at: string
   created_by: string
-  created_name: string
+  report_name: string
 
   pr_second: number
   route_id: number

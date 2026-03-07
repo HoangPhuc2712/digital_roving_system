@@ -35,7 +35,7 @@ type ApiPointReportView = {
   scanAt?: string
   createdAt?: string
   createdBy?: string
-  createdName?: string
+  reportName?: string
 
   prSecond?: number
   routeId?: number
@@ -92,10 +92,10 @@ export async function fetchReportRows(): Promise<ReportRow[]> {
       const cpName = String(v.cpName ?? '')
       const cpDesc = String(v.cpDescription ?? '')
 
-      const guardName = String(v.createdName ?? '')
+      const reportName = String(v.reportName ?? '')
       const note = String(v.prNote ?? '')
 
-      const q = [areaCode, areaName, cpCode, cpName, cpDesc, guardName, note]
+      const q = [areaCode, areaName, cpCode, cpName, cpDesc, reportName, note]
         .join(' ')
         .toLowerCase()
 
@@ -120,7 +120,7 @@ export async function fetchReportRows(): Promise<ReportRow[]> {
         scan_at: scanAt,
         created_at: createdAt,
         created_by: String(v.createdBy ?? ''),
-        created_name: guardName,
+        report_name: reportName,
 
         pr_second: Number(v.prSecond ?? 0),
         route_id: Number(v.routeId ?? 0),
@@ -151,10 +151,10 @@ export async function fetchReportRowById(pr_id: number): Promise<ReportRow | nul
     const cpName = String(v.cpName ?? '')
     const cpDesc = String(v.cpDescription ?? '')
 
-    const guardName = String(v.createdName ?? '')
+    const reportName = String(v.reportName ?? '')
     const note = String(v.prNote ?? '')
 
-    const q = [areaCode, areaName, cpCode, cpName, cpDesc, guardName, note].join(' ').toLowerCase()
+    const q = [areaCode, areaName, cpCode, cpName, cpDesc, reportName, note].join(' ').toLowerCase()
 
     const scanAt = String(v.scanAt ?? v.createdAt ?? nowIso())
     const createdAt = String(v.createdAt ?? v.scanAt ?? nowIso())
@@ -177,7 +177,7 @@ export async function fetchReportRowById(pr_id: number): Promise<ReportRow | nul
       scan_at: scanAt,
       created_at: createdAt,
       created_by: String(v.createdBy ?? ''),
-      created_name: guardName,
+      report_name: reportName,
 
       pr_second: Number(v.prSecond ?? 0),
       route_id: Number(v.routeId ?? 0),

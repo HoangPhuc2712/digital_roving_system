@@ -86,7 +86,7 @@ function issueStatusSeverity(s: number) {
   // PrimeVue Tag severity: success | info | warning | danger | secondary
   switch (s) {
     case 0:
-      return 'warning'
+      return 'warn'
     case 1:
       return 'info'
     case 2:
@@ -306,7 +306,7 @@ function onPage(e: DataTablePageEvent) {
         </template>
       </Column>
 
-      <Column field="created_name" header="Guard Name" style="min-width: 12rem" />
+      <Column field="report_name" header="Guard Name" style="min-width: 12rem" />
 
       <Column header="Issue Status" style="min-width: 12rem" sortField="pr_status">
         <template #body="{ data }">

@@ -172,6 +172,6 @@ function buildColumnChildren(node: VNode, sortable: boolean) {
 function resolveSortIcon(slotProps: SortIconSlotProps) {
   if (!slotProps?.sorted) return 'pi-sort-alt'
   if ((slotProps.sortOrder ?? 0) > 0) return 'pi-sort-amount-down-alt'
-  return 'pi-sort-amount-up'
+  return 'pi-sort-amount-down'
 }
 </script>
