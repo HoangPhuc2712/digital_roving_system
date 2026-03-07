@@ -14,22 +14,21 @@ import type { AreaRow } from '@/modules/areas/areas.types'
 import { deleteAreaMock } from '@/modules/areas/areas.api'
 
 import BaseInput from '@/components/common/inputs/BaseInput.vue'
-import BaseButton from '@/components/common/buttons/BaseButton.vue'
+import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 
 import AreaForm, {
   type AreaFormMode,
   type AreaFormModel,
-  type AreaFormSubmitPayload,
 } from '@/modules/areas/components/AreaForm.vue'
-import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
+import BaseButton from '@/components/common/buttons/BaseButton.vue'
 
+const router = useRouter()
 const toast = useToast()
 const confirm = useConfirm()
 
 const store = useAreasStore()
 const auth = useAuthStore()
-const router = useRouter()
 
 const canManage = computed(() => auth.canAccess('areas.manage'))
 
@@ -71,16 +70,6 @@ function clearAll() {
   searchDraft.value = ''
 }
 
-function openAreaCheckPoints(row: AreaRow) {
-  router.push({
-    name: 'checkpoints',
-    query: {
-      areaId: String(row.area_id),
-      areaCode: row.area_code,
-    },
-  })
-}
-
 const selectedAreas = ref<AreaRow[] | null>(null)
 
 const formVisible = ref(false)
@@ -93,6 +82,28 @@ function mapRowToFormModel(row: AreaRow): AreaFormModel {
     area_code: row.area_code,
     area_name: row.area_name,
   }
+}
+
+function getCheckpointCount(row: AreaRow) {
+  const raw =
+    (row as Record<string, unknown>).checkpoint_count ??
+    (row as Record<string, unknown>).check_point_count ??
+    (row as Record<string, unknown>).scan_point_count ??
+    (row as Record<string, unknown>).scanpoint_count ??
+    0
+
+  const count = Number(raw)
+  return Number.isFinite(count) ? count : 0
+}
+
+function goToAreaCheckPoints(row: AreaRow) {
+  router.push({
+    name: 'checkpoints',
+    query: {
+      areaId: row.area_id,
+      areaCode: row.area_code,
+    },
+  })
 }
 
 function openNew() {
@@ -144,7 +155,7 @@ async function onDelete(row: AreaRow) {
           toast.add({
             severity: 'warn',
             summary: 'Cannot Delete',
-            detail: `Can't delete Area ${row.area_code} because it has ${n} scan points`,
+            detail: `Can't delete Area ${row.area_code} because it has ${n} check points`,
             life: 3500,
           })
           return
@@ -189,7 +200,7 @@ function onDeleteSelected() {
           toast.add({
             severity: 'warn',
             summary: 'Cannot Delete',
-            detail: `Can't delete because one selected Area has ${n} scan points`,
+            detail: `Can't delete because one selected Area has ${n} check points`,
             life: 3500,
           })
           return
@@ -322,24 +333,23 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
 
       <template #toolbar-end></template>
 
-      <Column selectionMode="multiple" style="width: 3rem" :exportable="false" />
+      <Column selectionMode="multiple" style="width: 3rem" :exportable="false" sortDisabled />
 
       <Column field="area_code" header="Area Code" style="min-width: 10rem" />
       <Column field="area_name" header="Area Name" style="min-width: 14rem" />
 
-      <Column header="Total Check Points" style="min-width: 12rem">
+      <Column header="Area Check Points" style="min-width: 12rem">
         <template #body="{ data }">
-          <BaseIconButton
+          <BaseButton
             :label="`View (${data.checkpoint_count})`"
-            icon="pi pi-eye"
             severity="secondary"
             outlined
-            @click="openAreaCheckPoints(data)"
+            @click="getCheckpointCount(data)"
           />
         </template>
       </Column>
 
-      <Column header="Status" style="min-width: 10rem">
+      <Column header="Status" style="min-width: 10rem" sortField="area_status">
         <template #body="{ data }">
           <Tag
             :value="statusLabel(data.area_status)"
@@ -348,7 +358,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
         </template>
       </Column>
 
-      <Column header="Action" :exportable="false" style="min-width: 16rem">
+      <Column header="Action" :exportable="false" style="min-width: 16rem" sortDisabled>
         <template #body="{ data }">
           <div class="flex gap-2 justify-start">
             <BaseIconButton

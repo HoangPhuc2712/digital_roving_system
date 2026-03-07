@@ -234,18 +234,18 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
         </div>
       </template>
 
-      <Column selectionMode="multiple" style="width: 3rem" :exportable="false" />
+      <Column selectionMode="multiple" style="width: 3rem" :exportable="false" sortDisabled />
 
       <Column field="role_code" header="Role Code" style="min-width: 10rem" />
       <Column field="role_name" header="Role Name" style="min-width: 14rem" />
 
-      <Column header="Permissions" style="min-width: 16rem">
+      <Column header="Permissions" style="min-width: 16rem" sortField="menu_count">
         <template #body="{ data }">
           <div class="text-slate-800">{{ data.menu_count }} permission(s)</div>
         </template>
       </Column>
 
-      <Column header="Status" style="min-width: 10rem">
+      <Column header="Status" style="min-width: 10rem" sortField="role_status">
         <template #body="{ data }">
           <Tag
             :value="statusLabel(data.role_status)"
@@ -254,7 +254,7 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
         </template>
       </Column>
 
-      <Column header="Action" style="width: 260px">
+      <Column header="Action" style="width: 260px" sortDisabled>
         <template #body="{ data }">
           <div class="flex gap-2 justify-start">
             <BaseIconButton

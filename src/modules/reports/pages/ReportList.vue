@@ -264,7 +264,7 @@ function onPage(e: DataTablePageEvent) {
         <div class="p-4 text-slate-600 flex justify-center">No reports found.</div>
       </template>
 
-      <Column header="Area" style="min-width: 10rem">
+      <Column header="Area" style="min-width: 10rem" sortField="area_code">
         <template #body="{ data }">
           <div class="flex flex-col">
             <div class="text-slate-800 font-bold">{{ data.area_code }}</div>
@@ -273,7 +273,7 @@ function onPage(e: DataTablePageEvent) {
         </template>
       </Column>
 
-      <Column header="Scan Point" style="min-width: 16rem">
+      <Column header="Scan Point" style="min-width: 16rem" sortField="cp_code">
         <template #body="{ data }">
           <div class="flex flex-col">
             <div class="text-slate-800 font-bold">{{ data.cp_code }}</div>
@@ -282,7 +282,7 @@ function onPage(e: DataTablePageEvent) {
         </template>
       </Column>
 
-      <Column header="Inspection Result" style="min-width: 10rem">
+      <Column header="Inspection Result" style="min-width: 10rem" sortField="pr_has_problem">
         <template #body="{ data }">
           <Tag
             :value="inspectionLabel(data.pr_has_problem)"
@@ -291,7 +291,7 @@ function onPage(e: DataTablePageEvent) {
         </template>
       </Column>
 
-      <Column header="Note" style="min-width: 16rem">
+      <Column header="Note" style="min-width: 16rem" sortField="pr_note">
         <template #body="{ data }">
           <div class="max-w-[420px] truncate" :title="data.pr_note || ''">
             {{ data.pr_note || '-' }}
@@ -308,7 +308,7 @@ function onPage(e: DataTablePageEvent) {
 
       <Column field="created_name" header="Guard Name" style="min-width: 12rem" />
 
-      <Column header="Issue Status" style="min-width: 12rem">
+      <Column header="Issue Status" style="min-width: 12rem" sortField="pr_status">
         <template #body="{ data }">
           <Tag
             :value="issueStatusLabel(data.pr_status)"
@@ -317,13 +317,13 @@ function onPage(e: DataTablePageEvent) {
         </template>
       </Column>
 
-      <Column header="Patrol Date" style="min-width: 12rem">
+      <Column header="Patrol Date" style="min-width: 12rem" sortField="scan_at">
         <template #body="{ data }">
           {{ formatDateTime(data.scan_at || data.created_at) }}
         </template>
       </Column>
 
-      <Column header="Action" style="width: 120px">
+      <Column header="Action" style="width: 120px" sortDisabled>
         <template #body="{ data }">
           <div class="flex gap-2 justify-start">
             <BaseIconButton

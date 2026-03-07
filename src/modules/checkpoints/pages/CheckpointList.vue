@@ -24,32 +24,35 @@ import CheckpointForm, {
 } from '@/modules/checkpoints/components/CheckpointForm.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 
+const route = useRoute()
 const toast = useToast()
 const confirm = useConfirm()
 
 const store = useCheckpointsStore()
 const auth = useAuthStore()
-const route = useRoute()
 
 const canManage = computed(() => auth.canAccess('checkpoints.manage'))
 
-function parseAreaId(value: unknown) {
-  const raw = Array.isArray(value) ? value[0] : value
-  const id = Number(raw)
-  return Number.isFinite(id) && id > 0 ? id : null
-}
+const lockedAreaId = computed<number | null>(() => {
+  const raw = Array.isArray(route.query.areaId) ? route.query.areaId[0] : route.query.areaId
+  const value = Number(raw)
+  return Number.isFinite(value) && value > 0 ? value : null
+})
 
-const scopedAreaId = computed(() => parseAreaId(route.query.areaId))
-const scopedAreaCode = computed(() => {
+const lockedAreaCode = computed(() => {
   const raw = Array.isArray(route.query.areaCode) ? route.query.areaCode[0] : route.query.areaCode
-  return typeof raw === 'string' ? raw.trim() : ''
+  return String(raw ?? '').trim()
 })
 
-const pageTitle = computed(() => {
-  return scopedAreaCode.value
-    ? `'${scopedAreaCode.value}' Check Points Management`
-    : 'Check Points Management'
-})
+const pageTitle = computed(() =>
+  lockedAreaCode.value
+    ? `${lockedAreaCode.value} Check Points Management`
+    : 'Check Points Management',
+)
+
+function applyLockedAreaFilter() {
+  store.filterAreaId = lockedAreaId.value
+}
 
 const searchDraft = ref(store.searchText)
 let searchTimer: number | undefined
@@ -62,34 +65,36 @@ watch(searchDraft, (val) => {
 })
 
 watch(
-  () => [store.searchText, store.filterStatus, scopedAreaId.value],
+  () => [store.searchText, store.filterStatus, lockedAreaId.value],
   () => store.setFirst(0),
 )
 
 watch(
-  scopedAreaId,
-  (areaId) => {
-    store.filterAreaId = areaId
+  lockedAreaId,
+  () => {
+    applyLockedAreaFilter()
   },
   { immediate: true },
 )
 
 onMounted(async () => {
+  applyLockedAreaFilter()
   await store.load()
-  store.filterAreaId = scopedAreaId.value
+  applyLockedAreaFilter()
 })
 
 function clearAll() {
   store.searchText = ''
-  store.filterStatus = 'ALL'
-  store.filterAreaId = scopedAreaId.value
-  store.first = 0
   searchDraft.value = ''
+  store.filterStatus = 'ALL'
+  applyLockedAreaFilter()
+  store.setFirst(0)
 }
 
 function statusLabel(s: number) {
   return s === 1 ? 'Active' : 'Inactive'
 }
+
 function statusSeverity(s: number) {
   return s === 1 ? 'success' : 'secondary'
 }
@@ -120,7 +125,7 @@ function openNew() {
     cp_qr: '',
     cp_description: '',
     cp_priority: 1,
-    area_id: scopedAreaId.value ?? store.areaOptions[0]?.value ?? 0,
+    area_id: lockedAreaId.value ?? store.areaOptions[0]?.value ?? 0,
   }
   formVisible.value = true
 }
@@ -151,7 +156,7 @@ function onDelete(row: CheckpointRow) {
       try {
         await deleteOne(row)
         await store.load()
-        store.filterAreaId = scopedAreaId.value
+        applyLockedAreaFilter()
         selectedRows.value = null
         toast.add({
           severity: 'success',
@@ -186,7 +191,7 @@ function onDeleteSelected() {
           await deleteOne(row)
         }
         await store.load()
-        store.filterAreaId = scopedAreaId.value
+        applyLockedAreaFilter()
         selectedRows.value = null
         toast.add({
           severity: 'success',
@@ -215,7 +220,7 @@ async function handleCheckpointFormSubmit(payload: {
   try {
     await payload.submit(actor)
     await store.load()
-    store.filterAreaId = scopedAreaId.value
+    applyLockedAreaFilter()
 
     toast.add({
       severity: 'success',
@@ -277,7 +282,7 @@ function normalizeQr(src: string) {
 
     <div class="bg-white border border-slate-200 rounded-xl p-3">
       <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
-        <div class="md:col-span-3">
+        <div class="md:col-span-4">
           <label class="block text-sm text-slate-600 mb-1">Status</label>
           <Dropdown
             v-model="store.filterStatus"
@@ -293,7 +298,7 @@ function normalizeQr(src: string) {
           />
         </div>
 
-        <div class="md:col-span-3 flex justify-end">
+        <div class="md:col-span-2 flex justify-end">
           <BaseIconButton
             icon="pi pi-filter-slash"
             label="Clear Filters"
@@ -306,7 +311,7 @@ function normalizeQr(src: string) {
     </div>
 
     <BaseDataTable
-      title="Check Points"
+      :title="pageTitle"
       :value="store.filteredRows"
       :loading="store.loading"
       dataKey="cp_id"
@@ -334,12 +339,12 @@ function normalizeQr(src: string) {
         />
       </template>
 
-      <Column selectionMode="multiple" style="width: 3rem" :exportable="false" />
+      <Column selectionMode="multiple" style="width: 3rem" :exportable="false" sortDisabled />
 
       <Column field="cp_code" header="Check Point Code" style="min-width: 12rem" />
       <Column field="cp_name" header="Check Point Name" style="min-width: 14rem" />
 
-      <Column header="QR Image" style="min-width: 10rem">
+      <Column header="QR Image" style="min-width: 10rem" sortDisabled>
         <template #body="{ data }">
           <div class="flex justify-start">
             <QrPreview :value="normalizeQr(data.cp_qr)" />
@@ -347,7 +352,7 @@ function normalizeQr(src: string) {
         </template>
       </Column>
 
-      <Column header="Area" style="min-width: 14rem">
+      <Column header="Area" style="min-width: 14rem" sortField="area_code">
         <template #body="{ data }">
           <div class="flex flex-col">
             <div class="text-slate-800 font-medium">{{ data.area_code }}</div>
@@ -357,15 +362,15 @@ function normalizeQr(src: string) {
       </Column>
 
       <Column field="cp_description" header="Description" style="min-width: 18rem" />
-      <Column field="cp_priority" header="Priority" style="min-width: 8rem" :min="1" />
+      <Column field="cp_priority" header="Priority" style="min-width: 8rem" />
 
-      <Column header="Status" style="min-width: 10rem">
+      <Column header="Status" style="min-width: 10rem" sortField="cp_status">
         <template #body="{ data }">
           <Tag :value="statusLabel(data.cp_status)" :severity="statusSeverity(data.cp_status)" />
         </template>
       </Column>
 
-      <Column header="Action" :exportable="false" style="min-width: 16rem">
+      <Column header="Action" :exportable="false" style="min-width: 16rem" sortDisabled>
         <template #body="{ data }">
           <div class="flex gap-2 justify-start">
             <BaseIconButton
