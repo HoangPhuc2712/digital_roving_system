@@ -75,4 +75,8 @@ export const endpoints = {
     update: (rncId: number | string) => `/reportnotecategory/update/${rncId}`,
     delete: (rncId: number | string) => `/reportnotecategory/delete/${rncId}`,
   },
+  menuCategoryView: {
+    getList: '/menucategoryview/getlist',
+    getOne: (mcId: number | string) => `/menucategoryview/getone/${mcId}`,
+  },
 }

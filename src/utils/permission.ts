@@ -56,6 +56,47 @@ export function derivePermissions(roleCode?: string, roleAllowView?: string): Se
   return new Set()
 }
 
+type AllowViewItem = {
+  mcCode?: string
+  mcActive?: boolean
+}
+
+const MC_CODE_TO_PERMS: Record<string, PermissionKey[]> = {
+  MC001: ['roles.manage'],
+  MC002: ['users.manage'],
+  MC004: ['areas.manage'],
+  // Backend currently groups Scan Points under Routes in menu permissions.
+  MC005: ['routes.manage', 'checkpoints.manage'],
+  // MC006: Reports (handled by roleCode: view_all vs view_mine)
+  // MC007: Tutorial (no permission key yet)
+}
+
+export function derivePermissionsFromAllowViews(
+  roleCode?: string,
+  allowViews?: AllowViewItem[] | null,
+  roleAllowView?: string,
+): Set<PermissionKey> {
+  const base = derivePermissions(roleCode, roleAllowView)
+
+  const list = Array.isArray(allowViews) ? allowViews : []
+  if (!list.length) return base
+
+  const perms = new Set<PermissionKey>(base)
+  for (const it of list) {
+    const code = String(it?.mcCode ?? '')
+      .trim()
+      .toUpperCase()
+    if (!code) continue
+    if (it?.mcActive === false) continue
+
+    const mapped = MC_CODE_TO_PERMS[code]
+    if (!mapped) continue
+    for (const p of mapped) perms.add(p)
+  }
+
+  return perms
+}
+
 export function hasPermission(
   perms: Set<PermissionKey>,
   required?: PermissionKey | PermissionKey[],

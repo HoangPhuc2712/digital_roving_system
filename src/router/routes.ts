@@ -1,5 +1,6 @@
 import { authRoutes } from '@/modules/auth/auth.routes'
 import MainLayout from '@/layouts/MainLayout.vue'
+import { dashboardRoutes } from '@/modules/dashboard/dashboard.routes'
 import { usersRoutes } from '@/modules/users/users.routes'
 import { areasRoutes } from '@/modules/areas/areas.routes'
 import { checkpointsRoutes } from '@/modules/checkpoints/checkpoints.routes'
@@ -14,7 +15,8 @@ export const routes = [
     component: MainLayout,
     meta: { requiresAuth: true },
     children: [
-      { path: '', redirect: '/reports' },
+      { path: '', redirect: '/dashboard' },
+      ...dashboardRoutes,
       ...reportsRoutes,
       ...usersRoutes,
       ...rolesRoutes,
