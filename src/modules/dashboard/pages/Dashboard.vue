@@ -97,8 +97,8 @@ onMounted(async () => {
   <div class="space-y-3">
     <div class="text-xl font-semibold text-slate-800">Dashboard</div>
 
-    <div v-if="store.error" class="bg-white rounded-2xl p-4 shadow-sm">
-      <div class="text-slate-800 font-semibold">Server Maintenance</div>
+    <div v-if="store.error" class="p-4">
+      <div class="text-slate-800 font-semibold text-lg">Server Maintenance</div>
       <div class="text-slate-600 mt-1">{{ store.error }}</div>
     </div>
 
@@ -107,7 +107,7 @@ onMounted(async () => {
         v-for="c in cards"
         :key="c.key"
         type="button"
-        class="rounded-2xl shadow-sm hover:shadow transition p-4 text-left"
+        class="rounded-2xl shadow-sm hover:shadow transition p-4 text-left cursor-pointer"
         :class="c.className"
         @click="open(c)"
       >

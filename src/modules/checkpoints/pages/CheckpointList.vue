@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import Column from 'primevue/column'
 import Dropdown from 'primevue/dropdown'
@@ -28,8 +29,27 @@ const confirm = useConfirm()
 
 const store = useCheckpointsStore()
 const auth = useAuthStore()
+const route = useRoute()
 
 const canManage = computed(() => auth.canAccess('checkpoints.manage'))
+
+function parseAreaId(value: unknown) {
+  const raw = Array.isArray(value) ? value[0] : value
+  const id = Number(raw)
+  return Number.isFinite(id) && id > 0 ? id : null
+}
+
+const scopedAreaId = computed(() => parseAreaId(route.query.areaId))
+const scopedAreaCode = computed(() => {
+  const raw = Array.isArray(route.query.areaCode) ? route.query.areaCode[0] : route.query.areaCode
+  return typeof raw === 'string' ? raw.trim() : ''
+})
+
+const pageTitle = computed(() => {
+  return scopedAreaCode.value
+    ? `'${scopedAreaCode.value}' Check Points Management`
+    : 'Check Points Management'
+})
 
 const searchDraft = ref(store.searchText)
 let searchTimer: number | undefined
@@ -42,16 +62,28 @@ watch(searchDraft, (val) => {
 })
 
 watch(
-  () => [store.searchText, store.filterAreaId, store.filterStatus],
+  () => [store.searchText, store.filterStatus, scopedAreaId.value],
   () => store.setFirst(0),
+)
+
+watch(
+  scopedAreaId,
+  (areaId) => {
+    store.filterAreaId = areaId
+  },
+  { immediate: true },
 )
 
 onMounted(async () => {
   await store.load()
+  store.filterAreaId = scopedAreaId.value
 })
 
 function clearAll() {
-  store.clearFilters()
+  store.searchText = ''
+  store.filterStatus = 'ALL'
+  store.filterAreaId = scopedAreaId.value
+  store.first = 0
   searchDraft.value = ''
 }
 
@@ -88,7 +120,7 @@ function openNew() {
     cp_qr: '',
     cp_description: '',
     cp_priority: 1,
-    area_id: store.areaOptions[0]?.value ?? 0,
+    area_id: scopedAreaId.value ?? store.areaOptions[0]?.value ?? 0,
   }
   formVisible.value = true
 }
@@ -112,25 +144,26 @@ async function deleteOne(row: CheckpointRow) {
 function onDelete(row: CheckpointRow) {
   confirm.require({
     header: 'Confirm Delete',
-    message: `Delete scan point ${row.cp_code} - ${row.cp_name}?`,
+    message: `Delete check point ${row.cp_code} - ${row.cp_name}?`,
     acceptLabel: 'Delete',
     rejectLabel: 'Cancel',
     accept: async () => {
       try {
         await deleteOne(row)
         await store.load()
+        store.filterAreaId = scopedAreaId.value
         selectedRows.value = null
         toast.add({
           severity: 'success',
           summary: 'Deleted',
-          detail: 'Scan point has been deleted.',
+          detail: 'Check point has been deleted.',
           life: 2000,
         })
       } catch (e: any) {
         toast.add({
           severity: 'error',
           summary: 'Error',
-          detail: e?.message ?? 'Failed to delete scan point.',
+          detail: e?.message ?? 'Failed to delete check point.',
           life: 3000,
         })
       }
@@ -144,7 +177,7 @@ function onDeleteSelected() {
 
   confirm.require({
     header: 'Confirm Delete',
-    message: `Delete ${sel.length} selected scan points?`,
+    message: `Delete ${sel.length} selected check points?`,
     acceptLabel: 'Delete',
     rejectLabel: 'Cancel',
     accept: async () => {
@@ -153,18 +186,19 @@ function onDeleteSelected() {
           await deleteOne(row)
         }
         await store.load()
+        store.filterAreaId = scopedAreaId.value
         selectedRows.value = null
         toast.add({
           severity: 'success',
           summary: 'Deleted',
-          detail: 'Selected scan points have been deleted.',
+          detail: 'Selected check points have been deleted.',
           life: 2000,
         })
       } catch (e: any) {
         toast.add({
           severity: 'error',
           summary: 'Error',
-          detail: e?.message ?? 'Failed to delete scan points.',
+          detail: e?.message ?? 'Failed to delete check points.',
           life: 3000,
         })
       }
@@ -181,11 +215,12 @@ async function handleCheckpointFormSubmit(payload: {
   try {
     await payload.submit(actor)
     await store.load()
+    store.filterAreaId = scopedAreaId.value
 
     toast.add({
       severity: 'success',
       summary: 'Saved',
-      detail: 'Scan Point has been saved.',
+      detail: 'Check Point has been saved.',
       life: 2000,
     })
   } catch (e: any) {
@@ -215,7 +250,7 @@ async function handleCheckpointFormSubmit(payload: {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: msg || 'Failed to save scan point.',
+      detail: msg || 'Failed to save check point.',
       life: 3500,
     })
   }
@@ -233,7 +268,7 @@ function normalizeQr(src: string) {
 <template>
   <div class="space-y-3">
     <div class="flex items-center justify-between gap-3">
-      <div class="text-xl font-semibold text-slate-800">Scan Points Management</div>
+      <div class="text-xl font-semibold text-slate-800">{{ pageTitle }}</div>
 
       <div class="w-full max-w-md">
         <BaseInput v-model="searchDraft" label="" class="w-full" placeholder="Search..." />
@@ -243,19 +278,6 @@ function normalizeQr(src: string) {
     <div class="bg-white border border-slate-200 rounded-xl p-3">
       <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
         <div class="md:col-span-3">
-          <label class="block text-sm text-slate-600 mb-1">Area</label>
-          <Dropdown
-            v-model="store.filterAreaId"
-            class="w-full"
-            :options="store.areaOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="All"
-            showClear
-          />
-        </div>
-
-        <div class="md:col-span-2">
           <label class="block text-sm text-slate-600 mb-1">Status</label>
           <Dropdown
             v-model="store.filterStatus"
@@ -271,7 +293,7 @@ function normalizeQr(src: string) {
           />
         </div>
 
-        <div class="md:col-span-1 flex justify-end">
+        <div class="md:col-span-3 flex justify-end">
           <BaseIconButton
             icon="pi pi-filter-slash"
             label="Clear Filters"
@@ -284,7 +306,7 @@ function normalizeQr(src: string) {
     </div>
 
     <BaseDataTable
-      title="Scan Points"
+      title="Check Points"
       :value="store.filteredRows"
       :loading="store.loading"
       dataKey="cp_id"
@@ -314,8 +336,8 @@ function normalizeQr(src: string) {
 
       <Column selectionMode="multiple" style="width: 3rem" :exportable="false" />
 
-      <Column field="cp_code" header="Scan Point Code" style="min-width: 12rem" />
-      <Column field="cp_name" header="Scan Point Name" style="min-width: 14rem" />
+      <Column field="cp_code" header="Check Point Code" style="min-width: 12rem" />
+      <Column field="cp_name" header="Check Point Name" style="min-width: 14rem" />
 
       <Column header="QR Image" style="min-width: 10rem">
         <template #body="{ data }">

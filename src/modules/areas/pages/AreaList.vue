@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 
@@ -28,6 +29,7 @@ const confirm = useConfirm()
 
 const store = useAreasStore()
 const auth = useAuthStore()
+const router = useRouter()
 
 const canManage = computed(() => auth.canAccess('areas.manage'))
 
@@ -67,6 +69,16 @@ function statusSeverity(s: number) {
 function clearAll() {
   store.clearFilters()
   searchDraft.value = ''
+}
+
+function openAreaCheckPoints(row: AreaRow) {
+  router.push({
+    name: 'checkpoints',
+    query: {
+      areaId: String(row.area_id),
+      areaCode: row.area_code,
+    },
+  })
 }
 
 const selectedAreas = ref<AreaRow[] | null>(null)
@@ -314,6 +326,18 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
 
       <Column field="area_code" header="Area Code" style="min-width: 10rem" />
       <Column field="area_name" header="Area Name" style="min-width: 14rem" />
+
+      <Column header="Total Check Points" style="min-width: 12rem">
+        <template #body="{ data }">
+          <BaseIconButton
+            :label="`View (${data.checkpoint_count})`"
+            icon="pi pi-eye"
+            severity="secondary"
+            outlined
+            @click="openAreaCheckPoints(data)"
+          />
+        </template>
+      </Column>
 
       <Column header="Status" style="min-width: 10rem">
         <template #body="{ data }">
