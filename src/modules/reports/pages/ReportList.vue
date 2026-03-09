@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import { onMounted, watch, ref } from 'vue'
 
-import Dropdown from 'primevue/dropdown'
-import Calendar from 'primevue/calendar'
 import Tag from 'primevue/tag'
-import Checkbox from 'primevue/checkbox'
 import { type DataTablePageEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
 
@@ -13,9 +10,11 @@ import BaseInput from '@/components/common/inputs/BaseInput.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 
 import { useReportsStore } from '@/modules/reports/reports.store'
-import type { ReportRow } from '@/modules/reports/reports.types'
+import type { ReportRow, ResultFilter } from '@/modules/reports/reports.types'
 import ReportForm, { type ReportFormModel } from '@/modules/reports/components/ReportForm.vue'
+import ReportFilters from '@/modules/reports/components/ReportFilters.vue'
 import { exportPatrolReportXlsx } from '@/services/export/patrolReport.export'
+import { fetchReportRowById } from '@/modules/reports/reports.api'
 
 const store = useReportsStore()
 
@@ -23,7 +22,7 @@ const resultOptions = [
   { label: 'All', value: 'ALL' },
   { label: 'OK', value: 'OK' },
   { label: 'Not OK', value: 'NOT_OK' },
-]
+] satisfies { label: string; value: ResultFilter }[]
 
 const issueStatusOptions = [
   { label: 'All', value: null },
@@ -34,7 +33,6 @@ const issueStatusOptions = [
 ]
 
 const exporting = ref(false)
-
 const formVisible = ref(false)
 const formModel = ref<ReportFormModel | null>(null)
 
@@ -45,9 +43,8 @@ watch(
     store.filterIssueStatus,
     store.filterResult,
     store.filterGuardId,
-    store.filterMultiDays,
-    store.filterDate,
-    store.filterDateRange,
+    store.filterDateFrom,
+    store.filterDateTo,
   ],
   () => store.setFirst(0),
 )
@@ -78,12 +75,11 @@ function issueStatusLabel(s: number) {
     case 3:
       return 'Incompleted'
     default:
-      return '—'
+      return 'No Issue'
   }
 }
 
 function issueStatusSeverity(s: number) {
-  // PrimeVue Tag severity: success | info | warning | danger | secondary
   switch (s) {
     case 0:
       return 'warn'
@@ -110,8 +106,8 @@ function clearAll() {
   store.clearFilters()
 }
 
-function openView(row: ReportRow) {
-  formModel.value = row as any
+async function openView(row: ReportRow) {
+  formModel.value = (await fetchReportRowById(row.pr_id)) ?? row
   formVisible.value = true
 }
 
@@ -142,99 +138,25 @@ function onPage(e: DataTablePageEvent) {
       </div>
     </div>
 
-    <div class="bg-white border border-slate-200 rounded-xl p-3">
-      <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-start">
-        <div class="md:col-span-1">
-          <label class="block text-sm text-slate-600 mb-1">Area</label>
-          <Dropdown
-            v-model="store.filterAreaId"
-            class="w-full"
-            :options="store.areaOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="All"
-            showClear
-          />
-        </div>
-        <div class="md:col-span-1">
-          <label class="block text-sm text-slate-600 mb-1">Issue Status</label>
-          <Dropdown
-            v-model="store.filterIssueStatus"
-            class="w-full"
-            :options="issueStatusOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="All"
-            showClear
-          />
-        </div>
-
-        <div class="md:col-span-1">
-          <label class="block text-sm text-slate-600 mb-1">Inspection Result</label>
-          <Dropdown
-            v-model="store.filterResult"
-            class="w-full"
-            :options="resultOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="All"
-          />
-        </div>
-
-        <div class="md:col-span-2">
-          <label class="block text-sm text-slate-600 mb-1">Guard Name</label>
-          <Dropdown
-            v-model="store.filterGuardId"
-            class="w-full"
-            :options="store.guardOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="All"
-            showClear
-          />
-        </div>
-
-        <div class="md:col-span-1">
-          <div class="flex justify-between">
-            <label class="block text-sm text-slate-600 mb-1">Select Date</label>
-            <div class="flex items-center gap-1 mb-1">
-              <Checkbox v-model="store.filterMultiDays" :binary="true" inputId="multiDays" />
-              <label for="multiDays" class="text-xs text-slate-600">Select multiple days</label>
-            </div>
-          </div>
-
-          <Calendar
-            v-if="!store.filterMultiDays"
-            v-model="store.filterDate"
-            class="w-full"
-            selectionMode="single"
-            dateFormat="yy-mm-dd"
-            placeholder="Select date"
-            showButtonBar
-          />
-
-          <Calendar
-            v-else
-            v-model="store.filterDateRange"
-            class="w-full"
-            selectionMode="range"
-            dateFormat="yy-mm-dd"
-            placeholder="From - To"
-            showButtonBar
-          />
-        </div>
-
-        <div class="md:col-span-6 flex justify-end">
-          <BaseIconButton
-            icon="pi pi-filter-slash"
-            label="Clear Filters"
-            severity="secondary"
-            outlined
-            @click="clearAll"
-          />
-        </div>
-      </div>
-    </div>
+    <ReportFilters
+      :areaOptions="store.areaOptions"
+      :guardOptions="store.guardOptions"
+      :resultOptions="resultOptions"
+      :issueStatusOptions="issueStatusOptions"
+      :modelAreaId="store.filterAreaId"
+      :modelIssueStatus="store.filterIssueStatus"
+      :modelResult="store.filterResult"
+      :modelGuardId="store.filterGuardId"
+      :modelDateFrom="store.filterDateFrom"
+      :modelDateTo="store.filterDateTo"
+      @update:modelAreaId="store.filterAreaId = $event"
+      @update:modelIssueStatus="store.filterIssueStatus = $event"
+      @update:modelResult="store.filterResult = $event"
+      @update:modelGuardId="store.filterGuardId = $event"
+      @update:modelDateFrom="store.filterDateFrom = $event"
+      @update:modelDateTo="store.filterDateTo = $event"
+      @clear="clearAll"
+    />
 
     <BaseDataTable
       title=""
@@ -299,13 +221,6 @@ function onPage(e: DataTablePageEvent) {
         </template>
       </Column>
 
-      <!-- Photo column is currently hidden by request; keep it for future enable -->
-      <Column v-if="false" header="Photo" style="min-width: 10rem">
-        <template #body="{ data }">
-          <div class="text-slate-700">{{ data.image_count }}</div>
-        </template>
-      </Column>
-
       <Column field="report_name" header="Guard Name" style="min-width: 12rem" />
 
       <Column header="Issue Status" style="min-width: 12rem" sortField="pr_status">
@@ -317,9 +232,9 @@ function onPage(e: DataTablePageEvent) {
         </template>
       </Column>
 
-      <Column header="Patrol Date" style="min-width: 12rem" sortField="scan_at">
+      <Column header="Report Date" style="min-width: 12rem" sortField="report_at">
         <template #body="{ data }">
-          {{ formatDateTime(data.scan_at || data.created_at) }}
+          {{ formatDateTime(data.report_at || data.scan_at || data.created_at) }}
         </template>
       </Column>
 

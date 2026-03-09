@@ -6,7 +6,7 @@ import Tag from 'primevue/tag'
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import BaseImageViewer from '@/components/common/BaseImageViewer.vue'
 
-import type { ReportRow } from '@/modules/reports/reports.types'
+import type { ReportImage, ReportRow } from '@/modules/reports/reports.types'
 
 type BaseImageItem = {
   id: string | number
@@ -28,7 +28,7 @@ const emit = defineEmits<{
 }>()
 
 const viewerVisible = ref(false)
-const viewerTitle = ref('Photos')
+const viewerTitle = ref('Detail Images')
 const viewerItems = ref<BaseImageItem[]>([])
 
 function close() {
@@ -68,12 +68,11 @@ function issueStatusLabel(s: number) {
     case 3:
       return 'Incompleted'
     default:
-      return '—'
+      return 'No Issue'
   }
 }
 
 function issueStatusSeverity(s: number) {
-  // PrimeVue Tag severity: success | info | warning | danger | secondary
   switch (s) {
     case 0:
       return 'warn'
@@ -90,31 +89,29 @@ function issueStatusSeverity(s: number) {
 
 const inspectionOk = computed(() => (props.model ? props.model.pr_has_problem === false : true))
 
-const images = computed<BaseImageItem[]>(() => {
-  const m = props.model
-  const list = m?.report_images ?? []
-  return list
-    .map((x, idx) => ({
-      id: x.pri_id || `${idx + 1}`,
-      src: x.pri_image,
-      title: `Photo ${idx + 1}`,
-      alt: `Photo ${idx + 1}`,
-    }))
-    .filter((x) => !!(x.src ?? '').trim())
+const detailGroups = computed(() => {
+  const groups = props.model?.note_groups ?? []
+  return groups.map((group, groupIndex) => ({
+    id: `${group.pr_group}-${groupIndex}`,
+    note: group.pri_image_note || '—',
+    items: (group.report_images ?? [])
+      .map((img: ReportImage, idx) => ({
+        id: img.pri_id || `${group.pr_group}-${idx + 1}`,
+        src: img.pri_image,
+        title: `Image ${idx + 1}`,
+        alt: `Image ${idx + 1}`,
+      }))
+      .filter((x) => !!(x.src ?? '').trim()),
+  }))
 })
 
-const thumbnailImages = computed(() => images.value.slice(0, 3))
-const hasMore = computed(() => images.value.length > 3)
-
-function openViewer(startIndex: number) {
-  const items = images.value
+function openViewer(items: BaseImageItem[], startIndex: number, title: string) {
   if (!items.length) return
 
   const idx = Math.max(0, Math.min(startIndex, items.length - 1))
-  // Move clicked image to front so gallery opens at it
   const rotated = items.slice(idx).concat(items.slice(0, idx))
 
-  viewerTitle.value = `Photos (${items.length})`
+  viewerTitle.value = title
   viewerItems.value = rotated
   viewerVisible.value = true
 }
@@ -160,9 +157,9 @@ watch(
           }}</span>
         </div>
         <div class="text-sm text-slate-600">
-          Patrol Date:
+          Report Date:
           <span class="text-slate-800 font-semibold">{{
-            formatDateTime(model.scan_at || model.created_at)
+            formatDateTime(model.report_at || model.scan_at || model.created_at)
           }}</span>
         </div>
 
@@ -181,35 +178,36 @@ watch(
       </div>
 
       <div class="border-t border-slate-200 pt-3">
-        <div class="text-sm font-semibold text-slate-800 mb-1">Note</div>
-        <div class="text-slate-700 whitespace-pre-wrap">
-          {{ (model.pr_note || '').trim() || '-' }}
+        <div class="text-sm font-semibold text-slate-800 mb-2">Detail</div>
+
+        <div v-if="detailGroups.length === 0" class="text-sm text-slate-500">
+          No detail available.
         </div>
-      </div>
 
-      <div class="border-t border-slate-200 pt-3">
-        <div class="text-sm font-semibold text-slate-800 mb-2">Photos</div>
-
-        <div v-if="images.length === 0" class="text-sm text-slate-500">No photos.</div>
-
-        <div v-else class="flex items-center gap-3 flex-wrap">
-          <button
-            v-for="(img, idx) in thumbnailImages"
-            :key="img.id"
-            type="button"
-            class="border border-slate-200 rounded-lg overflow-hidden hover:border-slate-400 transition"
-            @click="openViewer(idx)"
+        <div v-else class="space-y-3">
+          <div
+            v-for="(group, groupIndex) in detailGroups"
+            :key="group.id"
+            class="rounded-xl border border-slate-200 bg-slate-50 p-3"
           >
-            <img :src="img.src" :alt="img.alt" class="h-16 w-16 object-cover" />
-          </button>
+            <div class="text-sm font-semibold text-slate-800 mb-2">{{ group.note }}</div>
 
-          <BaseButton
-            v-if="hasMore"
-            label="View more"
-            severity="secondary"
-            outlined
-            @click="openViewer(0)"
-          />
+            <div v-if="group.items.length === 0" class="text-sm text-slate-500">No images.</div>
+
+            <div v-else class="flex items-center gap-3 flex-wrap">
+              <button
+                v-for="(img, idx) in group.items"
+                :key="img.id"
+                type="button"
+                class="border border-slate-200 rounded-lg overflow-hidden hover:border-slate-400 transition"
+                @click="
+                  openViewer(group.items, idx, `Detail ${groupIndex + 1} (${group.items.length})`)
+                "
+              >
+                <img :src="img.src" :alt="img.alt" class="h-16 w-16 object-cover" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

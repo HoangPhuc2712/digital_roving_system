@@ -1,9 +1,19 @@
 import { defineStore } from 'pinia'
 import { fetchReportRows } from './reports.api'
-import type { ReportRow } from './reports.types'
+import type { ReportRow, ResultFilter } from './reports.types'
 import { useAuthStore } from '@/stores/auth.store'
 
-type ResultFilter = 'ALL' | 'OK' | 'NOT_OK'
+function startOfToday() {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+function endOfToday() {
+  const d = new Date()
+  d.setHours(23, 59, 59, 999)
+  return d
+}
 
 export const useReportsStore = defineStore('reports', {
   state: () => ({
@@ -14,16 +24,10 @@ export const useReportsStore = defineStore('reports', {
 
     filterAreaId: null as number | null,
     filterResult: 'ALL' as ResultFilter,
-
-    // Issue Status filter (pr_status). null = All
     filterIssueStatus: null as number | null,
-
-    // Guard filter (value = created_by userId)
     filterGuardId: '' as string,
-
-    filterMultiDays: false as boolean,
-    filterDate: null as Date | null,
-    filterDateRange: null as (Date | null)[] | null,
+    filterDateFrom: startOfToday() as Date | null,
+    filterDateTo: endOfToday() as Date | null,
 
     first: 0,
     rowsPerPage: 10,
@@ -57,11 +61,9 @@ export const useReportsStore = defineStore('reports', {
       const seen = new Map<string, string>()
       for (const r of this.visibleRows) {
         const guardId = (r.created_by ?? '').trim()
-        if (!guardId) continue
-        if (!seen.has(guardId)) {
-          const label = (r.report_name ?? '').trim() || guardId
-          seen.set(guardId, label)
-        }
+        const label = (r.report_name ?? '').trim()
+        if (!guardId || !label) continue
+        if (!seen.has(guardId)) seen.set(guardId, label)
       }
 
       return [...seen.entries()]
@@ -71,24 +73,16 @@ export const useReportsStore = defineStore('reports', {
 
     filteredRows(): ReportRow[] {
       const q = this.searchText.trim().toLowerCase()
+      let fromTime = this.filterDateFrom ? this.filterDateFrom.getTime() : null
+      let toTime = this.filterDateTo ? this.filterDateTo.getTime() : null
 
-      let start: Date | null = null
-      let end: Date | null = null
-
-      if (this.filterMultiDays) {
-        start = this.filterDateRange?.[0] ?? null
-        end = this.filterDateRange?.[1] ?? null
-        if (start && !end) end = start
-      } else {
-        start = this.filterDate ?? null
-        end = this.filterDate ?? null
+      if (fromTime != null && toTime != null && fromTime > toTime) {
+        const tmp = fromTime
+        fromTime = toTime
+        toTime = tmp
       }
 
-      const startTime = start ? startOfDay(start).getTime() : null
-      const endTime = end ? endOfDay(end).getTime() : null
-
       return this.visibleRows.filter((r) => {
-        // search
         if (q) {
           const haystack = (
             r._q ||
@@ -106,24 +100,17 @@ export const useReportsStore = defineStore('reports', {
           if (!haystack.includes(q)) return false
         }
 
-        // area
         if (this.filterAreaId != null && r.area_id !== this.filterAreaId) return false
-
-        // inspection result
         if (this.filterResult === 'OK' && r.pr_has_problem !== false) return false
         if (this.filterResult === 'NOT_OK' && r.pr_has_problem !== true) return false
-
-        // issue status
         if (this.filterIssueStatus != null && r.pr_status !== this.filterIssueStatus) return false
-
-        // guard
         if (this.filterGuardId && (r.created_by ?? '') !== this.filterGuardId) return false
 
-        // date (ưu tiên scan_at, fallback created_at)
-        if (startTime != null || endTime != null) {
-          const t = new Date(r.scan_at || r.created_at).getTime()
-          if (startTime != null && t < startTime) return false
-          if (endTime != null && t > endTime) return false
+        if (fromTime != null || toTime != null) {
+          const t = new Date(r.report_at || r.scan_at || r.created_at).getTime()
+          if (!Number.isFinite(t)) return false
+          if (fromTime != null && t < fromTime) return false
+          if (toTime != null && t > toTime) return false
         }
 
         return true
@@ -147,9 +134,8 @@ export const useReportsStore = defineStore('reports', {
       this.filterResult = 'ALL'
       this.filterIssueStatus = null
       this.filterGuardId = ''
-      this.filterMultiDays = false
-      this.filterDate = null
-      this.filterDateRange = null
+      this.filterDateFrom = startOfToday()
+      this.filterDateTo = endOfToday()
       this.first = 0
     },
 
@@ -165,15 +151,3 @@ export const useReportsStore = defineStore('reports', {
     },
   },
 })
-
-function startOfDay(d: Date) {
-  const x = new Date(d)
-  x.setHours(0, 0, 0, 0)
-  return x
-}
-
-function endOfDay(d: Date) {
-  const x = new Date(d)
-  x.setHours(23, 59, 59, 999)
-  return x
-}
