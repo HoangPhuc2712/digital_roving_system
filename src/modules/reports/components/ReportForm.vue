@@ -76,7 +76,7 @@ function issueStatusSeverity(s: number) {
   // PrimeVue Tag severity: success | info | warning | danger | secondary
   switch (s) {
     case 0:
-      return 'warning'
+      return 'warn'
     case 1:
       return 'info'
     case 2:
@@ -156,7 +156,7 @@ watch(
         <div class="text-sm text-slate-600">
           Guard:
           <span class="text-slate-800 font-semibold">{{
-            model.created_name || model.created_by
+            model.report_name || model.created_by
           }}</span>
         </div>
         <div class="text-sm text-slate-600">

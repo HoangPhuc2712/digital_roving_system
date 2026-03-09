@@ -13,7 +13,7 @@ import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import { useAuthStore } from '@/stores/auth.store'
 import { useRoutesStore } from '@/modules/routes/routes.store'
 import type { RouteRow } from '@/modules/routes/routes.types'
-import { deleteRouteMock } from '@/modules/routes/routes.api'
+import { deleteRouteMock, fetchRouteById } from '@/modules/routes/routes.api'
 
 import RouteFilters from '../components/RouteFilters.vue'
 import RouteForm, {
@@ -78,6 +78,8 @@ function mapRowToFormModel(row: RouteRow): RouteFormModel {
     route_code: row.route_code,
     route_name: row.route_name,
     area_id: row.area_id,
+    role_id: row.role_id,
+    role_name: row.role_name,
     route_priority: row.route_priority,
     details: row.details.map((d) => ({ ...d })),
   }
@@ -89,21 +91,31 @@ function openNew() {
     route_code: '',
     route_name: '',
     area_id: 0,
+    role_id: 0,
+    role_name: '',
     route_priority: 1,
     details: [],
   }
   formVisible.value = true
 }
 
-function openView(row: RouteRow) {
+async function hydrateFormModel(row: RouteRow) {
+  try {
+    return await fetchRouteById(row.route_id, store.roleOptions)
+  } catch {
+    return mapRowToFormModel(row)
+  }
+}
+
+async function openView(row: RouteRow) {
   formMode.value = 'view'
-  formModel.value = mapRowToFormModel(row)
+  formModel.value = await hydrateFormModel(row)
   formVisible.value = true
 }
 
-function openEdit(row: RouteRow) {
+async function openEdit(row: RouteRow) {
   formMode.value = 'edit'
-  formModel.value = mapRowToFormModel(row)
+  formModel.value = await hydrateFormModel(row)
   formVisible.value = true
 }
 
@@ -261,6 +273,12 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
         </template>
       </Column>
 
+      <Column header="Role" style="min-width: 10rem" sortField="role_name">
+        <template #body="{ data }">
+          <div class="text-slate-800">{{ data.role_name || data.role_code || '—' }}</div>
+        </template>
+      </Column>
+
       <Column field="route_priority" header="Priority" style="min-width: 8rem" />
 
       <Column header="Total Time" style="min-width: 10rem" sortField="route_total_second">
@@ -269,7 +287,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
         </template>
       </Column>
 
-      <Column header="Points" style="min-width: 8rem" sortField="details_count">
+      <Column header="Total Points" style="min-width: 8rem" sortField="details_count">
         <template #body="{ data }">
           <div class="text-slate-800">{{ data.details_count }}</div>
         </template>
@@ -323,6 +341,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
       :mode="formMode"
       :model="formModel"
       :areaOptions="store.areaOptions"
+      :roleOptions="store.roleOptions"
       @submit="handleSubmit"
       @close="formModel = null"
     />

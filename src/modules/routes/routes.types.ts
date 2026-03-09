@@ -1,17 +1,20 @@
 export type RouteStatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE'
 export type AreaOption = { label: string; value: number }
+export type RoleOption = { label: string; value: number }
 
 export type ScanPointOption = {
   label: string
   value: number // cpId
   cpCode: string
   cpName: string
+  cpPriority?: number
 }
 
 export type RouteDetailModel = {
   cp_id: number
   cp_code: string
   cp_name: string
+  cp_priority?: number
   rd_second: number
   rd_priority: number
 }
@@ -27,6 +30,10 @@ export type RouteRow = {
   area_id: number
   area_code: string
   area_name: string
+
+  role_id: number
+  role_code: string
+  role_name: string
 
   details: RouteDetailModel[]
   details_count: number

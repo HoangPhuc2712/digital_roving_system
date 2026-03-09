@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
-import type { AreaOption, RouteRow, RouteStatusFilter } from './routes.types'
-import { fetchAreaOptions, fetchRouteRows } from './routes.api'
+import type { AreaOption, RoleOption, RouteRow, RouteStatusFilter } from './routes.types'
+import { fetchAreaOptions, fetchRoleOptions, fetchRouteRows } from './routes.api'
 
 export const useRoutesStore = defineStore('routes', {
   state: () => ({
@@ -12,6 +12,7 @@ export const useRoutesStore = defineStore('routes', {
     filterStatus: 'ALL' as RouteStatusFilter,
 
     areaOptions: [] as AreaOption[],
+    roleOptions: [] as RoleOption[],
 
     first: 0,
     rowsPerPage: 10,
@@ -38,9 +39,10 @@ export const useRoutesStore = defineStore('routes', {
     async load() {
       this.loading = true
       try {
-        const [areas, rows] = await Promise.all([fetchAreaOptions(), fetchRouteRows()])
+        const [areas, roles] = await Promise.all([fetchAreaOptions(), fetchRoleOptions()])
         this.areaOptions = areas
-        this.rows = rows
+        this.roleOptions = roles
+        this.rows = await fetchRouteRows(roles)
       } finally {
         this.loading = false
       }
