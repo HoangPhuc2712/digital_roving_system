@@ -30,6 +30,19 @@ const auth = useAuthStore()
 
 const canManage = computed(() => auth.canAccess('routes.manage'))
 
+const routeFilterAreaOptions = computed(() => {
+  const map = new Map<number, string>()
+  for (const row of store.rows) {
+    const id = Number(row.area_id ?? 0)
+    if (!id || map.has(id)) continue
+    map.set(id, row.area_name || row.area_code || String(id))
+  }
+
+  return Array.from(map.entries())
+    .map(([value, label]) => ({ value, label }))
+    .sort((a, b) => String(a.label).localeCompare(String(b.label)))
+})
+
 const searchDraft = ref(store.searchText)
 let searchTimer: number | undefined
 
@@ -226,7 +239,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
     </div>
 
     <RouteFilters
-      :areaOptions="store.areaOptions"
+      :areaOptions="routeFilterAreaOptions"
       :modelAreaId="store.filterAreaId"
       :modelStatus="store.filterStatus"
       @update:modelAreaId="store.filterAreaId = $event"
@@ -265,15 +278,15 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
       <Column selectionMode="multiple" style="width: 3rem" :exportable="false" sortDisabled />
 
       <Column field="route_code" header="Route Code" style="min-width: 10rem" />
-      <Column field="route_name" header="Route Name" style="min-width: 16rem" />
+      <Column field="route_name" header="Route Name" style="min-width: 14rem" />
 
-      <Column header="Area" style="min-width: 14rem" sortField="area_name">
+      <Column header="Area" style="min-width: 10rem" sortField="area_name">
         <template #body="{ data }">
           <div class="text-slate-800">{{ data.area_name }}</div>
         </template>
       </Column>
 
-      <Column header="Role" style="min-width: 10rem" sortField="role_name">
+      <Column header="Role" style="min-width: 8rem" sortField="role_name">
         <template #body="{ data }">
           <div class="text-slate-800">{{ data.role_name || data.role_code || '—' }}</div>
         </template>

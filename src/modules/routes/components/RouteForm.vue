@@ -135,14 +135,14 @@ function applyDetailMetadata() {
   }
 }
 
-async function loadScanPoints(areaId: number, roleId: number) {
-  if (!areaId) {
+async function loadScanPoints(roleId: number) {
+  if (!roleId) {
     scanPointOptions.value = []
     return
   }
   scanLoading.value = true
   try {
-    scanPointOptions.value = await fetchScanPointsByArea(areaId, roleId || null)
+    scanPointOptions.value = await fetchScanPointsByArea(form.area_id, roleId || null)
     applyDetailMetadata()
   } finally {
     scanLoading.value = false
@@ -165,7 +165,7 @@ watch(
     form.details = Array.isArray(m.details) ? m.details.map((d) => ({ ...d })) : []
     form.selected_cp_ids = []
 
-    await loadScanPoints(form.area_id, form.role_id)
+    await loadScanPoints(form.role_id)
     reindexDetails()
     applyDetailMetadata()
 
@@ -175,18 +175,17 @@ watch(
 )
 
 watch(
-  () => [form.area_id, form.role_id],
-  async ([newAreaId, newRoleId], [oldAreaId, oldRoleId]) => {
+  () => form.role_id,
+  async (newRoleId, oldRoleId) => {
     if (initializing.value) return
     if (isView.value) return
 
-    const sameArea = Number(newAreaId || 0) === Number(oldAreaId || 0)
     const sameRole = Number(newRoleId || 0) === Number(oldRoleId || 0)
-    if (sameArea && sameRole) return
+    if (sameRole) return
 
     form.selected_cp_ids = []
     form.details = []
-    await loadScanPoints(Number(newAreaId || 0), Number(newRoleId || 0))
+    await loadScanPoints(Number(newRoleId || 0))
   },
 )
 
@@ -210,10 +209,6 @@ function toastError(detail: string) {
 }
 
 function addSelectedScanPoint() {
-  if (!form.area_id) {
-    toastError('Please select Area first.')
-    return
-  }
   if (!form.role_id) {
     toastError('Please select Role first.')
     return
@@ -399,7 +394,7 @@ function submit() {
               optionValue="value"
               placeholder="Select scan point"
               :loading="scanLoading"
-              :disabled="isView || !form.area_id || !form.role_id"
+              :disabled="isView || !form.role_id"
               display="chip"
               filter
               :maxSelectedLabels="2"
@@ -411,14 +406,14 @@ function submit() {
               icon="pi pi-plus"
               label="Add"
               severity="success"
-              :disabled="isView || !form.area_id || !form.role_id || !form.selected_cp_ids.length"
+              :disabled="isView || !form.role_id || !form.selected_cp_ids.length"
               @click="addSelectedScanPoint"
             />
           </div>
         </div>
 
-        <div v-if="!form.area_id || !form.role_id" class="text-sm text-slate-500">
-          Please select Area and Role to load Scan Points.
+        <div v-if="!form.role_id" class="text-sm text-slate-500">
+          Please select Role to load Scan Points.
         </div>
 
         <div v-else>

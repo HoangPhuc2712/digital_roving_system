@@ -190,15 +190,14 @@ export async function fetchScanPointsByArea(
   areaId: number,
   roleId?: number | null,
 ): Promise<ScanPointOption[]> {
-  if (!areaId) return []
+  if (!roleId) return []
 
-  const res = await http.post(endpoints.checkPointView.getList, { areaId })
+  const res = await http.post(endpoints.checkPointView.getList, {})
   const env = ensureSuccess<ApiCheckPointView[]>(res.data)
   const list = env.data ?? []
 
   return list
     .filter((cp) => {
-      if (!roleId) return true
       const ids = parseRoleIds(cp.roleIdStr)
       return ids.includes(Number(roleId))
     })
