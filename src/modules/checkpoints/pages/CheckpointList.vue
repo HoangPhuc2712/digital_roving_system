@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import Column from 'primevue/column'
 import Dropdown from 'primevue/dropdown'
@@ -14,7 +15,7 @@ import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import { useAuthStore } from '@/stores/auth.store'
 import { useCheckpointsStore } from '@/modules/checkpoints/checkpoints.store'
 import type { CheckpointRow } from '@/modules/checkpoints/checkpoints.types'
-import { deleteCheckpointMock } from '@/modules/checkpoints/checkpoints.api'
+import { deleteCheckpointMock, fetchCheckpointById } from '@/modules/checkpoints/checkpoints.api'
 
 import QrPreview from '@/modules/checkpoints/components/QrPreview.vue'
 import CheckpointForm, {
@@ -23,6 +24,7 @@ import CheckpointForm, {
 } from '@/modules/checkpoints/components/CheckpointForm.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 
+const route = useRoute()
 const toast = useToast()
 const confirm = useConfirm()
 
@@ -30,6 +32,27 @@ const store = useCheckpointsStore()
 const auth = useAuthStore()
 
 const canManage = computed(() => auth.canAccess('checkpoints.manage'))
+
+const lockedAreaId = computed<number | null>(() => {
+  const raw = Array.isArray(route.query.areaId) ? route.query.areaId[0] : route.query.areaId
+  const value = Number(raw)
+  return Number.isFinite(value) && value > 0 ? value : null
+})
+
+const lockedAreaCode = computed(() => {
+  const raw = Array.isArray(route.query.areaCode) ? route.query.areaCode[0] : route.query.areaCode
+  return String(raw ?? '').trim()
+})
+
+const pageTitle = computed(() =>
+  lockedAreaCode.value
+    ? `${lockedAreaCode.value} Check Points Management`
+    : 'Check Points Management',
+)
+
+function applyLockedAreaFilter() {
+  store.filterAreaId = lockedAreaId.value
+}
 
 const searchDraft = ref(store.searchText)
 let searchTimer: number | undefined
@@ -42,22 +65,36 @@ watch(searchDraft, (val) => {
 })
 
 watch(
-  () => [store.searchText, store.filterAreaId, store.filterStatus],
+  () => [store.searchText, store.filterStatus, lockedAreaId.value],
   () => store.setFirst(0),
 )
 
+watch(
+  lockedAreaId,
+  () => {
+    applyLockedAreaFilter()
+  },
+  { immediate: true },
+)
+
 onMounted(async () => {
+  applyLockedAreaFilter()
   await store.load()
+  applyLockedAreaFilter()
 })
 
 function clearAll() {
-  store.clearFilters()
+  store.searchText = ''
   searchDraft.value = ''
+  store.filterStatus = 'ALL'
+  applyLockedAreaFilter()
+  store.setFirst(0)
 }
 
 function statusLabel(s: number) {
   return s === 1 ? 'Active' : 'Inactive'
 }
+
 function statusSeverity(s: number) {
   return s === 1 ? 'success' : 'secondary'
 }
@@ -77,6 +114,8 @@ function mapRowToFormModel(row: CheckpointRow): CheckpointFormModel {
     cp_description: row.cp_description,
     cp_priority: row.cp_priority,
     area_id: row.area_id,
+    role_ids: row.role_ids,
+    role_names: row.role_names,
   }
 }
 
@@ -88,20 +127,52 @@ function openNew() {
     cp_qr: '',
     cp_description: '',
     cp_priority: 1,
-    area_id: store.areaOptions[0]?.value ?? 0,
+    area_id: lockedAreaId.value ?? store.areaOptions[0]?.value ?? 0,
+    role_ids: [],
+    role_names: [],
   }
   formVisible.value = true
 }
 
-function openView(row: CheckpointRow) {
+async function openView(row: CheckpointRow) {
   formMode.value = 'view'
-  formModel.value = mapRowToFormModel(row)
+  try {
+    const detail = await fetchCheckpointById(row.cp_id, store.roleOptions)
+    formModel.value = {
+      cp_id: detail.cp_id,
+      cp_code: detail.cp_code,
+      cp_name: detail.cp_name,
+      cp_qr: detail.cp_qr,
+      cp_description: detail.cp_description,
+      cp_priority: detail.cp_priority,
+      area_id: detail.area_id,
+      role_ids: detail.role_ids,
+      role_names: detail.role_names,
+    }
+  } catch {
+    formModel.value = mapRowToFormModel(row)
+  }
   formVisible.value = true
 }
 
-function openEdit(row: CheckpointRow) {
+async function openEdit(row: CheckpointRow) {
   formMode.value = 'edit'
-  formModel.value = mapRowToFormModel(row)
+  try {
+    const detail = await fetchCheckpointById(row.cp_id, store.roleOptions)
+    formModel.value = {
+      cp_id: detail.cp_id,
+      cp_code: detail.cp_code,
+      cp_name: detail.cp_name,
+      cp_qr: detail.cp_qr,
+      cp_description: detail.cp_description,
+      cp_priority: detail.cp_priority,
+      area_id: detail.area_id,
+      role_ids: detail.role_ids,
+      role_names: detail.role_names,
+    }
+  } catch {
+    formModel.value = mapRowToFormModel(row)
+  }
   formVisible.value = true
 }
 
@@ -112,25 +183,26 @@ async function deleteOne(row: CheckpointRow) {
 function onDelete(row: CheckpointRow) {
   confirm.require({
     header: 'Confirm Delete',
-    message: `Delete scan point ${row.cp_code} - ${row.cp_name}?`,
+    message: `Delete check point ${row.cp_code} - ${row.cp_name}?`,
     acceptLabel: 'Delete',
     rejectLabel: 'Cancel',
     accept: async () => {
       try {
         await deleteOne(row)
         await store.load()
+        applyLockedAreaFilter()
         selectedRows.value = null
         toast.add({
           severity: 'success',
           summary: 'Deleted',
-          detail: 'Scan point has been deleted.',
+          detail: 'Check point has been deleted.',
           life: 2000,
         })
       } catch (e: any) {
         toast.add({
           severity: 'error',
           summary: 'Error',
-          detail: e?.message ?? 'Failed to delete scan point.',
+          detail: e?.message ?? 'Failed to delete check point.',
           life: 3000,
         })
       }
@@ -144,7 +216,7 @@ function onDeleteSelected() {
 
   confirm.require({
     header: 'Confirm Delete',
-    message: `Delete ${sel.length} selected scan points?`,
+    message: `Delete ${sel.length} selected check points?`,
     acceptLabel: 'Delete',
     rejectLabel: 'Cancel',
     accept: async () => {
@@ -153,18 +225,19 @@ function onDeleteSelected() {
           await deleteOne(row)
         }
         await store.load()
+        applyLockedAreaFilter()
         selectedRows.value = null
         toast.add({
           severity: 'success',
           summary: 'Deleted',
-          detail: 'Selected scan points have been deleted.',
+          detail: 'Selected check points have been deleted.',
           life: 2000,
         })
       } catch (e: any) {
         toast.add({
           severity: 'error',
           summary: 'Error',
-          detail: e?.message ?? 'Failed to delete scan points.',
+          detail: e?.message ?? 'Failed to delete check points.',
           life: 3000,
         })
       }
@@ -181,11 +254,12 @@ async function handleCheckpointFormSubmit(payload: {
   try {
     await payload.submit(actor)
     await store.load()
+    applyLockedAreaFilter()
 
     toast.add({
       severity: 'success',
       summary: 'Saved',
-      detail: 'Scan Point has been saved.',
+      detail: 'Check Point has been saved.',
       life: 2000,
     })
   } catch (e: any) {
@@ -215,7 +289,7 @@ async function handleCheckpointFormSubmit(payload: {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: msg || 'Failed to save scan point.',
+      detail: msg || 'Failed to save check point.',
       life: 3500,
     })
   }
@@ -233,7 +307,7 @@ function normalizeQr(src: string) {
 <template>
   <div class="space-y-3">
     <div class="flex items-center justify-between gap-3">
-      <div class="text-xl font-semibold text-slate-800">Scan Points Management</div>
+      <div class="text-xl font-semibold text-slate-800">{{ pageTitle }}</div>
 
       <div class="w-full max-w-md">
         <BaseInput v-model="searchDraft" label="" class="w-full" placeholder="Search..." />
@@ -243,19 +317,6 @@ function normalizeQr(src: string) {
     <div class="bg-white border border-slate-200 rounded-xl p-3">
       <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
         <div class="md:col-span-3">
-          <label class="block text-sm text-slate-600 mb-1">Area</label>
-          <Dropdown
-            v-model="store.filterAreaId"
-            class="w-full"
-            :options="store.areaOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="All"
-            showClear
-          />
-        </div>
-
-        <div class="md:col-span-2">
           <label class="block text-sm text-slate-600 mb-1">Status</label>
           <Dropdown
             v-model="store.filterStatus"
@@ -271,7 +332,7 @@ function normalizeQr(src: string) {
           />
         </div>
 
-        <div class="md:col-span-1 flex justify-end">
+        <div class="md:col-span-3 flex justify-end">
           <BaseIconButton
             icon="pi pi-filter-slash"
             label="Clear Filters"
@@ -284,7 +345,7 @@ function normalizeQr(src: string) {
     </div>
 
     <BaseDataTable
-      title="Scan Points"
+      :title="pageTitle"
       :value="store.filteredRows"
       :loading="store.loading"
       dataKey="cp_id"
@@ -312,12 +373,12 @@ function normalizeQr(src: string) {
         />
       </template>
 
-      <Column selectionMode="multiple" style="width: 3rem" :exportable="false" />
+      <Column selectionMode="multiple" style="width: 3rem" :exportable="false" sortDisabled />
 
-      <Column field="cp_code" header="Scan Point Code" style="min-width: 12rem" />
-      <Column field="cp_name" header="Scan Point Name" style="min-width: 14rem" />
+      <Column field="cp_code" header="Check Point Code" style="min-width: 12rem" />
+      <Column field="cp_name" header="Check Point Name" style="min-width: 14rem" />
 
-      <Column header="QR Image" style="min-width: 10rem">
+      <Column header="QR Image" style="min-width: 10rem" sortDisabled>
         <template #body="{ data }">
           <div class="flex justify-start">
             <QrPreview :value="normalizeQr(data.cp_qr)" />
@@ -325,7 +386,7 @@ function normalizeQr(src: string) {
         </template>
       </Column>
 
-      <Column header="Area" style="min-width: 14rem">
+      <Column header="Area" style="min-width: 14rem" sortField="area_code">
         <template #body="{ data }">
           <div class="flex flex-col">
             <div class="text-slate-800 font-medium">{{ data.area_code }}</div>
@@ -335,15 +396,15 @@ function normalizeQr(src: string) {
       </Column>
 
       <Column field="cp_description" header="Description" style="min-width: 18rem" />
-      <Column field="cp_priority" header="Priority" style="min-width: 8rem" :min="1" />
+      <Column field="cp_priority" header="Priority" style="min-width: 8rem" />
 
-      <Column header="Status" style="min-width: 10rem">
+      <Column header="Status" style="min-width: 10rem" sortField="cp_status">
         <template #body="{ data }">
           <Tag :value="statusLabel(data.cp_status)" :severity="statusSeverity(data.cp_status)" />
         </template>
       </Column>
 
-      <Column header="Action" :exportable="false" style="min-width: 16rem">
+      <Column header="Action" :exportable="false" style="min-width: 16rem" sortDisabled>
         <template #body="{ data }">
           <div class="flex gap-2 justify-start">
             <BaseIconButton
@@ -382,6 +443,7 @@ function normalizeQr(src: string) {
       :mode="formMode"
       :model="formModel"
       :areaOptions="store.areaOptions"
+      :roleOptions="store.roleOptions"
       @submit="handleCheckpointFormSubmit"
       @close="formModel = null"
     />

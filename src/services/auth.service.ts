@@ -66,7 +66,8 @@ function toAuthUser(apiUser: any) {
     updated_by: apiUser.updatedBy ?? apiUser.userId,
   }
 
-  return { ...omitPassword(user), role }
+  const allow_views = Array.isArray(apiUser?.allowViews) ? apiUser.allowViews : []
+  return { ...omitPassword(user), role, allow_views }
 }
 
 export async function mockLogin(user_code: string, user_password: string) {

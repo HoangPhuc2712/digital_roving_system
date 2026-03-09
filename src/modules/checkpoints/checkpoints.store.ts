@@ -1,6 +1,11 @@
 import { defineStore } from 'pinia'
-import type { CheckpointRow, CheckpointStatusFilter, AreaOption } from './checkpoints.types'
-import { fetchAreaOptions, fetchCheckpointRows } from './checkpoints.api'
+import type {
+  CheckpointRow,
+  CheckpointStatusFilter,
+  AreaOption,
+  RoleOption,
+} from './checkpoints.types'
+import { fetchAreaOptions, fetchCheckpointRows, fetchRoleOptions } from './checkpoints.api'
 
 export const useCheckpointsStore = defineStore('checkpoints', {
   state: () => ({
@@ -12,6 +17,7 @@ export const useCheckpointsStore = defineStore('checkpoints', {
     filterStatus: 'ALL' as CheckpointStatusFilter,
 
     areaOptions: [] as AreaOption[],
+    roleOptions: [] as RoleOption[],
 
     first: 0,
     rowsPerPage: 10,
@@ -38,9 +44,10 @@ export const useCheckpointsStore = defineStore('checkpoints', {
     async load() {
       this.loading = true
       try {
-        const [areas, rows] = await Promise.all([fetchAreaOptions(), fetchCheckpointRows()])
+        const [areas, roles] = await Promise.all([fetchAreaOptions(), fetchRoleOptions()])
         this.areaOptions = areas
-        this.rows = rows
+        this.roleOptions = roles
+        this.rows = await fetchCheckpointRows(roles)
       } finally {
         this.loading = false
       }

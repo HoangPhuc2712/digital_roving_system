@@ -1,174 +1,208 @@
-import { pointReports, pointReportImages, checkPoints, areas, users, roles } from '@/mocks/db'
+import type { AxiosError } from 'axios'
+import { http } from '@/services/http/axios'
+import { endpoints } from '@/services/http/endpoints'
 
-import type { ReportRow } from './reports.types'
+import type { ReportImage, ReportRow } from './reports.types'
+
+type ApiEnvelope<T> = {
+  data: T
+  success: boolean
+  message: string
+}
+
+type ApiReportImage = {
+  priId: number
+  prId: number
+  priImage: string
+  priImageType?: string
+}
+
+type ApiPointReportView = {
+  prId: number
+  prStatus: number
+  prHasProblem: boolean
+  prNote?: string
+
+  cpId: number
+  cpCode: string
+  cpName: string
+  cpDescription?: string
+
+  areaId: number
+  areaCode?: string
+  areaName?: string
+
+  scanAt?: string
+  createdAt?: string
+  createdBy?: string
+  reportName?: string
+
+  prSecond?: number
+  routeId?: number
+  rdId?: number
+  rdSecond?: number
+
+  reportImages?: ApiReportImage[]
+}
+
+function ensureSuccess<T>(payload: any): ApiEnvelope<T> {
+  const e = payload as ApiEnvelope<T>
+  if (!e || typeof e !== 'object' || !('success' in e)) throw new Error('API_ERROR')
+  if (!e.success) throw new Error(String(e.message ?? 'API_ERROR') || 'API_ERROR')
+  return e
+}
+
+function nowIso() {
+  return new Date().toISOString()
+}
+
+function normalizeImage(img: ApiReportImage): ReportImage {
+  const raw = String(img?.priImage ?? '').trim()
+  const ext =
+    String(img?.priImageType ?? 'jpeg')
+      .trim()
+      .toLowerCase() || 'jpeg'
+
+  const finalSrc = raw.startsWith('data:image/')
+    ? raw
+    : raw
+      ? `data:image/${ext};base64,${raw}`
+      : ''
+
+  return {
+    pri_id: Number(img?.priId ?? 0),
+    pr_id: Number(img?.prId ?? 0),
+    pri_image: finalSrc,
+    pri_image_type: ext,
+  }
+}
 
 export async function fetchReportRows(): Promise<ReportRow[]> {
-  const cpMap = new Map(checkPoints.map((cp) => [cp.cp_id, cp]))
-  const areaMap = new Map(areas.map((a) => [a.area_id, a]))
-  const userMap = new Map(users.map((u) => [u.user_id, u]))
-  const roleMap = new Map(roles.map((r) => [r.role_id, r]))
+  const res = await http.post(endpoints.pointReportView.getList, {})
+  const views = ensureSuccess<ApiPointReportView[]>(res.data).data ?? []
 
-  const imageCountMap = new Map<number, number>()
-  for (const img of pointReportImages) {
-    imageCountMap.set(img.pr_id, (imageCountMap.get(img.pr_id) ?? 0) + 1)
-  }
+  return views
+    .map((v) => {
+      const imgs = Array.isArray(v.reportImages) ? v.reportImages : []
+      const normalizedImgs = imgs.map(normalizeImage).filter((x) => !!x.pri_image)
 
-  const rows: ReportRow[] = pointReports
-    .map((pr) => {
-      const cp = cpMap.get(pr.cp_id)
-      const area = cp ? areaMap.get(cp.area_id) : undefined
-      const user = userMap.get(pr.created_by)
-      const role = user ? roleMap.get(user.user_role_id) : undefined
+      const areaCode = String(v.areaCode ?? '')
+      const areaName = String(v.areaName ?? '')
+      const cpCode = String(v.cpCode ?? '')
+      const cpName = String(v.cpName ?? '')
+      const cpDesc = String(v.cpDescription ?? '')
 
-      const areaCode = area?.area_code ?? ''
-      const areaName = area?.area_name ?? ''
-      const cpName = cp?.cp_name ?? ''
-      const userCode = user?.user_code ?? ''
-      const userName = user?.user_name ?? ''
+      const reportName = String(v.reportName ?? '')
+      const note = String(v.prNote ?? '')
 
-      const q = `${areaCode} ${areaName} ${cpName} ${userCode} ${userName}`.toLowerCase()
+      const q = [areaCode, areaName, cpCode, cpName, cpDesc, reportName, note]
+        .join(' ')
+        .toLowerCase()
+
+      const scanAt = String(v.scanAt ?? v.createdAt ?? nowIso())
+      const createdAt = String(v.createdAt ?? v.scanAt ?? nowIso())
 
       return {
-        pr_id: pr.pr_id,
-        pr_check: pr.pr_check,
-        pr_note: pr.pr_note,
-        cp_id: pr.cp_id,
-        created_at: pr.created_at,
-        created_by: pr.created_by,
+        pr_id: Number(v.prId ?? 0),
+        pr_status: Number(v.prStatus ?? 0),
+        pr_has_problem: Boolean(v.prHasProblem),
+        pr_note: note,
 
-        area_id: area?.area_id ?? 0,
+        cp_id: Number(v.cpId ?? 0),
+        cp_code: cpCode,
+        cp_name: cpName,
+        cp_description: cpDesc,
+
+        area_id: Number(v.areaId ?? 0),
         area_code: areaCode,
         area_name: areaName,
 
-        cp_code: cp?.cp_code ?? '',
-        cp_name: cpName,
-        cp_description: cp?.cp_description ?? '',
+        scan_at: scanAt,
+        created_at: createdAt,
+        created_by: String(v.createdBy ?? ''),
+        report_name: reportName,
 
-        user_id: user?.user_id ?? '',
-        user_code: userCode,
-        user_name: userName,
+        pr_second: Number(v.prSecond ?? 0),
+        route_id: Number(v.routeId ?? 0),
+        rd_id: Number(v.rdId ?? 0),
+        rd_second: Number(v.rdSecond ?? 0),
 
-        role_id: role?.role_id ?? 0,
-        role_code: role?.role_code ?? '',
-        role_name: role?.role_name ?? '',
-
-        image_count: imageCountMap.get(pr.pr_id) ?? 0,
+        report_images: normalizedImgs,
+        image_count: normalizedImgs.length,
 
         _q: q,
       }
     })
-    .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
-
-  return rows
+    .sort((a, b) => (a.scan_at < b.scan_at ? 1 : -1))
 }
 
 export async function fetchReportRowById(pr_id: number): Promise<ReportRow | null> {
-  const rows = await fetchReportRows()
-  return rows.find((r) => r.pr_id === pr_id) ?? null
-}
+  try {
+    const res = await http.get(endpoints.pointReportView.getOne(pr_id))
+    const v = ensureSuccess<ApiPointReportView>(res.data).data
+    if (!v) return null
 
-export async function fetchReportImagesByReportId(pr_id: number) {
-  const imgs = pointReportImages
-    .filter((x) => x.pr_id === pr_id)
-    .sort((a, b) => (a.created_at < b.created_at ? -1 : 1))
+    const imgs = Array.isArray(v.reportImages) ? v.reportImages : []
+    const normalizedImgs = imgs.map(normalizeImage).filter((x) => !!x.pri_image)
 
-  return imgs
-}
+    const areaCode = String(v.areaCode ?? '')
+    const areaName = String(v.areaName ?? '')
+    const cpCode = String(v.cpCode ?? '')
+    const cpName = String(v.cpName ?? '')
+    const cpDesc = String(v.cpDescription ?? '')
 
-function getNextPriId() {
-  let maxId = 0
-  for (const x of pointReportImages) {
-    if (x.pri_id > maxId) maxId = x.pri_id
-  }
-  return maxId + 1
-}
+    const reportName = String(v.reportName ?? '')
+    const note = String(v.prNote ?? '')
 
-function getNextPrId() {
-  let maxId = 0
-  for (const x of pointReports) {
-    if (x.pr_id > maxId) maxId = x.pr_id
-  }
-  return maxId + 1
-}
+    const q = [areaCode, areaName, cpCode, cpName, cpDesc, reportName, note].join(' ').toLowerCase()
 
-export async function updateReportMock(payload: {
-  pr_id: number
-  pr_check: boolean
-  pr_note: string
-  delete_image_ids: number[]
-  add_images: string[]
-  actor_id: string
-}) {
-  const pr = pointReports.find((x) => x.pr_id === payload.pr_id)
-  if (!pr) throw new Error('REPORT_NOT_FOUND')
+    const scanAt = String(v.scanAt ?? v.createdAt ?? nowIso())
+    const createdAt = String(v.createdAt ?? v.scanAt ?? nowIso())
 
-  pr.pr_check = payload.pr_check
-  pr.pr_note = payload.pr_note
+    return {
+      pr_id: Number(v.prId ?? 0),
+      pr_status: Number(v.prStatus ?? 0),
+      pr_has_problem: Boolean(v.prHasProblem),
+      pr_note: note,
 
-  const del = new Set(payload.delete_image_ids ?? [])
+      cp_id: Number(v.cpId ?? 0),
+      cp_code: cpCode,
+      cp_name: cpName,
+      cp_description: cpDesc,
 
-  for (let i = pointReportImages.length - 1; i >= 0; i--) {
-    const item = pointReportImages[i]
-    if (!item) continue
+      area_id: Number(v.areaId ?? 0),
+      area_code: areaCode,
+      area_name: areaName,
 
-    if (del.has(item.pri_id)) {
-      pointReportImages.splice(i, 1)
+      scan_at: scanAt,
+      created_at: createdAt,
+      created_by: String(v.createdBy ?? ''),
+      report_name: reportName,
+
+      pr_second: Number(v.prSecond ?? 0),
+      route_id: Number(v.routeId ?? 0),
+      rd_id: Number(v.rdId ?? 0),
+      rd_second: Number(v.rdSecond ?? 0),
+
+      report_images: normalizedImgs,
+      image_count: normalizedImgs.length,
+
+      _q: q,
     }
+  } catch {
+    return null
   }
-
-  let nextId = getNextPriId()
-  const now = new Date().toISOString()
-  for (const img of payload.add_images ?? []) {
-    const s = (img ?? '').trim()
-    if (!s) continue
-
-    pointReportImages.push({
-      pri_id: nextId++,
-      pr_id: payload.pr_id,
-      pri_image: s,
-      created_at: now,
-      created_by: payload.actor_id,
-    })
-  }
-
-  return true
 }
 
-export async function createReportMock(payload: {
-  cp_id: number
-  pr_check: boolean
-  pr_note: string
-  add_images: string[]
-  actor_id: string
-}) {
-  const cp = checkPoints.find((x) => x.cp_id === payload.cp_id)
-  if (!cp) throw new Error('CHECKPOINT_NOT_FOUND')
-
-  const pr_id = getNextPrId()
-  const now = new Date().toISOString()
-
-  pointReports.push({
-    pr_id,
-    pr_check: payload.pr_check,
-    pr_note: payload.pr_note,
-    cp_id: payload.cp_id,
-    created_at: now,
-    created_by: payload.actor_id,
-  })
-
-  let nextId = getNextPriId()
-  for (const img of payload.add_images ?? []) {
-    const s = (img ?? '').trim()
-    if (!s) continue
-
-    pointReportImages.push({
-      pri_id: nextId++,
-      pr_id,
-      pri_image: s,
-      created_at: now,
-      created_by: payload.actor_id,
-    })
+export async function fetchReportImagesByReportId(pr_id: number): Promise<ReportImage[]> {
+  try {
+    const res = await http.get(endpoints.pointReportImage.getListByReportId(pr_id))
+    const imgs = ensureSuccess<ApiReportImage[]>(res.data).data ?? []
+    return imgs.map(normalizeImage).filter((x) => !!x.pri_image)
+  } catch (e) {
+    const err = e as AxiosError<any>
+    const msg = String(err?.response?.data?.message ?? '')
+    if (msg) throw new Error(msg)
+    throw e
   }
-
-  return pr_id
 }

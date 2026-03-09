@@ -14,8 +14,13 @@ export const useReportsStore = defineStore('reports', {
 
     filterAreaId: null as number | null,
     filterResult: 'ALL' as ResultFilter,
-    filterRoleCode: '' as string,
+
+    // Issue Status filter (pr_status). null = All
+    filterIssueStatus: null as number | null,
+
+    // Guard filter (value = created_by userId)
     filterGuardId: '' as string,
+
     filterMultiDays: false as boolean,
     filterDate: null as Date | null,
     filterDateRange: null as (Date | null)[] | null,
@@ -39,20 +44,8 @@ export const useReportsStore = defineStore('reports', {
       for (const r of this.visibleRows) {
         if (!r.area_id) continue
         if (!seen.has(r.area_id)) {
-          seen.set(r.area_id, `${r.area_code} - ${r.area_name}`.trim())
-        }
-      }
-      return [...seen.entries()]
-        .map(([value, label]) => ({ value, label }))
-        .sort((a, b) => a.label.localeCompare(b.label))
-    },
-
-    roleOptions(): { label: string; value: string }[] {
-      const seen = new Map<string, string>()
-      for (const r of this.visibleRows) {
-        if (!r.role_code) continue
-        if (!seen.has(r.role_code)) {
-          seen.set(r.role_code, r.role_name || r.role_code)
+          const label = `${r.area_code} - ${r.area_name}`.trim()
+          seen.set(r.area_id, label)
         }
       }
       return [...seen.entries()]
@@ -61,21 +54,13 @@ export const useReportsStore = defineStore('reports', {
     },
 
     guardOptions(): { label: string; value: string }[] {
-      const rf = (this.filterRoleCode ?? '').trim()
-
       const seen = new Map<string, string>()
       for (const r of this.visibleRows) {
-        if (!r.user_id) continue
-
-        if (rf) {
-          const codeMatch = r.role_code === rf
-          const nameMatch = (r.role_name ?? '') === rf
-          if (!codeMatch && !nameMatch) continue
-        }
-
-        if (!seen.has(r.user_id)) {
-          const label = r.user_name ? `${r.user_name} (${r.user_code})` : r.user_code
-          seen.set(r.user_id, label)
+        const guardId = (r.created_by ?? '').trim()
+        if (!guardId) continue
+        if (!seen.has(guardId)) {
+          const label = (r.report_name ?? '').trim() || guardId
+          seen.set(guardId, label)
         }
       }
 
@@ -103,37 +88,40 @@ export const useReportsStore = defineStore('reports', {
       const endTime = end ? endOfDay(end).getTime() : null
 
       return this.visibleRows.filter((r) => {
+        // search
         if (q) {
-          const haystack = [
-            r.area_code,
-            r.area_name,
-            r.cp_name,
-            r.cp_description,
-            r.user_code,
-            r.user_name,
-          ]
-            .join(' ')
-            .toLowerCase()
+          const haystack = (
+            r._q ||
+            [
+              r.area_code,
+              r.area_name,
+              r.cp_code,
+              r.cp_name,
+              r.cp_description,
+              r.report_name,
+              r.pr_note,
+            ].join(' ')
+          ).toLowerCase()
 
           if (!haystack.includes(q)) return false
         }
 
+        // area
         if (this.filterAreaId != null && r.area_id !== this.filterAreaId) return false
 
-        if (this.filterResult === 'OK' && r.pr_check !== true) return false
-        if (this.filterResult === 'NOT_OK' && r.pr_check !== false) return false
+        // inspection result
+        if (this.filterResult === 'OK' && r.pr_has_problem !== false) return false
+        if (this.filterResult === 'NOT_OK' && r.pr_has_problem !== true) return false
 
-        if (this.filterRoleCode) {
-          const rf = this.filterRoleCode.trim()
-          const codeMatch = r.role_code === rf
-          const nameMatch = (r.role_name ?? '') === rf
-          if (!codeMatch && !nameMatch) return false
-        }
+        // issue status
+        if (this.filterIssueStatus != null && r.pr_status !== this.filterIssueStatus) return false
 
-        if (this.filterGuardId && r.user_id !== this.filterGuardId) return false
+        // guard
+        if (this.filterGuardId && (r.created_by ?? '') !== this.filterGuardId) return false
 
+        // date (ưu tiên scan_at, fallback created_at)
         if (startTime != null || endTime != null) {
-          const t = new Date(r.created_at).getTime()
+          const t = new Date(r.scan_at || r.created_at).getTime()
           if (startTime != null && t < startTime) return false
           if (endTime != null && t > endTime) return false
         }
@@ -157,7 +145,7 @@ export const useReportsStore = defineStore('reports', {
       this.searchText = ''
       this.filterAreaId = null
       this.filterResult = 'ALL'
-      this.filterRoleCode = ''
+      this.filterIssueStatus = null
       this.filterGuardId = ''
       this.filterMultiDays = false
       this.filterDate = null

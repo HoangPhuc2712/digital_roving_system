@@ -250,12 +250,12 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
         </div>
       </template>
 
-      <Column selectionMode="multiple" style="width: 3rem" :exportable="false" />
+      <Column selectionMode="multiple" style="width: 3rem" :exportable="false" sortDisabled />
 
       <Column field="route_code" header="Route Code" style="min-width: 10rem" />
       <Column field="route_name" header="Route Name" style="min-width: 16rem" />
 
-      <Column header="Area" style="min-width: 14rem">
+      <Column header="Area" style="min-width: 14rem" sortField="area_name">
         <template #body="{ data }">
           <div class="text-slate-800">{{ data.area_name }}</div>
         </template>
@@ -263,19 +263,19 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
 
       <Column field="route_priority" header="Priority" style="min-width: 8rem" />
 
-      <Column header="Total Time" style="min-width: 10rem">
+      <Column header="Total Time" style="min-width: 10rem" sortField="route_total_second">
         <template #body="{ data }">
           <div class="text-slate-800">{{ formatSeconds(data.route_total_second) }}</div>
         </template>
       </Column>
 
-      <Column header="Points" style="min-width: 8rem">
+      <Column header="Points" style="min-width: 8rem" sortField="details_count">
         <template #body="{ data }">
           <div class="text-slate-800">{{ data.details_count }}</div>
         </template>
       </Column>
 
-      <Column header="Status" style="min-width: 10rem">
+      <Column header="Status" style="min-width: 10rem" sortField="route_status">
         <template #body="{ data }">
           <Tag
             :value="statusLabel(data.route_status)"
@@ -284,7 +284,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
         </template>
       </Column>
 
-      <Column header="Action" style="width: 260px">
+      <Column header="Action" style="width: 260px" sortDisabled>
         <template #body="{ data }">
           <div class="flex gap-2 justify-start">
             <BaseIconButton

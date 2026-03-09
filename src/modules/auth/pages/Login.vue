@@ -50,9 +50,11 @@ async function onLogin() {
   if (!code.value.trim() || !password.value) return
 
   try {
+    auth.clearSession()
     await auth.login(code.value.trim(), password.value)
-    await router.push({ name: 'reports' })
+    await router.push({ name: 'dashboard' })
   } catch (e: any) {
+    auth.clearSession()
     const msg =
       e?.message === 'USER_NOT_FOUND'
         ? 'User not found'

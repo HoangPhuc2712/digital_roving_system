@@ -1,9 +1,13 @@
 import { defineStore } from 'pinia'
-import { derivePermissions, hasPermission, type PermissionKey } from '@/utils/permission'
+import {
+  derivePermissionsFromAllowViews,
+  hasPermission,
+  type PermissionKey,
+} from '@/utils/permission'
 import type { User, Role } from '@/mocks/db'
 import { mockLogin, mockMe } from '@/services/auth.service'
 
-type AuthUser = User & { role?: Role }
+type AuthUser = User & { role?: Role; allow_views?: any[] }
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -26,12 +30,13 @@ export const useAuthStore = defineStore('auth', {
 
       const roleCode = payload.user.role?.role_code
       const allow = payload.user.role?.role_allow_view
-      this.permissions = derivePermissions(roleCode, allow)
+      this.permissions = derivePermissionsFromAllowViews(roleCode, payload.user.allow_views, allow)
 
       localStorage.setItem('token', payload.token)
       localStorage.setItem('user', JSON.stringify(payload.user))
       localStorage.setItem('role_allow_view', allow ?? '')
       localStorage.setItem('role_code', roleCode ?? '')
+      localStorage.setItem('allow_views', JSON.stringify(payload.user.allow_views ?? []))
     },
 
     clearSession() {
@@ -43,6 +48,7 @@ export const useAuthStore = defineStore('auth', {
       localStorage.removeItem('user')
       localStorage.removeItem('role_allow_view')
       localStorage.removeItem('role_code')
+      localStorage.removeItem('allow_views')
     },
 
     logout() {
@@ -63,7 +69,10 @@ export const useAuthStore = defineStore('auth', {
 
       const roleCode = localStorage.getItem('role_code') ?? user.role?.role_code ?? ''
 
-      this.permissions = derivePermissions(roleCode, allow)
+      const allowViewsRaw = localStorage.getItem('allow_views')
+      const allowViews = allowViewsRaw ? JSON.parse(allowViewsRaw) : user.allow_views
+
+      this.permissions = derivePermissionsFromAllowViews(roleCode, allowViews, allow)
     },
 
     async login(user_code: string, user_password: string) {
@@ -85,11 +94,13 @@ export const useAuthStore = defineStore('auth', {
 
       const roleCode = res.user.role?.role_code ?? ''
       const allow = res.user.role?.role_allow_view ?? ''
-      this.permissions = derivePermissions(roleCode, allow)
+      const allowViews = (res.user as any)?.allow_views
+      this.permissions = derivePermissionsFromAllowViews(roleCode, allowViews, allow)
 
       localStorage.setItem('user', JSON.stringify(res.user))
       localStorage.setItem('role_allow_view', allow)
       localStorage.setItem('role_code', roleCode)
+      localStorage.setItem('allow_views', JSON.stringify(allowViews ?? []))
     },
   },
 })

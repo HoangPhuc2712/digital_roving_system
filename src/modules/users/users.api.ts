@@ -43,6 +43,10 @@ type ApiUserView = {
   allowViews?: any[]
 }
 
+type ApiRoleBase = { roleId: number; roleCode?: string; roleName?: string }
+
+type ApiAreaBase = { areaId: number; areaCode?: string; areaName?: string }
+
 function nowIso() {
   return new Date().toISOString()
 }
@@ -218,7 +222,7 @@ export async function createUserMock(payload: {
     userCode: payload.user_code.trim(),
     userPassword: payload.user_password,
     userRoleId: payload.user_role_id,
-    userAreaId: areaId,
+    userAreaId: payload.user_area_id, // ✅ dùng cái user chọn
     createdBy: payload.actor_id,
     updatedBy: payload.actor_id,
   }
@@ -254,7 +258,7 @@ export async function updateUserMock(payload: {
     userName: payload.user_name.trim(),
     userCode: payload.user_code.trim(),
     userRoleId: payload.user_role_id,
-    userAreaId: areaId,
+    userAreaId: payload.user_area_id, // ✅ dùng cái user chọn
     updatedBy: payload.actor_id,
   }
 
@@ -289,23 +293,27 @@ export async function deleteUserMock(payload: { user_id: string; actor_id: strin
 }
 
 export async function fetchRoleOptions() {
-  // Until Roles module is connected, derive role options from UserView list
-  const res = await http.post(endpoints.userView.getList, {})
-  const views = ensureSuccess<ApiUserView[]>(res.data).data ?? []
+  const res = await http.get(endpoints.role.getBaseList)
+  const list = ensureSuccess<ApiRoleBase[]>(res.data).data ?? []
 
-  const map = new Map<number, string>()
-  for (const v of views) {
-    if (!v?.userRoleId) continue
-    const label =
-      (v as any).roleName ??
-      (v as any).userRoleName ??
-      (v as any).roleCode ??
-      (v as any).userRoleCode ??
-      String(v.userRoleId)
-    if (!map.has(v.userRoleId)) map.set(v.userRoleId, label)
-  }
+  return list
+    .map((r) => ({
+      value: Number(r.roleId ?? 0),
+      label: String(r.roleName ?? r.roleCode ?? r.roleId),
+    }))
+    .filter((x) => x.value > 0)
+    .sort((a, b) => a.label.localeCompare(b.label))
+}
 
-  return Array.from(map.entries())
-    .map(([value, label]) => ({ label, value }))
+export async function fetchAreaOptions() {
+  const res = await http.get(endpoints.area.getBaseList)
+  const list = ensureSuccess<ApiAreaBase[]>(res.data).data ?? []
+
+  return list
+    .map((a) => ({
+      value: Number(a.areaId ?? 0),
+      label: String(a.areaName ?? a.areaCode ?? a.areaId),
+    }))
+    .filter((x) => x.value > 0)
     .sort((a, b) => a.label.localeCompare(b.label))
 }

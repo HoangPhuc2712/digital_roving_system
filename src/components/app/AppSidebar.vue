@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
+import { http } from '@/services/http/axios'
+import { endpoints } from '@/services/http/endpoints'
 import BaseBadgeButton from '../common/buttons/BaseBadgeButton.vue'
 
 const props = withDefaults(
@@ -21,8 +23,141 @@ const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 
-const roleCode = computed(() => String(auth.user?.role?.role_code ?? '').toUpperCase())
-const canSeeAdminMenus = computed(() => roleCode.value === 'ADMIN' || roleCode.value === 'IT')
+type ApiEnvelope<T> = { data: T; success: boolean; message: string }
+
+type MenuCategoryView = {
+  mcId: number
+  mcCode: string
+  mcName: string
+  mcActive: boolean
+  mcPriority: number
+}
+
+function ensureSuccess<T>(payload: any): ApiEnvelope<T> {
+  const e = payload as ApiEnvelope<T>
+  if (!e || typeof e !== 'object' || !('success' in e)) throw new Error('API_ERROR')
+  if (!e.success) throw new Error(String(e.message ?? 'API_ERROR') || 'API_ERROR')
+  return e
+}
+
+const menuCategories = ref<MenuCategoryView[]>([])
+
+async function loadMenuCategories() {
+  try {
+    const res = await http.post(endpoints.menuCategoryView.getList, {})
+    const list = ensureSuccess<MenuCategoryView[]>(res.data).data ?? []
+    menuCategories.value = Array.isArray(list) ? list : []
+  } catch {
+    menuCategories.value = []
+  }
+}
+
+onMounted(async () => {
+  if (auth.isAuthenticated) {
+    await loadMenuCategories()
+  }
+})
+
+watch(
+  () => auth.isAuthenticated,
+  async (ok) => {
+    if (!ok) return
+    await loadMenuCategories()
+  },
+)
+
+type NavItem = {
+  key: string
+  label: string
+  to: string
+  icon: string
+  prefix: string
+  priority: number
+}
+
+const MENU_MAP: Record<string, Omit<NavItem, 'key' | 'priority' | 'label'>> = {
+  DASHBOARD: { to: '/dashboard', icon: 'pi pi-home', prefix: '/dashboard' },
+
+  MC006: { to: '/reports', icon: 'pi pi-clipboard', prefix: '/reports' },
+  MC002: { to: '/users', icon: 'pi pi-users', prefix: '/users' },
+  MC001: { to: '/roles', icon: 'pi pi-key', prefix: '/roles' },
+  MC004: { to: '/areas', icon: 'pi pi-map-marker', prefix: '/areas' },
+  MC005: { to: '/routes', icon: 'pi pi-map', prefix: '/routes' },
+  // Optional pages (only show if you have routes for them)
+  // MC007: { to: '/tutorial', icon: 'pi pi-book', prefix: '/tutorial' },
+}
+
+const allowedMcCodes = computed(() => {
+  const raw = (auth.user as any)?.allow_views ?? (auth.user as any)?.allowViews ?? []
+  const arr = Array.isArray(raw) ? raw : []
+  const set = new Set<string>()
+  for (const it of arr) {
+    const code = String(it?.mcCode ?? '')
+      .trim()
+      .toUpperCase()
+    if (!code) continue
+    if (it?.mcActive === false) continue
+    set.add(code)
+  }
+  return set
+})
+
+const navItems = computed<NavItem[]>(() => {
+  const items: NavItem[] = []
+
+  // Dashboard is always visible (after login)
+  const dash = MENU_MAP['DASHBOARD']!
+  items.push({
+    key: 'DASHBOARD',
+    label: 'Dashboard',
+    to: dash.to,
+    icon: dash.icon,
+    prefix: dash.prefix,
+    priority: 0,
+  })
+
+  // Prefer menu category list from API (has priority + active)
+  const base =
+    Array.isArray(menuCategories.value) && menuCategories.value.length
+      ? menuCategories.value
+      : (() => {
+          const raw = (auth.user as any)?.allow_views ?? (auth.user as any)?.allowViews ?? []
+          const arr = Array.isArray(raw) ? raw : []
+          return arr.map((x: any, idx: number) => ({
+            mcId: Number(x?.mcId ?? 0),
+            mcCode: String(x?.mcCode ?? ''),
+            mcName: String(x?.mcName ?? ''),
+            mcActive: x?.mcActive !== false,
+            mcPriority: Number(x?.mcPriority ?? idx + 1),
+          }))
+        })()
+
+  const allowed = allowedMcCodes.value
+
+  for (const mc of base) {
+    const code = String((mc as any).mcCode ?? '')
+      .trim()
+      .toUpperCase()
+    if (!code) continue
+    if ((mc as any).mcActive === false) continue
+    if (allowed.size > 0 && !allowed.has(code)) continue
+
+    const meta = MENU_MAP[code]
+    if (!meta) continue
+
+    const label = code === 'MC005' ? 'Patrol Routes' : String((mc as any).mcName ?? '')
+    items.push({
+      key: code,
+      label: label || code,
+      to: meta.to,
+      icon: meta.icon,
+      prefix: meta.prefix,
+      priority: Number((mc as any).mcPriority ?? 999),
+    })
+  }
+
+  return items.sort((a, b) => a.priority - b.priority)
+})
 
 const userFullName = computed(() => auth.user?.user_name ?? '—')
 const userCode = computed(() => auth.user?.user_code ?? '—')
@@ -71,73 +206,16 @@ function logout() {
 
     <nav class="flex-1 overflow-y-auto px-2 py-3">
       <ul class="space-y-1">
-        <li>
-          <RouterLink to="/reports" v-slot="{ isActive }">
-            <a :class="itemClass(isActive)" @click="closeMobile">
+        <li v-for="item in navItems" :key="item.key">
+          <RouterLink :to="item.to" v-slot="{ isActive }">
+            <a :class="itemClass(isActive || isActivePath(item.prefix))" @click="closeMobile">
               <span class="flex items-center gap-3">
-                <i class="pi pi-clipboard"></i>
-                <span>Reports</span>
+                <i :class="item.icon"></i>
+                <span>{{ item.label }}</span>
               </span>
             </a>
           </RouterLink>
         </li>
-
-        <template v-if="canSeeAdminMenus">
-          <li>
-            <RouterLink to="/users" v-slot="{ isActive }">
-              <a :class="itemClass(isActive || isActivePath('/users'))" @click="closeMobile">
-                <span class="flex items-center gap-3">
-                  <i class="pi pi-users"></i>
-                  <span>Users</span>
-                </span>
-              </a>
-            </RouterLink>
-          </li>
-
-          <li>
-            <RouterLink to="/roles" v-slot="{ isActive }">
-              <a :class="itemClass(isActive || isActivePath('/roles'))" @click="closeMobile">
-                <span class="flex items-center gap-3">
-                  <i class="pi pi-key"></i>
-                  <span>Roles</span>
-                </span>
-              </a>
-            </RouterLink>
-          </li>
-
-          <li>
-            <RouterLink to="/areas" v-slot="{ isActive }">
-              <a :class="itemClass(isActive || isActivePath('/areas'))" @click="closeMobile">
-                <span class="flex items-center gap-3">
-                  <i class="pi pi-map-marker"></i>
-                  <span>Areas</span>
-                </span>
-              </a>
-            </RouterLink>
-          </li>
-
-          <li>
-            <RouterLink to="/checkpoints" v-slot="{ isActive }">
-              <a :class="itemClass(isActive || isActivePath('/checkpoints'))" @click="closeMobile">
-                <span class="flex items-center gap-3">
-                  <i class="pi pi-flag-fill"></i>
-                  <span>Scan Points</span>
-                </span>
-              </a>
-            </RouterLink>
-          </li>
-
-          <li>
-            <RouterLink to="/routes" v-slot="{ isActive }">
-              <a :class="itemClass(isActive || isActivePath('/routes'))" @click="closeMobile">
-                <span class="flex items-center gap-3">
-                  <i class="pi pi-map"></i>
-                  <span>Patrol Routes</span>
-                </span>
-              </a>
-            </RouterLink>
-          </li>
-        </template>
       </ul>
     </nav>
 

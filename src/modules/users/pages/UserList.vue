@@ -251,23 +251,23 @@ function onViewPatrolPath(row: UserRow) {
         <!-- Import/Export -->
       </template>
 
-      <Column selectionMode="multiple" style="width: 3rem" :exportable="false" />
+      <Column selectionMode="multiple" style="width: 3rem" :exportable="false" sortDisabled />
 
       <Column field="user_name" header="Name" style="min-width: 14rem" />
       <Column field="user_code" header="User Code" style="min-width: 10rem" />
-      <Column header="Area" style="min-width: 14rem">
+      <Column header="Area" style="min-width: 14rem" sortField="area_name">
         <template #body="{ data }">
           <div class="text-slate-800">{{ data.area_name }}</div>
         </template>
       </Column>
 
-      <Column header="Role" style="min-width: 12rem">
+      <Column header="Role" style="min-width: 12rem" sortField="role_name">
         <template #body="{ data }">
           <div class="text-slate-800">{{ data.role_name }}</div>
         </template>
       </Column>
 
-      <Column header="Status" style="min-width: 10rem">
+      <Column header="Status" style="min-width: 10rem" sortField="user_status">
         <template #body="{ data }">
           <Tag
             :value="statusLabel(data.user_status)"
@@ -291,7 +291,7 @@ function onViewPatrolPath(row: UserRow) {
         </template>
       </Column> -->
 
-      <Column header="Action" style="width: 260px">
+      <Column header="Action" style="width: 260px" sortDisabled>
         <template #body="{ data }">
           <div class="flex gap-2 justify-start">
             <BaseIconButton

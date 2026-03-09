@@ -2,6 +2,7 @@
 import { computed, reactive, watch } from 'vue'
 import Dialog from 'primevue/dialog'
 import Dropdown from 'primevue/dropdown'
+import MultiSelect from 'primevue/multiselect'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import BaseInput from '@/components/common/inputs/BaseInput.vue'
@@ -19,6 +20,8 @@ export type CheckpointFormModel = {
   cp_description: string
   cp_priority: number
   area_id: number
+  role_ids: number[]
+  role_names?: string[]
 }
 
 type FormState = {
@@ -29,6 +32,7 @@ type FormState = {
   cp_description: string
   cp_priority_text: string
   area_id: number
+  role_ids: number[]
 }
 
 export type CheckpointFormSubmitPayload = {
@@ -40,6 +44,7 @@ const props = defineProps<{
   mode: CheckpointFormMode
   model: CheckpointFormModel | null
   areaOptions: { label: string; value: number }[]
+  roleOptions: { label: string; value: number }[]
 }>()
 
 const emit = defineEmits<{
@@ -53,10 +58,10 @@ const isNew = computed(() => props.mode === 'new')
 
 const title = computed(() =>
   props.mode === 'new'
-    ? 'New Scan Point'
+    ? 'New Check Point'
     : props.mode === 'edit'
-      ? 'Edit Scan Point'
-      : 'Scan Point Detail',
+      ? 'Edit Check Point'
+      : 'Check Point Detail',
 )
 
 const form = reactive<FormState>({
@@ -67,6 +72,7 @@ const form = reactive<FormState>({
   cp_description: '',
   cp_priority_text: '1',
   area_id: 0,
+  role_ids: [],
 })
 
 watch(
@@ -80,6 +86,7 @@ watch(
     form.cp_description = m.cp_description ?? ''
     form.cp_priority_text = String(m.cp_priority ?? 1)
     form.area_id = Number(m.area_id ?? props.areaOptions[0]?.value ?? 0)
+    form.role_ids = Array.isArray(m.role_ids) ? [...m.role_ids] : []
   },
   { immediate: true },
 )
@@ -88,6 +95,13 @@ const areaLabel = computed(() => {
   return (
     props.areaOptions.find((x) => x.value === form.area_id)?.label ?? String(form.area_id ?? '')
   )
+})
+
+const roleLabels = computed(() => {
+  if (props.model?.role_names?.length) return props.model.role_names
+
+  const map = new Map(props.roleOptions.map((x) => [x.value, x.label]))
+  return form.role_ids.map((id) => map.get(id) ?? String(id))
 })
 
 function close() {
@@ -106,16 +120,16 @@ function normalizeQr(src: string) {
 function submit() {
   emit('submit', {
     submit: async (actor_id: string) => {
-      const code = (form.cp_code ?? '').trim()
       const name = (form.cp_name ?? '').trim()
       const desc = (form.cp_description ?? '').trim()
       const areaId = Number(form.area_id ?? 0)
       const priority = Number(form.cp_priority_text ?? 0)
+      const roleIds = (form.role_ids ?? []).map((x) => Number(x)).filter((x) => x > 0)
 
       const missing: string[] = []
-      if (!code) missing.push('Scan Point Code')
-      if (!name) missing.push('Scan Point Name')
+      if (!name) missing.push('Check Point Name')
       if (!areaId) missing.push('Area')
+      if (!roleIds.length) missing.push('Role')
 
       if (missing.length) {
         throw new Error(`MISSING_FIELDS:${missing.join(', ')}`)
@@ -125,15 +139,13 @@ function submit() {
         throw new Error('PRIORITY_MIN_1')
       }
 
-      // Backend create/update không nhận cpQr -> không validate MISSING_QR nữa
-
       if (props.mode === 'new') {
         await createCheckpointMock({
-          cp_code: code,
           cp_name: name,
           cp_description: desc,
           cp_priority: priority,
           area_id: areaId,
+          role_ids: roleIds,
           actor_id,
         })
         return
@@ -143,11 +155,11 @@ function submit() {
 
       await updateCheckpointMock({
         cp_id: form.cp_id,
-        cp_code: code,
         cp_name: name,
         cp_description: desc,
         cp_priority: priority,
         area_id: areaId,
+        role_ids: roleIds,
         actor_id,
       })
     },
@@ -169,16 +181,33 @@ function submit() {
 
     <div v-else class="space-y-4">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm text-slate-600 mb-1">Scan Point Code</label>
-          <div v-if="isView" class="text-slate-800 font-semibold">{{ form.cp_code }}</div>
-          <BaseInput v-else v-model="form.cp_code" label="" placeholder="Enter code" />
+        <div v-if="isView">
+          <label class="block text-sm text-slate-600 mb-1">Check Point Code</label>
+          <div class="text-slate-800 font-semibold">{{ form.cp_code }}</div>
         </div>
 
         <div>
-          <label class="block text-sm text-slate-600 mb-1">Scan Point Name</label>
+          <label class="block text-sm text-slate-600 mb-1">Check Point Name</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ form.cp_name }}</div>
           <BaseInput v-else v-model="form.cp_name" label="" placeholder="Enter name" />
+        </div>
+
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Role</label>
+          <div v-if="isView" class="text-slate-800 font-semibold">
+            {{ roleLabels.length ? roleLabels.join(', ') : '—' }}
+          </div>
+          <MultiSelect
+            v-else
+            v-model="form.role_ids"
+            class="w-full"
+            :options="roleOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Select role"
+            display="chip"
+            filter
+          />
         </div>
 
         <div class="md:col-span-2">
@@ -205,6 +234,7 @@ function submit() {
             optionLabel="label"
             optionValue="value"
             placeholder="Select area"
+            disabled
           />
         </div>
 

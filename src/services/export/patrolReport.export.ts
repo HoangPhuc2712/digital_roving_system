@@ -119,11 +119,11 @@ export async function exportPatrolReportXlsx(params: { rows: ReportRow[]; fileNa
   >()
 
   for (const r of params.rows ?? []) {
-    const key = String(r.user_id || r.created_by || 'unknown')
+    const key = String(r.created_by || 'unknown')
     const g = groups.get(key) ?? {
       guardKey: key,
-      guardName: String(r.user_name ?? '').trim() || '—',
-      guardCode: String(r.user_code ?? '').trim() || '',
+      guardName: String(r.created_name ?? '').trim() || '—',
+      guardCode: '',
       rows: [],
     }
     g.rows.push(r)
@@ -137,10 +137,12 @@ export async function exportPatrolReportXlsx(params: { rows: ReportRow[]; fileNa
 
   // build sheets
   for (const g of groups.values()) {
-    const sorted = [...g.rows].sort((a, b) => (a.created_at < b.created_at ? -1 : 1))
+    const sorted = [...g.rows].sort((a, b) =>
+      (a.scan_at || a.created_at) < (b.scan_at || b.created_at) ? -1 : 1,
+    )
 
     const times = sorted
-      .map((x) => new Date(x.created_at).getTime())
+      .map((x) => new Date(x.scan_at || x.created_at).getTime())
       .filter((t) => Number.isFinite(t))
 
     const startDt = times.length ? new Date(Math.min(...times)) : null
@@ -169,7 +171,7 @@ export async function exportPatrolReportXlsx(params: { rows: ReportRow[]; fileNa
     ws.mergeCells(3, 4, 3, 6)
 
     ws.getCell(1, 1).value = `Name of the guard: ${guardLabel}`
-    ws.getCell(1, 4).value = `Roving date: ${rovingDate}`
+    ws.getCell(1, 4).value = `Patrol date: ${rovingDate}`
     ws.getCell(2, 4).value = `Start time: ${startTime}`
     ws.getCell(3, 4).value = `Finish time: ${finishTime}`
 
@@ -226,9 +228,9 @@ export async function exportPatrolReportXlsx(params: { rows: ReportRow[]; fileNa
 
       for (let rr = startRow; rr <= endRow; rr++) ws.getRow(rr).height = 72
       const areaText = (r.area_code ?? '').trim()
-      const cpText = (r.cp_name ?? '').trim()
+      const cpText = `${(r.cp_code ?? '').trim()} - ${(r.cp_name ?? '').trim()}`.trim()
       const locationText = (r.cp_description ?? '').trim() || '-'
-      const resultText = r.pr_check ? 'OK' : 'NOT OK'
+      const resultText = r.pr_has_problem ? 'NOT OK' : 'OK'
       const noteText = (r.pr_note ?? '').trim() || '-'
 
       ws.getCell(startRow, 1).value = areaText
@@ -260,7 +262,7 @@ export async function exportPatrolReportXlsx(params: { rows: ReportRow[]; fileNa
       resultCell.fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: r.pr_check ? 'FF16A34A' : 'FFDC2626' },
+        fgColor: { argb: r.pr_has_problem ? 'FFDC2626' : 'FF16A34A' },
       }
 
       if (imgList.length > 0) {
