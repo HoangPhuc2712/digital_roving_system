@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth.store'
 import { useDashboardStore } from '@/modules/dashboard/dashboard.store'
-import type { DashboardCard } from '@/modules/dashboard/dashboard.types'
+import type { DashboardCardMeta, DashboardTotalAppItem } from '@/modules/dashboard/dashboard.types'
 
 const auth = useAuthStore()
 const store = useDashboardStore()
@@ -14,82 +14,65 @@ const allowCodeSet = computed(() => {
   const list = (auth.user as any)?.allowViews ?? (auth.user as any)?.allow_views ?? []
   const set = new Set<string>()
   for (const x of list) {
-    if (x?.mcActive === true && x?.mcCode) set.add(String(x.mcCode))
+    if (x?.mcActive === true && x?.mcCode) set.add(String(x.mcCode).toUpperCase())
   }
   return set
 })
 
 function canSeeMc(mcCode?: string) {
   if (!mcCode) return true
-  return allowCodeSet.value.has(mcCode)
+  return allowCodeSet.value.has(mcCode.toUpperCase())
 }
 
-const cards = computed<DashboardCard[]>(() => {
-  // className: bạn tự đổi màu tại đây
-  const list: DashboardCard[] = [
-    {
-      key: 'totalReports',
-      title: 'Total Reports',
-      mcCode: 'MC006',
-      to: '/reports',
-      className: 'bg-white',
-    },
-    {
-      key: 'issuedReports',
-      title: 'Issued Reports',
-      mcCode: 'MC006',
-      to: '/reports',
-      className: 'bg-white',
-    },
-    {
-      key: 'pendingReports',
-      title: 'Pending Reports',
-      mcCode: 'MC006',
-      to: '/reports',
-      className: 'bg-white',
-    },
+function normalizeName(name: string) {
+  return String(name ?? '')
+    .trim()
+    .replace(/\s+/g, '')
+    .toUpperCase()
+}
 
-    { key: 'roles', title: 'Roles', mcCode: 'MC001', to: '/roles', className: 'bg-white' },
-    { key: 'users', title: 'Users', mcCode: 'MC002', to: '/users', className: 'bg-white' },
+function cardMetaOf(item: DashboardTotalAppItem): DashboardCardMeta {
+  switch (normalizeName(item.name)) {
+    case 'ROLES':
+      return { mcCode: 'MC001', to: '/roles' }
+    case 'USERS':
+      return { mcCode: 'MC002', to: '/users' }
+    case 'MENUCATEGORIES':
+      return { mcCode: 'MC003' }
+    case 'AREAS':
+      return { mcCode: 'MC004', to: '/areas' }
+    case 'CHECKPOINTS':
+      return { mcCode: 'MC004', to: '/areas' }
+    case 'ROUTES':
+      return { mcCode: 'MC005', to: '/routes' }
+    default:
+      return {}
+  }
+}
 
-    // Scan Points không có menu riêng trong MenuCategory list, nên tạm map chung quyền Routes (MC005)
-    {
-      key: 'scanPoints',
-      title: 'Scan Points',
-      mcCode: 'MC005',
-      to: '/checkpoints',
-      className: 'bg-white',
-    },
-    { key: 'routes', title: 'Routes', mcCode: 'MC005', to: '/routes', className: 'bg-white' },
-  ]
-
-  return list.filter((c) => canSeeMc(c.mcCode))
+const cards = computed(() => {
+  return store.cards
+    .map((item) => ({
+      ...item,
+      ...cardMetaOf(item),
+    }))
+    .filter((item) => canSeeMc(item.mcCode))
+    .sort((a, b) => a.stt - b.stt)
 })
 
-function valueOf(key: DashboardCard['key']) {
-  const s = store.stats
-  if (!s) return null
-  return s[key]
-}
-
-function open(card: DashboardCard) {
+function open(card: DashboardTotalAppItem & DashboardCardMeta) {
   if (!card.to) return
   router.push(card.to)
 }
 
-onMounted(async () => {
-  const hasReports = canSeeMc('MC006')
-  const hasRoles = canSeeMc('MC001')
-  const hasUsers = canSeeMc('MC002')
-  const hasRoutes = canSeeMc('MC005')
+function cardStyle(card: DashboardTotalAppItem) {
+  return {
+    backgroundColor: card.color || '#ffffff',
+  }
+}
 
-  await store.load({
-    includeReports: hasReports,
-    includeRoles: hasRoles,
-    includeUsers: hasUsers,
-    includeScanPoints: hasRoutes,
-    includeRoutes: hasRoutes,
-  })
+onMounted(async () => {
+  await store.load()
 })
 </script>
 
@@ -104,22 +87,59 @@ onMounted(async () => {
 
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
       <button
-        v-for="c in cards"
-        :key="c.key"
+        v-for="(card, idx) in cards"
+        :key="`${card.stt}-${card.name}`"
+        v-animateonscroll="{
+          enterClass: 'dashboard-card-enter',
+          leaveClass: 'dashboard-card-leave',
+        }"
         type="button"
-        class="rounded-2xl shadow-sm hover:shadow transition p-4 text-left cursor-pointer"
-        :class="c.className"
-        @click="open(c)"
+        class="dashboard-card rounded-2xl shadow-sm hover:shadow transition p-4 text-left"
+        :class="card.to ? 'cursor-pointer' : 'cursor-default'"
+        :style="{ ...cardStyle(card), animationDelay: `${idx * 100}ms` }"
+        @click="open(card)"
       >
-        <div class="text-sm text-slate-600">{{ c.title }}</div>
+        <div class="text-sm text-white/85">{{ card.name }}</div>
 
-        <div class="mt-2 text-3xl font-semibold text-slate-900">
+        <div class="mt-2 text-3xl font-semibold text-white">
           <span v-if="store.loading">—</span>
-          <span v-else>{{ valueOf(c.key) ?? '—' }}</span>
+          <span v-else>{{ card.totalItem }}</span>
         </div>
 
-        <div class="mt-2 text-xs text-slate-500">Click to view</div>
+        <div class="mt-2 text-xs text-white/80">Click to view</div>
       </button>
     </div>
   </div>
 </template>
+
+<style scoped>
+.dashboard-card-enter {
+  animation: dashboard-fade-in-left 0.7s ease-out both;
+}
+
+.dashboard-card-leave {
+  animation: dashboard-fade-out 0.2s ease-in both;
+}
+
+@keyframes dashboard-fade-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes dashboard-fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+</style>
