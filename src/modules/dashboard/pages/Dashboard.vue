@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import Chart from 'primevue/chart'
 
 import { useAuthStore } from '@/stores/auth.store'
 import { useDashboardStore } from '@/modules/dashboard/dashboard.store'
@@ -71,13 +72,92 @@ function cardStyle(card: DashboardTotalAppItem) {
   }
 }
 
+const chartOptions = computed(() => {
+  const textColor = '#334155'
+  const mutedTextColor = '#64748b'
+
+  return {
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          color: textColor,
+          usePointStyle: true,
+          pointStyle: 'circle',
+          padding: 16,
+        },
+      },
+      tooltip: {
+        callbacks: {
+          label(context: any) {
+            const label = String(context.label ?? '')
+            const value = Number(context.raw ?? 0)
+            return `${label}: ${value}`
+          },
+        },
+      },
+    },
+    cutout: '60%',
+    maintainAspectRatio: false,
+    animation: {
+      animateScale: true,
+      animateRotate: true,
+      duration: 900,
+    },
+    elements: {
+      arc: {
+        borderWidth: 0,
+      },
+    },
+    layout: {
+      padding: 4,
+    },
+    color: mutedTextColor,
+  }
+})
+
+const roleChartData = computed(() => ({
+  labels: store.totalUsersByRole.map((x) => x.role_name || x.role_code || `Role ${x.role_id}`),
+  datasets: [
+    {
+      data: store.totalUsersByRole.map((x) => x.total_user),
+      backgroundColor: ['#FE9A37', '#F0B13B', '#37BC7D', '#3BB8DB', '#8E51FF', '#F76E6E'],
+      hoverBackgroundColor: ['#FE9A37', '#F0B13B', '#37BC7D', '#3BB8DB', '#8E51FF', '#F76E6E'],
+    },
+  ],
+}))
+
+const areaUserChartData = computed(() => ({
+  labels: store.totalUsersByArea.map((x) => x.area_name || x.area_code || `Area ${x.area_id}`),
+  datasets: [
+    {
+      data: store.totalUsersByArea.map((x) => x.total_user),
+      backgroundColor: ['#36BBA7', '#3BB8DB', '#8E51FF', '#FE9A37', '#F76E6E', '#9CA3AF'],
+      hoverBackgroundColor: ['#36BBA7', '#3BB8DB', '#8E51FF', '#FE9A37', '#F76E6E', '#9CA3AF'],
+    },
+  ],
+}))
+
+const checkpointChartData = computed(() => ({
+  labels: store.totalCheckpointsByArea.map(
+    (x) => x.area_name || x.area_code || `Area ${x.area_id}`,
+  ),
+  datasets: [
+    {
+      data: store.totalCheckpointsByArea.map((x) => x.total_check_point),
+      backgroundColor: ['#3BB8DB', '#8E51FF', '#37BC7D', '#F0B13B', '#FE9A37', '#F76E6E'],
+      hoverBackgroundColor: ['#3BB8DB', '#8E51FF', '#37BC7D', '#F0B13B', '#FE9A37', '#F76E6E'],
+    },
+  ],
+}))
+
 onMounted(async () => {
   await store.load()
 })
 </script>
 
 <template>
-  <div class="space-y-3">
+  <div class="space-y-6">
     <div class="text-xl font-semibold text-slate-800">Dashboard</div>
 
     <div v-if="store.error" class="p-4">
@@ -109,6 +189,64 @@ onMounted(async () => {
         <div class="mt-2 text-xs text-white/80">Click to view</div>
       </button>
     </div>
+
+    <div class="mt-20 grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div
+        v-animateonscroll="{
+          enterClass: 'dashboard-chart-enter',
+          leaveClass: 'dashboard-chart-leave',
+        }"
+        class="rounded-2xl border border-slate-200 bg-white p-4"
+      >
+        <div class="text-base font-semibold text-slate-800">Total Users by Roles</div>
+        <div class="mt-4 h-[320px]">
+          <Chart
+            type="doughnut"
+            :data="roleChartData"
+            :options="chartOptions"
+            class="h-full w-full"
+          />
+        </div>
+      </div>
+
+      <div
+        v-animateonscroll="{
+          enterClass: 'dashboard-chart-enter',
+          leaveClass: 'dashboard-chart-leave',
+        }"
+        class="rounded-2xl border border-slate-200 bg-white p-4"
+        style="animation-delay: 100ms"
+      >
+        <div class="text-base font-semibold text-slate-800">Total Users by Area</div>
+        <div class="mt-4 h-[320px]">
+          <Chart
+            type="doughnut"
+            :data="areaUserChartData"
+            :options="chartOptions"
+            class="h-full w-full"
+          />
+        </div>
+      </div>
+
+      <div
+        v-animateonscroll="{
+          enterClass: 'dashboard-chart-enter',
+          leaveClass: 'dashboard-chart-leave',
+        }"
+        class="rounded-2xl border border-slate-200 bg-white p-4"
+        style="animation-delay: 200ms"
+      >
+        <div class="text-base font-semibold text-slate-800">Total Checkpoints by Area</div>
+        <div class="mt-4 h-[320px]">
+          <Chart
+            type="doughnut"
+            :data="checkpointChartData"
+            :options="chartOptions"
+            class="h-full w-full"
+          />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -121,6 +259,14 @@ onMounted(async () => {
   animation: dashboard-fade-out 0.2s ease-in both;
 }
 
+.dashboard-chart-enter {
+  animation: dashboard-pop-center 0.7s ease-out both;
+}
+
+.dashboard-chart-leave {
+  animation: dashboard-fade-out 0.2s ease-in both;
+}
+
 @keyframes dashboard-fade-in-left {
   from {
     opacity: 0;
@@ -130,6 +276,18 @@ onMounted(async () => {
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+@keyframes dashboard-pop-center {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 

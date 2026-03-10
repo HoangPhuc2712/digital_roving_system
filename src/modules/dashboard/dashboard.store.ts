@@ -1,26 +1,71 @@
 import { defineStore } from 'pinia'
-import type { DashboardTotalAppItem } from './dashboard.types'
-import { fetchDashboardCards } from './dashboard.api'
+import type {
+  DashboardTotalAppItem,
+  DashboardTotalCheckpointByAreaItem,
+  DashboardTotalUserByAreaItem,
+  DashboardTotalUserByRoleItem,
+} from './dashboard.types'
+import {
+  fetchDashboardCards,
+  fetchDashboardTotalCheckpointByArea,
+  fetchDashboardTotalUserByArea,
+  fetchDashboardTotalUserByRole,
+} from './dashboard.api'
 
 export const useDashboardStore = defineStore('dashboard', {
   state: () => ({
     loading: false,
     error: '' as string,
     cards: [] as DashboardTotalAppItem[],
+    totalUsersByRole: [] as DashboardTotalUserByRoleItem[],
+    totalUsersByArea: [] as DashboardTotalUserByAreaItem[],
+    totalCheckpointsByArea: [] as DashboardTotalCheckpointByAreaItem[],
   }),
 
   actions: {
     async load() {
       this.loading = true
       this.error = ''
-      try {
-        this.cards = await fetchDashboardCards()
-      } catch (e: any) {
-        this.error = String(e?.message ?? 'FAILED_TO_LOAD')
+
+      const results = await Promise.allSettled([
+        fetchDashboardCards(),
+        fetchDashboardTotalUserByRole(),
+        fetchDashboardTotalUserByArea(),
+        fetchDashboardTotalCheckpointByArea(),
+      ])
+
+      const [cardsRes, usersByRoleRes, usersByAreaRes, checkpointsByAreaRes] = results
+
+      if (cardsRes.status === 'fulfilled') {
+        this.cards = cardsRes.value
+      } else {
         this.cards = []
-      } finally {
-        this.loading = false
       }
+
+      if (usersByRoleRes.status === 'fulfilled') {
+        this.totalUsersByRole = usersByRoleRes.value
+      } else {
+        this.totalUsersByRole = []
+      }
+
+      if (usersByAreaRes.status === 'fulfilled') {
+        this.totalUsersByArea = usersByAreaRes.value
+      } else {
+        this.totalUsersByArea = []
+      }
+
+      if (checkpointsByAreaRes.status === 'fulfilled') {
+        this.totalCheckpointsByArea = checkpointsByAreaRes.value
+      } else {
+        this.totalCheckpointsByArea = []
+      }
+
+      const firstRejected = results.find((x) => x.status === 'rejected')
+      this.error =
+        firstRejected?.status === 'rejected'
+          ? String(firstRejected.reason?.message ?? 'FAILED_TO_LOAD')
+          : ''
+      this.loading = false
     },
   },
 })
