@@ -49,12 +49,18 @@ type ApiPointReportView = {
 
   scanAt?: string
   realitySecond?: number
-  realityTimeStr?: string
+  realityHours?: number
+  realityMinutes?: number
+  realitySeconds?: number
+
   routeId?: number
   routeName?: string
   rdId?: number
   planSecond?: number
-  planTimeStr?: string
+  planHours?: number
+  planMinutes?: number
+  planSeconds?: number
+
   timeProblem?: boolean
   psId?: number
   psDay?: number
@@ -150,6 +156,17 @@ function flattenNoteGroups(noteGroups: ReportNoteGroup[]): ReportImage[] {
   return noteGroups.flatMap((group) => group.report_images)
 }
 
+function pad2(n: number) {
+  return String(n).padStart(2, '0')
+}
+
+function formatHms(hours: number, minutes: number, seconds: number) {
+  const h = Number.isFinite(hours) ? Math.max(0, hours) : 0
+  const m = Number.isFinite(minutes) ? Math.max(0, minutes) : 0
+  const s = Number.isFinite(seconds) ? Math.max(0, seconds) : 0
+  return `${h}:${pad2(m)}:${pad2(s)}`
+}
+
 function normalizeView(v: ApiPointReportView): ReportRow {
   const noteGroups = normalizeNoteGroups(v).filter(
     (group) => group.report_images.length > 0 || !!group.pri_image_note.trim(),
@@ -177,10 +194,19 @@ function normalizeView(v: ApiPointReportView): ReportRow {
 
   const actualSecond = Number(v.realitySecond ?? 0)
   const planSecond = Number(v.planSecond ?? 0)
-  const realityTimeStr = String(v.realityTimeStr ?? '').trim()
-  const planTimeStr = String(v.planTimeStr ?? '').trim()
+
+  const realityHours = Number(v.realityHours ?? 0)
+  const realityMinutes = Number(v.realityMinutes ?? 0)
+  const realitySeconds = Number(v.realitySeconds ?? 0)
+
+  const planHours = Number(v.planHours ?? 0)
+  const planMinutes = Number(v.planMinutes ?? 0)
+  const planSeconds = Number(v.planSeconds ?? 0)
+
   const timeProblem = Boolean(v.timeProblem)
 
+  const realityTimeStr = formatHms(realityHours, realityMinutes, realitySeconds)
+  const planTimeStr = formatHms(planHours, planMinutes, planSeconds)
   return {
     pr_id: Number(v.prId ?? 0),
     pr_status: Number(v.prStatus ?? 0),
@@ -220,8 +246,15 @@ function normalizeView(v: ApiPointReportView): ReportRow {
     ps_hour_from: Number(v.psHourFrom ?? 0),
     ps_hour_to: Number(v.psHourTo ?? 0),
 
-    reality_time_str: realityTimeStr || (actualSecond > 0 ? String(actualSecond) : ''),
-    plan_time_str: planTimeStr || (planSecond > 0 ? String(planSecond) : ''),
+    reality_hours: realityHours,
+    reality_minutes: realityMinutes,
+    reality_seconds: realitySeconds,
+    plan_hours: planHours,
+    plan_minutes: planMinutes,
+    plan_seconds: planSeconds,
+
+    reality_time_str: realityTimeStr,
+    plan_time_str: planTimeStr,
     time_problem: timeProblem,
 
     report_images: flatImages,

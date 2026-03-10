@@ -54,6 +54,13 @@ export type ReportRow = {
   ps_hour_from: number
   ps_hour_to: number
 
+  reality_hours: number
+  reality_minutes: number
+  reality_seconds: number
+  plan_hours: number
+  plan_minutes: number
+  plan_seconds: number
+
   reality_time_str: string
   plan_time_str: string
   time_problem: boolean

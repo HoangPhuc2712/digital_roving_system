@@ -59,11 +59,13 @@ export const useReportsStore = defineStore('reports', {
 
     guardOptions(): { label: string; value: string }[] {
       const seen = new Map<string, string>()
+
       for (const r of this.visibleRows) {
-        const guardId = (r.created_by ?? '').trim()
-        const label = (r.report_name ?? '').trim()
-        if (!guardId || !label) continue
-        if (!seen.has(guardId)) seen.set(guardId, label)
+        const label = String(r.report_name ?? '').trim()
+        const value = String(r.created_by ?? '').trim() || label
+
+        if (!label || !value) continue
+        if (!seen.has(value)) seen.set(value, label)
       }
 
       return [...seen.entries()]
@@ -107,7 +109,10 @@ export const useReportsStore = defineStore('reports', {
           if (!r.pr_has_problem) return false
           if (r.pr_status !== this.filterIssueStatus) return false
         }
-        if (this.filterGuardId && (r.created_by ?? '') !== this.filterGuardId) return false
+        if (this.filterGuardId) {
+          const guardValue = String(r.created_by ?? '').trim() || String(r.report_name ?? '').trim()
+          if (guardValue !== this.filterGuardId) return false
+        }
 
         if (fromTime != null || toTime != null) {
           const t = new Date(r.report_at || r.scan_at || r.created_at).getTime()
