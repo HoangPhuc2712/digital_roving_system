@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import Dialog from 'primevue/dialog'
+import Dropdown from 'primevue/dropdown'
 import Tag from 'primevue/tag'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
@@ -15,21 +16,36 @@ type BaseImageItem = {
   title?: string
 }
 
+export type ReportFormMode = 'view' | 'edit-status'
 export type ReportFormModel = ReportRow
 
 const props = defineProps<{
   visible: boolean
   model: ReportFormModel | null
+  mode?: ReportFormMode
 }>()
 
 const emit = defineEmits<{
   (e: 'update:visible', v: boolean): void
+  (e: 'submit-status', payload: { pr_id: number; pr_status: number }): void
   (e: 'close'): void
 }>()
 
 const viewerVisible = ref(false)
 const viewerTitle = ref('Detail Images')
 const viewerItems = ref<BaseImageItem[]>([])
+const statusDraft = ref(0)
+
+const formMode = computed<ReportFormMode>(() => props.mode ?? 'view')
+const isEditStatus = computed(() => formMode.value === 'edit-status')
+const inspectionOk = computed(() => (props.model ? props.model.pr_has_problem === false : true))
+
+const issueStatusOptions = [
+  { label: 'Pending', value: 0 },
+  { label: 'In Progress', value: 1 },
+  { label: 'Completed', value: 2 },
+  { label: 'Incompleted', value: 3 },
+]
 
 function close() {
   emit('update:visible', false)
@@ -57,7 +73,8 @@ function formatSeconds(sec: number) {
   return h > 0 ? `${h}:${mm}:${rr}` : `${m}:${rr.padStart(2, '0')}`
 }
 
-function issueStatusLabel(s: number) {
+function issueStatusLabel(s: number, hasProblem = true) {
+  if (!hasProblem) return 'No Issue'
   switch (s) {
     case 0:
       return 'Pending'
@@ -72,7 +89,8 @@ function issueStatusLabel(s: number) {
   }
 }
 
-function issueStatusSeverity(s: number) {
+function issueStatusSeverity(s: number, hasProblem = true) {
+  if (!hasProblem) return 'secondary'
   switch (s) {
     case 0:
       return 'warn'
@@ -86,8 +104,6 @@ function issueStatusSeverity(s: number) {
       return 'secondary'
   }
 }
-
-const inspectionOk = computed(() => (props.model ? props.model.pr_has_problem === false : true))
 
 const detailGroups = computed(() => {
   const groups = props.model?.note_groups ?? []
@@ -116,6 +132,14 @@ function openViewer(items: BaseImageItem[], startIndex: number, title: string) {
   viewerVisible.value = true
 }
 
+function submitStatus() {
+  if (!props.model?.pr_id) return
+  emit('submit-status', {
+    pr_id: props.model.pr_id,
+    pr_status: Number(statusDraft.value ?? 0),
+  })
+}
+
 watch(
   () => props.visible,
   (v) => {
@@ -125,13 +149,25 @@ watch(
     }
   },
 )
+
+watch(
+  () => [props.model?.pr_id, props.model?.pr_status, props.model?.pr_has_problem, formMode.value],
+  () => {
+    if (!props.model) {
+      statusDraft.value = 0
+      return
+    }
+    statusDraft.value = props.model.pr_has_problem ? Number(props.model.pr_status ?? 0) : 0
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
   <Dialog
     :visible="visible"
     modal
-    header="Report Detail"
+    :header="isEditStatus ? 'Edit Issue Status' : 'Report Detail'"
     :style="{ width: '980px', maxWidth: '95vw' }"
     :contentStyle="{ maxHeight: '78vh', overflow: 'auto' }"
     @update:visible="emit('update:visible', $event)"
@@ -165,8 +201,8 @@ watch(
 
         <div class="flex flex-wrap gap-2 pt-1">
           <Tag
-            :value="issueStatusLabel(model.pr_status)"
-            :severity="issueStatusSeverity(model.pr_status)"
+            :value="issueStatusLabel(model.pr_status, model.pr_has_problem)"
+            :severity="issueStatusSeverity(model.pr_status, model.pr_has_problem)"
           />
           <Tag
             :value="inspectionOk ? 'OK' : 'Not OK'"
@@ -174,6 +210,23 @@ watch(
           />
           <Tag :value="`Actual: ${formatSeconds(model.pr_second)}`" severity="secondary" />
           <Tag :value="`Standard: ${formatSeconds(model.rd_second)}`" severity="secondary" />
+        </div>
+      </div>
+
+      <div v-if="isEditStatus" class="border-t border-slate-200 pt-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">Issue Status</label>
+            <Dropdown
+              v-model="statusDraft"
+              class="w-full"
+              :options="issueStatusOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Select status"
+              :disabled="!model.pr_has_problem"
+            />
+          </div>
         </div>
       </div>
 
@@ -213,6 +266,12 @@ watch(
 
       <div class="flex justify-end gap-2 pt-3 border-t border-slate-200">
         <BaseButton label="Close" severity="secondary" outlined @click="close" />
+        <BaseButton
+          v-if="isEditStatus && model.pr_has_problem"
+          label="Submit"
+          severity="success"
+          @click="submitStatus"
+        />
       </div>
     </div>
 

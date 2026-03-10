@@ -103,7 +103,10 @@ export const useReportsStore = defineStore('reports', {
         if (this.filterAreaId != null && r.area_id !== this.filterAreaId) return false
         if (this.filterResult === 'OK' && r.pr_has_problem !== false) return false
         if (this.filterResult === 'NOT_OK' && r.pr_has_problem !== true) return false
-        if (this.filterIssueStatus != null && r.pr_status !== this.filterIssueStatus) return false
+        if (this.filterIssueStatus != null) {
+          if (!r.pr_has_problem) return false
+          if (r.pr_status !== this.filterIssueStatus) return false
+        }
         if (this.filterGuardId && (r.created_by ?? '') !== this.filterGuardId) return false
 
         if (fromTime != null || toTime != null) {

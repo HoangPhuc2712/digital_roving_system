@@ -98,7 +98,6 @@ const emit = defineEmits<{
           :manualInput="false"
           showButtonBar
           showIcon
-          readonlyInput
           placeholder="Select start date"
           @update:modelValue="emit('update:modelDateFrom', $event)"
         />
@@ -115,7 +114,6 @@ const emit = defineEmits<{
           :manualInput="false"
           showButtonBar
           showIcon
-          readonlyInput
           placeholder="Select end date"
           @update:modelValue="emit('update:modelDateTo', $event)"
         />

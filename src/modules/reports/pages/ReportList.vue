@@ -2,6 +2,7 @@
 import { onMounted, watch, ref } from 'vue'
 
 import Tag from 'primevue/tag'
+import { useToast } from 'primevue/usetoast'
 import { type DataTablePageEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
 
@@ -9,13 +10,19 @@ import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import BaseInput from '@/components/common/inputs/BaseInput.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 
+import { useAuthStore } from '@/stores/auth.store'
 import { useReportsStore } from '@/modules/reports/reports.store'
 import type { ReportRow, ResultFilter } from '@/modules/reports/reports.types'
-import ReportForm, { type ReportFormModel } from '@/modules/reports/components/ReportForm.vue'
+import ReportForm, {
+  type ReportFormMode,
+  type ReportFormModel,
+} from '@/modules/reports/components/ReportForm.vue'
 import ReportFilters from '@/modules/reports/components/ReportFilters.vue'
 import { exportPatrolReportXlsx } from '@/services/export/patrolReport.export'
-import { fetchReportRowById } from '@/modules/reports/reports.api'
+import { changeReportStatus, fetchReportRowById } from '@/modules/reports/reports.api'
 
+const toast = useToast()
+const auth = useAuthStore()
 const store = useReportsStore()
 
 const resultOptions = [
@@ -34,6 +41,7 @@ const issueStatusOptions = [
 
 const exporting = ref(false)
 const formVisible = ref(false)
+const formMode = ref<ReportFormMode>('view')
 const formModel = ref<ReportFormModel | null>(null)
 
 watch(
@@ -64,7 +72,8 @@ function formatDateTime(iso: string) {
   )}:${pad2(d.getSeconds())}`
 }
 
-function issueStatusLabel(s: number) {
+function issueStatusLabel(s: number, hasProblem: boolean) {
+  if (!hasProblem) return 'No Issue'
   switch (s) {
     case 0:
       return 'Pending'
@@ -79,7 +88,8 @@ function issueStatusLabel(s: number) {
   }
 }
 
-function issueStatusSeverity(s: number) {
+function issueStatusSeverity(s: number, hasProblem: boolean) {
+  if (!hasProblem) return 'secondary'
   switch (s) {
     case 0:
       return 'warn'
@@ -107,8 +117,58 @@ function clearAll() {
 }
 
 async function openView(row: ReportRow) {
+  formMode.value = 'view'
   formModel.value = (await fetchReportRowById(row.pr_id)) ?? row
   formVisible.value = true
+}
+
+async function openEditStatus(row: ReportRow) {
+  if (!row.pr_has_problem) return
+  formMode.value = 'edit-status'
+  formModel.value = (await fetchReportRowById(row.pr_id)) ?? row
+  formVisible.value = true
+}
+
+async function handleSubmitStatus(payload: { pr_id: number; pr_status: number }) {
+  const updatedBy = auth.user?.user_id ?? ''
+  if (!updatedBy) return
+
+  try {
+    await changeReportStatus({
+      pr_id: payload.pr_id,
+      pr_status: payload.pr_status,
+      updated_by: updatedBy,
+    })
+
+    const refreshed = await fetchReportRowById(payload.pr_id)
+    if (!refreshed) {
+      throw new Error('Failed to reload updated report.')
+    }
+
+    const idx = store.rows.findIndex((x) => x.pr_id === payload.pr_id)
+    if (idx >= 0) {
+      store.rows[idx] = refreshed
+    }
+
+    if (formModel.value?.pr_id === payload.pr_id) {
+      formModel.value = refreshed
+    }
+
+    formVisible.value = false
+    toast.add({
+      severity: 'success',
+      summary: 'Saved',
+      detail: 'Issue status has been updated.',
+      life: 2000,
+    })
+  } catch (e: any) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: String(e?.message ?? 'Failed to update issue status.'),
+      life: 3000,
+    })
+  }
 }
 
 async function onExport() {
@@ -226,8 +286,8 @@ function onPage(e: DataTablePageEvent) {
       <Column header="Issue Status" style="min-width: 12rem" sortField="pr_status">
         <template #body="{ data }">
           <Tag
-            :value="issueStatusLabel(data.pr_status)"
-            :severity="issueStatusSeverity(data.pr_status)"
+            :value="issueStatusLabel(data.pr_status, data.pr_has_problem)"
+            :severity="issueStatusSeverity(data.pr_status, data.pr_has_problem)"
           />
         </template>
       </Column>
@@ -238,7 +298,7 @@ function onPage(e: DataTablePageEvent) {
         </template>
       </Column>
 
-      <Column header="Action" style="width: 120px" sortDisabled>
+      <Column header="Action" style="width: 160px" sortDisabled>
         <template #body="{ data }">
           <div class="flex gap-2 justify-start">
             <BaseIconButton
@@ -249,11 +309,26 @@ function onPage(e: DataTablePageEvent) {
               rounded
               @click="openView(data)"
             />
+            <BaseIconButton
+              v-if="data.pr_has_problem"
+              icon="pi pi-pencil"
+              size="small"
+              severity="secondary"
+              outlined
+              rounded
+              @click="openEditStatus(data)"
+            />
           </div>
         </template>
       </Column>
     </BaseDataTable>
 
-    <ReportForm v-model:visible="formVisible" :model="formModel" @close="formModel = null" />
+    <ReportForm
+      v-model:visible="formVisible"
+      :mode="formMode"
+      :model="formModel"
+      @submit-status="handleSubmitStatus"
+      @close="formModel = null"
+    />
   </div>
 </template>

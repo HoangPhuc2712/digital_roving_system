@@ -250,3 +250,28 @@ export async function fetchReportImagesByReportId(pr_id: number): Promise<Report
     throw e
   }
 }
+
+type ChangeReportStatusPayload = {
+  pr_id: number
+  pr_status: number
+  updated_by: string
+}
+
+export async function changeReportStatus(payload: ChangeReportStatusPayload): Promise<void> {
+  const actor = String(payload.updated_by ?? '').trim()
+
+  const body = {
+    prStatus: Number(payload.pr_status ?? 0),
+    updateBy: actor,
+  }
+
+  try {
+    const res = await http.patch(endpoints.pointReport.changeStatus(payload.pr_id), body)
+    ensureSuccess<unknown>(res.data)
+  } catch (e) {
+    const err = e as AxiosError<any>
+    const msg = String(err?.response?.data?.message ?? '')
+    if (msg) throw new Error(msg)
+    throw e
+  }
+}
