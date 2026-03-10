@@ -5,6 +5,7 @@ import Dropdown from 'primevue/dropdown'
 import Tag from 'primevue/tag'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
+import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import BaseImageViewer from '@/components/common/BaseImageViewer.vue'
 
 import type { ReportImage, ReportRow } from '@/modules/reports/reports.types'
@@ -35,9 +36,11 @@ const viewerVisible = ref(false)
 const viewerTitle = ref('Detail Images')
 const viewerItems = ref<BaseImageItem[]>([])
 const statusDraft = ref(0)
+const inlineStatusEdit = ref(false)
 
 const formMode = computed<ReportFormMode>(() => props.mode ?? 'view')
-const isEditStatus = computed(() => formMode.value === 'edit-status')
+const isExternalEditStatus = computed(() => formMode.value === 'edit-status')
+const isEditStatus = computed(() => isExternalEditStatus.value || inlineStatusEdit.value)
 const inspectionOk = computed(() => (props.model ? props.model.pr_has_problem === false : true))
 
 const issueStatusOptions = [
@@ -61,16 +64,6 @@ function formatDateTime(iso: string) {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(
     d.getMinutes(),
   )}:${pad2(d.getSeconds())}`
-}
-
-function formatSeconds(sec: number) {
-  const s = Math.max(0, Number(sec) || 0)
-  const h = Math.floor(s / 3600)
-  const m = Math.floor((s % 3600) / 60)
-  const r = s % 60
-  const mm = String(m).padStart(2, '0')
-  const rr = String(r).padStart(2, '0')
-  return h > 0 ? `${h}:${mm}:${rr}` : `${m}:${rr.padStart(2, '0')}`
 }
 
 function issueStatusLabel(s: number, hasProblem = true) {
@@ -121,6 +114,18 @@ const detailGroups = computed(() => {
   }))
 })
 
+const actualTimeText = computed(() => {
+  const text = String(props.model?.reality_time_str ?? '').trim()
+  return text || '—'
+})
+
+const standardTimeText = computed(() => {
+  const text = String(props.model?.plan_time_str ?? '').trim()
+  return text || '—'
+})
+
+const actualTimeSeverity = computed(() => (props.model?.time_problem ? 'danger' : 'secondary'))
+
 function openViewer(items: BaseImageItem[], startIndex: number, title: string) {
   if (!items.length) return
 
@@ -130,6 +135,17 @@ function openViewer(items: BaseImageItem[], startIndex: number, title: string) {
   viewerTitle.value = title
   viewerItems.value = rotated
   viewerVisible.value = true
+}
+
+function startInlineEditStatus() {
+  if (!props.model?.pr_has_problem) return
+  inlineStatusEdit.value = true
+  statusDraft.value = Number(props.model.pr_status ?? 0)
+}
+
+function cancelInlineEditStatus() {
+  inlineStatusEdit.value = false
+  statusDraft.value = props.model?.pr_has_problem ? Number(props.model.pr_status ?? 0) : 0
 }
 
 function submitStatus() {
@@ -146,6 +162,7 @@ watch(
     if (!v) {
       viewerVisible.value = false
       viewerItems.value = []
+      inlineStatusEdit.value = false
     }
   },
 )
@@ -155,9 +172,11 @@ watch(
   () => {
     if (!props.model) {
       statusDraft.value = 0
+      inlineStatusEdit.value = false
       return
     }
     statusDraft.value = props.model.pr_has_problem ? Number(props.model.pr_status ?? 0) : 0
+    inlineStatusEdit.value = false
   },
   { immediate: true },
 )
@@ -167,7 +186,7 @@ watch(
   <Dialog
     :visible="visible"
     modal
-    :header="isEditStatus ? 'Edit Issue Status' : 'Report Detail'"
+    :header="isExternalEditStatus ? 'Edit Issue Status' : 'Report Detail'"
     :style="{ width: '980px', maxWidth: '95vw' }"
     :contentStyle="{ maxHeight: '78vh', overflow: 'auto' }"
     @update:visible="emit('update:visible', $event)"
@@ -176,56 +195,104 @@ watch(
     <div v-if="!model" class="text-slate-500">No data.</div>
 
     <div v-else class="space-y-4">
-      <div class="space-y-1">
-        <div class="text-lg font-semibold text-slate-800">
-          {{ model.cp_code }} - {{ model.cp_name }}
-        </div>
-        <div class="text-sm text-slate-600">
-          Area:
-          <span class="text-slate-800 font-semibold"
-            >{{ model.area_code }} - {{ model.area_name }}</span
-          >
-        </div>
-        <div class="text-sm text-slate-600">
-          Guard:
-          <span class="text-slate-800 font-semibold">{{
-            model.report_name || model.created_by
-          }}</span>
-        </div>
-        <div class="text-sm text-slate-600">
-          Report Date:
-          <span class="text-slate-800 font-semibold">{{
-            formatDateTime(model.report_at || model.scan_at || model.created_at)
-          }}</span>
+      <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
+        <div class="space-y-4 min-w-0">
+          <div class="space-y-1">
+            <div class="text-lg font-semibold text-slate-800">
+              {{ model.cp_code }} - {{ model.cp_name }}
+            </div>
+            <div class="text-sm text-slate-600">
+              Area:
+              <span class="text-slate-800 font-semibold"
+                >{{ model.area_code }} - {{ model.area_name }}</span
+              >
+            </div>
+            <div class="text-sm text-slate-600">
+              Guard:
+              <span class="text-slate-800 font-semibold">{{
+                model.report_name || model.created_by
+              }}</span>
+            </div>
+            <div class="text-sm text-slate-600">
+              Report Date:
+              <span class="text-slate-800 font-semibold">{{
+                formatDateTime(model.report_at || model.scan_at || model.created_at)
+              }}</span>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <div class="flex flex-wrap gap-2">
+              <Tag
+                :value="inspectionOk ? 'OK' : 'Not OK'"
+                :severity="inspectionOk ? 'success' : 'danger'"
+              />
+            </div>
+
+            <div class="space-y-2">
+              <div class="text-sm font-semibold text-slate-800">Patrol Time</div>
+              <div class="flex flex-wrap gap-2">
+                <Tag :value="`Actual: ${actualTimeText}`" :severity="actualTimeSeverity" />
+                <Tag :value="`Standard: ${standardTimeText}`" severity="secondary" />
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="flex flex-wrap gap-2 pt-1">
-          <Tag
-            :value="issueStatusLabel(model.pr_status, model.pr_has_problem)"
-            :severity="issueStatusSeverity(model.pr_status, model.pr_has_problem)"
-          />
-          <Tag
-            :value="inspectionOk ? 'OK' : 'Not OK'"
-            :severity="inspectionOk ? 'success' : 'danger'"
-          />
-          <Tag :value="`Actual: ${formatSeconds(model.pr_second)}`" severity="secondary" />
-          <Tag :value="`Standard: ${formatSeconds(model.rd_second)}`" severity="secondary" />
-        </div>
-      </div>
+        <div class="space-y-3">
+          <div class="text-sm font-semibold text-slate-800">Issue Status</div>
 
-      <div v-if="isEditStatus" class="border-t border-slate-200 pt-3">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-          <div>
-            <label class="block text-sm text-slate-600 mb-1">Issue Status</label>
-            <Dropdown
-              v-model="statusDraft"
-              class="w-full"
-              :options="issueStatusOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Select status"
-              :disabled="!model.pr_has_problem"
-            />
+          <div v-if="isEditStatus && model.pr_has_problem" class="space-y-3">
+            <div>
+              <label class="block text-sm text-slate-600 mb-1">Status</label>
+              <Dropdown
+                v-model="statusDraft"
+                class="w-full"
+                :options="issueStatusOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Select status"
+              />
+            </div>
+
+            <div class="text-sm text-slate-600">
+              Updated by:
+              <span class="text-slate-800 font-semibold">{{ model.updated_name || '—' }}</span>
+            </div>
+
+            <div class="flex justify-end gap-2">
+              <BaseButton
+                v-if="inlineStatusEdit"
+                label="Cancel"
+                severity="secondary"
+                outlined
+                @click="cancelInlineEditStatus"
+              />
+            </div>
+          </div>
+
+          <div v-else class="space-y-3">
+            <div class="flex items-center justify-between gap-3">
+              <Tag
+                :value="issueStatusLabel(model.pr_status, model.pr_has_problem)"
+                :severity="issueStatusSeverity(model.pr_status, model.pr_has_problem)"
+              />
+
+              <BaseIconButton
+                v-if="model.pr_has_problem"
+                icon="pi pi-pencil"
+                size="small"
+                severity="secondary"
+                outlined
+                rounded
+                @click="startInlineEditStatus"
+              />
+            </div>
+
+            <div class="text-sm text-slate-600">
+              Updated by:
+              <span class="text-slate-800 font-semibold">{{ model.updated_name || '—' }}</span>
+            </div>
           </div>
         </div>
       </div>

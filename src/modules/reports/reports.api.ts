@@ -49,10 +49,13 @@ type ApiPointReportView = {
 
   scanAt?: string
   realitySecond?: number
+  realityTimeStr?: string
   routeId?: number
   routeName?: string
   rdId?: number
   planSecond?: number
+  planTimeStr?: string
+  timeProblem?: boolean
   psId?: number
   psDay?: number
   psMonth?: number
@@ -174,6 +177,9 @@ function normalizeView(v: ApiPointReportView): ReportRow {
 
   const actualSecond = Number(v.realitySecond ?? 0)
   const planSecond = Number(v.planSecond ?? 0)
+  const realityTimeStr = String(v.realityTimeStr ?? '').trim()
+  const planTimeStr = String(v.planTimeStr ?? '').trim()
+  const timeProblem = Boolean(v.timeProblem)
 
   return {
     pr_id: Number(v.prId ?? 0),
@@ -196,6 +202,9 @@ function normalizeView(v: ApiPointReportView): ReportRow {
     created_by: reportBy,
     created_name: reportName,
     report_name: reportName,
+    updated_at: String(v.updatedAt ?? v.reportAt ?? v.scanAt ?? nowIso()),
+    updated_by: String(v.updatedBy ?? reportBy),
+    updated_name: String(v.updatedName ?? reportName),
 
     pr_second: actualSecond,
     route_id: Number(v.routeId ?? 0),
@@ -210,6 +219,10 @@ function normalizeView(v: ApiPointReportView): ReportRow {
     ps_year: Number(v.psYear ?? 0),
     ps_hour_from: Number(v.psHourFrom ?? 0),
     ps_hour_to: Number(v.psHourTo ?? 0),
+
+    reality_time_str: realityTimeStr || (actualSecond > 0 ? String(actualSecond) : ''),
+    plan_time_str: planTimeStr || (planSecond > 0 ? String(planSecond) : ''),
+    time_problem: timeProblem,
 
     report_images: flatImages,
     note_groups: noteGroups,

@@ -36,6 +36,9 @@ export type ReportRow = {
   created_by: string
   created_name: string
   report_name: string
+  updated_at: string
+  updated_by: string
+  updated_name: string
 
   pr_second: number
   route_id: number
@@ -50,6 +53,10 @@ export type ReportRow = {
   ps_year: number
   ps_hour_from: number
   ps_hour_to: number
+
+  reality_time_str: string
+  plan_time_str: string
+  time_problem: boolean
 
   report_images: ReportImage[]
   note_groups: ReportNoteGroup[]
