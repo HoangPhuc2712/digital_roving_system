@@ -184,9 +184,7 @@ function normalizeView(v: ApiPointReportView): ReportRow {
   const note = String(v.prNote ?? '')
   const groupNotes = noteGroups.map((group) => group.pri_image_note).filter(Boolean)
 
-  const q = [areaCode, areaName, cpCode, cpName, cpDesc, reportName, note, ...groupNotes]
-    .join(' ')
-    .toLowerCase()
+  const q = [areaCode, areaName, cpCode, cpName, reportName].join(' ').toLowerCase()
 
   const scanAt = String(v.scanAt ?? v.reportAt ?? v.updatedAt ?? nowIso())
   const reportAt = String(v.reportAt ?? v.scanAt ?? v.updatedAt ?? nowIso())
