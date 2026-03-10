@@ -1,9 +1,21 @@
 import type { AxiosError } from 'axios'
 import { http } from '@/services/http/axios'
 import { endpoints } from '@/services/http/endpoints'
-import type { AreaOption, RouteDetailModel, RouteRow, ScanPointOption } from './routes.types'
+import type {
+  AreaOption,
+  RoleOption,
+  RouteDetailModel,
+  RouteRow,
+  ScanPointOption,
+} from './routes.types'
 
 type ApiEnvelope<T> = { data: T; success: boolean; message: string }
+
+type ApiRoleBase = {
+  roleId: number
+  roleCode?: string
+  roleName?: string
+}
 
 type ApiRouteDetail = {
   rdId?: number
@@ -11,8 +23,10 @@ type ApiRouteDetail = {
   cpId: number
   cpCode: string
   cpName: string
-  rdSecond: number
-  rdPriority: number
+  cpPriority?: number
+  rdSecond?: number
+  rdPriority?: number
+  rdMinute?: number
 }
 
 type ApiRouteView = {
@@ -21,10 +35,14 @@ type ApiRouteView = {
   routeKeyword?: string
   routeCode: string
   routeName: string
-  routeTotalSecond: number
+  routeTotalSecond?: number
+  routeTotalMinute?: number
   areaId: number
   areaCode?: string
   areaName?: string
+  roleId?: number
+  roleCode?: string
+  roleName?: string
   routePriority: number
   createdAt?: string
   updatedAt?: string
@@ -35,7 +53,9 @@ type ApiCheckPointView = {
   cpId: number
   cpCode: string
   cpName: string
+  cpPriority?: number
   areaId: number
+  roleIdStr?: string
 }
 
 function ensureSuccess<T>(payload: any): ApiEnvelope<T> {
@@ -53,6 +73,85 @@ function nowIso() {
 function apiStatusToUi(status?: number) {
   if (status == null) return 1
   return status === 0 ? 1 : 0
+}
+
+function parseRoleIds(roleIdStr?: string) {
+  return String(roleIdStr ?? '')
+    .split(/[;,|\s]+/)
+    .map((x) => Number(x.trim()))
+    .filter((x) => Number.isFinite(x) && x > 0)
+}
+
+function resolveRoleLabel(
+  roleId: number,
+  roleCode: string,
+  roleName: string,
+  roleOptions: RoleOption[],
+) {
+  if (roleName) return roleName
+  if (roleCode) return roleCode
+  return roleOptions.find((x) => x.value === roleId)?.label ?? ''
+}
+
+function toSeconds(value?: number, fallbackMinutes?: number) {
+  const sec = Number(value ?? 0)
+  if (Number.isFinite(sec) && sec > 0) return sec
+  const minute = Number(fallbackMinutes ?? 0)
+  if (Number.isFinite(minute) && minute > 0) return minute * 60
+  return 0
+}
+
+function mapRouteDetails(details: ApiRouteDetail[]): RouteDetailModel[] {
+  return (details ?? [])
+    .slice()
+    .sort((a, b) => Number(a.rdPriority ?? 0) - Number(b.rdPriority ?? 0))
+    .map<RouteDetailModel>((d) => ({
+      cp_id: Number(d.cpId ?? 0),
+      cp_code: String(d.cpCode ?? ''),
+      cp_name: String(d.cpName ?? ''),
+      cp_priority: Number(d.cpPriority ?? 0) || undefined,
+      rd_second: toSeconds(d.rdSecond, d.rdMinute),
+      rd_priority: Number(d.rdPriority ?? 0),
+    }))
+}
+
+function mapRouteView(v: ApiRouteView, roleOptions: RoleOption[] = []): RouteRow {
+  const details = mapRouteDetails(v.routeDetails ?? [])
+  const roleId = Number(v.roleId ?? 0)
+  const roleCode = String(v.roleCode ?? '')
+  const roleName = resolveRoleLabel(roleId, roleCode, String(v.roleName ?? ''), roleOptions)
+  const totalSecond = Number(v.routeTotalSecond ?? 0)
+  const totalMinute = Number(v.routeTotalMinute ?? 0)
+
+  return {
+    route_id: Number(v.routeId ?? 0),
+    route_code: String(v.routeCode ?? ''),
+    route_name: String(v.routeName ?? ''),
+    route_status: apiStatusToUi(v.routeStatus),
+    route_priority: Number(v.routePriority ?? 0),
+    route_total_second:
+      totalSecond > 0 ? totalSecond : totalMinute > 0 ? totalMinute * 60 : sumSeconds(details),
+
+    area_id: Number(v.areaId ?? 0),
+    area_code: String(v.areaCode ?? ''),
+    area_name: String(v.areaName ?? ''),
+
+    role_id: roleId,
+    role_code: roleCode,
+    role_name: roleName,
+
+    details,
+    details_count: details.length,
+
+    created_at: v.createdAt ?? nowIso(),
+    updated_at: v.updatedAt ?? nowIso(),
+    _q: String(
+      v.routeKeyword ??
+        `${v.routeCode ?? ''} ${v.routeName ?? ''} ${v.areaCode ?? ''} ${v.areaName ?? ''} ${roleCode} ${roleName}`,
+    )
+      .toLowerCase()
+      .trim(),
+  }
 }
 
 export function sumSeconds(details: RouteDetailModel[]) {
@@ -73,66 +172,78 @@ export async function fetchAreaOptions(): Promise<AreaOption[]> {
     .sort((a: AreaOption, b: AreaOption) => String(a.label).localeCompare(String(b.label)))
 }
 
-export async function fetchScanPointsByArea(areaId: number): Promise<ScanPointOption[]> {
-  const res = await http.post(endpoints.checkPointView.getList, { areaId })
+export async function fetchRoleOptions(): Promise<RoleOption[]> {
+  const res = await http.get(endpoints.role.getBaseList)
+  const env = ensureSuccess<ApiRoleBase[]>(res.data)
+  const list = env.data ?? []
+
+  return list
+    .map((r) => ({
+      value: Number(r.roleId ?? 0),
+      label: String(r.roleName ?? r.roleCode ?? r.roleId),
+    }))
+    .filter((x) => x.value > 0)
+    .sort((a, b) => a.label.localeCompare(b.label))
+}
+
+export async function fetchScanPointsByArea(
+  areaId: number,
+  roleId?: number | null,
+): Promise<ScanPointOption[]> {
+  if (!roleId) return []
+
+  const res = await http.post(endpoints.checkPointView.getList, {})
   const env = ensureSuccess<ApiCheckPointView[]>(res.data)
   const list = env.data ?? []
 
   return list
+    .filter((cp) => {
+      const ids = parseRoleIds(cp.roleIdStr)
+      return ids.includes(Number(roleId))
+    })
     .map((cp) => ({
-      value: cp.cpId,
-      cpCode: cp.cpCode,
-      cpName: cp.cpName,
-      label: `${cp.cpCode} - ${cp.cpName}`,
+      value: Number(cp.cpId ?? 0),
+      cpCode: String(cp.cpCode ?? ''),
+      cpName: String(cp.cpName ?? ''),
+      cpPriority: Number(cp.cpPriority ?? 0) || undefined,
+      label: `${cp.cpCode ?? cp.cpId} - ${cp.cpName ?? ''}`,
     }))
+    .filter((x) => x.value > 0)
     .sort((a, b) => a.cpCode.localeCompare(b.cpCode))
 }
 
-export async function fetchRouteRows(): Promise<RouteRow[]> {
+export async function fetchRouteRows(roleOptions: RoleOption[] = []): Promise<RouteRow[]> {
   const res = await http.post(endpoints.routeView.getList, {})
   const env = ensureSuccess<ApiRouteView[]>(res.data)
   const views = env.data ?? []
 
   return views
-    .map((v) => {
-      const details = (v.routeDetails ?? [])
-        .slice()
-        .sort((a, b) => Number(a.rdPriority) - Number(b.rdPriority))
-        .map<RouteDetailModel>((d) => ({
-          cp_id: d.cpId,
-          cp_code: d.cpCode,
-          cp_name: d.cpName,
-          rd_second: Number(d.rdSecond ?? 0),
-          rd_priority: Number(d.rdPriority ?? 0),
-        }))
-
-      return {
-        route_id: v.routeId,
-        route_code: v.routeCode,
-        route_name: v.routeName,
-        route_status: apiStatusToUi(v.routeStatus),
-        route_priority: Number(v.routePriority ?? 0),
-        route_total_second: Number(v.routeTotalSecond ?? sumSeconds(details)),
-
-        area_id: Number(v.areaId ?? 0),
-        area_code: String(v.areaCode ?? ''),
-        area_name: String(v.areaName ?? ''),
-
-        details,
-        details_count: details.length,
-
-        created_at: v.createdAt ?? nowIso(),
-        updated_at: v.updatedAt ?? nowIso(),
-        _q: String(v.routeKeyword ?? `${v.routeCode} ${v.routeName}`).toLowerCase(),
-      }
-    })
+    .map((v) => mapRouteView(v, roleOptions))
     .sort((a, b) => a.route_code.localeCompare(b.route_code))
+}
+
+export async function fetchRouteById(routeId: number, roleOptions: RoleOption[] = []) {
+  const res = await http.get(endpoints.routeView.getOne(routeId))
+  const data = ensureSuccess<ApiRouteView>(res.data).data
+  const row = mapRouteView(data, roleOptions)
+
+  return {
+    route_id: row.route_id,
+    route_code: row.route_code,
+    route_name: row.route_name,
+    area_id: row.area_id,
+    role_id: row.role_id,
+    role_name: row.role_name,
+    route_priority: row.route_priority,
+    details: row.details.map((d) => ({ ...d })),
+  }
 }
 
 export async function createRouteMock(payload: {
   route_code: string
   route_name: string
   area_id: number
+  role_id: number
   route_priority: number
   details: RouteDetailModel[]
   actor_id: string
@@ -149,6 +260,7 @@ export async function createRouteMock(payload: {
     routeName: payload.route_name.trim(),
     routeTotalSecond: sumSeconds(payload.details),
     areaId: payload.area_id,
+    roleId: Number(payload.role_id ?? 0),
     routePriority: Number(payload.route_priority ?? 0),
     createdBy: payload.actor_id,
     updatedBy: payload.actor_id,
@@ -172,6 +284,7 @@ export async function updateRouteMock(payload: {
   route_code: string
   route_name: string
   area_id: number
+  role_id: number
   route_priority: number
   details: RouteDetailModel[]
   actor_id: string
@@ -188,6 +301,7 @@ export async function updateRouteMock(payload: {
     routeName: payload.route_name.trim(),
     routeTotalSecond: sumSeconds(payload.details),
     areaId: payload.area_id,
+    roleId: Number(payload.role_id ?? 0),
     routePriority: Number(payload.route_priority ?? 0),
     updatedBy: payload.actor_id,
     routeDetails: details,

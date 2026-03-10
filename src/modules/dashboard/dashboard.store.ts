@@ -1,29 +1,23 @@
 import { defineStore } from 'pinia'
-import type { DashboardStats } from './dashboard.types'
-import { fetchDashboardStats } from './dashboard.api'
+import type { DashboardTotalAppItem } from './dashboard.types'
+import { fetchDashboardCards } from './dashboard.api'
 
 export const useDashboardStore = defineStore('dashboard', {
   state: () => ({
     loading: false,
     error: '' as string,
-    stats: null as DashboardStats | null,
+    cards: [] as DashboardTotalAppItem[],
   }),
 
   actions: {
-    async load(payload: {
-      includeReports: boolean
-      includeRoles: boolean
-      includeUsers: boolean
-      includeScanPoints: boolean
-      includeRoutes: boolean
-    }) {
+    async load() {
       this.loading = true
       this.error = ''
       try {
-        this.stats = await fetchDashboardStats(payload)
+        this.cards = await fetchDashboardCards()
       } catch (e: any) {
         this.error = String(e?.message ?? 'FAILED_TO_LOAD')
-        this.stats = null
+        this.cards = []
       } finally {
         this.loading = false
       }

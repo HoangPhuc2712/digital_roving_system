@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { onMounted, watch, ref } from 'vue'
 
-import Dropdown from 'primevue/dropdown'
-import Calendar from 'primevue/calendar'
 import Tag from 'primevue/tag'
-import Checkbox from 'primevue/checkbox'
+import { useToast } from 'primevue/usetoast'
 import { type DataTablePageEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
 
@@ -12,18 +10,26 @@ import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import BaseInput from '@/components/common/inputs/BaseInput.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 
+import { useAuthStore } from '@/stores/auth.store'
 import { useReportsStore } from '@/modules/reports/reports.store'
-import type { ReportRow } from '@/modules/reports/reports.types'
-import ReportForm, { type ReportFormModel } from '@/modules/reports/components/ReportForm.vue'
+import type { ReportRow, ResultFilter } from '@/modules/reports/reports.types'
+import ReportForm, {
+  type ReportFormMode,
+  type ReportFormModel,
+} from '@/modules/reports/components/ReportForm.vue'
+import ReportFilters from '@/modules/reports/components/ReportFilters.vue'
 import { exportPatrolReportXlsx } from '@/services/export/patrolReport.export'
+import { changeReportStatus, fetchReportRowById } from '@/modules/reports/reports.api'
 
+const toast = useToast()
+const auth = useAuthStore()
 const store = useReportsStore()
 
 const resultOptions = [
   { label: 'All', value: 'ALL' },
   { label: 'OK', value: 'OK' },
   { label: 'Not OK', value: 'NOT_OK' },
-]
+] satisfies { label: string; value: ResultFilter }[]
 
 const issueStatusOptions = [
   { label: 'All', value: null },
@@ -34,8 +40,8 @@ const issueStatusOptions = [
 ]
 
 const exporting = ref(false)
-
 const formVisible = ref(false)
+const formMode = ref<ReportFormMode>('view')
 const formModel = ref<ReportFormModel | null>(null)
 
 watch(
@@ -45,9 +51,8 @@ watch(
     store.filterIssueStatus,
     store.filterResult,
     store.filterGuardId,
-    store.filterMultiDays,
-    store.filterDate,
-    store.filterDateRange,
+    store.filterDateFrom,
+    store.filterDateTo,
   ],
   () => store.setFirst(0),
 )
@@ -67,7 +72,8 @@ function formatDateTime(iso: string) {
   )}:${pad2(d.getSeconds())}`
 }
 
-function issueStatusLabel(s: number) {
+function issueStatusLabel(s: number, hasProblem: boolean) {
+  if (!hasProblem) return 'No Issue'
   switch (s) {
     case 0:
       return 'Pending'
@@ -78,12 +84,12 @@ function issueStatusLabel(s: number) {
     case 3:
       return 'Incompleted'
     default:
-      return '—'
+      return 'No Issue'
   }
 }
 
-function issueStatusSeverity(s: number) {
-  // PrimeVue Tag severity: success | info | warning | danger | secondary
+function issueStatusSeverity(s: number, hasProblem: boolean) {
+  if (!hasProblem) return 'secondary'
   switch (s) {
     case 0:
       return 'warn'
@@ -110,9 +116,59 @@ function clearAll() {
   store.clearFilters()
 }
 
-function openView(row: ReportRow) {
-  formModel.value = row as any
+async function openView(row: ReportRow) {
+  formMode.value = 'view'
+  formModel.value = (await fetchReportRowById(row.pr_id)) ?? row
   formVisible.value = true
+}
+
+async function openEditStatus(row: ReportRow) {
+  if (!row.pr_has_problem) return
+  formMode.value = 'edit-status'
+  formModel.value = (await fetchReportRowById(row.pr_id)) ?? row
+  formVisible.value = true
+}
+
+async function handleSubmitStatus(payload: { pr_id: number; pr_status: number }) {
+  const updatedBy = auth.user?.user_id ?? ''
+  if (!updatedBy) return
+
+  try {
+    await changeReportStatus({
+      pr_id: payload.pr_id,
+      pr_status: payload.pr_status,
+      updated_by: updatedBy,
+    })
+
+    const refreshed = await fetchReportRowById(payload.pr_id)
+    if (!refreshed) {
+      throw new Error('Failed to reload updated report.')
+    }
+
+    const idx = store.rows.findIndex((x) => x.pr_id === payload.pr_id)
+    if (idx >= 0) {
+      store.rows[idx] = refreshed
+    }
+
+    if (formModel.value?.pr_id === payload.pr_id) {
+      formModel.value = refreshed
+    }
+
+    formVisible.value = false
+    toast.add({
+      severity: 'success',
+      summary: 'Saved',
+      detail: 'Issue status has been updated.',
+      life: 2000,
+    })
+  } catch (e: any) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: String(e?.message ?? 'Failed to update issue status.'),
+      life: 3000,
+    })
+  }
 }
 
 async function onExport() {
@@ -142,99 +198,25 @@ function onPage(e: DataTablePageEvent) {
       </div>
     </div>
 
-    <div class="bg-white border border-slate-200 rounded-xl p-3">
-      <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-start">
-        <div class="md:col-span-1">
-          <label class="block text-sm text-slate-600 mb-1">Area</label>
-          <Dropdown
-            v-model="store.filterAreaId"
-            class="w-full"
-            :options="store.areaOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="All"
-            showClear
-          />
-        </div>
-        <div class="md:col-span-1">
-          <label class="block text-sm text-slate-600 mb-1">Issue Status</label>
-          <Dropdown
-            v-model="store.filterIssueStatus"
-            class="w-full"
-            :options="issueStatusOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="All"
-            showClear
-          />
-        </div>
-
-        <div class="md:col-span-1">
-          <label class="block text-sm text-slate-600 mb-1">Inspection Result</label>
-          <Dropdown
-            v-model="store.filterResult"
-            class="w-full"
-            :options="resultOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="All"
-          />
-        </div>
-
-        <div class="md:col-span-2">
-          <label class="block text-sm text-slate-600 mb-1">Guard Name</label>
-          <Dropdown
-            v-model="store.filterGuardId"
-            class="w-full"
-            :options="store.guardOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="All"
-            showClear
-          />
-        </div>
-
-        <div class="md:col-span-1">
-          <div class="flex justify-between">
-            <label class="block text-sm text-slate-600 mb-1">Select Date</label>
-            <div class="flex items-center gap-1 mb-1">
-              <Checkbox v-model="store.filterMultiDays" :binary="true" inputId="multiDays" />
-              <label for="multiDays" class="text-xs text-slate-600">Select multiple days</label>
-            </div>
-          </div>
-
-          <Calendar
-            v-if="!store.filterMultiDays"
-            v-model="store.filterDate"
-            class="w-full"
-            selectionMode="single"
-            dateFormat="yy-mm-dd"
-            placeholder="Select date"
-            showButtonBar
-          />
-
-          <Calendar
-            v-else
-            v-model="store.filterDateRange"
-            class="w-full"
-            selectionMode="range"
-            dateFormat="yy-mm-dd"
-            placeholder="From - To"
-            showButtonBar
-          />
-        </div>
-
-        <div class="md:col-span-6 flex justify-end">
-          <BaseIconButton
-            icon="pi pi-filter-slash"
-            label="Clear Filters"
-            severity="secondary"
-            outlined
-            @click="clearAll"
-          />
-        </div>
-      </div>
-    </div>
+    <ReportFilters
+      :areaOptions="store.areaOptions"
+      :guardOptions="store.guardOptions"
+      :resultOptions="resultOptions"
+      :issueStatusOptions="issueStatusOptions"
+      :modelAreaId="store.filterAreaId"
+      :modelIssueStatus="store.filterIssueStatus"
+      :modelResult="store.filterResult"
+      :modelGuardId="store.filterGuardId"
+      :modelDateFrom="store.filterDateFrom"
+      :modelDateTo="store.filterDateTo"
+      @update:modelAreaId="store.filterAreaId = $event"
+      @update:modelIssueStatus="store.filterIssueStatus = $event"
+      @update:modelResult="store.filterResult = $event"
+      @update:modelGuardId="store.filterGuardId = $event"
+      @update:modelDateFrom="store.filterDateFrom = $event"
+      @update:modelDateTo="store.filterDateTo = $event"
+      @clear="clearAll"
+    />
 
     <BaseDataTable
       title=""
@@ -299,31 +281,24 @@ function onPage(e: DataTablePageEvent) {
         </template>
       </Column>
 
-      <!-- Photo column is currently hidden by request; keep it for future enable -->
-      <Column v-if="false" header="Photo" style="min-width: 10rem">
-        <template #body="{ data }">
-          <div class="text-slate-700">{{ data.image_count }}</div>
-        </template>
-      </Column>
-
       <Column field="report_name" header="Guard Name" style="min-width: 12rem" />
 
       <Column header="Issue Status" style="min-width: 12rem" sortField="pr_status">
         <template #body="{ data }">
           <Tag
-            :value="issueStatusLabel(data.pr_status)"
-            :severity="issueStatusSeverity(data.pr_status)"
+            :value="issueStatusLabel(data.pr_status, data.pr_has_problem)"
+            :severity="issueStatusSeverity(data.pr_status, data.pr_has_problem)"
           />
         </template>
       </Column>
 
-      <Column header="Patrol Date" style="min-width: 12rem" sortField="scan_at">
+      <Column header="Report Date" style="min-width: 12rem" sortField="report_at">
         <template #body="{ data }">
-          {{ formatDateTime(data.scan_at || data.created_at) }}
+          {{ formatDateTime(data.report_at || data.scan_at || data.created_at) }}
         </template>
       </Column>
 
-      <Column header="Action" style="width: 120px" sortDisabled>
+      <Column header="Action" style="width: 160px" sortDisabled>
         <template #body="{ data }">
           <div class="flex gap-2 justify-start">
             <BaseIconButton
@@ -334,11 +309,26 @@ function onPage(e: DataTablePageEvent) {
               rounded
               @click="openView(data)"
             />
+            <BaseIconButton
+              v-if="data.pr_has_problem"
+              icon="pi pi-pencil"
+              size="small"
+              severity="secondary"
+              outlined
+              rounded
+              @click="openEditStatus(data)"
+            />
           </div>
         </template>
       </Column>
     </BaseDataTable>
 
-    <ReportForm v-model:visible="formVisible" :model="formModel" @close="formModel = null" />
+    <ReportForm
+      v-model:visible="formVisible"
+      :mode="formMode"
+      :model="formModel"
+      @submit-status="handleSubmitStatus"
+      @close="formModel = null"
+    />
   </div>
 </template>

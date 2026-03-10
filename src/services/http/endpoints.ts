@@ -64,6 +64,13 @@ export const endpoints = {
     getList: '/pointreportview/getlist',
     getOne: (prId: number | string) => `/pointreportview/getone/${prId}`,
   },
+
+  report: {
+    totalAppData: '/report/totalappdata',
+  },
+  pointReport: {
+    changeStatus: (prId: number | string) => `/pointreport/changestatus/${prId}`,
+  },
   pointReportImage: {
     getListByReportId: (prId: number | string) => `/pointreportimage/getlistbyreportid/${prId}`,
   },

@@ -1,6 +1,7 @@
 import PrimeVue from 'primevue/config'
 import ToastService from 'primevue/toastservice'
 import ConfirmationService from 'primevue/confirmationservice'
+import AnimateOnScroll from 'primevue/animateonscroll'
 
 import Aura from '@primeuix/themes/aura'
 
@@ -16,4 +17,5 @@ export function setupPrimeVue(app: any) {
 
   app.use(ToastService)
   app.use(ConfirmationService)
+  app.directive('animateonscroll', AnimateOnScroll)
 }

@@ -13,7 +13,7 @@ import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import { useAuthStore } from '@/stores/auth.store'
 import { useRoutesStore } from '@/modules/routes/routes.store'
 import type { RouteRow } from '@/modules/routes/routes.types'
-import { deleteRouteMock } from '@/modules/routes/routes.api'
+import { deleteRouteMock, fetchRouteById } from '@/modules/routes/routes.api'
 
 import RouteFilters from '../components/RouteFilters.vue'
 import RouteForm, {
@@ -29,6 +29,19 @@ const store = useRoutesStore()
 const auth = useAuthStore()
 
 const canManage = computed(() => auth.canAccess('routes.manage'))
+
+const routeFilterAreaOptions = computed(() => {
+  const map = new Map<number, string>()
+  for (const row of store.rows) {
+    const id = Number(row.area_id ?? 0)
+    if (!id || map.has(id)) continue
+    map.set(id, row.area_name || row.area_code || String(id))
+  }
+
+  return Array.from(map.entries())
+    .map(([value, label]) => ({ value, label }))
+    .sort((a, b) => String(a.label).localeCompare(String(b.label)))
+})
 
 const searchDraft = ref(store.searchText)
 let searchTimer: number | undefined
@@ -78,6 +91,8 @@ function mapRowToFormModel(row: RouteRow): RouteFormModel {
     route_code: row.route_code,
     route_name: row.route_name,
     area_id: row.area_id,
+    role_id: row.role_id,
+    role_name: row.role_name,
     route_priority: row.route_priority,
     details: row.details.map((d) => ({ ...d })),
   }
@@ -89,21 +104,31 @@ function openNew() {
     route_code: '',
     route_name: '',
     area_id: 0,
+    role_id: 0,
+    role_name: '',
     route_priority: 1,
     details: [],
   }
   formVisible.value = true
 }
 
-function openView(row: RouteRow) {
+async function hydrateFormModel(row: RouteRow) {
+  try {
+    return await fetchRouteById(row.route_id, store.roleOptions)
+  } catch {
+    return mapRowToFormModel(row)
+  }
+}
+
+async function openView(row: RouteRow) {
   formMode.value = 'view'
-  formModel.value = mapRowToFormModel(row)
+  formModel.value = await hydrateFormModel(row)
   formVisible.value = true
 }
 
-function openEdit(row: RouteRow) {
+async function openEdit(row: RouteRow) {
   formMode.value = 'edit'
-  formModel.value = mapRowToFormModel(row)
+  formModel.value = await hydrateFormModel(row)
   formVisible.value = true
 }
 
@@ -214,7 +239,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
     </div>
 
     <RouteFilters
-      :areaOptions="store.areaOptions"
+      :areaOptions="routeFilterAreaOptions"
       :modelAreaId="store.filterAreaId"
       :modelStatus="store.filterStatus"
       @update:modelAreaId="store.filterAreaId = $event"
@@ -253,11 +278,17 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
       <Column selectionMode="multiple" style="width: 3rem" :exportable="false" sortDisabled />
 
       <Column field="route_code" header="Route Code" style="min-width: 10rem" />
-      <Column field="route_name" header="Route Name" style="min-width: 16rem" />
+      <Column field="route_name" header="Route Name" style="min-width: 14rem" />
 
-      <Column header="Area" style="min-width: 14rem" sortField="area_name">
+      <Column header="Area" style="min-width: 10rem" sortField="area_name">
         <template #body="{ data }">
           <div class="text-slate-800">{{ data.area_name }}</div>
+        </template>
+      </Column>
+
+      <Column header="Role" style="min-width: 8rem" sortField="role_name">
+        <template #body="{ data }">
+          <div class="text-slate-800">{{ data.role_name || data.role_code || '—' }}</div>
         </template>
       </Column>
 
@@ -269,7 +300,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
         </template>
       </Column>
 
-      <Column header="Points" style="min-width: 8rem" sortField="details_count">
+      <Column header="Total Points" style="min-width: 8rem" sortField="details_count">
         <template #body="{ data }">
           <div class="text-slate-800">{{ data.details_count }}</div>
         </template>
@@ -323,6 +354,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
       :mode="formMode"
       :model="formModel"
       :areaOptions="store.areaOptions"
+      :roleOptions="store.roleOptions"
       @submit="handleSubmit"
       @close="formModel = null"
     />

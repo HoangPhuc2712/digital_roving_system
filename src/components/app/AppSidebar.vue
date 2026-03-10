@@ -83,8 +83,8 @@ const MENU_MAP: Record<string, Omit<NavItem, 'key' | 'priority' | 'label'>> = {
   MC001: { to: '/roles', icon: 'pi pi-key', prefix: '/roles' },
   MC004: { to: '/areas', icon: 'pi pi-map-marker', prefix: '/areas' },
   MC005: { to: '/routes', icon: 'pi pi-map', prefix: '/routes' },
-  // Optional pages (only show if you have routes for them)
-  // MC007: { to: '/tutorial', icon: 'pi pi-book', prefix: '/tutorial' },
+  MC007: { to: '/tutorial', icon: 'pi pi-info', prefix: '/tutorial' },
+  MC003: { to: '/menuCategories', icon: 'pi pi-book', prefix: '/menuCategories' },
 }
 
 const allowedMcCodes = computed(() => {

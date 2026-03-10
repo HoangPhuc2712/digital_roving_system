@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import Dialog from 'primevue/dialog'
 import Dropdown from 'primevue/dropdown'
+import MultiSelect from 'primevue/multiselect'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import InputNumber from 'primevue/inputnumber'
@@ -26,6 +27,8 @@ export type RouteFormModel = {
   route_code: string
   route_name: string
   area_id: number
+  role_id: number
+  role_name?: string
   route_priority: number
   details: RouteDetailModel[]
 }
@@ -35,7 +38,7 @@ export type RouteFormSubmitPayload = {
 }
 
 type RouteFormState = RouteFormModel & {
-  selected_cp_id: number | null
+  selected_cp_ids: number[]
 }
 
 type ScanPointOption = {
@@ -43,6 +46,7 @@ type ScanPointOption = {
   value: number
   cpCode: string
   cpName: string
+  cpPriority?: number
 }
 
 const props = defineProps<{
@@ -50,6 +54,7 @@ const props = defineProps<{
   mode: RouteFormMode
   model: RouteFormModel | null
   areaOptions: { label: string; value: number }[]
+  roleOptions: { label: string; value: number }[]
 }>()
 
 const emit = defineEmits<{
@@ -62,7 +67,6 @@ const toast = useToast()
 const initializing = ref(false)
 
 const isView = computed(() => props.mode === 'view')
-const isNew = computed(() => props.mode === 'new')
 const title = computed(() =>
   props.mode === 'new' ? 'Create New Route' : props.mode === 'edit' ? 'Edit Route' : 'Route Detail',
 )
@@ -70,6 +74,12 @@ const title = computed(() =>
 const areaLabel = computed(() => {
   return (
     props.areaOptions.find((x) => x.value === form.area_id)?.label ?? String(form.area_id ?? '')
+  )
+})
+
+const roleLabel = computed(() => {
+  return (
+    props.roleOptions.find((x) => x.value === form.role_id)?.label ?? props.model?.role_name ?? '—'
   )
 })
 
@@ -81,9 +91,11 @@ const form = reactive<RouteFormState>({
   route_code: '',
   route_name: '',
   area_id: 0,
+  role_id: 0,
+  role_name: '',
   route_priority: 1,
   details: [],
-  selected_cp_id: null,
+  selected_cp_ids: [],
 })
 
 const sortedDetails = computed(() => {
@@ -108,14 +120,30 @@ function formatSeconds(sec: number) {
   return h > 0 ? `${h}:${mm}:${rr}` : `${m}:${rr.padStart(2, '0')}`
 }
 
-async function loadScanPoints(areaId: number) {
-  if (!areaId) {
+function getDisplayOrder(detail: RouteDetailModel) {
+  return Number(detail.cp_priority ?? 0) || Number(detail.cp_id ?? 0)
+}
+
+function applyDetailMetadata() {
+  const pointMap = new Map((scanPointOptions.value ?? []).map((x) => [x.value, x]))
+  for (const detail of form.details ?? []) {
+    const point = pointMap.get(detail.cp_id)
+    if (!point) continue
+    if (!detail.cp_code) detail.cp_code = point.cpCode
+    if (!detail.cp_name) detail.cp_name = point.cpName
+    if (!detail.cp_priority && point.cpPriority) detail.cp_priority = point.cpPriority
+  }
+}
+
+async function loadScanPoints(roleId: number) {
+  if (!roleId) {
     scanPointOptions.value = []
     return
   }
   scanLoading.value = true
   try {
-    scanPointOptions.value = await fetchScanPointsByArea(areaId)
+    scanPointOptions.value = await fetchScanPointsByArea(form.area_id, roleId || null)
+    applyDetailMetadata()
   } finally {
     scanLoading.value = false
   }
@@ -131,12 +159,15 @@ watch(
     form.route_code = m.route_code ?? ''
     form.route_name = m.route_name ?? ''
     form.area_id = Number(m.area_id ?? 0)
+    form.role_id = Number(m.role_id ?? 0)
+    form.role_name = m.role_name ?? ''
     form.route_priority = Number(m.route_priority ?? 1)
     form.details = Array.isArray(m.details) ? m.details.map((d) => ({ ...d })) : []
-    form.selected_cp_id = null
+    form.selected_cp_ids = []
 
-    await loadScanPoints(form.area_id)
+    await loadScanPoints(form.role_id)
     reindexDetails()
+    applyDetailMetadata()
 
     initializing.value = false
   },
@@ -144,16 +175,17 @@ watch(
 )
 
 watch(
-  () => form.area_id,
-  async (newAreaId, oldAreaId) => {
+  () => form.role_id,
+  async (newRoleId, oldRoleId) => {
     if (initializing.value) return
     if (isView.value) return
 
-    if (Number(newAreaId || 0) === Number(oldAreaId || 0)) return
+    const sameRole = Number(newRoleId || 0) === Number(oldRoleId || 0)
+    if (sameRole) return
 
-    form.selected_cp_id = null
+    form.selected_cp_ids = []
     form.details = []
-    await loadScanPoints(Number(newAreaId || 0))
+    await loadScanPoints(Number(newRoleId || 0))
   },
 )
 
@@ -177,37 +209,37 @@ function toastError(detail: string) {
 }
 
 function addSelectedScanPoint() {
-  if (!form.area_id) {
-    toastError('Please select Area first.')
+  if (!form.role_id) {
+    toastError('Please select Role first.')
     return
   }
-  if (!form.selected_cp_id) {
-    toastError('Please select a Scan Point.')
-    return
-  }
-
-  const existed = form.details.some((d) => d.cp_id === form.selected_cp_id)
-  if (existed) {
-    toastError('This Scan Point is already in the route.')
+  if (!form.selected_cp_ids.length) {
+    toastError('Please select at least one Scan Point.')
     return
   }
 
-  const opt = availableScanPointOptions.value.find((x) => x.value === form.selected_cp_id)
-  if (!opt) {
-    toastError('Scan Point not found.')
-    return
+  const optionMap = new Map(availableScanPointOptions.value.map((x) => [x.value, x]))
+  const orderedIds = form.selected_cp_ids.slice()
+
+  for (const cpId of orderedIds) {
+    const existed = form.details.some((d) => d.cp_id === cpId)
+    if (existed) continue
+
+    const opt = optionMap.get(cpId)
+    if (!opt) continue
+
+    const nextPriority = form.details.length + 1
+    form.details.push({
+      cp_id: opt.value,
+      cp_code: opt.cpCode,
+      cp_name: opt.cpName,
+      cp_priority: opt.cpPriority,
+      rd_second: 60,
+      rd_priority: nextPriority,
+    })
   }
 
-  const nextPriority = form.details.length + 1
-  form.details.push({
-    cp_id: opt.value,
-    cp_code: opt.cpCode,
-    cp_name: opt.cpName,
-    rd_second: 60,
-    rd_priority: nextPriority,
-  })
-
-  form.selected_cp_id = null
+  form.selected_cp_ids = []
 }
 
 function removeDetail(cpId: number) {
@@ -216,7 +248,6 @@ function removeDetail(cpId: number) {
 }
 
 function onRowReorder(e: any) {
-  // PrimeVue rowReorder trả về mảng đã reorder ở e.value
   const next = Array.isArray(e?.value) ? e.value : []
   form.details = next.map((d: any, idx: number) => ({
     ...d,
@@ -228,9 +259,10 @@ function submit() {
   const code = (form.route_code ?? '').trim()
   const name = (form.route_name ?? '').trim()
   const areaId = Number(form.area_id ?? 0)
+  const roleId = Number(form.role_id ?? 0)
 
-  if (!code || !name || !areaId) {
-    toastError('Please fill Route Code, Route Name, and Area.')
+  if (!code || !name || !areaId || !roleId) {
+    toastError('Please fill Route Code, Route Name, Area, and Role.')
     return
   }
 
@@ -255,6 +287,7 @@ function submit() {
           route_code: code,
           route_name: name,
           area_id: areaId,
+          role_id: roleId,
           route_priority: Number(form.route_priority ?? 1),
           details,
           actor_id,
@@ -269,6 +302,7 @@ function submit() {
         route_code: code,
         route_name: name,
         area_id: areaId,
+        role_id: roleId,
         route_priority: Number(form.route_priority ?? 1),
         details,
         actor_id,
@@ -303,6 +337,7 @@ function submit() {
           <div v-if="isView" class="text-slate-800 font-semibold">{{ form.route_name }}</div>
           <BaseInput v-else v-model="form.route_name" label="" placeholder="Enter name" />
         </div>
+
         <div>
           <label class="block text-sm text-slate-600 mb-1">Area</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ areaLabel }}</div>
@@ -314,6 +349,20 @@ function submit() {
             optionLabel="label"
             optionValue="value"
             placeholder="Select area"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Role</label>
+          <div v-if="isView" class="text-slate-800 font-semibold">{{ roleLabel }}</div>
+          <Dropdown
+            v-else
+            v-model="form.role_id"
+            class="w-full"
+            :options="roleOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Select role"
           />
         </div>
 
@@ -337,16 +386,18 @@ function submit() {
         <div v-if="!isView" class="flex items-end gap-3">
           <div class="flex-1">
             <label class="block text-sm text-slate-600 mb-1">Add Scan Point</label>
-            <Dropdown
-              v-model="form.selected_cp_id"
+            <MultiSelect
+              v-model="form.selected_cp_ids"
               class="w-full"
               :options="availableScanPointOptions"
               optionLabel="label"
               optionValue="value"
               placeholder="Select scan point"
               :loading="scanLoading"
-              :disabled="isView || !form.area_id"
-              showClear
+              :disabled="isView || !form.role_id"
+              display="chip"
+              filter
+              :maxSelectedLabels="2"
             />
           </div>
 
@@ -355,14 +406,14 @@ function submit() {
               icon="pi pi-plus"
               label="Add"
               severity="success"
-              :disabled="isView || !form.area_id || !form.selected_cp_id"
+              :disabled="isView || !form.role_id || !form.selected_cp_ids.length"
               @click="addSelectedScanPoint"
             />
           </div>
         </div>
 
-        <div v-if="!form.area_id" class="text-sm text-slate-500">
-          Please select Area to load Scan Points.
+        <div v-if="!form.role_id" class="text-sm text-slate-500">
+          Please select Role to load Scan Points.
         </div>
 
         <div v-else>
@@ -377,7 +428,7 @@ function submit() {
 
             <Column header="Order" style="width: 6rem">
               <template #body="{ data }">
-                <div class="text-slate-800">{{ data.rd_priority }}</div>
+                <div class="text-slate-800">{{ getDisplayOrder(data) }}</div>
               </template>
             </Column>
 
