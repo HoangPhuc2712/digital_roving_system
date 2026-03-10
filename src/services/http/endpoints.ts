@@ -67,6 +67,9 @@ export const endpoints = {
 
   report: {
     totalAppData: '/report/totalappdata',
+    totalUserByRole: '/report/totaluserbyrole',
+    totalUserByArea: '/report/totaluserbyarea',
+    totalCheckpointByArea: '/report/totalcheckpointbyarea',
   },
   pointReport: {
     changeStatus: (prId: number | string) => `/pointreport/changestatus/${prId}`,
