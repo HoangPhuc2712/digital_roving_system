@@ -246,11 +246,10 @@ function onPage(e: DataTablePageEvent) {
         <div class="p-4 text-slate-600 flex justify-center">No reports found.</div>
       </template>
 
-      <Column header="Area" style="min-width: 10rem" sortField="area_code">
+      <Column header="Route Name" style="min-width: 10rem" sortField="route_name">
         <template #body="{ data }">
-          <div class="flex flex-col">
-            <div class="text-slate-800 font-bold">{{ data.area_code }}</div>
-            <div class="text-slate-600 text-xs">{{ data.area_name }}</div>
+          <div class="text-slate-800 font-semibold">
+            {{ data.route_name || '-' }}
           </div>
         </template>
       </Column>
@@ -258,7 +257,7 @@ function onPage(e: DataTablePageEvent) {
       <Column header="Scan Point" style="min-width: 16rem" sortField="cp_code">
         <template #body="{ data }">
           <div class="flex flex-col">
-            <div class="text-slate-800 font-bold">{{ data.cp_code }}</div>
+            <div class="text-slate-800 font-semibold">{{ data.cp_code }}</div>
             <div class="text-slate-600 text-xs">{{ data.cp_name }}</div>
           </div>
         </template>

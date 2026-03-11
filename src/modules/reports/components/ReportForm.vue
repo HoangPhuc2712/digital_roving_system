@@ -35,6 +35,7 @@ const emit = defineEmits<{
 const viewerVisible = ref(false)
 const viewerTitle = ref('Detail Images')
 const viewerItems = ref<BaseImageItem[]>([])
+const viewerStartIndex = ref(0)
 const statusDraft = ref(0)
 const inlineStatusEdit = ref(false)
 
@@ -107,8 +108,8 @@ const detailGroups = computed(() => {
       .map((img: ReportImage, idx) => ({
         id: img.pri_id || `${group.pr_group}-${idx + 1}`,
         src: img.pri_image,
-        title: `Image ${idx + 1}`,
-        alt: `Image ${idx + 1}`,
+        title: group.pri_image_note || 'Photo',
+        alt: `${group.pri_image_note || 'Photo'} ${idx + 1}`,
       }))
       .filter((x) => !!(x.src ?? '').trim()),
   }))
@@ -130,10 +131,10 @@ function openViewer(items: BaseImageItem[], startIndex: number, title: string) {
   if (!items.length) return
 
   const idx = Math.max(0, Math.min(startIndex, items.length - 1))
-  const rotated = items.slice(idx).concat(items.slice(0, idx))
 
   viewerTitle.value = title
-  viewerItems.value = rotated
+  viewerItems.value = items
+  viewerStartIndex.value = idx
   viewerVisible.value = true
 }
 
@@ -320,9 +321,7 @@ watch(
                 :key="img.id"
                 type="button"
                 class="border border-slate-200 rounded-lg overflow-hidden hover:border-slate-400 transition"
-                @click="
-                  openViewer(group.items, idx, `Detail ${groupIndex + 1} (${group.items.length})`)
-                "
+                @click="openViewer(group.items, idx, group.note)"
               >
                 <img :src="img.src" :alt="img.alt" class="h-16 w-16 object-cover" />
               </button>
@@ -342,6 +341,11 @@ watch(
       </div>
     </div>
 
-    <BaseImageViewer v-model:visible="viewerVisible" :title="viewerTitle" :images="viewerItems" />
+    <BaseImageViewer
+      v-model:visible="viewerVisible"
+      :title="viewerTitle"
+      :images="viewerItems"
+      :startIndex="viewerStartIndex"
+    />
   </Dialog>
 </template>
