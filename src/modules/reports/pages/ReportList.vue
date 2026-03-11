@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, watch, ref } from 'vue'
-import { useRoute, onBeforeRouteLeave } from 'vue-router'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
@@ -26,6 +26,7 @@ const toast = useToast()
 const auth = useAuthStore()
 const store = useReportsStore()
 const route = useRoute()
+const router = useRouter()
 
 const resultOptions = [
   { label: 'All', value: 'ALL' },
@@ -230,6 +231,10 @@ async function onExport() {
 function onPage(e: DataTablePageEvent) {
   store.setFirst(e.first)
 }
+
+function goToCtpatReport() {
+  router.push({ name: 'ctpat-reports' })
+}
 </script>
 
 <template>
@@ -271,7 +276,15 @@ function onPage(e: DataTablePageEvent) {
       :first="store.first"
       @page="onPage"
     >
-      <template #toolbar-start></template>
+      <template #toolbar-start>
+        <BaseIconButton
+          icon="pi pi-file"
+          label="C-TPAT Report"
+          severity="secondary"
+          outlined
+          @click="goToCtpatReport"
+        />
+      </template>
 
       <template #toolbar-end>
         <div class="flex justify-end gap-2">

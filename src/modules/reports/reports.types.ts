@@ -71,3 +71,18 @@ export type ReportRow = {
 
   _q: string
 }
+
+export type CtpatReportRow = {
+  pr_id: number
+  area_name: string
+  check_point_name: string
+  cp_priority: number
+  start_at: string
+  end_at: string
+  scan_at: string
+  report_name: string
+  route_id: number
+  route_name: string
+
+  _q: string
+}

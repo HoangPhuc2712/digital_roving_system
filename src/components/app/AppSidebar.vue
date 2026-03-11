@@ -41,6 +41,7 @@ function ensureSuccess<T>(payload: any): ApiEnvelope<T> {
 }
 
 const menuCategories = ref<MenuCategoryView[]>([])
+const reportsOpen = ref(false)
 
 async function loadMenuCategories() {
   try {
@@ -159,6 +160,34 @@ const navItems = computed<NavItem[]>(() => {
   return items.sort((a, b) => a.priority - b.priority)
 })
 
+watch(
+  () => route.path,
+  (path) => {
+    if (
+      path === '/reports' ||
+      path === '/ctpat-reports' ||
+      path.startsWith('/reports/') ||
+      path.startsWith('/ctpat-reports/')
+    ) {
+      reportsOpen.value = true
+    }
+  },
+  { immediate: true },
+)
+
+function toggleReports() {
+  reportsOpen.value = !reportsOpen.value
+}
+
+function isReportsActive() {
+  return (
+    route.path === '/reports' ||
+    route.path === '/ctpat-reports' ||
+    route.path.startsWith('/reports/') ||
+    route.path.startsWith('/ctpat-reports/')
+  )
+}
+
 const userFullName = computed(() => auth.user?.user_name ?? '—')
 const userCode = computed(() => auth.user?.user_code ?? '—')
 const userRoleName = computed(() => auth.user?.role?.role_name ?? '—')
@@ -207,14 +236,52 @@ function logout() {
     <nav class="flex-1 overflow-y-auto px-2 py-3">
       <ul class="space-y-1">
         <li v-for="item in navItems" :key="item.key">
-          <RouterLink :to="item.to" v-slot="{ isActive }">
-            <a :class="itemClass(isActive || isActivePath(item.prefix))" @click="closeMobile">
+          <template v-if="item.key === 'MC006'">
+            <button type="button" :class="itemClass(isReportsActive())" @click="toggleReports">
               <span class="flex items-center gap-3">
                 <i :class="item.icon"></i>
                 <span>{{ item.label }}</span>
               </span>
-            </a>
-          </RouterLink>
+              <i
+                class="pi transition-transform"
+                :class="reportsOpen ? 'pi-chevron-down' : 'pi-chevron-right'"
+              ></i>
+            </button>
+
+            <div v-if="reportsOpen" class="mt-1 ml-4 space-y-1">
+              <RouterLink to="/reports" v-slot="{ isActive }">
+                <a :class="itemClass(isActive || isActivePath('/reports'))" @click="closeMobile">
+                  <span class="flex items-center gap-3">
+                    <i class="pi pi-shield"></i>
+                    <span>Patrols</span>
+                  </span>
+                </a>
+              </RouterLink>
+
+              <RouterLink to="/ctpat-reports" v-slot="{ isActive }">
+                <a
+                  :class="itemClass(isActive || isActivePath('/ctpat-reports'))"
+                  @click="closeMobile"
+                >
+                  <span class="flex items-center gap-3">
+                    <i class="pi pi-chart-line"></i>
+                    <span>C-TPAT Report</span>
+                  </span>
+                </a>
+              </RouterLink>
+            </div>
+          </template>
+
+          <template v-else>
+            <RouterLink :to="item.to" v-slot="{ isActive }">
+              <a :class="itemClass(isActive || isActivePath(item.prefix))" @click="closeMobile">
+                <span class="flex items-center gap-3">
+                  <i :class="item.icon"></i>
+                  <span>{{ item.label }}</span>
+                </span>
+              </a>
+            </RouterLink>
+          </template>
         </li>
       </ul>
     </nav>
