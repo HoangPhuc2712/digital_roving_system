@@ -6,6 +6,7 @@ import type {
   DashboardTotalUserByAreaDetailItem,
   DashboardTotalUserByAreaItem,
   DashboardTotalUserByRoleItem,
+  DashboardTotalPointReportByStatusItem,
 } from './dashboard.types'
 
 type ApiEnvelope<T> = { data: T; success: boolean; message: string }
@@ -44,6 +45,12 @@ type ApiDashboardTotalCheckpointByAreaItem = {
   areaCode?: string
   areaName?: string
   totalCheckPoint?: number
+}
+
+type ApiDashboardTotalPointReportByStatusItem = {
+  prStatus?: number
+  prStatusName?: string
+  totalProblem?: number
 }
 
 function ensureSuccess<T>(payload: any): ApiEnvelope<T> {
@@ -107,6 +114,16 @@ function normalizeCheckpointByAreaItem(
   }
 }
 
+function normalizePointReportByStatusItem(
+  item: ApiDashboardTotalPointReportByStatusItem,
+): DashboardTotalPointReportByStatusItem {
+  return {
+    pr_status: Number(item.prStatus ?? 0),
+    pr_status_name: String(item.prStatusName ?? '').trim(),
+    total_problem: Number(item.totalProblem ?? 0),
+  }
+}
+
 export async function fetchDashboardCards(): Promise<DashboardTotalAppItem[]> {
   const res = await http.get(endpoints.report.totalAppData)
   const list = ensureSuccess<ApiDashboardTotalAppItem[]>(res.data).data ?? []
@@ -131,4 +148,12 @@ export async function fetchDashboardTotalCheckpointByArea(): Promise<
   const res = await http.get(endpoints.report.totalCheckpointByArea)
   const list = ensureSuccess<ApiDashboardTotalCheckpointByAreaItem[]>(res.data).data ?? []
   return Array.isArray(list) ? list.map(normalizeCheckpointByAreaItem) : []
+}
+
+export async function fetchDashboardTotalPointReportByStatus(): Promise<
+  DashboardTotalPointReportByStatusItem[]
+> {
+  const res = await http.get(endpoints.report.totalPointReportByStatus)
+  const list = ensureSuccess<ApiDashboardTotalPointReportByStatusItem[]>(res.data).data ?? []
+  return Array.isArray(list) ? list.map(normalizePointReportByStatusItem) : []
 }

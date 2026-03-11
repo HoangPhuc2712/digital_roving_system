@@ -4,12 +4,14 @@ import type {
   DashboardTotalCheckpointByAreaItem,
   DashboardTotalUserByAreaItem,
   DashboardTotalUserByRoleItem,
+  DashboardTotalPointReportByStatusItem,
 } from './dashboard.types'
 import {
   fetchDashboardCards,
   fetchDashboardTotalCheckpointByArea,
   fetchDashboardTotalUserByArea,
   fetchDashboardTotalUserByRole,
+  fetchDashboardTotalPointReportByStatus,
 } from './dashboard.api'
 
 export const useDashboardStore = defineStore('dashboard', {
@@ -20,6 +22,7 @@ export const useDashboardStore = defineStore('dashboard', {
     totalUsersByRole: [] as DashboardTotalUserByRoleItem[],
     totalUsersByArea: [] as DashboardTotalUserByAreaItem[],
     totalCheckpointsByArea: [] as DashboardTotalCheckpointByAreaItem[],
+    totalPointReportsByStatus: [] as DashboardTotalPointReportByStatusItem[],
   }),
 
   actions: {
@@ -32,9 +35,16 @@ export const useDashboardStore = defineStore('dashboard', {
         fetchDashboardTotalUserByRole(),
         fetchDashboardTotalUserByArea(),
         fetchDashboardTotalCheckpointByArea(),
+        fetchDashboardTotalPointReportByStatus(),
       ])
 
-      const [cardsRes, usersByRoleRes, usersByAreaRes, checkpointsByAreaRes] = results
+      const [
+        cardsRes,
+        usersByRoleRes,
+        usersByAreaRes,
+        checkpointsByAreaRes,
+        pointReportsByStatusRes,
+      ] = results
 
       if (cardsRes.status === 'fulfilled') {
         this.cards = cardsRes.value
@@ -58,6 +68,12 @@ export const useDashboardStore = defineStore('dashboard', {
         this.totalCheckpointsByArea = checkpointsByAreaRes.value
       } else {
         this.totalCheckpointsByArea = []
+      }
+
+      if (pointReportsByStatusRes.status === 'fulfilled') {
+        this.totalPointReportsByStatus = pointReportsByStatusRes.value
+      } else {
+        this.totalPointReportsByStatus = []
       }
 
       const firstRejected = results.find((x) => x.status === 'rejected')

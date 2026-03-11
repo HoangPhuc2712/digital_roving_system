@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, watch, ref } from 'vue'
+import { useRoute } from 'vue-router'
 
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
@@ -24,6 +25,7 @@ import { changeReportStatus, fetchReportRowById } from '@/modules/reports/report
 const toast = useToast()
 const auth = useAuthStore()
 const store = useReportsStore()
+const route = useRoute()
 
 const resultOptions = [
   { label: 'All', value: 'ALL' },
@@ -57,7 +59,35 @@ watch(
   () => store.setFirst(0),
 )
 
+function applyRouteFilters() {
+  const result = String(route.query.result ?? '')
+    .trim()
+    .toUpperCase()
+  const issueStatusRaw = route.query.issueStatus
+  const fromDashboard = String(route.query.fromDashboard ?? '') === '1'
+
+  if (result === 'ALL' || result === 'OK' || result === 'NOT_OK') {
+    store.filterResult = result as ResultFilter
+  }
+
+  if (issueStatusRaw != null && issueStatusRaw !== '') {
+    const issueStatus = Number(Array.isArray(issueStatusRaw) ? issueStatusRaw[0] : issueStatusRaw)
+    if (Number.isFinite(issueStatus)) {
+      store.filterIssueStatus = issueStatus
+    }
+  }
+
+  if (fromDashboard) {
+    store.searchText = ''
+    store.filterAreaId = null
+    store.filterGuardId = ''
+    store.filterDateFrom = null
+    store.filterDateTo = null
+  }
+}
+
 onMounted(async () => {
+  applyRouteFilters()
   await store.load()
 })
 

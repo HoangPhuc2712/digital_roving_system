@@ -70,6 +70,7 @@ export const endpoints = {
     totalUserByRole: '/report/totaluserbyrole',
     totalUserByArea: '/report/totaluserbyarea',
     totalCheckpointByArea: '/report/totalcheckpointbyarea',
+    totalPointReportByStatus: '/report/totalpointreportbystatus',
   },
   pointReport: {
     changeStatus: (prId: number | string) => `/pointreport/changestatus/${prId}`,
