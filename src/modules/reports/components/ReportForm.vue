@@ -203,10 +203,12 @@ watch(
               {{ model.cp_code }} - {{ model.cp_name }}
             </div>
             <div class="text-sm text-slate-600">
+              Patrol Route:
+              <span class="text-slate-800 font-semibold">{{ model.route_name }}</span>
+            </div>
+            <div class="text-sm text-slate-600">
               Area:
-              <span class="text-slate-800 font-semibold"
-                >{{ model.area_code }} - {{ model.area_name }}</span
-              >
+              <span class="text-slate-800 font-semibold">{{ model.area_name }}</span>
             </div>
             <div class="text-sm text-slate-600">
               Guard:

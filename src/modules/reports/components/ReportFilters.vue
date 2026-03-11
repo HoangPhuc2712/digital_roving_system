@@ -30,9 +30,9 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="bg-white border border-slate-200 rounded-xl p-3">
-    <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
-      <div class="md:col-span-1">
+  <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-3">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 items-end">
+      <div>
         <label class="block text-sm text-slate-600 mb-1">Area</label>
         <Dropdown
           :modelValue="props.modelAreaId"
@@ -46,7 +46,7 @@ const emit = defineEmits<{
         />
       </div>
 
-      <div class="md:col-span-1">
+      <div>
         <label class="block text-sm text-slate-600 mb-1">Issue Status</label>
         <Dropdown
           :modelValue="props.modelIssueStatus"
@@ -60,7 +60,7 @@ const emit = defineEmits<{
         />
       </div>
 
-      <div class="md:col-span-1">
+      <div>
         <label class="block text-sm text-slate-600 mb-1">Inspection Result</label>
         <Dropdown
           :modelValue="props.modelResult"
@@ -73,7 +73,7 @@ const emit = defineEmits<{
         />
       </div>
 
-      <div class="md:col-span-1">
+      <div>
         <label class="block text-sm text-slate-600 mb-1">Guard Name</label>
         <Dropdown
           :modelValue="props.modelGuardId"
@@ -86,8 +86,10 @@ const emit = defineEmits<{
           @update:modelValue="emit('update:modelGuardId', $event)"
         />
       </div>
+    </div>
 
-      <div class="md:col-span-1">
+    <div class="grid grid-cols-1 lg:grid-cols-[320px_320px_auto] gap-3 items-end">
+      <div>
         <label class="block text-sm text-slate-600 mb-1">From</label>
         <Calendar
           :modelValue="props.modelDateFrom"
@@ -103,7 +105,7 @@ const emit = defineEmits<{
         />
       </div>
 
-      <div class="md:col-span-1">
+      <div>
         <label class="block text-sm text-slate-600 mb-1">To</label>
         <Calendar
           :modelValue="props.modelDateTo"
@@ -119,7 +121,7 @@ const emit = defineEmits<{
         />
       </div>
 
-      <div class="md:col-span-6 flex justify-end">
+      <div class="flex lg:justify-end">
         <BaseIconButton
           icon="pi pi-filter-slash"
           label="Clear Filters"

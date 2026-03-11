@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, watch, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { onMounted, onBeforeUnmount, watch, ref } from 'vue'
+import { useRoute, onBeforeRouteLeave } from 'vue-router'
 
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
@@ -91,6 +91,14 @@ onMounted(async () => {
   await store.load()
 })
 
+onBeforeRouteLeave(() => {
+  resetPageState()
+})
+
+onBeforeUnmount(() => {
+  resetPageState()
+})
+
 function formatDateTime(iso: string) {
   const s = (iso ?? '').trim()
   if (!s) return '—'
@@ -144,6 +152,12 @@ function inspectionSeverity(hasProblem: boolean) {
 
 function clearAll() {
   store.clearFilters()
+}
+
+function resetPageState() {
+  store.clearFilters()
+  formVisible.value = false
+  formModel.value = null
 }
 
 async function openView(row: ReportRow) {
