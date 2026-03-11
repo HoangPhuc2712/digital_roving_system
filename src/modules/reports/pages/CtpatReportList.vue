@@ -85,7 +85,7 @@ function onPage(e: DataTablePageEvent) {
 <template>
   <div class="page-reports space-y-3">
     <div class="flex items-center justify-between gap-3">
-      <div class="text-xl font-semibold text-slate-800">C-TPAT Report</div>
+      <div class="text-xl font-semibold text-slate-800">C-TPAT Reports</div>
 
       <div class="w-full max-w-md">
         <BaseInput label="" v-model="store.searchText" class="w-full" placeholder="Search..." />
@@ -141,14 +141,14 @@ function onPage(e: DataTablePageEvent) {
 
       <Column
         field="route_name"
-        header="Patrol Routes"
+        header="Route Name"
         style="min-width: 12rem"
         sortField="route_name"
       />
 
       <Column
         field="check_point_name"
-        header="Check Points"
+        header="Check Point"
         style="min-width: 18rem"
         sortField="check_point_name"
       />
