@@ -20,8 +20,8 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-3">
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 items-end">
+  <div class="bg-white border border-slate-200 rounded-xl p-3">
+    <div class="grid grid-cols-1 lg:grid-cols-[400px_320px_320px_auto] gap-3 items-end">
       <div>
         <label class="block text-sm text-slate-600 mb-1">Area</label>
         <Dropdown
@@ -35,9 +35,7 @@ const emit = defineEmits<{
           @update:modelValue="emit('update:modelAreaName', $event)"
         />
       </div>
-    </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-[320px_320px_auto] gap-3 items-end">
       <div>
         <label class="block text-sm text-slate-600 mb-1">From</label>
         <Calendar
@@ -70,7 +68,7 @@ const emit = defineEmits<{
         />
       </div>
 
-      <div class="flex lg:justify-end">
+      <div class="flex xl:justify-end">
         <BaseIconButton
           icon="pi pi-filter-slash"
           label="Clear Filters"

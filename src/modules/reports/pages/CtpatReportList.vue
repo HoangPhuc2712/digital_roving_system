@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, watch, ref } from 'vue'
-import { onBeforeRouteLeave } from 'vue-router'
+import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import { type DataTablePageEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
 import { useToast } from 'primevue/usetoast'
@@ -11,8 +11,10 @@ import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import CtpatReportFilters from '@/modules/reports/components/CtpatReportFilters.vue'
 import { useCtpatReportsStore } from '@/modules/reports/ctpatReports.store'
 import { exportCtpatReportXlsx } from '@/services/export/ctpatReport.export'
+import BaseButton from '@/components/common/buttons/BaseButton.vue'
 
 const toast = useToast()
+const router = useRouter()
 const store = useCtpatReportsStore()
 const exporting = ref(false)
 
@@ -50,6 +52,10 @@ function clearAll() {
 
 function resetPageState() {
   store.clearFilters()
+}
+
+function goToPatrolsReport() {
+  router.push({ name: 'reports' })
 }
 
 async function onExport() {
@@ -106,7 +112,15 @@ function onPage(e: DataTablePageEvent) {
       :first="store.first"
       @page="onPage"
     >
-      <template #toolbar-start></template>
+      <template #toolbar-start>
+        <BaseIconButton
+          icon="pi pi-file"
+          label="Patrols Report"
+          severity="secondary"
+          outlined
+          @click="goToPatrolsReport"
+        />
+      </template>
 
       <template #toolbar-end>
         <div class="flex justify-end gap-2">
