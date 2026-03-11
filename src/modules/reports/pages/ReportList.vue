@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onMounted, watch, ref } from 'vue'
+import { onMounted, onBeforeUnmount, watch, ref } from 'vue'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
@@ -24,6 +25,8 @@ import { changeReportStatus, fetchReportRowById } from '@/modules/reports/report
 const toast = useToast()
 const auth = useAuthStore()
 const store = useReportsStore()
+const route = useRoute()
+const router = useRouter()
 
 const resultOptions = [
   { label: 'All', value: 'ALL' },
@@ -57,8 +60,44 @@ watch(
   () => store.setFirst(0),
 )
 
+function applyRouteFilters() {
+  const result = String(route.query.result ?? '')
+    .trim()
+    .toUpperCase()
+  const issueStatusRaw = route.query.issueStatus
+  const fromDashboard = String(route.query.fromDashboard ?? '') === '1'
+
+  if (result === 'ALL' || result === 'OK' || result === 'NOT_OK') {
+    store.filterResult = result as ResultFilter
+  }
+
+  if (issueStatusRaw != null && issueStatusRaw !== '') {
+    const issueStatus = Number(Array.isArray(issueStatusRaw) ? issueStatusRaw[0] : issueStatusRaw)
+    if (Number.isFinite(issueStatus)) {
+      store.filterIssueStatus = issueStatus
+    }
+  }
+
+  if (fromDashboard) {
+    store.searchText = ''
+    store.filterAreaId = null
+    store.filterGuardId = ''
+    store.filterDateFrom = null
+    store.filterDateTo = null
+  }
+}
+
 onMounted(async () => {
+  applyRouteFilters()
   await store.load()
+})
+
+onBeforeRouteLeave(() => {
+  resetPageState()
+})
+
+onBeforeUnmount(() => {
+  resetPageState()
 })
 
 function formatDateTime(iso: string) {
@@ -114,6 +153,12 @@ function inspectionSeverity(hasProblem: boolean) {
 
 function clearAll() {
   store.clearFilters()
+}
+
+function resetPageState() {
+  store.clearFilters()
+  formVisible.value = false
+  formModel.value = null
 }
 
 async function openView(row: ReportRow) {
@@ -186,6 +231,10 @@ async function onExport() {
 function onPage(e: DataTablePageEvent) {
   store.setFirst(e.first)
 }
+
+function goToCtpatReport() {
+  router.push({ name: 'ctpat-reports' })
+}
 </script>
 
 <template>
@@ -227,7 +276,15 @@ function onPage(e: DataTablePageEvent) {
       :first="store.first"
       @page="onPage"
     >
-      <template #toolbar-start></template>
+      <template #toolbar-start>
+        <BaseIconButton
+          icon="pi pi-file"
+          label="C-TPAT Report"
+          severity="secondary"
+          outlined
+          @click="goToCtpatReport"
+        />
+      </template>
 
       <template #toolbar-end>
         <div class="flex justify-end gap-2">
@@ -246,11 +303,10 @@ function onPage(e: DataTablePageEvent) {
         <div class="p-4 text-slate-600 flex justify-center">No reports found.</div>
       </template>
 
-      <Column header="Area" style="min-width: 10rem" sortField="area_code">
+      <Column header="Route Name" style="min-width: 10rem" sortField="route_name">
         <template #body="{ data }">
-          <div class="flex flex-col">
-            <div class="text-slate-800 font-bold">{{ data.area_code }}</div>
-            <div class="text-slate-600 text-xs">{{ data.area_name }}</div>
+          <div class="text-slate-800 font-semibold">
+            {{ data.route_name || '-' }}
           </div>
         </template>
       </Column>
@@ -258,7 +314,7 @@ function onPage(e: DataTablePageEvent) {
       <Column header="Scan Point" style="min-width: 16rem" sortField="cp_code">
         <template #body="{ data }">
           <div class="flex flex-col">
-            <div class="text-slate-800 font-bold">{{ data.cp_code }}</div>
+            <div class="text-slate-800 font-semibold">{{ data.cp_code }}</div>
             <div class="text-slate-600 text-xs">{{ data.cp_name }}</div>
           </div>
         </template>

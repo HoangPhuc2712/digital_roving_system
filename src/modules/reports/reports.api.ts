@@ -2,7 +2,7 @@ import type { AxiosError } from 'axios'
 import { http } from '@/services/http/axios'
 import { endpoints } from '@/services/http/endpoints'
 
-import type { ReportImage, ReportNoteGroup, ReportRow } from './reports.types'
+import type { CtpatReportRow, ReportImage, ReportNoteGroup, ReportRow } from './reports.types'
 
 type ApiEnvelope<T> = {
   data: T
@@ -76,6 +76,19 @@ type ApiPointReportView = {
   updatedName?: string
 
   noteGroups?: ApiNoteGroup[]
+}
+
+type ApiCtpatReportView = {
+  prId?: number
+  areaName?: string
+  checkPointName?: string
+  cpPriority?: number
+  startAt?: string
+  endAt?: string
+  scanAt?: string
+  reportName?: string
+  routeId?: number
+  routeName?: string
 }
 
 function ensureSuccess<T>(payload: any): ApiEnvelope<T> {
@@ -318,4 +331,50 @@ export async function changeReportStatus(payload: ChangeReportStatusPayload): Pr
     if (msg) throw new Error(msg)
     throw e
   }
+}
+
+function normalizeCtpatView(v: ApiCtpatReportView): CtpatReportRow {
+  const areaName = String(v.areaName ?? '')
+  const checkPointName = String(v.checkPointName ?? '')
+  const routeName = String(v.routeName ?? '')
+  const reportName = String(v.reportName ?? '')
+  const startAt = String(v.startAt ?? '')
+  const endAt = String(v.endAt ?? '')
+  const scanAt = String(v.scanAt ?? '')
+  const cpPriority = Number(v.cpPriority ?? 0)
+
+  const q = [
+    areaName,
+    checkPointName,
+    routeName,
+    reportName,
+    startAt,
+    endAt,
+    scanAt,
+    String(cpPriority),
+  ]
+    .join(' ')
+    .toLowerCase()
+
+  return {
+    pr_id: Number(v.prId ?? 0),
+    area_name: areaName,
+    check_point_name: checkPointName,
+    cp_priority: cpPriority,
+    start_at: startAt,
+    end_at: endAt,
+    scan_at: scanAt,
+    report_name: reportName,
+    route_id: Number(v.routeId ?? 0),
+    route_name: routeName,
+    _q: q,
+  }
+}
+
+export async function fetchCtpatReportRows(): Promise<CtpatReportRow[]> {
+  const res = await http.post(endpoints.report.ctpatReport, {})
+  const payload = ensureSuccess<ApiCtpatReportView[] | ApiCtpatReportView>(res.data).data
+  const views = asArray(payload)
+
+  return views.map(normalizeCtpatView).sort((a, b) => (a.scan_at < b.scan_at ? 1 : -1))
 }

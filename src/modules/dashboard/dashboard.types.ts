@@ -38,3 +38,9 @@ export type DashboardTotalCheckpointByAreaItem = {
   area_name: string
   total_check_point: number
 }
+
+export type DashboardTotalPointReportByStatusItem = {
+  pr_status: number
+  pr_status_name: string
+  total_problem: number
+}

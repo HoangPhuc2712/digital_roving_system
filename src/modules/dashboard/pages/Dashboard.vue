@@ -5,7 +5,11 @@ import Chart from 'primevue/chart'
 
 import { useAuthStore } from '@/stores/auth.store'
 import { useDashboardStore } from '@/modules/dashboard/dashboard.store'
-import type { DashboardCardMeta, DashboardTotalAppItem } from '@/modules/dashboard/dashboard.types'
+import type {
+  DashboardCardMeta,
+  DashboardTotalAppItem,
+  DashboardTotalPointReportByStatusItem,
+} from '@/modules/dashboard/dashboard.types'
 
 const auth = useAuthStore()
 const store = useDashboardStore()
@@ -60,6 +64,36 @@ const cards = computed(() => {
     .filter((item) => canSeeMc(item.mcCode))
     .sort((a, b) => a.stt - b.stt)
 })
+
+const pointReportStatusCards = computed(() => {
+  return (store.totalPointReportsByStatus ?? [])
+    .filter((item) => Number(item.total_problem ?? 0) >= 0)
+    .sort((a, b) => Number(a.pr_status ?? 0) - Number(b.pr_status ?? 0))
+})
+
+function openStatusCard(card: DashboardTotalPointReportByStatusItem) {
+  router.push({
+    name: 'reports',
+    query: {
+      result: 'NOT_OK',
+      issueStatus: String(card.pr_status),
+      fromDashboard: '1',
+    },
+  })
+}
+
+function statusCardStyle(card: DashboardTotalPointReportByStatusItem) {
+  const colorMap: Record<number, string> = {
+    0: '#FE9A37',
+    1: '#3BB8DB',
+    2: '#37BC7D',
+    3: '#F76E6E',
+  }
+
+  return {
+    backgroundColor: colorMap[Number(card.pr_status ?? -1)] || '#64748b',
+  }
+}
 
 function open(card: DashboardTotalAppItem & DashboardCardMeta) {
   if (!card.to) return
@@ -179,7 +213,7 @@ onMounted(async () => {
         :style="{ ...cardStyle(card), animationDelay: `${idx * 100}ms` }"
         @click="open(card)"
       >
-        <div class="text-sm text-white/85">{{ card.name }}</div>
+        <div class="text-md font-semibold text-white/85">{{ card.name }}</div>
 
         <div class="mt-2 text-3xl font-semibold text-white">
           <span v-if="store.loading">—</span>
@@ -188,6 +222,36 @@ onMounted(async () => {
 
         <div class="mt-2 text-xs text-white/80">Click to view</div>
       </button>
+    </div>
+
+    <div class="mt-20 flex flex-col gap-3">
+      <div class="text-xl font-semibold text-slate-800">Report Summary</div>
+      <div
+        v-if="pointReportStatusCards.length"
+        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"
+      >
+        <button
+          v-for="(card, idx) in pointReportStatusCards"
+          :key="`problem-${card.pr_status}-${card.pr_status_name}`"
+          v-animateonscroll="{
+            enterClass: 'dashboard-card-enter',
+            leaveClass: 'dashboard-card-leave',
+          }"
+          type="button"
+          class="dashboard-card rounded-2xl shadow-sm hover:shadow transition p-4 text-left cursor-pointer"
+          :style="{ ...statusCardStyle(card), animationDelay: `${idx * 100}ms` }"
+          @click="openStatusCard(card)"
+        >
+          <div class="text-md font-semibold text-white/85">{{ card.pr_status_name }}</div>
+
+          <div class="mt-2 text-3xl font-semibold text-white">
+            <span v-if="store.loading">—</span>
+            <span v-else>{{ card.total_problem }}</span>
+          </div>
+
+          <div class="mt-2 text-xs text-white/80">Click to view</div>
+        </button>
+      </div>
     </div>
 
     <div class="mt-20 grid grid-cols-1 lg:grid-cols-3 gap-4">
