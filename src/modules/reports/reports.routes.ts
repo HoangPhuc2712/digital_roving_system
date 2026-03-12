@@ -11,4 +11,10 @@ export const reportsRoutes = [
     component: () => import('@/modules/reports/pages/CtpatReportList.vue'),
     meta: { permission: ['reports.view_all', 'reports.view_mine'] },
   },
+  {
+    path: 'patrol-detail-reports',
+    name: 'patrol-detail-reports',
+    component: () => import('@/modules/reports/pages/PatrolDetailReportList.vue'),
+    meta: { permission: ['reports.view_all', 'reports.view_mine'] },
+  },
 ]

@@ -2,7 +2,13 @@ import type { AxiosError } from 'axios'
 import { http } from '@/services/http/axios'
 import { endpoints } from '@/services/http/endpoints'
 
-import type { CtpatReportRow, ReportImage, ReportNoteGroup, ReportRow } from './reports.types'
+import type {
+  CtpatReportRow,
+  PatrolDetailReportRow,
+  ReportImage,
+  ReportNoteGroup,
+  ReportRow,
+} from './reports.types'
 
 type ApiEnvelope<T> = {
   data: T
@@ -89,6 +95,31 @@ type ApiCtpatReportView = {
   reportName?: string
   routeId?: number
   routeName?: string
+}
+
+type ApiPatrolShiftPointReport = {
+  prId?: number
+  prStatus?: number
+  prHasProblem?: boolean
+  cpName?: string
+  psId?: number
+  reportAt?: string
+  reportName?: string
+  timeProblem?: boolean
+}
+
+type ApiPatrolShiftReportView = {
+  psId?: number
+  routeId?: number
+  routeCode?: string
+  routeName?: string
+  areaId?: number
+  timeProblem?: boolean
+  pointProblem?: boolean
+  reportTimeFrom?: string
+  reportTimeTo?: string
+  reportName?: string
+  pointReports?: ApiPatrolShiftPointReport[]
 }
 
 function ensureSuccess<T>(payload: any): ApiEnvelope<T> {
@@ -377,4 +408,90 @@ export async function fetchCtpatReportRows(): Promise<CtpatReportRow[]> {
   const views = asArray(payload)
 
   return views.map(normalizeCtpatView).sort((a, b) => (a.scan_at < b.scan_at ? 1 : -1))
+}
+
+function normalizePatrolDetailRows(views: ApiPatrolShiftReportView[]): PatrolDetailReportRow[] {
+  const shiftColors = ['#ffeeba', '#bee5eb']
+
+  const sortedViews = [...views].sort((a, b) => {
+    const aStart = String(a.reportTimeFrom ?? '')
+    const bStart = String(b.reportTimeFrom ?? '')
+    if (aStart === bStart) return Number(a.psId ?? 0) - Number(b.psId ?? 0)
+    return aStart.localeCompare(bStart)
+  })
+
+  return sortedViews.flatMap((view, shiftIndex) => {
+    const shiftColor = shiftColors[shiftIndex % shiftColors.length] ?? '#ffeeba'
+    const psId = Number(view.psId ?? 0)
+    const routeId = Number(view.routeId ?? 0)
+    const routeCode = String(view.routeCode ?? '')
+    const routeName = String(view.routeName ?? '')
+    const areaId = Number(view.areaId ?? 0)
+    const startTime = String(view.reportTimeFrom ?? '')
+    const finishTime = String(view.reportTimeTo ?? '')
+    const shiftGuardName = String(view.reportName ?? '')
+    const shiftKey = `${psId}|${routeId}|${startTime}|${finishTime}|${shiftGuardName}`
+    const points = Array.isArray(view.pointReports) ? view.pointReports : []
+
+    const sortedPoints = [...points].sort((a, b) => {
+      const aTime = String(a.reportAt ?? '')
+      const bTime = String(b.reportAt ?? '')
+      if (aTime === bTime) return Number(a.prId ?? 0) - Number(b.prId ?? 0)
+      return aTime.localeCompare(bTime)
+    })
+
+    return sortedPoints.map((point, pointIndex) => {
+      const checkPointName = String(point.cpName ?? '')
+      const reportName = String(point.reportName ?? shiftGuardName)
+      const patrolTime = String(point.reportAt ?? '')
+      const prStatus = Number(point.prStatus ?? 0)
+      const prHasProblem = Boolean(point.prHasProblem)
+      const pointTimeProblem = Boolean(point.timeProblem)
+
+      const q = [
+        routeCode,
+        routeName,
+        checkPointName,
+        reportName,
+        startTime,
+        finishTime,
+        patrolTime,
+        String(areaId),
+      ]
+        .join(' ')
+        .toLowerCase()
+
+      return {
+        row_id: `${psId}-${Number(point.prId ?? pointIndex + 1)}-${pointIndex}`,
+        ps_id: psId,
+        area_id: areaId,
+        route_id: routeId,
+        route_code: routeCode,
+        route_name: routeName,
+        check_point_name: checkPointName,
+        start_time: startTime,
+        finish_time: finishTime,
+        patrol_time: patrolTime,
+        report_name: reportName,
+        pr_id: Number(point.prId ?? 0),
+        pr_status: prStatus,
+        pr_has_problem: prHasProblem,
+        point_time_problem: pointTimeProblem,
+        shift_key: shiftKey,
+        shift_color: shiftColor,
+        event_zh: '',
+        event_vi: '',
+        _q: q,
+      }
+    })
+  })
+}
+
+export async function fetchPatrolDetailReportRows(): Promise<PatrolDetailReportRow[]> {
+  const res = await http.post(endpoints.report.patrolDetailReport, {})
+  const payload = ensureSuccess<ApiPatrolShiftReportView[] | ApiPatrolShiftReportView>(
+    res.data,
+  ).data
+  const views = asArray(payload)
+  return normalizePatrolDetailRows(views)
 }

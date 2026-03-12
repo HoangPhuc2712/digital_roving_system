@@ -72,6 +72,7 @@ export const endpoints = {
     totalCheckpointByArea: '/report/totalcheckpointbyarea',
     totalPointReportByStatus: '/report/totalpointreportbystatus',
     ctpatReport: '/report/reportctpat',
+    patrolDetailReport: '/report/reportpatrolshift',
   },
   pointReport: {
     changeStatus: (prId: number | string) => `/pointreport/changestatus/${prId}`,

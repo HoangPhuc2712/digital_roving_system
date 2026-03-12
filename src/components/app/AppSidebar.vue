@@ -164,8 +164,12 @@ watch(
     if (
       path === '/reports' ||
       path === '/ctpat-reports' ||
+      path === '/patrol-detail-reports' ||
+      path === '/patrol-summary-reports' ||
       path.startsWith('/reports/') ||
-      path.startsWith('/ctpat-reports/')
+      path.startsWith('/ctpat-reports/') ||
+      path.startsWith('/patrol-detail-reports/') ||
+      path.startsWith('/patrol-summary-reports/')
     ) {
       reportsOpen.value = true
     }
@@ -197,13 +201,6 @@ function subItemClass(active: boolean) {
   ].join(' ')
 }
 
-function subItemDisabledClass() {
-  return [
-    'w-full flex items-center gap-3',
-    'px-3 py-2 rounded-lg transition opacity-50 cursor-not-allowed',
-  ].join(' ')
-}
-
 function isActivePath(prefix: string) {
   return route.path === prefix || route.path.startsWith(prefix + '/')
 }
@@ -212,8 +209,12 @@ function isReportsGroupActive() {
   return (
     route.path === '/reports' ||
     route.path === '/ctpat-reports' ||
+    route.path === '/patrol-detail-reports' ||
+    route.path === '/patrol-summary-reports' ||
     route.path.startsWith('/reports/') ||
-    route.path.startsWith('/ctpat-reports/')
+    route.path.startsWith('/ctpat-reports/') ||
+    route.path.startsWith('/patrol-detail-reports/') ||
+    route.path.startsWith('/patrol-summary-reports/')
   )
 }
 
@@ -223,6 +224,11 @@ function toggleReports() {
 
 function goToPatrolsData() {
   router.push({ name: 'reports' })
+  closeMobile()
+}
+
+function goToReportsData() {
+  router.push({ name: 'patrol-detail-reports' })
   closeMobile()
 }
 
@@ -278,12 +284,21 @@ function logout() {
                 </span>
               </button>
 
-              <div :class="subItemDisabledClass()">
+              <button
+                type="button"
+                :class="
+                  subItemClass(
+                    isActivePath('/patrol-detail-reports') ||
+                      isActivePath('/patrol-summary-reports'),
+                  )
+                "
+                @click="goToReportsData"
+              >
                 <span class="flex items-center gap-3">
                   <i class="pi pi-file"></i>
                   <span>Reports Data</span>
                 </span>
-              </div>
+              </button>
             </div>
           </template>
 
