@@ -37,15 +37,41 @@ export const useUsersStore = defineStore('users', {
     async load() {
       this.loading = true
       try {
-        const [roles, areas, rows] = await Promise.all([
-          fetchRoleOptions(),
-          fetchAreaOptions(),
+        const [rows, roles, areas] = await Promise.all([
           fetchUserRows(),
+          fetchRoleOptions().catch(() => []),
+          fetchAreaOptions().catch(() => []),
         ])
 
-        this.roleOptions = roles
-        this.areaOptions = areas
+        const fallbackRoleOptions = Array.from(
+          new Map(
+            rows
+              .filter((r) => Number(r.user_role_id) > 0)
+              .map((r) => [
+                Number(r.user_role_id),
+                String(r.role_name || r.role_code || r.user_role_id),
+              ]),
+          ).entries(),
+        )
+          .map(([value, label]) => ({ value, label }))
+          .sort((a, b) => a.label.localeCompare(b.label))
+
+        const fallbackAreaOptions = Array.from(
+          new Map(
+            rows
+              .filter((r) => Number(r.user_area_id) > 0)
+              .map((r) => [
+                Number(r.user_area_id),
+                String(r.area_name || r.area_code || r.user_area_id),
+              ]),
+          ).entries(),
+        )
+          .map(([value, label]) => ({ value, label }))
+          .sort((a, b) => a.label.localeCompare(b.label))
+
         this.rows = rows
+        this.roleOptions = roles.length ? roles : fallbackRoleOptions
+        this.areaOptions = areas.length ? areas : fallbackAreaOptions
       } finally {
         this.loading = false
       }

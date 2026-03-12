@@ -109,7 +109,7 @@ function mapRouteDetails(details: ApiRouteDetail[]): RouteDetailModel[] {
       cp_id: Number(d.cpId ?? 0),
       cp_code: String(d.cpCode ?? ''),
       cp_name: String(d.cpName ?? ''),
-      cp_priority: Number(d.cpPriority ?? 0) || undefined,
+      cp_priority: Number(d.cpPriority ?? d.rdPriority ?? 0) || undefined,
       rd_second: toSeconds(d.rdSecond, d.rdMinute),
       rd_priority: Number(d.rdPriority ?? 0),
     }))
@@ -214,8 +214,8 @@ export async function fetchScanPointsByArea(
 
 export async function fetchRouteRows(roleOptions: RoleOption[] = []): Promise<RouteRow[]> {
   const res = await http.post(endpoints.routeView.getList, {})
-  const env = ensureSuccess<ApiRouteView[]>(res.data)
-  const views = env.data ?? []
+  const payload = ensureSuccess<ApiRouteView[] | ApiRouteView>(res.data).data ?? []
+  const views = Array.isArray(payload) ? payload : [payload]
 
   return views
     .map((v) => mapRouteView(v, roleOptions))
