@@ -5,6 +5,7 @@ import { endpoints } from '@/services/http/endpoints'
 import type {
   CtpatReportRow,
   PatrolDetailReportRow,
+  PatrolSummaryReportRow,
   ReportImage,
   ReportNoteGroup,
   ReportRow,
@@ -120,6 +121,49 @@ type ApiPatrolShiftReportView = {
   reportTimeTo?: string
   reportName?: string
   pointReports?: ApiPatrolShiftPointReport[]
+}
+
+type ApiPlannedPatrolShiftRouteDetail = {
+  rdId?: number
+  routeId?: number
+  cpId?: number
+  cpCode?: string
+  cpName?: string
+  rdSecond?: number
+  rdMinute?: number
+  rdPriority?: number
+}
+
+type ApiPlannedPatrolShiftView = {
+  psId?: number
+  psDay?: number
+  psMonth?: number
+  psYear?: number
+  psHourFrom?: number
+  psHourTo?: number
+  psStartAt?: string | null
+  psEndAt?: string | null
+  routeId?: number
+  routeCode?: string
+  routeName?: string
+  areaId?: number
+  roleId?: number
+  planSecond?: number
+  planHours?: number
+  planMinutes?: number
+  planSeconds?: number
+  realitySecond?: number
+  realityHours?: number
+  realityMinutes?: number
+  realitySeconds?: number
+  timeProblem?: boolean
+  planPoint?: number
+  realityPoint?: number
+  pointProblem?: boolean
+  isComplete?: boolean
+  reportdBy?: string
+  reportName?: string
+  routeDetails?: ApiPlannedPatrolShiftRouteDetail[]
 }
 
 function ensureSuccess<T>(payload: any): ApiEnvelope<T> {
@@ -420,8 +464,10 @@ function normalizePatrolDetailRows(views: ApiPatrolShiftReportView[]): PatrolDet
     return aStart.localeCompare(bStart)
   })
 
-  return sortedViews.flatMap((view, shiftIndex) => {
-    const shiftColor = shiftColors[shiftIndex % shiftColors.length] ?? '#ffeeba'
+  const shiftColorMap = new Map<string, string>()
+  let nextColorIndex = 0
+
+  return sortedViews.flatMap((view) => {
     const psId = Number(view.psId ?? 0)
     const routeId = Number(view.routeId ?? 0)
     const routeCode = String(view.routeCode ?? '')
@@ -431,6 +477,15 @@ function normalizePatrolDetailRows(views: ApiPatrolShiftReportView[]): PatrolDet
     const finishTime = String(view.reportTimeTo ?? '')
     const shiftGuardName = String(view.reportName ?? '')
     const shiftKey = `${psId}|${routeId}|${startTime}|${finishTime}|${shiftGuardName}`
+
+    const timeSlotKey = `${startTime}|${finishTime}`
+
+    if (!shiftColorMap.has(timeSlotKey)) {
+      shiftColorMap.set(timeSlotKey, shiftColors[nextColorIndex % shiftColors.length] ?? '#ffeeba')
+      nextColorIndex += 1
+    }
+
+    const shiftColor = shiftColorMap.get(timeSlotKey) ?? '#ffeeba'
     const points = Array.isArray(view.pointReports) ? view.pointReports : []
 
     const sortedPoints = [...points].sort((a, b) => {
@@ -494,4 +549,124 @@ export async function fetchPatrolDetailReportRows(): Promise<PatrolDetailReportR
   ).data
   const views = asArray(payload)
   return normalizePatrolDetailRows(views)
+}
+
+function normalizeDateOnly(value: Date) {
+  const y = value.getFullYear()
+  const m = String(value.getMonth() + 1).padStart(2, '0')
+  const d = String(value.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+function eachDateInclusive(dateFrom: Date, dateTo: Date) {
+  const start = new Date(dateFrom)
+  start.setHours(0, 0, 0, 0)
+
+  const end = new Date(dateTo)
+  end.setHours(0, 0, 0, 0)
+
+  const dates: Date[] = []
+  const cursor = new Date(start)
+  while (cursor.getTime() <= end.getTime()) {
+    dates.push(new Date(cursor))
+    cursor.setDate(cursor.getDate() + 1)
+  }
+  return dates
+}
+
+async function fetchTotalPatrolShiftByDate(date: Date) {
+  const body = {
+    psDay: date.getDate(),
+    psMonth: date.getMonth() + 1,
+    psYear: date.getFullYear(),
+  }
+
+  const res = await http.post(endpoints.report.totalPatrolShift, body)
+  const payload = ensureSuccess<ApiPatrolShiftReportView[] | ApiPatrolShiftReportView>(
+    res.data,
+  ).data
+  return asArray(payload)
+}
+
+async function fetchPlannedPatrolShiftByDate(date: Date) {
+  const body = {
+    psDay: date.getDate(),
+    psMonth: date.getMonth() + 1,
+    psYear: date.getFullYear(),
+  }
+
+  const res = await http.post(endpoints.patrolShiftView.getList, body)
+  const payload = ensureSuccess<ApiPlannedPatrolShiftView[] | ApiPlannedPatrolShiftView>(
+    res.data,
+  ).data
+  return asArray(payload)
+}
+
+export async function fetchPatrolSummaryRows(
+  dateFrom: Date,
+  dateTo: Date,
+): Promise<PatrolSummaryReportRow[]> {
+  const from = new Date(dateFrom)
+  const to = new Date(dateTo)
+
+  if (from.getTime() > to.getTime()) {
+    const tmp = new Date(from)
+    from.setTime(to.getTime())
+    to.setTime(tmp.getTime())
+  }
+
+  const days = eachDateInclusive(from, to)
+  const rows: PatrolSummaryReportRow[] = []
+
+  for (const day of days) {
+    const [actualViews, plannedViews] = await Promise.all([
+      fetchTotalPatrolShiftByDate(day),
+      fetchPlannedPatrolShiftByDate(day),
+    ])
+
+    const areaIds = new Set<number>()
+
+    for (const item of actualViews) {
+      const areaId = Number(item.areaId ?? 0)
+      if (areaId > 0) areaIds.add(areaId)
+    }
+
+    for (const item of plannedViews) {
+      const areaId = Number(item.areaId ?? 0)
+      if (areaId > 0) areaIds.add(areaId)
+    }
+
+    const dateLabel = normalizeDateOnly(day)
+
+    for (const areaId of [...areaIds].sort((a, b) => a - b)) {
+      const actualRows = actualViews.filter((item) => Number(item.areaId ?? 0) === areaId)
+      const plannedRows = plannedViews.filter((item) => Number(item.areaId ?? 0) === areaId)
+
+      const requiredCount = plannedRows.length
+      const actualCount = actualRows.length
+      const missedCount = Math.max(requiredCount - actualCount, 0)
+      const timeProblemCount = actualRows.filter((item) => Boolean(item.timeProblem)).length
+      const insufficientCount = actualRows.filter((item) => Boolean(item.pointProblem)).length
+      const abnormalTotal = missedCount + timeProblemCount + insufficientCount
+      const abnormalRate = requiredCount > 0 ? (abnormalTotal / requiredCount) * 100 : 0
+
+      rows.push({
+        date_key: dateLabel,
+        date_label: dateLabel,
+        area_id: areaId,
+        area_name: `Area ${areaId}`,
+        required_count: requiredCount,
+        actual_count: actualCount,
+        missed_count: missedCount,
+        time_problem_count: timeProblemCount,
+        insufficient_count: insufficientCount,
+        abnormal_rate: Number(abnormalRate.toFixed(2)),
+      })
+    }
+  }
+
+  return rows.sort((a, b) => {
+    if (a.date_key === b.date_key) return a.area_name.localeCompare(b.area_name)
+    return a.date_key.localeCompare(b.date_key)
+  })
 }

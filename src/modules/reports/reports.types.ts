@@ -110,3 +110,16 @@ export type PatrolDetailReportRow = {
 
   _q: string
 }
+
+export type PatrolSummaryReportRow = {
+  date_key: string
+  date_label: string
+  area_id: number
+  area_name: string
+  required_count: number
+  actual_count: number
+  missed_count: number
+  time_problem_count: number
+  insufficient_count: number
+  abnormal_rate: number
+}

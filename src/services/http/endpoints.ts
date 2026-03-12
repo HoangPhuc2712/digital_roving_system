@@ -64,7 +64,9 @@ export const endpoints = {
     getList: '/pointreportview/getlist',
     getOne: (prId: number | string) => `/pointreportview/getone/${prId}`,
   },
-
+  patrolShiftView: {
+    getList: '/patrolshiftview/getlist',
+  },
   report: {
     totalAppData: '/report/totalappdata',
     totalUserByRole: '/report/totaluserbyrole',
@@ -73,6 +75,7 @@ export const endpoints = {
     totalPointReportByStatus: '/report/totalpointreportbystatus',
     ctpatReport: '/report/reportctpat',
     patrolDetailReport: '/report/reportpatrolshift',
+    totalPatrolShift: '/report/totalpatrolshift',
   },
   pointReport: {
     changeStatus: (prId: number | string) => `/pointreport/changestatus/${prId}`,

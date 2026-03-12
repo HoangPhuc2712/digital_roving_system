@@ -60,8 +60,8 @@ function resetPageState() {
   store.clearFilters()
 }
 
-function goToPatrolsData() {
-  router.push({ name: 'reports' })
+function goToPatrolSummaryReport() {
+  router.push({ name: 'patrol-summary-reports' })
 }
 
 function shiftCellStyle(hex: string) {
@@ -135,11 +135,11 @@ function onPage(e: DataTablePageEvent) {
     >
       <template #toolbar-start>
         <BaseIconButton
-          icon="pi pi-shield"
-          label="Patrols Data"
+          icon="pi pi-chart-line"
+          label="Patrol Summary Report"
           severity="secondary"
           outlined
-          @click="goToPatrolsData"
+          @click="goToPatrolSummaryReport"
         />
       </template>
 

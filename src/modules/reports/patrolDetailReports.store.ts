@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { fetchAreaOptions } from '@/modules/areas/areas.api'
+import { fetchAreaRows } from '@/modules/areas/areas.api'
 import { fetchPatrolDetailReportRows } from './reports.api'
 import type { PatrolDetailReportRow } from './reports.types'
 
@@ -113,16 +113,16 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
     async load() {
       this.loading = true
       try {
-        const [rows, areaOptions] = await Promise.all([
+        const [rows, areaRows] = await Promise.all([
           fetchPatrolDetailReportRows(),
-          fetchAreaOptions().catch(() => []),
+          fetchAreaRows().catch(() => []),
         ])
 
         this.rows = rows
         this.areaLabelMap = Object.fromEntries(
-          (areaOptions ?? []).map((option: any) => [
-            Number(option.value ?? 0),
-            String(option.label ?? ''),
+          (areaRows ?? []).map((row: any) => [
+            Number(row.area_id ?? 0),
+            String(row.area_name ?? row.area_code ?? ''),
           ]),
         )
       } finally {
