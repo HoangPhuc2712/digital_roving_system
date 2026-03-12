@@ -11,7 +11,6 @@ import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import CtpatReportFilters from '@/modules/reports/components/CtpatReportFilters.vue'
 import { useCtpatReportsStore } from '@/modules/reports/ctpatReports.store'
 import { exportCtpatReportXlsx } from '@/services/export/ctpatReport.export'
-import BaseButton from '@/components/common/buttons/BaseButton.vue'
 
 const toast = useToast()
 const router = useRouter()
