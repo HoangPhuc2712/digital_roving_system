@@ -89,7 +89,7 @@ function buildRoleNames(roleIds: number[], roleOptions: RoleOption[]) {
 }
 
 export async function fetchAreaOptions(): Promise<AreaOption[]> {
-  const res = await http.get(endpoints.area.getBaseList)
+  const res = await http.post(endpoints.area.getBaseList, {})
   const env = ensureSuccess<any[]>(res.data)
   const list = env.data ?? []
 
@@ -103,7 +103,7 @@ export async function fetchAreaOptions(): Promise<AreaOption[]> {
 }
 
 export async function fetchRoleOptions(): Promise<RoleOption[]> {
-  const res = await http.get(endpoints.role.getBaseList)
+  const res = await http.post(endpoints.role.getBaseList, {})
   const list = ensureSuccess<ApiRoleBase[]>(res.data).data ?? []
 
   return list
