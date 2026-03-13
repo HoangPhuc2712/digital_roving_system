@@ -615,22 +615,33 @@ function buildPlannedShiftStart(view: ApiPlannedPatrolShiftView) {
   return Number.isFinite(d.getTime()) ? d : null
 }
 
-function buildActualShiftStart(view: ApiPatrolShiftReportView) {
-  const reportTimeFrom = String(view.reportTimeFrom ?? '').trim()
-  if (reportTimeFrom) {
-    const d = new Date(reportTimeFrom)
-    if (Number.isFinite(d.getTime())) return d
-  }
+// function buildActualShiftStart(view: ApiPatrolShiftReportView): Date | null {
+//   const points = Array.isArray(view.pointReports) ? view.pointReports : []
 
-  const firstPoint = Array.isArray(view.pointReports) ? view.pointReports[0] : null
-  const fallback = String(firstPoint?.reportAt ?? '').trim()
-  if (fallback) {
-    const d = new Date(fallback)
-    if (Number.isFinite(d.getTime())) return d
-  }
+//   const pointTimes = points
+//     .map((point) => {
+//       const raw = String(point?.reportAt ?? '').trim()
+//       if (!raw) return null
 
-  return null
-}
+//       const d = new Date(raw)
+//       return Number.isFinite(d.getTime()) ? d : null
+//     })
+//     .filter((d): d is Date => d != null)
+//     .sort((a, b) => a.getTime() - b.getTime())
+
+//   const firstPointTime = pointTimes[0] ?? null
+//   if (firstPointTime) {
+//     return firstPointTime
+//   }
+
+//   const reportTimeFrom = String(view.reportTimeFrom ?? '').trim()
+//   if (reportTimeFrom) {
+//     const d = new Date(reportTimeFrom)
+//     if (Number.isFinite(d.getTime())) return d
+//   }
+
+//   return null
+// }
 
 function isWithinWindow(value: Date | null, windowStart: Date, windowEnd: Date) {
   if (!value || !Number.isFinite(value.getTime())) return false
@@ -638,20 +649,20 @@ function isWithinWindow(value: Date | null, windowStart: Date, windowEnd: Date) 
   return t >= windowStart.getTime() && t <= windowEnd.getTime()
 }
 
-async function fetchTotalPatrolShiftByDate(date: Date) {
-  const body = {
-    psDay: date.getDate(),
-    psMonth: date.getMonth() + 1,
-    psYear: date.getFullYear(),
-    roleId: SECURITY_ROLE_ID,
-  }
+// async function fetchTotalPatrolShiftByDate(date: Date) {
+//   const body = {
+//     psDay: date.getDate(),
+//     psMonth: date.getMonth() + 1,
+//     psYear: date.getFullYear(),
+//     roleId: SECURITY_ROLE_ID,
+//   }
 
-  const res = await http.post(endpoints.report.totalPatrolShift, body)
-  const payload = ensureSuccess<ApiPatrolShiftReportView[] | ApiPatrolShiftReportView>(
-    res.data,
-  ).data
-  return asArray(payload)
-}
+//   const res = await http.post(endpoints.report.totalPatrolShift, body)
+//   const payload = ensureSuccess<ApiPatrolShiftReportView[] | ApiPatrolShiftReportView>(
+//     res.data,
+//   ).data
+//   return asArray(payload)
+// }
 
 async function fetchPlannedPatrolShiftByDate(date: Date) {
   const body = {
@@ -697,26 +708,13 @@ export async function fetchPatrolSummaryRows(
       continue
     }
 
-    const [actualViews, plannedViews] = await Promise.all([
-      fetchTotalPatrolShiftByDate(day),
-      fetchPlannedPatrolShiftByDate(day),
-    ])
-
-    const filteredActualViews = actualViews.filter((item) =>
-      isWithinWindow(buildActualShiftStart(item), windowStart, windowEnd),
-    )
+    const plannedViews = await fetchPlannedPatrolShiftByDate(day)
 
     const filteredPlannedViews = plannedViews.filter((item) =>
       isWithinWindow(buildPlannedShiftStart(item), windowStart, windowEnd),
     )
 
     const areaIds = new Set<number>()
-
-    for (const item of filteredActualViews) {
-      const areaId = Number(item.areaId ?? 0)
-      if (areaId > 0) areaIds.add(areaId)
-    }
-
     for (const item of filteredPlannedViews) {
       const areaId = Number(item.areaId ?? 0)
       if (areaId > 0) areaIds.add(areaId)
@@ -725,10 +723,19 @@ export async function fetchPatrolSummaryRows(
     const dateLabel = normalizeDateOnly(day)
 
     for (const areaId of [...areaIds].sort((a, b) => a - b)) {
-      const actualRows = filteredActualViews.filter((item) => Number(item.areaId ?? 0) === areaId)
       const plannedRows = filteredPlannedViews.filter((item) => Number(item.areaId ?? 0) === areaId)
 
       const requiredCount = plannedRows.length
+
+      const actualRows = plannedRows.filter((item) => {
+        const startAt = String(item.psStartAt ?? '').trim()
+        const endAt = String(item.psEndAt ?? '').trim()
+        const realityPoint = Number(item.realityPoint ?? 0)
+        const realitySecond = Number(item.realitySecond ?? 0)
+
+        return !!startAt || !!endAt || realityPoint > 0 || realitySecond > 0
+      })
+
       const actualCount = actualRows.length
       const missedCount = Math.max(requiredCount - actualCount, 0)
       const timeProblemCount = actualRows.filter((item) => Boolean(item.timeProblem)).length
