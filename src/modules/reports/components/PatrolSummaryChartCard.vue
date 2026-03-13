@@ -87,7 +87,21 @@ function renderChart() {
 }
 
 function getBase64Image() {
-  return chartInstance?.toBase64Image() || ''
+  const canvas = chartCanvasRef.value
+  if (!canvas) return ''
+
+  const exportCanvas = document.createElement('canvas')
+  exportCanvas.width = canvas.width
+  exportCanvas.height = canvas.height
+
+  const exportCtx = exportCanvas.getContext('2d')
+  if (!exportCtx) return ''
+
+  exportCtx.fillStyle = '#FFFFFF'
+  exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height)
+  exportCtx.drawImage(canvas, 0, 0)
+
+  return exportCanvas.toDataURL('image/png')
 }
 
 defineExpose({
@@ -104,7 +118,7 @@ defineExpose({
       <div class="text-2xl font-semibold text-slate-800">Chart</div>
     </div>
 
-    <div class="relative h-[420px] w-full">
+    <div class="relative h-[420px] w-full bg-white">
       <canvas ref="chartCanvasRef"></canvas>
     </div>
   </div>

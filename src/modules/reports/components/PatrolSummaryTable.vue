@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ProgressSpinner from 'primevue/progressspinner'
 import type { PatrolSummaryReportRow } from '@/modules/reports/reports.types'
 
 defineProps<{
@@ -16,7 +17,7 @@ function formatRate(rate: number) {
 }
 
 function actualCountClass(row: PatrolSummaryReportRow) {
-  return row.actual_count < row.required_count ? 'text-red-500 font-medium' : ''
+  return row.actual_count !== row.required_count ? 'text-red-500 font-medium' : ''
 }
 
 function abnormalCountClass(value: number) {
@@ -25,7 +26,20 @@ function abnormalCountClass(value: number) {
 </script>
 
 <template>
-  <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+  <div class="relative overflow-x-auto rounded-xl border border-slate-200 bg-white min-h-[220px]">
+    <div
+      v-if="loading"
+      class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-white/75 backdrop-blur-[1px]"
+    >
+      <ProgressSpinner
+        strokeWidth="4"
+        style="width: 44px; height: 44px"
+        animationDuration=".8s"
+        class="summary-loading-spinner"
+      />
+      <div class="text-sm text-slate-500">Loading data...</div>
+    </div>
+
     <table class="w-full min-w-[1100px] border-collapse text-[0.95rem] text-slate-700">
       <thead>
         <tr class="bg-slate-50 text-slate-800">
@@ -96,13 +110,24 @@ function abnormalCountClass(value: number) {
         </template>
       </tbody>
 
-      <tbody v-else>
+      <tbody v-else-if="!loading">
         <tr>
           <td colspan="8" class="border border-slate-200 px-4 py-8 text-center text-slate-500">
-            {{ loading ? 'Loading data...' : 'No reports found.' }}
+            No reports found.
           </td>
         </tr>
       </tbody>
     </table>
   </div>
 </template>
+
+<style scoped>
+:deep(.summary-loading-spinner svg) {
+  width: 44px;
+  height: 44px;
+}
+
+:deep(.summary-loading-spinner .p-progress-spinner-circle) {
+  stroke: #cbd5e1 !important;
+}
+</style>
