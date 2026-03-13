@@ -551,6 +551,8 @@ export async function fetchPatrolDetailReportRows(): Promise<PatrolDetailReportR
   return normalizePatrolDetailRows(views)
 }
 
+const SECURITY_ROLE_ID = 4
+
 function normalizeDateOnly(value: Date) {
   const y = value.getFullYear()
   const m = String(value.getMonth() + 1).padStart(2, '0')
@@ -558,20 +560,82 @@ function normalizeDateOnly(value: Date) {
   return `${y}-${m}-${d}`
 }
 
-function eachDateInclusive(dateFrom: Date, dateTo: Date) {
-  const start = new Date(dateFrom)
-  start.setHours(0, 0, 0, 0)
+function startOfLocalDay(value: Date) {
+  const d = new Date(value)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
 
-  const end = new Date(dateTo)
-  end.setHours(0, 0, 0, 0)
+function endOfLocalDay(value: Date) {
+  const d = new Date(value)
+  d.setHours(23, 59, 59, 999)
+  return d
+}
+
+function minDate(a: Date, b: Date) {
+  return a.getTime() <= b.getTime() ? a : b
+}
+
+function maxDate(a: Date, b: Date) {
+  return a.getTime() >= b.getTime() ? a : b
+}
+
+function isSameLocalDate(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  )
+}
+
+function eachDateInclusive(dateFrom: Date, dateTo: Date) {
+  const start = startOfLocalDay(dateFrom)
+  const end = startOfLocalDay(dateTo)
 
   const dates: Date[] = []
   const cursor = new Date(start)
+
   while (cursor.getTime() <= end.getTime()) {
     dates.push(new Date(cursor))
     cursor.setDate(cursor.getDate() + 1)
   }
+
   return dates
+}
+
+function buildPlannedShiftStart(view: ApiPlannedPatrolShiftView) {
+  const year = Number(view.psYear ?? 0)
+  const month = Number(view.psMonth ?? 0)
+  const day = Number(view.psDay ?? 0)
+  const hourFrom = Number(view.psHourFrom ?? 0)
+
+  if (!year || !month || !day) return null
+
+  const d = new Date(year, month - 1, day, hourFrom, 0, 0, 0)
+  return Number.isFinite(d.getTime()) ? d : null
+}
+
+function buildActualShiftStart(view: ApiPatrolShiftReportView) {
+  const reportTimeFrom = String(view.reportTimeFrom ?? '').trim()
+  if (reportTimeFrom) {
+    const d = new Date(reportTimeFrom)
+    if (Number.isFinite(d.getTime())) return d
+  }
+
+  const firstPoint = Array.isArray(view.pointReports) ? view.pointReports[0] : null
+  const fallback = String(firstPoint?.reportAt ?? '').trim()
+  if (fallback) {
+    const d = new Date(fallback)
+    if (Number.isFinite(d.getTime())) return d
+  }
+
+  return null
+}
+
+function isWithinWindow(value: Date | null, windowStart: Date, windowEnd: Date) {
+  if (!value || !Number.isFinite(value.getTime())) return false
+  const t = value.getTime()
+  return t >= windowStart.getTime() && t <= windowEnd.getTime()
 }
 
 async function fetchTotalPatrolShiftByDate(date: Date) {
@@ -579,6 +643,7 @@ async function fetchTotalPatrolShiftByDate(date: Date) {
     psDay: date.getDate(),
     psMonth: date.getMonth() + 1,
     psYear: date.getFullYear(),
+    roleId: SECURITY_ROLE_ID,
   }
 
   const res = await http.post(endpoints.report.totalPatrolShift, body)
@@ -593,6 +658,7 @@ async function fetchPlannedPatrolShiftByDate(date: Date) {
     psDay: date.getDate(),
     psMonth: date.getMonth() + 1,
     psYear: date.getFullYear(),
+    roleId: SECURITY_ROLE_ID,
   }
 
   const res = await http.post(endpoints.patrolShiftView.getList, body)
@@ -616,22 +682,42 @@ export async function fetchPatrolSummaryRows(
   }
 
   const days = eachDateInclusive(from, to)
+  const now = new Date()
   const rows: PatrolSummaryReportRow[] = []
 
   for (const day of days) {
+    let windowStart = maxDate(startOfLocalDay(day), from)
+    let windowEnd = minDate(endOfLocalDay(day), to)
+
+    if (isSameLocalDate(day, now)) {
+      windowEnd = minDate(windowEnd, now)
+    }
+
+    if (windowStart.getTime() > windowEnd.getTime()) {
+      continue
+    }
+
     const [actualViews, plannedViews] = await Promise.all([
       fetchTotalPatrolShiftByDate(day),
       fetchPlannedPatrolShiftByDate(day),
     ])
 
+    const filteredActualViews = actualViews.filter((item) =>
+      isWithinWindow(buildActualShiftStart(item), windowStart, windowEnd),
+    )
+
+    const filteredPlannedViews = plannedViews.filter((item) =>
+      isWithinWindow(buildPlannedShiftStart(item), windowStart, windowEnd),
+    )
+
     const areaIds = new Set<number>()
 
-    for (const item of actualViews) {
+    for (const item of filteredActualViews) {
       const areaId = Number(item.areaId ?? 0)
       if (areaId > 0) areaIds.add(areaId)
     }
 
-    for (const item of plannedViews) {
+    for (const item of filteredPlannedViews) {
       const areaId = Number(item.areaId ?? 0)
       if (areaId > 0) areaIds.add(areaId)
     }
@@ -639,8 +725,8 @@ export async function fetchPatrolSummaryRows(
     const dateLabel = normalizeDateOnly(day)
 
     for (const areaId of [...areaIds].sort((a, b) => a - b)) {
-      const actualRows = actualViews.filter((item) => Number(item.areaId ?? 0) === areaId)
-      const plannedRows = plannedViews.filter((item) => Number(item.areaId ?? 0) === areaId)
+      const actualRows = filteredActualViews.filter((item) => Number(item.areaId ?? 0) === areaId)
+      const plannedRows = filteredPlannedViews.filter((item) => Number(item.areaId ?? 0) === areaId)
 
       const requiredCount = plannedRows.length
       const actualCount = actualRows.length
