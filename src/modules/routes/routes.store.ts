@@ -39,10 +39,35 @@ export const useRoutesStore = defineStore('routes', {
     async load() {
       this.loading = true
       try {
-        const [areas, roles] = await Promise.all([fetchAreaOptions(), fetchRoleOptions()])
-        this.areaOptions = areas
-        this.roleOptions = roles
-        this.rows = await fetchRouteRows(roles)
+        const roles = await fetchRoleOptions().catch(() => [])
+        const [areas, rows] = await Promise.all([
+          fetchAreaOptions().catch(() => []),
+          fetchRouteRows(roles),
+        ])
+
+        const fallbackAreaOptions = Array.from(
+          new Map(
+            rows
+              .filter((r) => Number(r.area_id) > 0)
+              .map((r) => [Number(r.area_id), String(r.area_name || r.area_code || r.area_id)]),
+          ).entries(),
+        )
+          .map(([value, label]) => ({ value, label }))
+          .sort((a, b) => a.label.localeCompare(b.label))
+
+        const fallbackRoleOptions = Array.from(
+          new Map(
+            rows
+              .filter((r) => Number(r.role_id) > 0)
+              .map((r) => [Number(r.role_id), String(r.role_name || r.role_code || r.role_id)]),
+          ).entries(),
+        )
+          .map(([value, label]) => ({ value, label }))
+          .sort((a, b) => a.label.localeCompare(b.label))
+
+        this.rows = rows
+        this.areaOptions = areas.length ? areas : fallbackAreaOptions
+        this.roleOptions = roles.length ? roles : fallbackRoleOptions
       } finally {
         this.loading = false
       }

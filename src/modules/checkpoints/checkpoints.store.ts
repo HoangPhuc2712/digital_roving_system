@@ -44,7 +44,11 @@ export const useCheckpointsStore = defineStore('checkpoints', {
     async load() {
       this.loading = true
       try {
-        const [areas, roles] = await Promise.all([fetchAreaOptions(), fetchRoleOptions()])
+        const [areas, roles] = await Promise.all([
+          fetchAreaOptions().catch(() => []),
+          fetchRoleOptions().catch(() => []),
+        ])
+
         this.areaOptions = areas
         this.roleOptions = roles
         this.rows = await fetchCheckpointRows(roles)

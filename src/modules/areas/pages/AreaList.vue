@@ -49,6 +49,7 @@ watch(
 
 onMounted(async () => {
   await store.load()
+  console.log(store.filteredRows)
 })
 
 const statusOptions = [

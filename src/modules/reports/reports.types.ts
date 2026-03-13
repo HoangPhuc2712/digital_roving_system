@@ -86,3 +86,40 @@ export type CtpatReportRow = {
 
   _q: string
 }
+
+export type PatrolDetailReportRow = {
+  row_id: string
+  ps_id: number
+  area_id: number
+  route_id: number
+  route_code: string
+  route_name: string
+  check_point_name: string
+  start_time: string
+  finish_time: string
+  patrol_time: string
+  report_name: string
+  pr_id: number
+  pr_status: number
+  pr_has_problem: boolean
+  point_time_problem: boolean
+  shift_key: string
+  shift_color: string
+  event_zh: string
+  event_vi: string
+
+  _q: string
+}
+
+export type PatrolSummaryReportRow = {
+  date_key: string
+  date_label: string
+  area_id: number
+  area_name: string
+  required_count: number
+  actual_count: number
+  missed_count: number
+  time_problem_count: number
+  insufficient_count: number
+  abnormal_rate: number
+}

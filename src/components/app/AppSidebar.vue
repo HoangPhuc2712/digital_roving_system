@@ -106,7 +106,6 @@ const allowedMcCodes = computed(() => {
 const navItems = computed<NavItem[]>(() => {
   const items: NavItem[] = []
 
-  // Dashboard is always visible (after login)
   const dash = MENU_MAP['DASHBOARD']!
   items.push({
     key: 'DASHBOARD',
@@ -117,7 +116,6 @@ const navItems = computed<NavItem[]>(() => {
     priority: 0,
   })
 
-  // Prefer menu category list from API (has priority + active)
   const base =
     Array.isArray(menuCategories.value) && menuCategories.value.length
       ? menuCategories.value
@@ -166,27 +164,18 @@ watch(
     if (
       path === '/reports' ||
       path === '/ctpat-reports' ||
+      path === '/patrol-detail-reports' ||
+      path === '/patrol-summary-reports' ||
       path.startsWith('/reports/') ||
-      path.startsWith('/ctpat-reports/')
+      path.startsWith('/ctpat-reports/') ||
+      path.startsWith('/patrol-detail-reports/') ||
+      path.startsWith('/patrol-summary-reports/')
     ) {
       reportsOpen.value = true
     }
   },
   { immediate: true },
 )
-
-function toggleReports() {
-  reportsOpen.value = !reportsOpen.value
-}
-
-function isReportsActive() {
-  return (
-    route.path === '/reports' ||
-    route.path === '/ctpat-reports' ||
-    route.path.startsWith('/reports/') ||
-    route.path.startsWith('/ctpat-reports/')
-  )
-}
 
 const userFullName = computed(() => auth.user?.user_name ?? '—')
 const userCode = computed(() => auth.user?.user_code ?? '—')
@@ -204,8 +193,43 @@ function itemClass(active: boolean) {
   ].join(' ')
 }
 
+function subItemClass(active: boolean) {
+  return [
+    'w-full flex items-center gap-3',
+    'px-3 py-2 rounded-lg transition',
+    active ? 'bg-white/10' : 'hover:bg-white/5',
+  ].join(' ')
+}
+
 function isActivePath(prefix: string) {
   return route.path === prefix || route.path.startsWith(prefix + '/')
+}
+
+function isReportsGroupActive() {
+  return (
+    route.path === '/reports' ||
+    route.path === '/ctpat-reports' ||
+    route.path === '/patrol-detail-reports' ||
+    route.path === '/patrol-summary-reports' ||
+    route.path.startsWith('/reports/') ||
+    route.path.startsWith('/ctpat-reports/') ||
+    route.path.startsWith('/patrol-detail-reports/') ||
+    route.path.startsWith('/patrol-summary-reports/')
+  )
+}
+
+function toggleReports() {
+  reportsOpen.value = !reportsOpen.value
+}
+
+function goToPatrolsData() {
+  router.push({ name: 'reports' })
+  closeMobile()
+}
+
+function goToReportsData() {
+  router.push({ name: 'patrol-detail-reports' })
+  closeMobile()
 }
 
 function logout() {
@@ -237,7 +261,7 @@ function logout() {
       <ul class="space-y-1">
         <li v-for="item in navItems" :key="item.key">
           <template v-if="item.key === 'MC006'">
-            <button type="button" :class="itemClass(isReportsActive())" @click="toggleReports">
+            <button type="button" :class="itemClass(isReportsGroupActive())" @click="toggleReports">
               <span class="flex items-center gap-3">
                 <i :class="item.icon"></i>
                 <span>{{ item.label }}</span>
@@ -249,26 +273,32 @@ function logout() {
             </button>
 
             <div v-if="reportsOpen" class="mt-1 ml-4 space-y-1">
-              <RouterLink to="/reports" v-slot="{ isActive }">
-                <a :class="itemClass(isActive || isActivePath('/reports'))" @click="closeMobile">
-                  <span class="flex items-center gap-3">
-                    <i class="pi pi-shield"></i>
-                    <span>Patrols</span>
-                  </span>
-                </a>
-              </RouterLink>
+              <button
+                type="button"
+                :class="subItemClass(isActivePath('/reports') || isActivePath('/ctpat-reports'))"
+                @click="goToPatrolsData"
+              >
+                <span class="flex items-center gap-3">
+                  <i class="pi pi-shield"></i>
+                  <span>Patrols Data</span>
+                </span>
+              </button>
 
-              <RouterLink to="/ctpat-reports" v-slot="{ isActive }">
-                <a
-                  :class="itemClass(isActive || isActivePath('/ctpat-reports'))"
-                  @click="closeMobile"
-                >
-                  <span class="flex items-center gap-3">
-                    <i class="pi pi-chart-line"></i>
-                    <span>C-TPAT Report</span>
-                  </span>
-                </a>
-              </RouterLink>
+              <button
+                type="button"
+                :class="
+                  subItemClass(
+                    isActivePath('/patrol-detail-reports') ||
+                      isActivePath('/patrol-summary-reports'),
+                  )
+                "
+                @click="goToReportsData"
+              >
+                <span class="flex items-center gap-3">
+                  <i class="pi pi-file"></i>
+                  <span>Reports Data</span>
+                </span>
+              </button>
             </div>
           </template>
 

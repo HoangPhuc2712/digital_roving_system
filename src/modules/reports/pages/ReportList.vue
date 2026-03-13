@@ -90,6 +90,7 @@ function applyRouteFilters() {
 onMounted(async () => {
   applyRouteFilters()
   await store.load()
+  console.log(store.filteredRows)
 })
 
 onBeforeRouteLeave(() => {

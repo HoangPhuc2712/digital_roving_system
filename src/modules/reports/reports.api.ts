@@ -2,7 +2,14 @@ import type { AxiosError } from 'axios'
 import { http } from '@/services/http/axios'
 import { endpoints } from '@/services/http/endpoints'
 
-import type { CtpatReportRow, ReportImage, ReportNoteGroup, ReportRow } from './reports.types'
+import type {
+  CtpatReportRow,
+  PatrolDetailReportRow,
+  PatrolSummaryReportRow,
+  ReportImage,
+  ReportNoteGroup,
+  ReportRow,
+} from './reports.types'
 
 type ApiEnvelope<T> = {
   data: T
@@ -89,6 +96,74 @@ type ApiCtpatReportView = {
   reportName?: string
   routeId?: number
   routeName?: string
+}
+
+type ApiPatrolShiftPointReport = {
+  prId?: number
+  prStatus?: number
+  prHasProblem?: boolean
+  cpName?: string
+  psId?: number
+  reportAt?: string
+  reportName?: string
+  timeProblem?: boolean
+}
+
+type ApiPatrolShiftReportView = {
+  psId?: number
+  routeId?: number
+  routeCode?: string
+  routeName?: string
+  areaId?: number
+  timeProblem?: boolean
+  pointProblem?: boolean
+  reportTimeFrom?: string
+  reportTimeTo?: string
+  reportName?: string
+  pointReports?: ApiPatrolShiftPointReport[]
+}
+
+type ApiPlannedPatrolShiftRouteDetail = {
+  rdId?: number
+  routeId?: number
+  cpId?: number
+  cpCode?: string
+  cpName?: string
+  rdSecond?: number
+  rdMinute?: number
+  rdPriority?: number
+}
+
+type ApiPlannedPatrolShiftView = {
+  psId?: number
+  psDay?: number
+  psMonth?: number
+  psYear?: number
+  psHourFrom?: number
+  psHourTo?: number
+  psStartAt?: string | null
+  psEndAt?: string | null
+  routeId?: number
+  routeCode?: string
+  routeName?: string
+  areaId?: number
+  roleId?: number
+  planSecond?: number
+  planHours?: number
+  planMinutes?: number
+  planSeconds?: number
+  realitySecond?: number
+  realityHours?: number
+  realityMinutes?: number
+  realitySeconds?: number
+  timeProblem?: boolean
+  planPoint?: number
+  realityPoint?: number
+  pointProblem?: boolean
+  isComplete?: boolean
+  reportdBy?: string
+  reportName?: string
+  routeDetails?: ApiPlannedPatrolShiftRouteDetail[]
 }
 
 function ensureSuccess<T>(payload: any): ApiEnvelope<T> {
@@ -377,4 +452,314 @@ export async function fetchCtpatReportRows(): Promise<CtpatReportRow[]> {
   const views = asArray(payload)
 
   return views.map(normalizeCtpatView).sort((a, b) => (a.scan_at < b.scan_at ? 1 : -1))
+}
+
+function normalizePatrolDetailRows(views: ApiPatrolShiftReportView[]): PatrolDetailReportRow[] {
+  const shiftColors = ['#ffeeba', '#bee5eb']
+
+  const sortedViews = [...views].sort((a, b) => {
+    const aStart = String(a.reportTimeFrom ?? '')
+    const bStart = String(b.reportTimeFrom ?? '')
+    if (aStart === bStart) return Number(a.psId ?? 0) - Number(b.psId ?? 0)
+    return aStart.localeCompare(bStart)
+  })
+
+  const shiftColorMap = new Map<string, string>()
+  let nextColorIndex = 0
+
+  return sortedViews.flatMap((view) => {
+    const psId = Number(view.psId ?? 0)
+    const routeId = Number(view.routeId ?? 0)
+    const routeCode = String(view.routeCode ?? '')
+    const routeName = String(view.routeName ?? '')
+    const areaId = Number(view.areaId ?? 0)
+    const startTime = String(view.reportTimeFrom ?? '')
+    const finishTime = String(view.reportTimeTo ?? '')
+    const shiftGuardName = String(view.reportName ?? '')
+    const shiftKey = `${psId}|${routeId}|${startTime}|${finishTime}|${shiftGuardName}`
+
+    const timeSlotKey = `${startTime}|${finishTime}`
+
+    if (!shiftColorMap.has(timeSlotKey)) {
+      shiftColorMap.set(timeSlotKey, shiftColors[nextColorIndex % shiftColors.length] ?? '#ffeeba')
+      nextColorIndex += 1
+    }
+
+    const shiftColor = shiftColorMap.get(timeSlotKey) ?? '#ffeeba'
+    const points = Array.isArray(view.pointReports) ? view.pointReports : []
+
+    const sortedPoints = [...points].sort((a, b) => {
+      const aTime = String(a.reportAt ?? '')
+      const bTime = String(b.reportAt ?? '')
+      if (aTime === bTime) return Number(a.prId ?? 0) - Number(b.prId ?? 0)
+      return aTime.localeCompare(bTime)
+    })
+
+    return sortedPoints.map((point, pointIndex) => {
+      const checkPointName = String(point.cpName ?? '')
+      const reportName = String(point.reportName ?? shiftGuardName)
+      const patrolTime = String(point.reportAt ?? '')
+      const prStatus = Number(point.prStatus ?? 0)
+      const prHasProblem = Boolean(point.prHasProblem)
+      const pointTimeProblem = Boolean(point.timeProblem)
+
+      const q = [
+        routeCode,
+        routeName,
+        checkPointName,
+        reportName,
+        startTime,
+        finishTime,
+        patrolTime,
+        String(areaId),
+      ]
+        .join(' ')
+        .toLowerCase()
+
+      return {
+        row_id: `${psId}-${Number(point.prId ?? pointIndex + 1)}-${pointIndex}`,
+        ps_id: psId,
+        area_id: areaId,
+        route_id: routeId,
+        route_code: routeCode,
+        route_name: routeName,
+        check_point_name: checkPointName,
+        start_time: startTime,
+        finish_time: finishTime,
+        patrol_time: patrolTime,
+        report_name: reportName,
+        pr_id: Number(point.prId ?? 0),
+        pr_status: prStatus,
+        pr_has_problem: prHasProblem,
+        point_time_problem: pointTimeProblem,
+        shift_key: shiftKey,
+        shift_color: shiftColor,
+        event_zh: '',
+        event_vi: '',
+        _q: q,
+      }
+    })
+  })
+}
+
+export async function fetchPatrolDetailReportRows(): Promise<PatrolDetailReportRow[]> {
+  const res = await http.post(endpoints.report.patrolDetailReport, {})
+  const payload = ensureSuccess<ApiPatrolShiftReportView[] | ApiPatrolShiftReportView>(
+    res.data,
+  ).data
+  const views = asArray(payload)
+  return normalizePatrolDetailRows(views)
+}
+
+const SECURITY_ROLE_ID = 4
+
+function normalizeDateOnly(value: Date) {
+  const y = value.getFullYear()
+  const m = String(value.getMonth() + 1).padStart(2, '0')
+  const d = String(value.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+function startOfLocalDay(value: Date) {
+  const d = new Date(value)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+function endOfLocalDay(value: Date) {
+  const d = new Date(value)
+  d.setHours(23, 59, 59, 999)
+  return d
+}
+
+function minDate(a: Date, b: Date) {
+  return a.getTime() <= b.getTime() ? a : b
+}
+
+function maxDate(a: Date, b: Date) {
+  return a.getTime() >= b.getTime() ? a : b
+}
+
+function isSameLocalDate(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  )
+}
+
+function eachDateInclusive(dateFrom: Date, dateTo: Date) {
+  const start = startOfLocalDay(dateFrom)
+  const end = startOfLocalDay(dateTo)
+
+  const dates: Date[] = []
+  const cursor = new Date(start)
+
+  while (cursor.getTime() <= end.getTime()) {
+    dates.push(new Date(cursor))
+    cursor.setDate(cursor.getDate() + 1)
+  }
+
+  return dates
+}
+
+function buildPlannedShiftStart(view: ApiPlannedPatrolShiftView) {
+  const year = Number(view.psYear ?? 0)
+  const month = Number(view.psMonth ?? 0)
+  const day = Number(view.psDay ?? 0)
+  const hourFrom = Number(view.psHourFrom ?? 0)
+
+  if (!year || !month || !day) return null
+
+  const d = new Date(year, month - 1, day, hourFrom, 0, 0, 0)
+  return Number.isFinite(d.getTime()) ? d : null
+}
+
+// function buildActualShiftStart(view: ApiPatrolShiftReportView): Date | null {
+//   const points = Array.isArray(view.pointReports) ? view.pointReports : []
+
+//   const pointTimes = points
+//     .map((point) => {
+//       const raw = String(point?.reportAt ?? '').trim()
+//       if (!raw) return null
+
+//       const d = new Date(raw)
+//       return Number.isFinite(d.getTime()) ? d : null
+//     })
+//     .filter((d): d is Date => d != null)
+//     .sort((a, b) => a.getTime() - b.getTime())
+
+//   const firstPointTime = pointTimes[0] ?? null
+//   if (firstPointTime) {
+//     return firstPointTime
+//   }
+
+//   const reportTimeFrom = String(view.reportTimeFrom ?? '').trim()
+//   if (reportTimeFrom) {
+//     const d = new Date(reportTimeFrom)
+//     if (Number.isFinite(d.getTime())) return d
+//   }
+
+//   return null
+// }
+
+function isWithinWindow(value: Date | null, windowStart: Date, windowEnd: Date) {
+  if (!value || !Number.isFinite(value.getTime())) return false
+  const t = value.getTime()
+  return t >= windowStart.getTime() && t <= windowEnd.getTime()
+}
+
+// async function fetchTotalPatrolShiftByDate(date: Date) {
+//   const body = {
+//     psDay: date.getDate(),
+//     psMonth: date.getMonth() + 1,
+//     psYear: date.getFullYear(),
+//     roleId: SECURITY_ROLE_ID,
+//   }
+
+//   const res = await http.post(endpoints.report.totalPatrolShift, body)
+//   const payload = ensureSuccess<ApiPatrolShiftReportView[] | ApiPatrolShiftReportView>(
+//     res.data,
+//   ).data
+//   return asArray(payload)
+// }
+
+async function fetchPlannedPatrolShiftByDate(date: Date) {
+  const body = {
+    psDay: date.getDate(),
+    psMonth: date.getMonth() + 1,
+    psYear: date.getFullYear(),
+    roleId: SECURITY_ROLE_ID,
+  }
+
+  const res = await http.post(endpoints.patrolShiftView.getList, body)
+  const payload = ensureSuccess<ApiPlannedPatrolShiftView[] | ApiPlannedPatrolShiftView>(
+    res.data,
+  ).data
+  return asArray(payload)
+}
+
+export async function fetchPatrolSummaryRows(
+  dateFrom: Date,
+  dateTo: Date,
+): Promise<PatrolSummaryReportRow[]> {
+  const from = new Date(dateFrom)
+  const to = new Date(dateTo)
+
+  if (from.getTime() > to.getTime()) {
+    const tmp = new Date(from)
+    from.setTime(to.getTime())
+    to.setTime(tmp.getTime())
+  }
+
+  const days = eachDateInclusive(from, to)
+  const now = new Date()
+  const rows: PatrolSummaryReportRow[] = []
+
+  for (const day of days) {
+    let windowStart = maxDate(startOfLocalDay(day), from)
+    let windowEnd = minDate(endOfLocalDay(day), to)
+
+    if (isSameLocalDate(day, now)) {
+      windowEnd = minDate(windowEnd, now)
+    }
+
+    if (windowStart.getTime() > windowEnd.getTime()) {
+      continue
+    }
+
+    const plannedViews = await fetchPlannedPatrolShiftByDate(day)
+
+    const filteredPlannedViews = plannedViews.filter((item) =>
+      isWithinWindow(buildPlannedShiftStart(item), windowStart, windowEnd),
+    )
+
+    const areaIds = new Set<number>()
+    for (const item of filteredPlannedViews) {
+      const areaId = Number(item.areaId ?? 0)
+      if (areaId > 0) areaIds.add(areaId)
+    }
+
+    const dateLabel = normalizeDateOnly(day)
+
+    for (const areaId of [...areaIds].sort((a, b) => a - b)) {
+      const plannedRows = filteredPlannedViews.filter((item) => Number(item.areaId ?? 0) === areaId)
+
+      const requiredCount = plannedRows.length
+
+      const actualRows = plannedRows.filter((item) => {
+        const startAt = String(item.psStartAt ?? '').trim()
+        const endAt = String(item.psEndAt ?? '').trim()
+        const realityPoint = Number(item.realityPoint ?? 0)
+        const realitySecond = Number(item.realitySecond ?? 0)
+
+        return !!startAt || !!endAt || realityPoint > 0 || realitySecond > 0
+      })
+
+      const actualCount = actualRows.length
+      const missedCount = Math.max(requiredCount - actualCount, 0)
+      const timeProblemCount = actualRows.filter((item) => Boolean(item.timeProblem)).length
+      const insufficientCount = actualRows.filter((item) => Boolean(item.pointProblem)).length
+      const abnormalTotal = missedCount + timeProblemCount + insufficientCount
+      const abnormalRate = requiredCount > 0 ? (abnormalTotal / requiredCount) * 100 : 0
+
+      rows.push({
+        date_key: dateLabel,
+        date_label: dateLabel,
+        area_id: areaId,
+        area_name: `Area ${areaId}`,
+        required_count: requiredCount,
+        actual_count: actualCount,
+        missed_count: missedCount,
+        time_problem_count: timeProblemCount,
+        insufficient_count: insufficientCount,
+        abnormal_rate: Number(abnormalRate.toFixed(2)),
+      })
+    }
+  }
+
+  return rows.sort((a, b) => {
+    if (a.date_key === b.date_key) return a.area_name.localeCompare(b.area_name)
+    return a.date_key.localeCompare(b.date_key)
+  })
 }

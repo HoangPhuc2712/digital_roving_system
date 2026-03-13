@@ -1,18 +1,15 @@
 <script setup lang="ts">
 import Calendar from 'primevue/calendar'
-import Dropdown from 'primevue/dropdown'
 
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 
 const props = defineProps<{
-  areaOptions: { label: string; value: string }[]
-  modelAreaName: string | null
   modelDateFrom: Date | null
   modelDateTo: Date | null
+  loading?: boolean
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:modelAreaName', value: string | null): void
   (e: 'update:modelDateFrom', value: Date | null): void
   (e: 'update:modelDateTo', value: Date | null): void
   (e: 'clear'): void
@@ -21,21 +18,7 @@ const emit = defineEmits<{
 
 <template>
   <div class="bg-white border border-slate-200 rounded-xl p-3">
-    <div class="grid grid-cols-1 lg:grid-cols-[400px_320px_320px_auto] gap-3 items-end">
-      <div>
-        <label class="block text-sm text-slate-600 mb-1">Area</label>
-        <Dropdown
-          :modelValue="props.modelAreaName"
-          class="w-full"
-          :options="props.areaOptions"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="All"
-          showClear
-          @update:modelValue="emit('update:modelAreaName', $event)"
-        />
-      </div>
-
+    <div class="grid grid-cols-1 lg:grid-cols-[320px_320px_auto] gap-3 items-end">
       <div>
         <label class="block text-sm text-slate-600 mb-1">From</label>
         <Calendar
@@ -68,12 +51,13 @@ const emit = defineEmits<{
         />
       </div>
 
-      <div class="flex xl:justify-end">
+      <div class="flex lg:justify-end">
         <BaseIconButton
           icon="pi pi-filter-slash"
           label="Clear Filters"
           severity="secondary"
           outlined
+          :disabled="props.loading"
           @click="emit('clear')"
         />
       </div>

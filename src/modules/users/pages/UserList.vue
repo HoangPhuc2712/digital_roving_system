@@ -50,6 +50,7 @@ watch(
 
 onMounted(async () => {
   await store.load()
+  console.log(store.filteredRows)
 })
 
 function statusLabel(s: number) {

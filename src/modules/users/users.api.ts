@@ -25,21 +25,28 @@ type ApiUserEntity = {
 
 type ApiUserView = {
   userId: string
-  userName: string
-  userCode: string
+  userKeyword?: string
+  userName?: string
+  userCode?: string
   userPassword?: string
-  userRoleId: number
-  roleCode?: string
-  roleName?: string
+
+  userRoleId?: number
+  userRoleCode?: string
+  userRoleName?: string
+  userRoleHourReport?: boolean
+  userRoleIsAdmin?: boolean
+
   userAreaId?: number
-  areaCode?: string
-  areaName?: string
+  userAreaCode?: string
+  userAreaName?: string
+
   createdAt?: string
   createdBy?: string
   createdName?: string
   updatedAt?: string
   updatedBy?: string
   updatedName?: string
+
   allowViews?: any[]
 }
 
@@ -104,6 +111,24 @@ async function safeGetUserEntity(userId: string): Promise<ApiUserEntity | null> 
   }
 }
 
+async function fetchUserStatusMap() {
+  try {
+    const entityRes = await http.post(endpoints.user.getList, {})
+    const entities = ensureSuccess<ApiUserEntity[] | ApiUserEntity>(entityRes.data).data ?? []
+    const list = Array.isArray(entities) ? entities : [entities]
+
+    const statusMap = new Map<string, number>()
+    for (const e of list) {
+      const id = String(e?.userId ?? '').trim()
+      if (!id) continue
+      statusMap.set(id, apiStatusToUi(e.userStatus))
+    }
+    return statusMap
+  } catch {
+    return new Map<string, number>()
+  }
+}
+
 async function resolveUserAreaId(userId: string): Promise<number> {
   const fromApi = await safeGetUserEntity(userId)
   const apiAreaId = fromApi?.userAreaId
@@ -116,35 +141,36 @@ async function resolveUserAreaId(userId: string): Promise<number> {
 }
 
 export async function fetchUserRows(): Promise<UserRow[]> {
-  const [entityRes, viewRes] = await Promise.all([
-    http.post(endpoints.user.getList, {}),
+  const [statusMap, viewRes] = await Promise.all([
+    fetchUserStatusMap(),
     http.post(endpoints.userView.getList, {}),
   ])
 
-  const entities = ensureSuccess<ApiUserEntity[]>(entityRes.data).data ?? []
-  const views = ensureSuccess<ApiUserView[]>(viewRes.data).data ?? []
-
-  const statusMap = new Map<string, number>()
-  for (const e of entities) {
-    if (!e?.userId) continue
-    statusMap.set(e.userId, apiStatusToUi(e.userStatus))
-  }
+  const payload = ensureSuccess<ApiUserView[] | ApiUserView>(viewRes.data).data ?? []
+  const views = Array.isArray(payload) ? payload : [payload]
 
   return views
     .map((v) => {
-      const roleName = (v as any).roleName ?? (v as any).userRoleName ?? ''
-      const roleCode = (v as any).roleCode ?? (v as any).userRoleCode ?? ''
+      const userId = String(v.userId ?? '')
+      const userName = String(v.userName ?? '')
+      const userCode = String(v.userCode ?? '')
 
-      const areaName = (v as any).areaName ?? (v as any).userAreaName ?? ''
-      const areaCode = (v as any).areaCode ?? (v as any).userAreaCode ?? ''
-      const areaId = (v as any).userAreaId ?? 0
-      const status = statusMap.get(v.userId) ?? 1
+      const roleId = Number(v.userRoleId ?? 0)
+      const roleName = String(v.userRoleName ?? '')
+      const roleCode = String(v.userRoleCode ?? '')
+
+      const areaId = Number(v.userAreaId ?? 0)
+      const areaName = String(v.userAreaName ?? '')
+      const areaCode = String(v.userAreaCode ?? '')
+
+      const status = statusMap.get(userId) ?? 1
 
       return {
-        user_id: v.userId,
-        user_name: v.userName,
-        user_code: v.userCode,
-        user_role_id: v.userRoleId,
+        user_id: userId,
+        user_name: userName,
+        user_code: userCode,
+
+        user_role_id: roleId,
         role_name: roleName,
         role_code: roleCode,
 
@@ -155,14 +181,20 @@ export async function fetchUserRows(): Promise<UserRow[]> {
         user_status: status,
         created_date: v.createdAt ?? nowIso(),
         updated_date: v.updatedAt ?? nowIso(),
-        _q: normalizeSearch({
-          user_name: v.userName,
-          user_code: v.userCode,
-          role_name: roleName,
-          role_code: roleCode,
-          area_name: areaName,
-          area_code: areaCode,
-        }),
+
+        _q: String(
+          v.userKeyword ??
+            normalizeSearch({
+              user_name: userName,
+              user_code: userCode,
+              role_name: roleName,
+              role_code: roleCode,
+              area_name: areaName,
+              area_code: areaCode,
+            }),
+        )
+          .toLowerCase()
+          .trim(),
       }
     })
     .sort((a, b) => a.user_name.localeCompare(b.user_name))
@@ -190,16 +222,22 @@ export async function fetchUserById(user_id: string) {
 
   return {
     user_id,
-    user_name: name,
-    user_code: code,
-    user_role_id: roleId,
-    role_name:
-      (view as any)?.roleName ?? (view as any)?.userRoleName ?? (view as any)?.roleCode ?? '',
-    role_code: (view as any)?.roleCode ?? (view as any)?.userRoleCode ?? '',
+    user_name: String(view?.userName ?? entity?.userName ?? ''),
+    user_code: String(view?.userCode ?? entity?.userCode ?? ''),
+    user_role_id: Number(view?.userRoleId ?? entity?.userRoleId ?? 0),
 
-    user_area_id: (view as any)?.userAreaId ?? entity?.userAreaId ?? 0,
-    area_name: (view as any)?.areaName ?? (view as any)?.userAreaName ?? '',
-    area_code: (view as any)?.areaCode ?? (view as any)?.userAreaCode ?? '',
+    role_name: String(
+      (view as any)?.userRoleName ??
+        (view as any)?.roleName ??
+        (view as any)?.userRoleCode ??
+        (view as any)?.roleCode ??
+        '',
+    ),
+    role_code: String((view as any)?.userRoleCode ?? (view as any)?.roleCode ?? ''),
+
+    user_area_id: Number((view as any)?.userAreaId ?? entity?.userAreaId ?? 0),
+    area_name: String((view as any)?.userAreaName ?? (view as any)?.areaName ?? ''),
+    area_code: String((view as any)?.userAreaCode ?? (view as any)?.areaCode ?? ''),
 
     user_status: apiStatusToUi(entity?.userStatus),
     created_date: view?.createdAt ?? entity?.createdAt ?? nowIso(),

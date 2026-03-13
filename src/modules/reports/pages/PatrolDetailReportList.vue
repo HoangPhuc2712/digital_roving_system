@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, watch, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import { type DataTablePageEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -8,17 +8,24 @@ import { useToast } from 'primevue/usetoast'
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import BaseInput from '@/components/common/inputs/BaseInput.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
-import CtpatReportFilters from '@/modules/reports/components/CtpatReportFilters.vue'
-import { useCtpatReportsStore } from '@/modules/reports/ctpatReports.store'
-import { exportCtpatReportXlsx } from '@/services/export/ctpatReport.export'
+import PatrolDetailReportFilters from '@/modules/reports/components/PatrolDetailReportFilters.vue'
+import { usePatrolDetailReportsStore } from '@/modules/reports/patrolDetailReports.store'
+import { exportPatrolDetailReportXlsx } from '@/services/export/patrolDetailReport.export'
 
 const toast = useToast()
 const router = useRouter()
-const store = useCtpatReportsStore()
+const store = usePatrolDetailReportsStore()
 const exporting = ref(false)
 
 watch(
-  () => [store.searchText, store.filterAreaName, store.filterDateFrom, store.filterDateTo],
+  () => [
+    store.searchText,
+    store.filterAreaId,
+    store.filterCheckPointName,
+    store.filterGuardName,
+    store.filterDateFrom,
+    store.filterDateTo,
+  ],
   () => store.setFirst(0),
 )
 
@@ -53,22 +60,31 @@ function resetPageState() {
   store.clearFilters()
 }
 
-function goToPatrolsReport() {
-  router.push({ name: 'reports' })
+function goToPatrolSummaryReport() {
+  router.push({ name: 'patrol-summary-reports' })
+}
+
+function shiftCellStyle(hex: string) {
+  return {
+    backgroundColor: hex,
+    margin: '-0.5rem -1rem',
+    padding: '0.5rem 1rem',
+    minHeight: 'calc(100% + 1rem)',
+  }
 }
 
 async function onExport() {
   exporting.value = true
   try {
-    await exportCtpatReportXlsx({
+    await exportPatrolDetailReportXlsx({
       rows: store.filteredRows,
-      fileName: `ctpat_reports_${new Date().toISOString().slice(0, 10)}.xlsx`,
+      fileName: `patrol_detail_reports_${new Date().toISOString().slice(0, 10)}.xlsx`,
     })
   } catch (e: any) {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: String(e?.message ?? 'Failed to export C-TPAT report.'),
+      detail: String(e?.message ?? 'Failed to export patrol detail report.'),
       life: 3000,
     })
   } finally {
@@ -84,19 +100,25 @@ function onPage(e: DataTablePageEvent) {
 <template>
   <div class="page-reports space-y-3">
     <div class="flex items-center justify-between gap-3">
-      <div class="text-xl font-semibold text-slate-800">C-TPAT Reports</div>
+      <div class="text-xl font-semibold text-slate-800">Patrol Detail Report</div>
 
       <div class="w-full max-w-md">
         <BaseInput label="" v-model="store.searchText" class="w-full" placeholder="Search..." />
       </div>
     </div>
 
-    <CtpatReportFilters
+    <PatrolDetailReportFilters
       :areaOptions="store.areaOptions"
-      :modelAreaName="store.filterAreaName"
+      :checkPointOptions="store.checkPointOptions"
+      :guardOptions="store.guardOptions"
+      :modelAreaId="store.filterAreaId"
+      :modelCheckPointName="store.filterCheckPointName"
+      :modelGuardName="store.filterGuardName"
       :modelDateFrom="store.filterDateFrom"
       :modelDateTo="store.filterDateTo"
-      @update:modelAreaName="store.filterAreaName = $event"
+      @update:modelAreaId="store.filterAreaId = $event"
+      @update:modelCheckPointName="store.filterCheckPointName = $event"
+      @update:modelGuardName="store.filterGuardName = $event"
       @update:modelDateFrom="store.filterDateFrom = $event"
       @update:modelDateTo="store.filterDateTo = $event"
       @clear="clearAll"
@@ -106,18 +128,18 @@ function onPage(e: DataTablePageEvent) {
       title=""
       :value="store.filteredRows"
       :loading="store.loading"
-      dataKey="pr_id"
+      dataKey="row_id"
       :rows="store.rowsPerPage"
       :first="store.first"
       @page="onPage"
     >
       <template #toolbar-start>
         <BaseIconButton
-          icon="pi pi-file"
-          label="Patrols Report"
+          icon="pi pi-chart-line"
+          label="Patrol Summary Report"
           severity="secondary"
           outlined
-          @click="goToPatrolsReport"
+          @click="goToPatrolSummaryReport"
         />
       </template>
 
@@ -141,7 +163,7 @@ function onPage(e: DataTablePageEvent) {
       <Column
         field="route_name"
         header="Route Name"
-        style="min-width: 12rem"
+        style="min-width: 10rem"
         sortField="route_name"
       />
 
@@ -152,37 +174,56 @@ function onPage(e: DataTablePageEvent) {
         sortField="check_point_name"
       />
 
-      <Column header="Start Time" style="min-width: 12rem" sortField="start_at">
+      <Column header="Start Time" style="min-width: 12rem" sortField="start_time">
         <template #body="{ data }">
-          {{ formatDateTime(data.start_at) }}
+          <div :style="shiftCellStyle(data.shift_color)">
+            {{ formatDateTime(data.start_time) }}
+          </div>
         </template>
       </Column>
 
-      <Column header="Finish Time" style="min-width: 12rem" sortField="end_at">
+      <Column header="Finish Time" style="min-width: 12rem" sortField="finish_time">
         <template #body="{ data }">
-          {{ formatDateTime(data.end_at) }}
+          <div :style="shiftCellStyle(data.shift_color)">
+            {{ formatDateTime(data.finish_time) }}
+          </div>
         </template>
       </Column>
 
-      <Column header="Patrol Time" style="min-width: 12rem" sortField="scan_at">
+      <Column header="Patrol Time" style="min-width: 12rem" sortField="patrol_time">
         <template #body="{ data }">
-          {{ formatDateTime(data.scan_at) }}
+          {{ formatDateTime(data.patrol_time) }}
         </template>
       </Column>
 
       <Column
         field="report_name"
-        header="Guard Name"
+        header="Patrol Guard"
         style="min-width: 12rem"
         sortField="report_name"
       />
 
       <Column
-        field="cp_priority"
-        header="Route Order"
-        style="min-width: 10rem"
-        sortField="cp_priority"
-      />
+        field="event_zh"
+        header="Event Information Zh"
+        style="min-width: 14rem"
+        sortField="event_zh"
+      >
+        <template #body="{ data }">
+          {{ data.event_zh || '' }}
+        </template>
+      </Column>
+
+      <Column
+        field="event_vi"
+        header="Event Information Vi"
+        style="min-width: 14rem"
+        sortField="event_vi"
+      >
+        <template #body="{ data }">
+          {{ data.event_vi || '' }}
+        </template>
+      </Column>
     </BaseDataTable>
   </div>
 </template>

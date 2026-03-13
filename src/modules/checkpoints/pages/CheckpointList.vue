@@ -81,6 +81,7 @@ onMounted(async () => {
   applyLockedAreaFilter()
   await store.load()
   applyLockedAreaFilter()
+  console.log(store.filteredRows)
 })
 
 function clearAll() {
