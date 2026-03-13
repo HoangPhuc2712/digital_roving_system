@@ -6,7 +6,6 @@ import Column from 'primevue/column'
 import { useToast } from 'primevue/usetoast'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
-import BaseInput from '@/components/common/inputs/BaseInput.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import PatrolDetailReportFilters from '@/modules/reports/components/PatrolDetailReportFilters.vue'
 import { usePatrolDetailReportsStore } from '@/modules/reports/patrolDetailReports.store'
@@ -99,13 +98,7 @@ function onPage(e: DataTablePageEvent) {
 
 <template>
   <div class="page-reports space-y-3">
-    <div class="flex items-center justify-between gap-3">
-      <div class="text-xl font-semibold text-slate-800">Patrol Detail Report</div>
-
-      <div class="w-full max-w-md">
-        <BaseInput label="" v-model="store.searchText" class="w-full" placeholder="Search..." />
-      </div>
-    </div>
+    <div class="text-xl font-semibold text-slate-800">Patrol Detail Report</div>
 
     <PatrolDetailReportFilters
       :areaOptions="store.areaOptions"
@@ -116,11 +109,13 @@ function onPage(e: DataTablePageEvent) {
       :modelGuardName="store.filterGuardName"
       :modelDateFrom="store.filterDateFrom"
       :modelDateTo="store.filterDateTo"
+      :modelSearch="store.searchText"
       @update:modelAreaId="store.filterAreaId = $event"
       @update:modelCheckPointName="store.filterCheckPointName = $event"
       @update:modelGuardName="store.filterGuardName = $event"
       @update:modelDateFrom="store.filterDateFrom = $event"
       @update:modelDateTo="store.filterDateTo = $event"
+      @update:modelSearch="store.searchText = $event"
       @clear="clearAll"
     />
 

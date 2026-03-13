@@ -8,7 +8,6 @@ import { type DataTablePageEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
-import BaseInput from '@/components/common/inputs/BaseInput.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 
 import { useAuthStore } from '@/stores/auth.store'
@@ -240,13 +239,7 @@ function goToCtpatReport() {
 
 <template>
   <div class="page-reports space-y-3">
-    <div class="flex items-center justify-between gap-3">
-      <div class="text-xl font-semibold text-slate-800">Patrol Reports</div>
-
-      <div class="w-full max-w-md">
-        <BaseInput label="" v-model="store.searchText" class="w-full" placeholder="Search..." />
-      </div>
-    </div>
+    <div class="text-xl font-semibold text-slate-800">Patrol Reports</div>
 
     <ReportFilters
       :areaOptions="store.areaOptions"
@@ -259,12 +252,14 @@ function goToCtpatReport() {
       :modelGuardId="store.filterGuardId"
       :modelDateFrom="store.filterDateFrom"
       :modelDateTo="store.filterDateTo"
+      :modelSearch="store.searchText"
       @update:modelAreaId="store.filterAreaId = $event"
       @update:modelIssueStatus="store.filterIssueStatus = $event"
       @update:modelResult="store.filterResult = $event"
       @update:modelGuardId="store.filterGuardId = $event"
       @update:modelDateFrom="store.filterDateFrom = $event"
       @update:modelDateTo="store.filterDateTo = $event"
+      @update:modelSearch="store.searchText = $event"
       @clear="clearAll"
     />
 
@@ -312,11 +307,11 @@ function goToCtpatReport() {
         </template>
       </Column>
 
-      <Column header="Scan Point" style="min-width: 16rem" sortField="cp_code">
+      <Column header="Check Point" style="min-width: 16rem" sortField="cp_code">
         <template #body="{ data }">
           <div class="flex flex-col">
-            <div class="text-slate-800 font-semibold">{{ data.cp_code }}</div>
-            <div class="text-slate-600 text-xs">{{ data.cp_name }}</div>
+            <div class="text-slate-800 font-semibold">{{ data.cp_name }}</div>
+            <div class="text-slate-600 text-xs">{{ data.cp_code }}</div>
           </div>
         </template>
       </Column>

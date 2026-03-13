@@ -3,16 +3,13 @@ import { computed } from 'vue'
 import BaseFilter from '@/components/common/filters/BaseFilter.vue'
 
 const props = defineProps<{
-  areaOptions: { label: string; value: number }[]
-  modelAreaId: number | null
   modelStatus: 'ALL' | 'ACTIVE' | 'INACTIVE'
   modelSearch: string
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:modelAreaId', v: number | null): void
-  (e: 'update:modelStatus', v: 'ALL' | 'ACTIVE' | 'INACTIVE'): void
-  (e: 'update:modelSearch', v: string): void
+  (e: 'update:modelStatus', value: 'ALL' | 'ACTIVE' | 'INACTIVE'): void
+  (e: 'update:modelSearch', value: string): void
   (e: 'clear'): void
 }>()
 
@@ -24,13 +21,6 @@ const statusOptions = [
 
 const dropdowns = computed(() => [
   {
-    key: 'areaId',
-    label: 'Area',
-    modelValue: props.modelAreaId,
-    options: props.areaOptions,
-    widthClass: 'w-full md:w-[280px]',
-  },
-  {
     key: 'status',
     label: 'Status',
     modelValue: props.modelStatus,
@@ -41,8 +31,9 @@ const dropdowns = computed(() => [
 ])
 
 function onDropdownUpdate(payload: { key: string; value: any }) {
-  if (payload.key === 'areaId') emit('update:modelAreaId', payload.value)
-  if (payload.key === 'status') emit('update:modelStatus', payload.value)
+  if (payload.key === 'status') {
+    emit('update:modelStatus', payload.value)
+  }
 }
 </script>
 

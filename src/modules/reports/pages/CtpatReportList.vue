@@ -6,7 +6,6 @@ import Column from 'primevue/column'
 import { useToast } from 'primevue/usetoast'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
-import BaseInput from '@/components/common/inputs/BaseInput.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import CtpatReportFilters from '@/modules/reports/components/CtpatReportFilters.vue'
 import { useCtpatReportsStore } from '@/modules/reports/ctpatReports.store'
@@ -83,22 +82,18 @@ function onPage(e: DataTablePageEvent) {
 
 <template>
   <div class="page-reports space-y-3">
-    <div class="flex items-center justify-between gap-3">
-      <div class="text-xl font-semibold text-slate-800">C-TPAT Reports</div>
-
-      <div class="w-full max-w-md">
-        <BaseInput label="" v-model="store.searchText" class="w-full" placeholder="Search..." />
-      </div>
-    </div>
+    <div class="text-xl font-semibold text-slate-800">C-TPAT Report</div>
 
     <CtpatReportFilters
       :areaOptions="store.areaOptions"
       :modelAreaName="store.filterAreaName"
       :modelDateFrom="store.filterDateFrom"
       :modelDateTo="store.filterDateTo"
+      :modelSearch="store.searchText"
       @update:modelAreaName="store.filterAreaName = $event"
       @update:modelDateFrom="store.filterDateFrom = $event"
       @update:modelDateTo="store.filterDateTo = $event"
+      @update:modelSearch="store.searchText = $event"
       @clear="clearAll"
     />
 
