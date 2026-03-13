@@ -70,8 +70,4 @@ const emit = defineEmits<{
 :deep(.base-date-selection .p-datepicker-trigger) {
   min-width: 2.75rem;
 }
-
-:deep(.p-datepicker .p-timepicker *) {
-  text-transform: uppercase;
-}
 </style>

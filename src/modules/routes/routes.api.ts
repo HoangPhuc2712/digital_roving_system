@@ -101,22 +101,50 @@ function toSeconds(value?: number, fallbackMinutes?: number) {
   return 0
 }
 
-function mapRouteDetails(details: ApiRouteDetail[]): RouteDetailModel[] {
+async function fetchCheckpointPriorityMap() {
+  const res = await http.post(endpoints.checkPointView.getList, {})
+  const env = ensureSuccess<ApiCheckPointView[] | ApiCheckPointView>(res.data)
+  const list = Array.isArray(env.data) ? env.data : [env.data]
+
+  const map = new Map<number, number>()
+  for (const cp of list) {
+    const cpId = Number(cp.cpId ?? 0)
+    const cpPriority = Number(cp.cpPriority ?? 0)
+    if (!cpId || !cpPriority) continue
+    map.set(cpId, cpPriority)
+  }
+
+  return map
+}
+
+function mapRouteDetails(
+  details: ApiRouteDetail[],
+  checkpointPriorityMap: Map<number, number> = new Map(),
+): RouteDetailModel[] {
   return (details ?? [])
     .slice()
     .sort((a, b) => Number(a.rdPriority ?? 0) - Number(b.rdPriority ?? 0))
-    .map<RouteDetailModel>((d) => ({
-      cp_id: Number(d.cpId ?? 0),
-      cp_code: String(d.cpCode ?? ''),
-      cp_name: String(d.cpName ?? ''),
-      cp_priority: Number(d.cpPriority ?? d.rdPriority ?? 0) || undefined,
-      rd_second: toSeconds(d.rdSecond, d.rdMinute),
-      rd_priority: Number(d.rdPriority ?? 0),
-    }))
+    .map<RouteDetailModel>((d) => {
+      const cpId = Number(d.cpId ?? 0)
+      const checkpointPriority = checkpointPriorityMap.get(cpId)
+
+      return {
+        cp_id: cpId,
+        cp_code: String(d.cpCode ?? ''),
+        cp_name: String(d.cpName ?? ''),
+        cp_priority: Number(d.cpPriority ?? checkpointPriority ?? 0) || undefined,
+        rd_second: toSeconds(d.rdSecond, d.rdMinute),
+        rd_priority: Number(d.rdPriority ?? 0),
+      }
+    })
 }
 
-function mapRouteView(v: ApiRouteView, roleOptions: RoleOption[] = []): RouteRow {
-  const details = mapRouteDetails(v.routeDetails ?? [])
+function mapRouteView(
+  v: ApiRouteView,
+  roleOptions: RoleOption[] = [],
+  checkpointPriorityMap: Map<number, number> = new Map(),
+): RouteRow {
+  const details = mapRouteDetails(v.routeDetails ?? [], checkpointPriorityMap)
   const roleId = Number(v.roleId ?? 0)
   const roleCode = String(v.roleCode ?? '')
   const roleName = resolveRoleLabel(roleId, roleCode, String(v.roleName ?? ''), roleOptions)
@@ -199,7 +227,7 @@ export async function fetchScanPointsByArea(
   return list
     .filter((cp) => {
       const ids = parseRoleIds(cp.roleIdStr)
-      return ids.includes(Number(roleId))
+      return Number(cp.areaId ?? 0) === Number(areaId) && ids.includes(Number(roleId))
     })
     .map((cp) => ({
       value: Number(cp.cpId ?? 0),
@@ -213,19 +241,27 @@ export async function fetchScanPointsByArea(
 }
 
 export async function fetchRouteRows(roleOptions: RoleOption[] = []): Promise<RouteRow[]> {
-  const res = await http.post(endpoints.routeView.getList, {})
+  const [checkpointPriorityMap, res] = await Promise.all([
+    fetchCheckpointPriorityMap().catch(() => new Map<number, number>()),
+    http.post(endpoints.routeView.getList, {}),
+  ])
+
   const payload = ensureSuccess<ApiRouteView[] | ApiRouteView>(res.data).data ?? []
   const views = Array.isArray(payload) ? payload : [payload]
 
   return views
-    .map((v) => mapRouteView(v, roleOptions))
+    .map((v) => mapRouteView(v, roleOptions, checkpointPriorityMap))
     .sort((a, b) => a.route_code.localeCompare(b.route_code))
 }
 
 export async function fetchRouteById(routeId: number, roleOptions: RoleOption[] = []) {
-  const res = await http.get(endpoints.routeView.getOne(routeId))
+  const [checkpointPriorityMap, res] = await Promise.all([
+    fetchCheckpointPriorityMap().catch(() => new Map<number, number>()),
+    http.get(endpoints.routeView.getOne(routeId)),
+  ])
+
   const data = ensureSuccess<ApiRouteView>(res.data).data
-  const row = mapRouteView(data, roleOptions)
+  const row = mapRouteView(data, roleOptions, checkpointPriorityMap)
 
   return {
     route_id: row.route_id,

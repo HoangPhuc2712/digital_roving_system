@@ -13,6 +13,10 @@ export function setupPrimeVue(app: any) {
         darkModeSelector: false,
       },
     },
+    locale: {
+      am: 'AM',
+      pm: 'PM',
+    },
   })
 
   app.use(ToastService)
