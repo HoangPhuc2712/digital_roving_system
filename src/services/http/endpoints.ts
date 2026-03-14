@@ -90,6 +90,14 @@ export const endpoints = {
     update: (rncId: number | string) => `/reportnotecategory/update/${rncId}`,
     delete: (rncId: number | string) => `/reportnotecategory/delete/${rncId}`,
   },
+  menuCategory: {
+    getList: '/menucategory/getlist',
+    getBaseList: '/menucategory/getbaselist',
+    getOne: (mcId: number | string) => `/menucategory/getone/${mcId}`,
+    create: '/menucategory/create',
+    update: (mcId: number | string) => `/menucategory/update/${mcId}`,
+    delete: (mcId: number | string) => `/menucategory/delete/${mcId}`,
+  },
   menuCategoryView: {
     getList: '/menucategoryview/getlist',
     getOne: (mcId: number | string) => `/menucategoryview/getone/${mcId}`,
