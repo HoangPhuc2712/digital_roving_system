@@ -116,7 +116,11 @@ function getDisplayOrder(detail: RouteDetailModel) {
 }
 
 function getQrValue(detail: RouteDetailModel) {
-  return String(detail.cp_qr ?? '')
+  const s = String(detail.cp_qr ?? '').trim()
+  if (!s) return ''
+  if (s.startsWith('data:image/')) return s
+  if (s.startsWith('http://') || s.startsWith('https://')) return s
+  return `data:image/png;base64,${s}`
 }
 
 function applyDetailMetadata() {
