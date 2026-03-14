@@ -374,7 +374,7 @@ function submit() {
         <div>
           <label class="block text-sm text-slate-600 mb-1">Route Priority</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ form.route_priority }}</div>
-          <InputNumber v-else v-model="form.route_priority" class="w-full" :min="1" />
+          <InputNumber v-else v-model="form.route_priority" class="w-full" size="small" :min="1" />
         </div>
 
         <div class="md:col-span-2">
@@ -396,6 +396,7 @@ function submit() {
               class="w-full"
               :options="availableScanPointOptions"
               optionLabel="label"
+              size="small"
               optionValue="value"
               placeholder="Select scan point"
               :loading="scanLoading"
@@ -410,6 +411,7 @@ function submit() {
             <BaseIconButton
               icon="pi pi-plus"
               label="Add"
+              size="small"
               severity="success"
               :disabled="isView || !form.role_id || !form.selected_cp_ids.length"
               @click="addSelectedScanPoint"
@@ -431,7 +433,7 @@ function submit() {
           >
             <Column v-if="!isView" rowReorder headerStyle="width: 3rem" />
 
-            <Column header="Order" style="width: 6rem">
+            <Column header="CP Priority" style="width: 8rem">
               <template #body="{ data }">
                 <div class="text-slate-800">{{ getDisplayOrder(data) }}</div>
               </template>

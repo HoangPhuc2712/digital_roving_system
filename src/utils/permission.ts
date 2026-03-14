@@ -8,6 +8,7 @@ export type PermissionKey =
   | 'areas.manage'
   | 'checkpoints.manage'
   | 'routes.manage'
+  | 'menuCategories.manage'
   | 'settings.manage'
 
 const ALL_KEYS: PermissionKey[] = [
@@ -20,6 +21,7 @@ const ALL_KEYS: PermissionKey[] = [
   'areas.manage',
   'checkpoints.manage',
   'routes.manage',
+  'menuCategories.manage',
   'settings.manage',
 ]
 
@@ -74,6 +76,7 @@ const MENU_NAME_TO_PERMS: Record<string, PermissionKey[]> = {
   USERS: ['users.manage'],
   AREAS: ['areas.manage'],
   ROUTES: ['routes.manage', 'checkpoints.manage'],
+  MENUCATEGORIES: ['menuCategories.manage'],
   // REPORTS giữ theo roleCode: view_all / view_mine
   // TUTORIAL chưa map permission riêng
 }
