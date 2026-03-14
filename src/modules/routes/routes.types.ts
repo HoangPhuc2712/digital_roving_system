@@ -8,14 +8,16 @@ export type ScanPointOption = {
   cpCode: string
   cpName: string
   cpPriority?: number
+  cpQr?: string
 }
 
 export type RouteDetailModel = {
   cp_id: number
   cp_code: string
   cp_name: string
+  cp_qr: string
   cp_priority?: number
-  rd_second: number
+  rd_minute: number
   rd_priority: number
 }
 
@@ -25,6 +27,7 @@ export type RouteRow = {
   route_name: string
   route_status: number // UI: 1 active, 0 inactive
   route_priority: number
+  route_total_minute: number
   route_total_second: number
 
   area_id: number

@@ -1,25 +1,24 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import Dialog from 'primevue/dialog'
-import Dropdown from 'primevue/dropdown'
 import MultiSelect from 'primevue/multiselect'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import InputNumber from 'primevue/inputnumber'
 import { useToast } from 'primevue/usetoast'
+import Select from 'primevue/select'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import BaseInput from '@/components/common/inputs/BaseInput.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
+import QrPreview from '@/modules/checkpoints/components/QrPreview.vue'
 
 import type { RouteDetailModel } from '@/modules/routes/routes.types'
 import {
   createRouteMock,
   updateRouteMock,
   fetchScanPointsByArea,
-  sumSeconds,
 } from '@/modules/routes/routes.api'
-import Select from 'primevue/select'
 
 export type RouteFormMode = 'new' | 'view' | 'edit'
 
@@ -31,6 +30,7 @@ export type RouteFormModel = {
   role_id: number
   role_name?: string
   route_priority: number
+  route_total_minute: number
   details: RouteDetailModel[]
 }
 
@@ -47,6 +47,7 @@ type ScanPointOption = {
   value: number
   cpCode: string
   cpName: string
+  cpQr?: string
   cpPriority?: number
 }
 
@@ -95,6 +96,7 @@ const form = reactive<RouteFormState>({
   role_id: 0,
   role_name: '',
   route_priority: 1,
+  route_total_minute: 0,
   details: [],
   selected_cp_ids: [],
 })
@@ -104,25 +106,17 @@ const sortedDetails = computed(() => {
   return arr.sort((a, b) => Number(a.rd_priority) - Number(b.rd_priority))
 })
 
-const totalSecond = computed(() => sumSeconds(form.details))
-
 const availableScanPointOptions = computed(() => {
   const used = new Set((form.details ?? []).map((d) => d.cp_id))
   return (scanPointOptions.value ?? []).filter((x) => !used.has(x.value))
 })
 
-function formatSeconds(sec: number) {
-  const s = Math.max(0, Number(sec) || 0)
-  const h = Math.floor(s / 3600)
-  const m = Math.floor((s % 3600) / 60)
-  const r = s % 60
-  const mm = String(m).padStart(2, '0')
-  const rr = String(r).padStart(2, '0')
-  return h > 0 ? `${h}:${mm}:${rr}` : `${m}:${rr.padStart(2, '0')}`
-}
-
 function getDisplayOrder(detail: RouteDetailModel) {
   return Number(detail.cp_priority ?? 0) || Number(detail.cp_id ?? 0)
+}
+
+function getQrValue(detail: RouteDetailModel) {
+  return String(detail.cp_qr ?? '')
 }
 
 function applyDetailMetadata() {
@@ -132,6 +126,7 @@ function applyDetailMetadata() {
     if (!point) continue
     if (!detail.cp_code) detail.cp_code = point.cpCode
     if (!detail.cp_name) detail.cp_name = point.cpName
+    if (!detail.cp_qr) detail.cp_qr = String(point.cpQr ?? '')
     if (!detail.cp_priority && point.cpPriority) detail.cp_priority = point.cpPriority
   }
 }
@@ -141,6 +136,7 @@ async function loadScanPoints(roleId: number) {
     scanPointOptions.value = []
     return
   }
+
   scanLoading.value = true
   try {
     scanPointOptions.value = await fetchScanPointsByArea(form.area_id, roleId || null)
@@ -163,6 +159,7 @@ watch(
     form.role_id = Number(m.role_id ?? 0)
     form.role_name = m.role_name ?? ''
     form.route_priority = Number(m.route_priority ?? 1)
+    form.route_total_minute = Number(m.route_total_minute ?? 0)
     form.details = Array.isArray(m.details) ? m.details.map((d) => ({ ...d })) : []
     form.selected_cp_ids = []
 
@@ -214,6 +211,7 @@ function addSelectedScanPoint() {
     toastError('Please select Role first.')
     return
   }
+
   if (!form.selected_cp_ids.length) {
     toastError('Please select at least one Scan Point.')
     return
@@ -234,8 +232,9 @@ function addSelectedScanPoint() {
       cp_id: opt.value,
       cp_code: opt.cpCode,
       cp_name: opt.cpName,
+      cp_qr: String(opt.cpQr ?? ''),
       cp_priority: opt.cpPriority,
-      rd_second: 60,
+      rd_minute: 1,
       rd_priority: nextPriority,
     })
   }
@@ -279,7 +278,7 @@ function submit() {
         .map((d, idx) => ({
           ...d,
           rd_priority: idx + 1,
-          rd_second: Number(d.rd_second ?? 0),
+          rd_minute: Number(d.rd_minute ?? 0),
         }))
 
       if (props.mode === 'new') {
@@ -288,6 +287,7 @@ function submit() {
           area_id: areaId,
           role_id: roleId,
           route_priority: Number(form.route_priority ?? 1),
+          route_total_minute: Number(form.route_total_minute ?? 0),
           details,
           actor_id,
         })
@@ -302,6 +302,7 @@ function submit() {
         area_id: areaId,
         role_id: roleId,
         route_priority: Number(form.route_priority ?? 1),
+        route_total_minute: Number(form.route_total_minute ?? 0),
         details,
         actor_id,
       })
@@ -374,16 +375,34 @@ function submit() {
         <div>
           <label class="block text-sm text-slate-600 mb-1">Route Priority</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ form.route_priority }}</div>
-          <InputNumber v-else v-model="form.route_priority" class="w-full" size="small" :min="1" />
+          <InputNumber
+            v-else
+            v-model="form.route_priority"
+            class="w-full"
+            size="small"
+            :min="1"
+            :step="1"
+            showButtons
+            buttonLayout="horizontal"
+            decrementButtonIcon="pi pi-minus"
+            incrementButtonIcon="pi pi-plus"
+          />
         </div>
 
-        <div class="md:col-span-2">
-          <div class="flex items-center justify-between gap-3">
-            <div class="text-sm text-slate-700">
-              <span class="font-semibold">Total Time:</span>
-              <span class="ml-2">{{ formatSeconds(totalSecond) }}</span>
-            </div>
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Total Minute</label>
+          <div v-if="isView" class="text-slate-800 font-semibold">
+            {{ form.route_total_minute }}
           </div>
+          <InputNumber
+            v-else
+            v-model="form.route_total_minute"
+            class="w-full"
+            size="small"
+            :min="0"
+            :step="1"
+            :useGrouping="false"
+          />
         </div>
       </div>
 
@@ -439,15 +458,28 @@ function submit() {
               </template>
             </Column>
 
-            <Column header="Scan Point" style="min-width: 18rem">
+            <Column header="Check Point" style="min-width: 18rem">
               <template #body="{ data }">
                 <div class="text-slate-800">{{ data.cp_code }} - {{ data.cp_name }}</div>
               </template>
             </Column>
 
-            <Column header="Seconds" style="width: 10rem">
+            <Column header="QR Image" style="width: 8rem">
               <template #body="{ data }">
-                <InputNumber v-model="data.rd_second" class="w-full" :min="0" :disabled="isView" />
+                <QrPreview :value="getQrValue(data)" :size="40" />
+              </template>
+            </Column>
+
+            <Column header="Minutes" style="width: 8rem">
+              <template #body="{ data }">
+                <InputNumber
+                  v-model="data.rd_minute"
+                  class="w-full"
+                  :min="0"
+                  :step="1"
+                  :useGrouping="false"
+                  :disabled="isView"
+                />
               </template>
             </Column>
 

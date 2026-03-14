@@ -93,6 +93,7 @@ function mapRowToFormModel(row: RouteRow): RouteFormModel {
     role_id: row.role_id,
     role_name: row.role_name,
     route_priority: row.route_priority,
+    route_total_minute: row.route_total_minute,
     details: row.details.map((d) => ({ ...d })),
   }
 }
@@ -106,6 +107,7 @@ function openNew() {
     role_id: 0,
     role_name: '',
     route_priority: 1,
+    route_total_minute: 0,
     details: [],
   }
   formVisible.value = true

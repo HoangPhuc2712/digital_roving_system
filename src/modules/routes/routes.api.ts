@@ -53,6 +53,7 @@ type ApiCheckPointView = {
   cpId: number
   cpCode: string
   cpName: string
+  cpQr?: string
   cpPriority?: number
   areaId: number
   roleIdStr?: string
@@ -93,25 +94,30 @@ function resolveRoleLabel(
   return roleOptions.find((x) => x.value === roleId)?.label ?? ''
 }
 
-function toSeconds(value?: number, fallbackMinutes?: number) {
-  const sec = Number(value ?? 0)
-  if (Number.isFinite(sec) && sec > 0) return sec
-  const minute = Number(fallbackMinutes ?? 0)
-  if (Number.isFinite(minute) && minute > 0) return minute * 60
+function toMinutes(value?: number, fallbackSeconds?: number) {
+  const minute = Number(value ?? 0)
+  if (Number.isFinite(minute) && minute > 0) return minute
+
+  const sec = Number(fallbackSeconds ?? 0)
+  if (Number.isFinite(sec) && sec > 0) return Math.ceil(sec / 60)
+
   return 0
 }
 
-async function fetchCheckpointPriorityMap() {
+async function fetchCheckpointMetaMap() {
   const res = await http.post(endpoints.checkPointView.getList, {})
   const env = ensureSuccess<ApiCheckPointView[] | ApiCheckPointView>(res.data)
   const list = Array.isArray(env.data) ? env.data : [env.data]
 
-  const map = new Map<number, number>()
+  const map = new Map<number, { cp_priority?: number; cp_qr: string }>()
   for (const cp of list) {
     const cpId = Number(cp.cpId ?? 0)
-    const cpPriority = Number(cp.cpPriority ?? 0)
-    if (!cpId || !cpPriority) continue
-    map.set(cpId, cpPriority)
+    if (!cpId) continue
+
+    map.set(cpId, {
+      cp_priority: Number(cp.cpPriority ?? 0) || undefined,
+      cp_qr: String(cp.cpQr ?? ''),
+    })
   }
 
   return map
@@ -119,21 +125,22 @@ async function fetchCheckpointPriorityMap() {
 
 function mapRouteDetails(
   details: ApiRouteDetail[],
-  checkpointPriorityMap: Map<number, number> = new Map(),
+  checkpointMetaMap: Map<number, { cp_priority?: number; cp_qr: string }> = new Map(),
 ): RouteDetailModel[] {
   return (details ?? [])
     .slice()
     .sort((a, b) => Number(a.rdPriority ?? 0) - Number(b.rdPriority ?? 0))
     .map<RouteDetailModel>((d) => {
       const cpId = Number(d.cpId ?? 0)
-      const checkpointPriority = checkpointPriorityMap.get(cpId)
+      const checkpointMeta = checkpointMetaMap.get(cpId)
 
       return {
         cp_id: cpId,
         cp_code: String(d.cpCode ?? ''),
         cp_name: String(d.cpName ?? ''),
-        cp_priority: Number(d.cpPriority ?? checkpointPriority ?? 0) || undefined,
-        rd_second: toSeconds(d.rdSecond, d.rdMinute),
+        cp_qr: String(checkpointMeta?.cp_qr ?? ''),
+        cp_priority: Number(d.cpPriority ?? checkpointMeta?.cp_priority ?? 0) || undefined,
+        rd_minute: toMinutes(d.rdMinute, d.rdSecond),
         rd_priority: Number(d.rdPriority ?? 0),
       }
     })
@@ -142,9 +149,9 @@ function mapRouteDetails(
 function mapRouteView(
   v: ApiRouteView,
   roleOptions: RoleOption[] = [],
-  checkpointPriorityMap: Map<number, number> = new Map(),
+  checkpointMetaMap: Map<number, { cp_priority?: number; cp_qr: string }> = new Map(),
 ): RouteRow {
-  const details = mapRouteDetails(v.routeDetails ?? [], checkpointPriorityMap)
+  const details = mapRouteDetails(v.routeDetails ?? [], checkpointMetaMap)
   const roleId = Number(v.roleId ?? 0)
   const roleCode = String(v.roleCode ?? '')
   const roleName = resolveRoleLabel(roleId, roleCode, String(v.roleName ?? ''), roleOptions)
@@ -157,6 +164,10 @@ function mapRouteView(
     route_name: String(v.routeName ?? ''),
     route_status: apiStatusToUi(v.routeStatus),
     route_priority: Number(v.routePriority ?? 0),
+    route_total_minute:
+      totalMinute > 0
+        ? totalMinute
+        : Math.ceil((totalSecond > 0 ? totalSecond : sumSeconds(details)) / 60),
     route_total_second:
       totalSecond > 0 ? totalSecond : totalMinute > 0 ? totalMinute * 60 : sumSeconds(details),
 
@@ -183,13 +194,7 @@ function mapRouteView(
 }
 
 export function sumSeconds(details: RouteDetailModel[]) {
-  return (details ?? []).reduce((acc, d) => acc + (Number(d.rd_second) || 0), 0)
-}
-
-function secondsToMinutes(value?: number) {
-  const second = Number(value ?? 0)
-  if (!Number.isFinite(second) || second <= 0) return 0
-  return Math.ceil(second / 60)
+  return (details ?? []).reduce((acc, d) => acc + (Number(d.rd_minute) || 0) * 60, 0)
 }
 
 export async function fetchAreaOptions(): Promise<AreaOption[]> {
@@ -233,12 +238,13 @@ export async function fetchScanPointsByArea(
   return list
     .filter((cp) => {
       const ids = parseRoleIds(cp.roleIdStr)
-      return Number(cp.areaId ?? 0) === Number(areaId) && ids.includes(Number(roleId))
+      return ids.includes(Number(roleId))
     })
     .map((cp) => ({
       value: Number(cp.cpId ?? 0),
       cpCode: String(cp.cpCode ?? ''),
       cpName: String(cp.cpName ?? ''),
+      cpQr: String(cp.cpQr ?? ''),
       cpPriority: Number(cp.cpPriority ?? 0) || undefined,
       label: `${cp.cpCode ?? cp.cpId} - ${cp.cpName ?? ''}`,
     }))
@@ -247,8 +253,10 @@ export async function fetchScanPointsByArea(
 }
 
 export async function fetchRouteRows(roleOptions: RoleOption[] = []): Promise<RouteRow[]> {
-  const [checkpointPriorityMap, res] = await Promise.all([
-    fetchCheckpointPriorityMap().catch(() => new Map<number, number>()),
+  const [checkpointMetaMap, res] = await Promise.all([
+    fetchCheckpointMetaMap().catch(
+      () => new Map<number, { cp_priority?: number; cp_qr: string }>(),
+    ),
     http.post(endpoints.routeView.getList, {}),
   ])
 
@@ -256,18 +264,20 @@ export async function fetchRouteRows(roleOptions: RoleOption[] = []): Promise<Ro
   const views = Array.isArray(payload) ? payload : [payload]
 
   return views
-    .map((v) => mapRouteView(v, roleOptions, checkpointPriorityMap))
+    .map((v) => mapRouteView(v, roleOptions, checkpointMetaMap))
     .sort((a, b) => a.route_code.localeCompare(b.route_code))
 }
 
 export async function fetchRouteById(routeId: number, roleOptions: RoleOption[] = []) {
-  const [checkpointPriorityMap, res] = await Promise.all([
-    fetchCheckpointPriorityMap().catch(() => new Map<number, number>()),
+  const [checkpointMetaMap, res] = await Promise.all([
+    fetchCheckpointMetaMap().catch(
+      () => new Map<number, { cp_priority?: number; cp_qr: string }>(),
+    ),
     http.get(endpoints.routeView.getOne(routeId)),
   ])
 
   const data = ensureSuccess<ApiRouteView>(res.data).data
-  const row = mapRouteView(data, roleOptions, checkpointPriorityMap)
+  const row = mapRouteView(data, roleOptions, checkpointMetaMap)
 
   return {
     route_id: row.route_id,
@@ -277,6 +287,7 @@ export async function fetchRouteById(routeId: number, roleOptions: RoleOption[] 
     role_id: row.role_id,
     role_name: row.role_name,
     route_priority: row.route_priority,
+    route_total_minute: row.route_total_minute,
     details: row.details.map((d) => ({ ...d })),
   }
 }
@@ -286,19 +297,20 @@ export async function createRouteMock(payload: {
   area_id: number
   role_id: number
   route_priority: number
+  route_total_minute: number
   details: RouteDetailModel[]
   actor_id: string
 }) {
   const details = (payload.details ?? []).map((d, idx) => ({
     cpId: d.cp_id,
-    rdMinute: secondsToMinutes(d.rd_second),
+    rdMinute: Number(d.rd_minute ?? 0),
     rdPriority: idx + 1,
     createdBy: payload.actor_id,
   }))
 
   const body = {
     routeName: payload.route_name.trim(),
-    routeTotalMinute: details.reduce((acc, d) => acc + Number(d.rdMinute ?? 0), 0),
+    routeTotalMinute: Number(payload.route_total_minute ?? 0),
     areaId: payload.area_id,
     roleId: Number(payload.role_id ?? 0),
     routePriority: Number(payload.route_priority ?? 0),
@@ -325,19 +337,20 @@ export async function updateRouteMock(payload: {
   area_id: number
   role_id: number
   route_priority: number
+  route_total_minute: number
   details: RouteDetailModel[]
   actor_id: string
 }) {
   const details = (payload.details ?? []).map((d, idx) => ({
     cpId: d.cp_id,
-    rdMinute: secondsToMinutes(d.rd_second),
+    rdMinute: Number(d.rd_minute ?? 0),
     rdPriority: idx + 1,
     createdBy: payload.actor_id,
   }))
 
   const body = {
     routeName: payload.route_name.trim(),
-    routeTotalMinute: details.reduce((acc, d) => acc + Number(d.rdMinute ?? 0), 0),
+    routeTotalMinute: Number(payload.route_total_minute ?? 0),
     areaId: payload.area_id,
     roleId: Number(payload.role_id ?? 0),
     routePriority: Number(payload.route_priority ?? 0),
