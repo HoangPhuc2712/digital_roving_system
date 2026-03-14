@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { exportCheckpointsXlsx } from '@/services/export/checkpoints.export'
 
 import Column from 'primevue/column'
 import Tag from 'primevue/tag'
@@ -29,6 +30,7 @@ const confirm = useConfirm()
 
 const store = useCheckpointsStore()
 const auth = useAuthStore()
+const exporting = ref(false)
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('checkpoints.manage'))
 
@@ -302,6 +304,27 @@ function normalizeQr(src: string) {
   if (s.startsWith('http://') || s.startsWith('https://')) return s
   return `data:image/png;base64,${s}`
 }
+
+async function onExport() {
+  exporting.value = true
+  try {
+    const areaCode = lockedAreaCode.value || 'Area'
+    await exportCheckpointsXlsx({
+      rows: store.filteredRows,
+      title: `${areaCode} Checkpoints`,
+      fileName: `${areaCode}_checkpoints_${new Date().toISOString().slice(0, 10)}.xlsx`,
+    })
+  } catch (e: any) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: String(e?.message ?? 'Failed to export checkpoints.'),
+      life: 3000,
+    })
+  } finally {
+    exporting.value = false
+  }
+}
 </script>
 
 <template>
@@ -345,6 +368,20 @@ function normalizeQr(src: string) {
           :disabled="!canManage || !(selectedRows && selectedRows.length)"
           @click="onDeleteSelected"
         />
+      </template>
+
+      <template #toolbar-end>
+        <div class="flex justify-end gap-2">
+          <BaseIconButton
+            icon="pi pi-file-excel"
+            label="Export"
+            size="small"
+            severity="secondary"
+            outlined
+            :disabled="exporting"
+            @click="onExport"
+          />
+        </div>
       </template>
 
       <Column
