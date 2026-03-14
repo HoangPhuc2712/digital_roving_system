@@ -19,6 +19,7 @@ import {
   fetchScanPointsByArea,
   sumSeconds,
 } from '@/modules/routes/routes.api'
+import Select from 'primevue/select'
 
 export type RouteFormMode = 'new' | 'view' | 'edit'
 
@@ -331,18 +332,25 @@ function submit() {
         <div>
           <label class="block text-sm text-slate-600 mb-1">Route Name</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ form.route_name }}</div>
-          <BaseInput v-else v-model="form.route_name" label="" placeholder="Enter name" />
+          <BaseInput
+            v-else
+            v-model="form.route_name"
+            label=""
+            size="small"
+            placeholder="Enter name"
+          />
         </div>
 
         <div>
           <label class="block text-sm text-slate-600 mb-1">Area</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ areaLabel }}</div>
-          <Dropdown
+          <Select
             v-else
             v-model="form.area_id"
             class="w-full"
             :options="areaOptions"
             optionLabel="label"
+            size="small"
             optionValue="value"
             placeholder="Select area"
           />
@@ -351,12 +359,13 @@ function submit() {
         <div>
           <label class="block text-sm text-slate-600 mb-1">Role</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ roleLabel }}</div>
-          <Dropdown
+          <Select
             v-else
             v-model="form.role_id"
             class="w-full"
             :options="roleOptions"
             optionLabel="label"
+            size="small"
             optionValue="value"
             placeholder="Select role"
           />

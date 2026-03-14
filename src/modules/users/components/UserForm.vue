@@ -2,6 +2,7 @@
 import { computed, reactive, watch } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import Dialog from 'primevue/dialog'
+import Select from 'primevue/select'
 import Dropdown from 'primevue/dropdown'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
@@ -198,6 +199,7 @@ function mapValidationError(code: string) {
             v-if="!isView"
             v-model="form.user_name"
             label=""
+            size="small"
             placeholder="Enter Name"
             :disabled="isView"
           />
@@ -210,6 +212,7 @@ function mapValidationError(code: string) {
             v-if="!isView"
             v-model="form.user_code"
             label=""
+            size="small"
             placeholder="Enter code"
             :disabled="isView"
           />
@@ -220,6 +223,7 @@ function mapValidationError(code: string) {
           <BasePasswordInput
             v-model="form.user_password"
             :label="isNew ? '' : ''"
+            size="small"
             placeholder="Enter password"
             :disabled="isView"
           />
@@ -230,6 +234,7 @@ function mapValidationError(code: string) {
           <BasePasswordInput
             v-model="form.confirm_password"
             label=""
+            size="small"
             placeholder="Re-enter password"
             :disabled="isView"
           />
@@ -240,12 +245,13 @@ function mapValidationError(code: string) {
           <div v-if="isView" class="text-slate-800 font-semibold">
             {{ roleLabel }}
           </div>
-          <Dropdown
+          <Select
             v-if="!isView"
             v-model="form.user_role_id"
             class="w-full"
             :options="roleOptions"
             optionLabel="label"
+            size="small"
             optionValue="value"
             placeholder="Select role"
             :disabled="isView"
@@ -257,12 +263,13 @@ function mapValidationError(code: string) {
           <div v-if="isView" class="text-slate-800 font-semibold">
             {{ areaLabel }}
           </div>
-          <Dropdown
+          <Select
             v-if="!isView"
             v-model="form.user_area_id"
             class="w-full"
             :options="areaOptions"
             optionLabel="label"
+            size="small"
             optionValue="value"
             placeholder="Select area"
             :disabled="isView"

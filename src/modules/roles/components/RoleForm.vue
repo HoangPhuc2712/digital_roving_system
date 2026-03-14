@@ -165,7 +165,7 @@ function submit() {
       <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label class="block text-sm text-slate-600 mb-1">Role Name</label>
-          <BaseInput v-model="form.role_name" label="" placeholder="Enter name" />
+          <BaseInput v-model="form.role_name" label="" size="small" placeholder="Enter name" />
         </div>
 
         <div>
@@ -175,6 +175,7 @@ function submit() {
             class="w-full"
             :options="menuOptions"
             optionLabel="label"
+            size="small"
             optionValue="value"
             placeholder="Select permissions"
             display="chip"
