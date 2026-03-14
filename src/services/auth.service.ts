@@ -1,6 +1,7 @@
 import { users, roles } from '@/mocks/db'
 import { http } from '@/services/http/axios'
 import { endpoints } from '@/services/http/endpoints'
+import { appConfig } from '@/config/app'
 
 function omitPassword(u: any) {
   const { user_password, ...safe } = u
@@ -8,7 +9,7 @@ function omitPassword(u: any) {
 }
 
 function isApiEnabled() {
-  const baseURL = (import.meta.env.VITE_API_BASE_URL as string) || ''
+  const baseURL = appConfig.apiBaseUrl || ''
   return !!baseURL
 }
 
@@ -41,6 +42,7 @@ function toAuthUser(apiUser: any) {
     user_role_id: apiUser.userRoleId,
     user_name: apiUser.userName,
     user_code: apiUser.userCode,
+    user_role_is_admin: Boolean(apiUser.userRoleIsAdmin),
     created_date: apiUser.createdAt ?? now,
     created_by: apiUser.createdBy ?? apiUser.userId,
     updated_date: apiUser.updatedAt ?? now,
@@ -58,7 +60,7 @@ function toAuthUser(apiUser: any) {
     role_status: 1,
     role_code,
     role_name,
-    // Giữ rỗng để derivePermissions fallback theo role_code (đúng rule Admin/IT vs Expat/Security)
+    role_is_admin: Boolean(apiUser.userRoleIsAdmin),
     role_allow_view: '',
     created_at: apiUser.createdAt ?? now,
     created_by: apiUser.createdBy ?? apiUser.userId,
@@ -122,12 +124,12 @@ export async function mockMe(token: string) {
     if (!userId) throw new Error('INVALID_TOKEN')
 
     // Lấy lại user từ UserView/getlist theo userId
-    const res = await http.post(endpoints.userView.getList, { userId })
+    const res = await http.get(endpoints.userView.getOne(userId))
     const payload = res?.data
 
     if (!payload?.success) throw new Error('INVALID_TOKEN')
 
-    const first = Array.isArray(payload?.data) ? payload.data[0] : null
+    const first = payload?.data
     if (!first?.userId) throw new Error('INVALID_TOKEN')
 
     if (first.userStatus != null && first.userStatus !== 0) throw new Error('USER_INACTIVE')

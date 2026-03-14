@@ -58,17 +58,24 @@ export function derivePermissions(roleCode?: string, roleAllowView?: string): Se
 
 type AllowViewItem = {
   mcCode?: string
+  mcName?: string
   mcActive?: boolean
 }
 
-const MC_CODE_TO_PERMS: Record<string, PermissionKey[]> = {
-  MC001: ['roles.manage'],
-  MC002: ['users.manage'],
-  MC004: ['areas.manage'],
-  // Backend currently groups Scan Points under Routes in menu permissions.
-  MC005: ['routes.manage', 'checkpoints.manage'],
-  // MC006: Reports (handled by roleCode: view_all vs view_mine)
-  // MC007: Tutorial (no permission key yet)
+function normalizeMenuName(input?: string) {
+  return String(input ?? '')
+    .trim()
+    .replace(/\s+/g, '')
+    .toUpperCase()
+}
+
+const MENU_NAME_TO_PERMS: Record<string, PermissionKey[]> = {
+  ROLES: ['roles.manage'],
+  USERS: ['users.manage'],
+  AREAS: ['areas.manage'],
+  ROUTES: ['routes.manage', 'checkpoints.manage'],
+  // REPORTS giữ theo roleCode: view_all / view_mine
+  // TUTORIAL chưa map permission riêng
 }
 
 export function derivePermissionsFromAllowViews(
@@ -83,13 +90,11 @@ export function derivePermissionsFromAllowViews(
 
   const perms = new Set<PermissionKey>(base)
   for (const it of list) {
-    const code = String(it?.mcCode ?? '')
-      .trim()
-      .toUpperCase()
-    if (!code) continue
+    const name = normalizeMenuName(it?.mcName)
+    if (!name) continue
     if (it?.mcActive === false) continue
 
-    const mapped = MC_CODE_TO_PERMS[code]
+    const mapped = MENU_NAME_TO_PERMS[name]
     if (!mapped) continue
     for (const p of mapped) perms.add(p)
   }

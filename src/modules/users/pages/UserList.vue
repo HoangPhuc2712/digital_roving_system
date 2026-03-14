@@ -8,8 +8,6 @@ import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
-import BaseButton from '@/components/common/buttons/BaseButton.vue'
-import BaseInput from '@/components/common/inputs/BaseInput.vue'
 
 import { useUsersStore } from '@/modules/users/users.store'
 import { useAuthStore } from '@/stores/auth.store'
@@ -202,21 +200,17 @@ function onViewPatrolPath(row: UserRow) {
 
 <template>
   <div class="space-y-3">
-    <div class="flex items-center justify-between gap-3">
-      <div class="text-xl font-semibold text-slate-800">Users Management</div>
-
-      <div class="w-full max-w-md">
-        <BaseInput v-model="searchDraft" label="" class="w-full" placeholder="Search..." />
-      </div>
-    </div>
+    <div class="text-xl font-semibold text-slate-800">Users Management</div>
 
     <UserFilters
       :roleOptions="store.roleOptions"
       :areaOptions="store.areaOptions"
       :modelRoleId="store.filterRoleId"
       :modelAreaId="store.filterAreaId"
+      :modelSearch="searchDraft"
       @update:modelRoleId="store.filterRoleId = $event"
       @update:modelAreaId="store.filterAreaId = $event"
+      @update:modelSearch="searchDraft = $event"
       @clear="clearAll"
     />
 
