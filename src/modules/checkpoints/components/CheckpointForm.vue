@@ -3,7 +3,7 @@ import { computed, reactive, watch } from 'vue'
 import Dialog from 'primevue/dialog'
 import Select from 'primevue/select'
 import MultiSelect from 'primevue/multiselect'
-
+import InputNumber from 'primevue/inputnumber'
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import BaseInput from '@/components/common/inputs/BaseInput.vue'
 
@@ -30,7 +30,7 @@ type FormState = {
   cp_name: string
   cp_qr: string
   cp_description: string
-  cp_priority_text: string
+  cp_priority: number
   area_id: number
   role_ids: number[]
 }
@@ -70,7 +70,7 @@ const form = reactive<FormState>({
   cp_name: '',
   cp_qr: '',
   cp_description: '',
-  cp_priority_text: '1',
+  cp_priority: 1,
   area_id: 0,
   role_ids: [],
 })
@@ -84,7 +84,7 @@ watch(
     form.cp_name = m.cp_name ?? ''
     form.cp_qr = m.cp_qr ?? ''
     form.cp_description = m.cp_description ?? ''
-    form.cp_priority_text = String(m.cp_priority ?? 1)
+    form.cp_priority = m.cp_priority ?? 1
     form.area_id = Number(m.area_id ?? props.areaOptions[0]?.value ?? 0)
     form.role_ids = Array.isArray(m.role_ids) ? [...m.role_ids] : []
   },
@@ -123,7 +123,7 @@ function submit() {
       const name = (form.cp_name ?? '').trim()
       const desc = (form.cp_description ?? '').trim()
       const areaId = Number(form.area_id ?? 0)
-      const priority = Number(form.cp_priority_text ?? 0)
+      const priority = Number(form.cp_priority ?? 0)
       const roleIds = (form.role_ids ?? []).map((x) => Number(x)).filter((x) => x > 0)
 
       const missing: string[] = []
@@ -243,13 +243,19 @@ function submit() {
 
         <div>
           <label class="block text-sm text-slate-600 mb-1">Priority</label>
-          <div v-if="isView" class="text-slate-800 font-semibold">{{ form.cp_priority_text }}</div>
-          <BaseInput
+          <div v-if="isView" class="text-slate-800 font-semibold">{{ form.cp_priority }}</div>
+          <InputNumber
             v-else
-            v-model="form.cp_priority_text"
+            v-model="form.cp_priority"
             label=""
+            class="w-full"
             size="small"
-            placeholder="Enter priority"
+            :min="1"
+            :step="1"
+            showButtons
+            buttonLayout="horizontal"
+            decrementButtonIcon="pi pi-minus"
+            incrementButtonIcon="pi pi-plus"
           />
         </div>
       </div>
