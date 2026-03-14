@@ -34,7 +34,7 @@ watch(
             <i class="pi pi-bars"></i>
           </button>
 
-          <div class="text-sm text-slate-600">Digital Patrol System</div>
+          <div class="text-sm text-slate-600">Internal Patrol Report</div>
         </div>
       </header>
 
