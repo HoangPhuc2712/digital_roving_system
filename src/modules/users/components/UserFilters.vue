@@ -1,61 +1,53 @@
 <script setup lang="ts">
-import Dropdown from 'primevue/dropdown'
-import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
+import { computed } from 'vue'
+import BaseFilter from '@/components/common/filters/BaseFilter.vue'
 
 const props = defineProps<{
   roleOptions: { label: string; value: number }[]
   areaOptions: { label: string; value: number }[]
   modelRoleId: number | null
   modelAreaId: number | null
+  modelSearch: string
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:modelRoleId', v: number | null): void
-  (e: 'update:modelAreaId', v: number | null): void
+  (e: 'update:modelRoleId', value: number | null): void
+  (e: 'update:modelAreaId', value: number | null): void
+  (e: 'update:modelSearch', value: string): void
   (e: 'clear'): void
 }>()
+
+const dropdowns = computed(() => [
+  {
+    key: 'roleId',
+    label: 'Role',
+    modelValue: props.modelRoleId,
+    options: props.roleOptions,
+    widthClass: 'w-full md:w-[280px]',
+  },
+  {
+    key: 'areaId',
+    label: 'Area',
+    modelValue: props.modelAreaId,
+    options: props.areaOptions,
+    widthClass: 'w-full md:w-[280px]',
+  },
+])
+
+function onDropdownUpdate(payload: { key: string; value: any }) {
+  if (payload.key === 'roleId') emit('update:modelRoleId', payload.value)
+  if (payload.key === 'areaId') emit('update:modelAreaId', payload.value)
+}
 </script>
 
 <template>
-  <div class="bg-white border border-slate-200 rounded-xl p-3">
-    <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
-      <div class="md:col-span-3">
-        <label class="block text-sm text-slate-600 mb-1">Role</label>
-        <Dropdown
-          :modelValue="props.modelRoleId"
-          class="w-full"
-          :options="props.roleOptions"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="All"
-          showClear
-          @update:modelValue="emit('update:modelRoleId', $event)"
-        />
-      </div>
-
-      <div class="md:col-span-3">
-        <label class="block text-sm text-slate-600 mb-1">Area</label>
-        <Dropdown
-          :modelValue="props.modelAreaId"
-          class="w-full"
-          :options="props.areaOptions"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="All"
-          showClear
-          @update:modelValue="emit('update:modelAreaId', $event)"
-        />
-      </div>
-    </div>
-
-    <div class="mt-3 flex justify-end">
-      <BaseIconButton
-        label="Clear Filters"
-        severity="secondary"
-        outlined
-        icon="pi pi-filter-slash"
-        @click="emit('clear')"
-      />
-    </div>
-  </div>
+  <BaseFilter
+    :dropdowns="dropdowns"
+    :modelSearch="props.modelSearch"
+    :showSearch="true"
+    :showDateSelection="false"
+    @update:modelSearch="emit('update:modelSearch', $event)"
+    @update:dropdown="onDropdownUpdate"
+    @clear="emit('clear')"
+  />
 </template>

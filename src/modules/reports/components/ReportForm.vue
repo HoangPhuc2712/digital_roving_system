@@ -196,7 +196,7 @@ watch(
     <div v-if="!model" class="text-slate-500">No data.</div>
 
     <div v-else class="space-y-4">
-      <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
+      <div class="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
         <div class="space-y-4 min-w-0">
           <div class="space-y-1">
             <div class="text-lg font-semibold text-slate-800">

@@ -76,30 +76,37 @@ type NavItem = {
   priority: number
 }
 
+function normalizeMenuName(input?: string) {
+  return String(input ?? '')
+    .trim()
+    .replace(/\s+/g, '')
+    .toUpperCase()
+}
+
 const MENU_MAP: Record<string, Omit<NavItem, 'key' | 'priority' | 'label'>> = {
   DASHBOARD: { to: '/dashboard', icon: 'pi pi-home', prefix: '/dashboard' },
 
-  MC006: { to: '/reports', icon: 'pi pi-clipboard', prefix: '/reports' },
-  MC002: { to: '/users', icon: 'pi pi-users', prefix: '/users' },
-  MC001: { to: '/roles', icon: 'pi pi-key', prefix: '/roles' },
-  MC004: { to: '/areas', icon: 'pi pi-map-marker', prefix: '/areas' },
-  MC005: { to: '/routes', icon: 'pi pi-map', prefix: '/routes' },
-  MC007: { to: '/tutorial', icon: 'pi pi-info', prefix: '/tutorial' },
-  MC003: { to: '/menuCategories', icon: 'pi pi-book', prefix: '/menuCategories' },
+  REPORTS: { to: '/reports', icon: 'pi pi-clipboard', prefix: '/reports' },
+  USERS: { to: '/users', icon: 'pi pi-users', prefix: '/users' },
+  ROLES: { to: '/roles', icon: 'pi pi-key', prefix: '/roles' },
+  AREAS: { to: '/areas', icon: 'pi pi-map-marker', prefix: '/areas' },
+  ROUTES: { to: '/routes', icon: 'pi pi-map', prefix: '/routes' },
+  TUTORIAL: { to: '/tutorial', icon: 'pi pi-info', prefix: '/tutorial' },
+  MENUCATEGORIES: { to: '/menuCategories', icon: 'pi pi-book', prefix: '/menuCategories' },
 }
 
-const allowedMcCodes = computed(() => {
+const allowedMenuNames = computed(() => {
   const raw = (auth.user as any)?.allow_views ?? (auth.user as any)?.allowViews ?? []
   const arr = Array.isArray(raw) ? raw : []
   const set = new Set<string>()
+
   for (const it of arr) {
-    const code = String(it?.mcCode ?? '')
-      .trim()
-      .toUpperCase()
-    if (!code) continue
+    const name = normalizeMenuName(it?.mcName)
+    if (!name) continue
     if (it?.mcActive === false) continue
-    set.add(code)
+    set.add(name)
   }
+
   return set
 })
 
@@ -131,23 +138,21 @@ const navItems = computed<NavItem[]>(() => {
           }))
         })()
 
-  const allowed = allowedMcCodes.value
+  const allowed = allowedMenuNames.value
 
   for (const mc of base) {
-    const code = String((mc as any).mcCode ?? '')
-      .trim()
-      .toUpperCase()
-    if (!code) continue
+    const menuName = normalizeMenuName((mc as any).mcName)
+    if (!menuName) continue
     if ((mc as any).mcActive === false) continue
-    if (allowed.size > 0 && !allowed.has(code)) continue
+    if (allowed.size > 0 && !allowed.has(menuName)) continue
 
-    const meta = MENU_MAP[code]
+    const meta = MENU_MAP[menuName]
     if (!meta) continue
 
-    const label = code === 'MC005' ? 'Patrol Routes' : String((mc as any).mcName ?? '')
+    const label = menuName === 'ROUTES' ? 'Patrol Routes' : String((mc as any).mcName ?? '')
     items.push({
-      key: code,
-      label: label || code,
+      key: menuName,
+      label: label || menuName,
       to: meta.to,
       icon: meta.icon,
       prefix: meta.prefix,
@@ -260,7 +265,7 @@ function logout() {
     <nav class="flex-1 overflow-y-auto px-2 py-3">
       <ul class="space-y-1">
         <li v-for="item in navItems" :key="item.key">
-          <template v-if="item.key === 'MC006'">
+          <template v-if="item.key === 'REPORTS'">
             <button type="button" :class="itemClass(isReportsGroupActive())" @click="toggleReports">
               <span class="flex items-center gap-3">
                 <i :class="item.icon"></i>

@@ -55,7 +55,6 @@ export const endpoints = {
     update: (routeId: number | string) => `/route/update/${routeId}`,
     delete: (routeId: number | string) => `/route/delete/${routeId}`,
   },
-
   routeView: {
     getList: '/routeview/getlist',
     getOne: (routeId: number | string) => `/routeview/getone/${routeId}`,

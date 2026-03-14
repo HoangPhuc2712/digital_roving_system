@@ -37,3 +37,9 @@ __screenshots__/
 
 # Vite
 *.timestamp-*-*.mjs
+
+# BẢO MẬT (Quan trọng)
+.env
+.env.local
+.env.*.local
+local.properties

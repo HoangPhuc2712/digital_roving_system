@@ -6,7 +6,6 @@ import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
-import BaseInput from '@/components/common/inputs/BaseInput.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 
 import { useRolesStore } from '@/modules/roles/roles.store'
@@ -189,20 +188,16 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
 
 <template>
   <div class="space-y-3">
-    <div class="flex items-center justify-between gap-3">
-      <div class="text-xl font-semibold text-slate-800">Roles Management</div>
-
-      <div class="w-full max-w-md">
-        <BaseInput v-model="searchDraft" label="" class="w-full" placeholder="Search..." />
-      </div>
-    </div>
+    <div class="text-xl font-semibold text-slate-800">Roles Management</div>
 
     <RoleFilters
       :menuOptions="store.menuOptions"
       :modelStatus="store.filterStatus"
       :modelMenuId="store.filterMenuId"
+      :modelSearch="searchDraft"
       @update:modelStatus="store.filterStatus = $event"
       @update:modelMenuId="store.filterMenuId = $event"
+      @update:modelSearch="searchDraft = $event"
       @clear="clearAll"
     />
 

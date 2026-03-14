@@ -2,6 +2,7 @@ import type { AxiosError } from 'axios'
 import { http } from '@/services/http/axios'
 import { endpoints } from '@/services/http/endpoints'
 import type { UserRow } from './users.types'
+import { appConfig } from '@/config/app'
 
 type ApiEnvelope<T> = {
   data: T
@@ -93,13 +94,6 @@ function apiStatusToUi(status?: number) {
   return 0
 }
 
-function uiStatusToApi(status: number) {
-  // UI: 1 active -> API: 0 active
-  if (status === 1) return 0
-  if (status < 0) return status
-  return 1
-}
-
 async function safeGetUserEntity(userId: string): Promise<ApiUserEntity | null> {
   try {
     const res = await http.get(endpoints.user.getOne(userId))
@@ -134,7 +128,7 @@ async function resolveUserAreaId(userId: string): Promise<number> {
   const apiAreaId = fromApi?.userAreaId
   if (typeof apiAreaId === 'number' && apiAreaId > 0) return apiAreaId
 
-  const fallback = Number(import.meta.env.VITE_DEFAULT_AREA_ID ?? 0)
+  const fallback = Number(appConfig.defaultAreaId ?? 0)
   if (fallback > 0) return fallback
 
   return 1

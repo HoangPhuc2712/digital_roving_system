@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import Dropdown from 'primevue/dropdown'
-import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
+import { computed } from 'vue'
+import BaseFilter from '@/components/common/filters/BaseFilter.vue'
 
 const props = defineProps<{
   menuOptions: { label: string; value: number }[]
   modelStatus: 'ALL' | 'ACTIVE' | 'INACTIVE'
   modelMenuId: number | null
+  modelSearch: string
 }>()
 
 const emit = defineEmits<{
   (e: 'update:modelStatus', v: 'ALL' | 'ACTIVE' | 'INACTIVE'): void
   (e: 'update:modelMenuId', v: number | null): void
+  (e: 'update:modelSearch', v: string): void
   (e: 'clear'): void
 }>()
 
@@ -19,47 +21,39 @@ const statusOptions = [
   { label: 'Active', value: 'ACTIVE' },
   { label: 'Inactive', value: 'INACTIVE' },
 ]
+
+const dropdowns = computed(() => [
+  {
+    key: 'status',
+    label: 'Status',
+    modelValue: props.modelStatus,
+    options: statusOptions,
+    showClear: false,
+    widthClass: 'w-full md:w-[280px]',
+  },
+  {
+    key: 'menuId',
+    label: 'Permission',
+    modelValue: props.modelMenuId,
+    options: props.menuOptions,
+    widthClass: 'w-full md:w-[280px]',
+  },
+])
+
+function onDropdownUpdate(payload: { key: string; value: any }) {
+  if (payload.key === 'status') emit('update:modelStatus', payload.value)
+  if (payload.key === 'menuId') emit('update:modelMenuId', payload.value)
+}
 </script>
 
 <template>
-  <div class="bg-white border border-slate-200 rounded-xl p-3">
-    <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
-      <div class="md:col-span-3">
-        <label class="block text-sm text-slate-600 mb-1">Status</label>
-        <Dropdown
-          :modelValue="props.modelStatus"
-          class="w-full"
-          :options="statusOptions"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="All"
-          @update:modelValue="emit('update:modelStatus', $event)"
-        />
-      </div>
-
-      <div class="md:col-span-3">
-        <label class="block text-sm text-slate-600 mb-1">Permission</label>
-        <Dropdown
-          :modelValue="props.modelMenuId"
-          class="w-full"
-          :options="props.menuOptions"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="All"
-          showClear
-          @update:modelValue="emit('update:modelMenuId', $event)"
-        />
-      </div>
-    </div>
-
-    <div class="mt-3 flex justify-end">
-      <BaseIconButton
-        label="Clear Filters"
-        severity="secondary"
-        outlined
-        icon="pi pi-filter-slash"
-        @click="emit('clear')"
-      />
-    </div>
-  </div>
+  <BaseFilter
+    :dropdowns="dropdowns"
+    :modelSearch="props.modelSearch"
+    :showSearch="true"
+    :showDateSelection="false"
+    @update:modelSearch="emit('update:modelSearch', $event)"
+    @update:dropdown="onDropdownUpdate"
+    @clear="emit('clear')"
+  />
 </template>

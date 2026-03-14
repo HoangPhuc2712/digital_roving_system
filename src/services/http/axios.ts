@@ -1,6 +1,7 @@
 import Axios from 'axios'
+import { appConfig } from '@/config/app'
 
-const baseURL = (import.meta.env.VITE_API_BASE_URL as string) || ''
+const baseURL = appConfig.apiBaseUrl || ''
 
 export const http = Axios.create({
   baseURL,
@@ -13,7 +14,6 @@ export const http = Axios.create({
 http.interceptors.response.use(
   (res) => res,
   (err) => {
-    // Giữ đơn giản, các module sẽ tự bắt lỗi theo message/code
     return Promise.reject(err)
   },
 )

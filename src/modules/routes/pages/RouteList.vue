@@ -7,7 +7,6 @@ import Column from 'primevue/column'
 import Tag from 'primevue/tag'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
-import BaseInput from '@/components/common/inputs/BaseInput.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 
 import { useAuthStore } from '@/stores/auth.store'
@@ -230,20 +229,16 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
 
 <template>
   <div class="space-y-3">
-    <div class="flex items-center justify-between gap-3">
-      <div class="text-xl font-semibold text-slate-800">Patrol Routes</div>
-
-      <div class="w-full max-w-md">
-        <BaseInput v-model="searchDraft" label="" class="w-full" placeholder="Search..." />
-      </div>
-    </div>
+    <div class="text-xl font-semibold text-slate-800">Patrol Routes</div>
 
     <RouteFilters
       :areaOptions="routeFilterAreaOptions"
       :modelAreaId="store.filterAreaId"
       :modelStatus="store.filterStatus"
+      :modelSearch="searchDraft"
       @update:modelAreaId="store.filterAreaId = $event"
       @update:modelStatus="store.filterStatus = $event"
+      @update:modelSearch="searchDraft = $event"
       @clear="clearAll"
     />
 

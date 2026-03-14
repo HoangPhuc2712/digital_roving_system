@@ -5,7 +5,6 @@ import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 
 import Column from 'primevue/column'
-import Dropdown from 'primevue/dropdown'
 import Tag from 'primevue/tag'
 
 import { useAreasStore } from '@/modules/areas/areas.store'
@@ -13,9 +12,9 @@ import { useAuthStore } from '@/stores/auth.store'
 import type { AreaRow } from '@/modules/areas/areas.types'
 import { deleteAreaMock } from '@/modules/areas/areas.api'
 
-import BaseInput from '@/components/common/inputs/BaseInput.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
+import AreaFilters from '@/modules/areas/components/AreaFilters.vue'
 
 import AreaForm, {
   type AreaFormMode,
@@ -271,39 +270,15 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
 
 <template>
   <div class="space-y-3">
-    <div class="flex items-center justify-between gap-3">
-      <div class="text-xl font-semibold text-slate-800">Areas Management</div>
+    <div class="text-xl font-semibold text-slate-800">Areas Management</div>
 
-      <div class="w-full max-w-md">
-        <BaseInput v-model="searchDraft" label="" class="w-full" placeholder="Search..." />
-      </div>
-    </div>
-
-    <div class="bg-white border border-slate-200 rounded-xl p-3">
-      <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
-        <div class="md:col-span-3">
-          <label class="block text-sm text-slate-600 mb-1">Status</label>
-          <Dropdown
-            v-model="store.filterStatus"
-            class="w-full"
-            :options="statusOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="All"
-          />
-        </div>
-
-        <div class="md:col-span-3 flex justify-end">
-          <BaseIconButton
-            icon="pi pi-filter-slash"
-            label="Clear Filters"
-            severity="secondary"
-            outlined
-            @click="clearAll"
-          />
-        </div>
-      </div>
-    </div>
+    <AreaFilters
+      :modelStatus="store.filterStatus"
+      :modelSearch="searchDraft"
+      @update:modelStatus="store.filterStatus = $event"
+      @update:modelSearch="searchDraft = $event"
+      @clear="clearAll"
+    />
 
     <BaseDataTable
       title="Areas"

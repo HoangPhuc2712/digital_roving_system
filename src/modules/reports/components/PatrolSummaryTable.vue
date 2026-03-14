@@ -26,7 +26,7 @@ function abnormalCountClass(value: number) {
 </script>
 
 <template>
-  <div class="relative overflow-x-auto rounded-xl border border-slate-200 bg-white min-h-[220px]">
+  <div class="relative overflow-x-auto rounded-xl border border-slate-200 bg-white">
     <div
       v-if="loading"
       class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-white/75 backdrop-blur-[1px]"

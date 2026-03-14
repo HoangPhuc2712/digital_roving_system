@@ -15,11 +15,20 @@ const auth = useAuthStore()
 const store = useDashboardStore()
 const router = useRouter()
 
+function normalizeMenuName(input?: string) {
+  return String(input ?? '')
+    .trim()
+    .replace(/\s+/g, '')
+    .toUpperCase()
+}
+
 const allowCodeSet = computed(() => {
   const list = (auth.user as any)?.allowViews ?? (auth.user as any)?.allow_views ?? []
   const set = new Set<string>()
   for (const x of list) {
-    if (x?.mcActive === true && x?.mcCode) set.add(String(x.mcCode).toUpperCase())
+    if (x?.mcActive === true && x?.mcName) {
+      set.add(normalizeMenuName(x.mcName))
+    }
   }
   return set
 })
@@ -39,17 +48,17 @@ function normalizeName(name: string) {
 function cardMetaOf(item: DashboardTotalAppItem): DashboardCardMeta {
   switch (normalizeName(item.name)) {
     case 'ROLES':
-      return { mcCode: 'MC001', to: '/roles' }
+      return { mcCode: 'ROLES', to: '/roles' }
     case 'USERS':
-      return { mcCode: 'MC002', to: '/users' }
+      return { mcCode: 'USERS', to: '/users' }
     case 'MENUCATEGORIES':
-      return { mcCode: 'MC003' }
+      return { mcCode: 'MENUCATEGORIES' }
     case 'AREAS':
-      return { mcCode: 'MC004', to: '/areas' }
+      return { mcCode: 'AREAS', to: '/areas' }
     case 'CHECKPOINTS':
-      return { mcCode: 'MC004', to: '/areas' }
+      return { mcCode: 'AREAS', to: '/areas' }
     case 'ROUTES':
-      return { mcCode: 'MC005', to: '/routes' }
+      return { mcCode: 'ROUTES', to: '/routes' }
     default:
       return {}
   }
