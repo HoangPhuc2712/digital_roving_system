@@ -186,8 +186,14 @@ export function sumSeconds(details: RouteDetailModel[]) {
   return (details ?? []).reduce((acc, d) => acc + (Number(d.rd_second) || 0), 0)
 }
 
+function secondsToMinutes(value?: number) {
+  const second = Number(value ?? 0)
+  if (!Number.isFinite(second) || second <= 0) return 0
+  return Math.ceil(second / 60)
+}
+
 export async function fetchAreaOptions(): Promise<AreaOption[]> {
-  const res = await http.get(endpoints.area.getBaseList)
+  const res = await http.post(endpoints.area.getBaseList, {})
   const env = ensureSuccess<any[]>(res.data)
   const list = env.data ?? []
 
@@ -201,7 +207,7 @@ export async function fetchAreaOptions(): Promise<AreaOption[]> {
 }
 
 export async function fetchRoleOptions(): Promise<RoleOption[]> {
-  const res = await http.get(endpoints.role.getBaseList)
+  const res = await http.post(endpoints.role.getBaseList, {})
   const env = ensureSuccess<ApiRoleBase[]>(res.data)
   const list = env.data ?? []
 
@@ -276,7 +282,6 @@ export async function fetchRouteById(routeId: number, roleOptions: RoleOption[] 
 }
 
 export async function createRouteMock(payload: {
-  route_code: string
   route_name: string
   area_id: number
   role_id: number
@@ -286,15 +291,14 @@ export async function createRouteMock(payload: {
 }) {
   const details = (payload.details ?? []).map((d, idx) => ({
     cpId: d.cp_id,
-    rdSecond: Number(d.rd_second ?? 0),
+    rdMinute: secondsToMinutes(d.rd_second),
     rdPriority: idx + 1,
     createdBy: payload.actor_id,
   }))
 
   const body = {
-    routeCode: payload.route_code.trim(),
     routeName: payload.route_name.trim(),
-    routeTotalSecond: sumSeconds(payload.details),
+    routeTotalMinute: details.reduce((acc, d) => acc + Number(d.rdMinute ?? 0), 0),
     areaId: payload.area_id,
     roleId: Number(payload.role_id ?? 0),
     routePriority: Number(payload.route_priority ?? 0),
@@ -317,7 +321,6 @@ export async function createRouteMock(payload: {
 
 export async function updateRouteMock(payload: {
   route_id: number
-  route_code: string
   route_name: string
   area_id: number
   role_id: number
@@ -327,15 +330,14 @@ export async function updateRouteMock(payload: {
 }) {
   const details = (payload.details ?? []).map((d, idx) => ({
     cpId: d.cp_id,
-    rdSecond: Number(d.rd_second ?? 0),
+    rdMinute: secondsToMinutes(d.rd_second),
     rdPriority: idx + 1,
     createdBy: payload.actor_id,
   }))
 
   const body = {
-    routeCode: payload.route_code.trim(),
     routeName: payload.route_name.trim(),
-    routeTotalSecond: sumSeconds(payload.details),
+    routeTotalMinute: details.reduce((acc, d) => acc + Number(d.rdMinute ?? 0), 0),
     areaId: payload.area_id,
     roleId: Number(payload.role_id ?? 0),
     routePriority: Number(payload.route_priority ?? 0),

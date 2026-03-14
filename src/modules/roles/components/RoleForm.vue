@@ -2,6 +2,7 @@
 import { computed, reactive, watch } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import Dialog from 'primevue/dialog'
+import Checkbox from 'primevue/checkbox'
 import MultiSelect from 'primevue/multiselect'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
@@ -15,6 +16,8 @@ export type RoleFormModel = {
   role_id?: number
   role_code: string
   role_name: string
+  role_hour_report: boolean
+  role_is_admin: boolean
   mc_ids: number[]
 }
 
@@ -46,6 +49,8 @@ const form = reactive<RoleFormModel>({
   role_id: undefined,
   role_code: '',
   role_name: '',
+  role_hour_report: false,
+  role_is_admin: false,
   mc_ids: [],
 })
 
@@ -56,6 +61,8 @@ watch(
     form.role_id = m.role_id
     form.role_code = m.role_code ?? ''
     form.role_name = m.role_name ?? ''
+    form.role_hour_report = Boolean(m.role_hour_report)
+    form.role_is_admin = Boolean(m.role_is_admin)
     form.mc_ids = Array.isArray(m.mc_ids) ? [...m.mc_ids] : []
   },
   { immediate: true },
@@ -76,12 +83,11 @@ function toastError(detail: string) {
 }
 
 function submit() {
-  const code = (form.role_code ?? '').trim()
   const name = (form.role_name ?? '').trim()
   const mcIds = Array.isArray(form.mc_ids) ? form.mc_ids : []
 
-  if (!code || !name) {
-    toastError('Please fill Role Code and Role Name.')
+  if (!name) {
+    toastError('Please fill Role Name.')
     return
   }
 
@@ -94,8 +100,9 @@ function submit() {
     submit: async (actor_id: string) => {
       if (props.mode === 'new') {
         await createRole({
-          role_code: code,
           role_name: name,
+          role_hour_report: Boolean(form.role_hour_report),
+          role_is_admin: Boolean(form.role_is_admin),
           mc_ids: mcIds,
           actor_id,
         })
@@ -103,8 +110,9 @@ function submit() {
         if (!form.role_id) throw new Error('ROLE_NOT_FOUND')
         await updateRole({
           role_id: form.role_id,
-          role_code: code,
           role_name: name,
+          role_hour_report: Boolean(form.role_hour_report),
+          role_is_admin: Boolean(form.role_is_admin),
           mc_ids: mcIds,
           actor_id,
         })
@@ -127,29 +135,42 @@ function submit() {
     <div v-if="!model" class="text-slate-500">No data.</div>
 
     <div v-else class="space-y-4">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div v-if="isView" class="grid grid-cols-1 gap-4 md:grid-cols-3">
         <div>
           <label class="block text-sm text-slate-600 mb-1">Role Code</label>
-          <div v-if="isView" class="text-slate-800 font-semibold">{{ form.role_code }}</div>
-          <BaseInput v-else v-model="form.role_code" label="" placeholder="Enter code" />
+          <div class="text-slate-800 font-semibold">{{ form.role_code || '—' }}</div>
         </div>
 
         <div>
           <label class="block text-sm text-slate-600 mb-1">Role Name</label>
-          <div v-if="isView" class="text-slate-800 font-semibold">{{ form.role_name }}</div>
-          <BaseInput v-else v-model="form.role_name" label="" placeholder="Enter name" />
+          <div class="text-slate-800 font-semibold">{{ form.role_name }}</div>
         </div>
 
-        <div class="md:col-span-2">
-          <label class="block text-sm text-slate-600 mb-1">Permissions</label>
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Administration Permission</label>
+          <div class="text-slate-800 font-semibold">
+            {{ form.role_is_admin ? 'Yes' : 'No' }}
+          </div>
+        </div>
 
-          <div v-if="isView" class="text-slate-800 font-semibold">
+        <div class="md:col-span-3">
+          <label class="block text-sm text-slate-600 mb-1">Permissions</label>
+          <div class="text-slate-800 font-semibold">
             <span v-if="permissionLabels.length">{{ permissionLabels.join(', ') }}</span>
             <span v-else class="text-slate-500 font-normal">—</span>
           </div>
+        </div>
+      </div>
 
+      <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Role Name</label>
+          <BaseInput v-model="form.role_name" label="" placeholder="Enter name" />
+        </div>
+
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Permissions</label>
           <MultiSelect
-            v-else
             v-model="form.mc_ids"
             class="w-full"
             :options="menuOptions"
@@ -158,6 +179,15 @@ function submit() {
             placeholder="Select permissions"
             display="chip"
           />
+        </div>
+
+        <div class="sm:col-start-1 flex items-center min-h-[42px]">
+          <div class="flex items-center gap-2 bg-transparent">
+            <Checkbox v-model="form.role_is_admin" inputId="role-is-admin" binary />
+            <label for="role-is-admin" class="text-sm text-slate-700">
+              Administration Permission
+            </label>
+          </div>
         </div>
       </div>
 

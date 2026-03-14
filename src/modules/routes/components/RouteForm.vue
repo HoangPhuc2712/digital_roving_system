@@ -24,7 +24,7 @@ export type RouteFormMode = 'new' | 'view' | 'edit'
 
 export type RouteFormModel = {
   route_id?: number
-  route_code: string
+  route_code?: string
   route_name: string
   area_id: number
   role_id: number
@@ -256,13 +256,12 @@ function onRowReorder(e: any) {
 }
 
 function submit() {
-  const code = (form.route_code ?? '').trim()
   const name = (form.route_name ?? '').trim()
   const areaId = Number(form.area_id ?? 0)
   const roleId = Number(form.role_id ?? 0)
 
-  if (!code || !name || !areaId || !roleId) {
-    toastError('Please fill Route Code, Route Name, Area, and Role.')
+  if (!name || !areaId || !roleId) {
+    toastError('Please fill Route Name, Area, and Role.')
     return
   }
 
@@ -284,7 +283,6 @@ function submit() {
 
       if (props.mode === 'new') {
         await createRouteMock({
-          route_code: code,
           route_name: name,
           area_id: areaId,
           role_id: roleId,
@@ -299,7 +297,6 @@ function submit() {
 
       await updateRouteMock({
         route_id: form.route_id,
-        route_code: code,
         route_name: name,
         area_id: areaId,
         role_id: roleId,
@@ -326,10 +323,9 @@ function submit() {
 
     <div v-else class="space-y-4">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
+        <div v-if="isView">
           <label class="block text-sm text-slate-600 mb-1">Route Code</label>
-          <div v-if="isView" class="text-slate-800 font-semibold">{{ form.route_code }}</div>
-          <BaseInput v-else v-model="form.route_code" label="" placeholder="Enter code" />
+          <div class="text-slate-800 font-semibold">{{ form.route_code || '—' }}</div>
         </div>
 
         <div>

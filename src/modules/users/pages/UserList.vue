@@ -29,7 +29,7 @@ const store = useUsersStore()
 const auth = useAuthStore()
 const router = useRouter()
 
-const canManage = computed(() => auth.canAccess('users.manage'))
+const canManage = computed(() => auth.isAdminUser && auth.canAccess('users.manage'))
 
 const searchDraft = ref(store.searchText)
 let searchTimer: number | undefined
@@ -222,11 +222,12 @@ function onViewPatrolPath(row: UserRow) {
       v-model:selection="selectedUsers"
       :rows="store.rowsPerPage"
     >
-      <template #toolbar-start>
+      <template v-if="canManage" #toolbar-start>
         <div class="flex gap-2">
           <BaseIconButton
             icon="pi pi-plus"
             label="New"
+            size="small"
             severity="success"
             :disabled="!canManage"
             @click="openNew"
@@ -234,6 +235,7 @@ function onViewPatrolPath(row: UserRow) {
           <BaseIconButton
             icon="pi pi-trash"
             label="Delete"
+            size="small"
             severity="danger"
             outlined
             :disabled="!canManage || !selectedUsers || selectedUsers.length === 0"
@@ -246,7 +248,13 @@ function onViewPatrolPath(row: UserRow) {
         <!-- Import/Export -->
       </template>
 
-      <Column selectionMode="multiple" style="width: 3rem" :exportable="false" sortDisabled />
+      <Column
+        v-if="canManage"
+        selectionMode="multiple"
+        style="width: 3rem"
+        :exportable="false"
+        sortDisabled
+      />
 
       <Column field="user_name" header="Name" style="min-width: 14rem" />
       <Column field="user_code" header="User Code" style="min-width: 10rem" />
@@ -298,21 +306,21 @@ function onViewPatrolPath(row: UserRow) {
               @click="openView(data)"
             />
             <BaseIconButton
+              v-if="canManage"
               icon="pi pi-pencil"
               size="small"
               severity="secondary"
               outlined
               rounded
-              :disabled="!canManage"
               @click="openEdit(data)"
             />
             <BaseIconButton
+              v-if="canManage"
               icon="pi pi-trash"
               size="small"
               severity="danger"
               outlined
               rounded
-              :disabled="!canManage"
               @click="onDelete(data)"
             />
           </div>

@@ -18,6 +18,7 @@ export const useAuthStore = defineStore('auth', {
   }),
   getters: {
     isAuthenticated: (s) => !!s.token && !!s.user,
+    isAdminUser: (s) => Boolean((s.user as any)?.user_role_is_admin),
   },
   actions: {
     canAccess(required?: PermissionKey | PermissionKey[]) {
@@ -66,9 +67,7 @@ export const useAuthStore = defineStore('auth', {
       this.user = user
 
       const allow = localStorage.getItem('role_allow_view') ?? user.role?.role_allow_view ?? ''
-
       const roleCode = localStorage.getItem('role_code') ?? user.role?.role_code ?? ''
-
       const allowViewsRaw = localStorage.getItem('allow_views')
       const allowViews = allowViewsRaw ? JSON.parse(allowViewsRaw) : user.allow_views
 

@@ -120,6 +120,7 @@ async function onExport() {
           <BaseIconButton
             icon="pi pi-file"
             label="Patrol Detail Report"
+            size="small"
             severity="secondary"
             outlined
             @click="goToPatrolDetailReport"
@@ -128,8 +129,9 @@ async function onExport() {
 
         <template #end>
           <BaseIconButton
-            icon="pi pi-download"
+            icon="pi pi-file-excel"
             label="Export"
+            size="small"
             severity="secondary"
             outlined
             :loading="exporting"

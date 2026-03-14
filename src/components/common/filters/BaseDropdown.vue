@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import Dropdown from 'primevue/dropdown'
+import Select from 'primevue/select'
 
 const props = withDefaults(
   defineProps<{
@@ -37,9 +37,10 @@ const model = computed({
 
 <template>
   <div :class="props.widthClass">
-    <Dropdown
+    <Select
       v-model="model"
       class="w-full base-dropdown"
+      size="small"
       :options="props.options"
       :optionLabel="props.optionLabel"
       :optionValue="props.optionValue"

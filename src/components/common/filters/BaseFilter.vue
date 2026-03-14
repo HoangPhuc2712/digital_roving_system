@@ -96,6 +96,7 @@ const searchModel = computed({
           <BaseInput
             v-model="searchModel"
             label=""
+            size="small"
             class="w-full"
             :placeholder="props.searchPlaceholder"
           />
@@ -106,6 +107,7 @@ const searchModel = computed({
         <BaseIconButton
           icon="pi pi-filter-slash"
           label="Clear Filters"
+          size="small"
           severity="secondary"
           outlined
           :disabled="props.clearDisabled"

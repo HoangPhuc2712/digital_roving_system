@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, watch, ref } from 'vue'
+import { computed, onMounted, onBeforeUnmount, watch, ref } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 
 import Tag from 'primevue/tag'
@@ -45,6 +45,7 @@ const exporting = ref(false)
 const formVisible = ref(false)
 const formMode = ref<ReportFormMode>('view')
 const formModel = ref<ReportFormModel | null>(null)
+const canEditStatus = computed(() => auth.isAdminUser)
 
 watch(
   () => [
@@ -168,7 +169,7 @@ async function openView(row: ReportRow) {
 }
 
 async function openEditStatus(row: ReportRow) {
-  if (!row.pr_has_problem) return
+  if (!canEditStatus.value || !row.pr_has_problem) return
   formMode.value = 'edit-status'
   formModel.value = (await fetchReportRowById(row.pr_id)) ?? row
   formVisible.value = true
@@ -276,6 +277,7 @@ function goToCtpatReport() {
         <BaseIconButton
           icon="pi pi-file"
           label="C-TPAT Report"
+          size="small"
           severity="secondary"
           outlined
           @click="goToCtpatReport"
@@ -285,8 +287,9 @@ function goToCtpatReport() {
       <template #toolbar-end>
         <div class="flex justify-end gap-2">
           <BaseIconButton
-            icon="pi pi-download"
+            icon="pi pi-file-excel"
             label="Export"
+            size="small"
             severity="secondary"
             outlined
             :disabled="exporting"
@@ -362,7 +365,7 @@ function goToCtpatReport() {
               @click="openView(data)"
             />
             <BaseIconButton
-              v-if="data.pr_has_problem"
+              v-if="canEditStatus && data.pr_has_problem"
               icon="pi pi-pencil"
               size="small"
               severity="secondary"
@@ -379,6 +382,7 @@ function goToCtpatReport() {
       v-model:visible="formVisible"
       :mode="formMode"
       :model="formModel"
+      :canEditStatus="canEditStatus"
       @submit-status="handleSubmitStatus"
       @close="formModel = null"
     />

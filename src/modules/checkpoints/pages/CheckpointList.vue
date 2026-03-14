@@ -30,7 +30,7 @@ const confirm = useConfirm()
 const store = useCheckpointsStore()
 const auth = useAuthStore()
 
-const canManage = computed(() => auth.canAccess('checkpoints.manage'))
+const canManage = computed(() => auth.isAdminUser && auth.canAccess('checkpoints.manage'))
 
 const lockedAreaId = computed<number | null>(() => {
   const raw = Array.isArray(route.query.areaId) ? route.query.areaId[0] : route.query.areaId
@@ -326,10 +326,11 @@ function normalizeQr(src: string) {
       v-model:selection="selectedRows"
       @page="(e) => store.setFirst(e.first)"
     >
-      <template #toolbar-start>
+      <template v-if="canManage" #toolbar-start>
         <BaseIconButton
           icon="pi pi-plus"
           label="New"
+          size="small"
           severity="success"
           :disabled="!canManage"
           @click="openNew"
@@ -337,6 +338,7 @@ function normalizeQr(src: string) {
         <BaseIconButton
           icon="pi pi-trash"
           label="Delete"
+          size="small"
           severity="danger"
           outlined
           class="ml-2"
@@ -345,7 +347,13 @@ function normalizeQr(src: string) {
         />
       </template>
 
-      <Column selectionMode="multiple" style="width: 3rem" :exportable="false" sortDisabled />
+      <Column
+        v-if="canManage"
+        selectionMode="multiple"
+        style="width: 3rem"
+        :exportable="false"
+        sortDisabled
+      />
 
       <Column field="cp_code" header="Check Point Code" style="min-width: 12rem" />
       <Column field="cp_name" header="Check Point Name" style="min-width: 14rem" />
@@ -388,21 +396,21 @@ function normalizeQr(src: string) {
               @click="openView(data)"
             />
             <BaseIconButton
+              v-if="canManage"
               icon="pi pi-pencil"
               size="small"
               severity="secondary"
               outlined
               rounded
-              :disabled="!canManage"
               @click="openEdit(data)"
             />
             <BaseIconButton
+              v-if="canManage"
               icon="pi pi-trash"
               size="small"
               severity="danger"
               outlined
               rounded
-              :disabled="!canManage"
               @click="onDelete(data)"
             />
           </div>
