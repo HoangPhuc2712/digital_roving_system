@@ -96,7 +96,7 @@ watch(
     class="base-image-viewer"
     modal
     :header="dialogTitle"
-    :style="{ width: '860px', maxWidth: '95vw' }"
+    :style="{ width: '700px', maxWidth: '95vw' }"
     :contentStyle="{ maxHeight: '78vh', padding: '0.75rem 1rem 1rem' }"
     @update:visible="emit('update:visible', $event)"
     @hide="close"
@@ -174,6 +174,10 @@ watch(
   max-height: 64px;
   object-fit: cover;
   border-radius: 8px;
+  display: block;
+}
+
+:deep(.p-galleria-thumbnail-item) {
   display: block;
 }
 

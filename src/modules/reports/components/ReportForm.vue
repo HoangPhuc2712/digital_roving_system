@@ -198,29 +198,31 @@ watch(
     <div v-else class="space-y-4">
       <div class="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
         <div class="space-y-4 min-w-0">
-          <div class="space-y-1">
-            <div class="text-lg font-semibold text-slate-800">
-              {{ model.cp_code }} - {{ model.cp_name }}
+          <div class="space-y-2">
+            <div class="text-xl font-semibold text-slate-800">
+              {{ model.cp_name }} - {{ model.cp_code }}
             </div>
-            <div class="text-sm text-slate-600">
-              Patrol Route:
-              <span class="text-slate-800 font-semibold">{{ model.route_name }}</span>
-            </div>
-            <div class="text-sm text-slate-600">
-              Area:
-              <span class="text-slate-800 font-semibold">{{ model.area_name }}</span>
-            </div>
-            <div class="text-sm text-slate-600">
-              Guard:
-              <span class="text-slate-800 font-semibold">{{
-                model.report_name || model.created_by
-              }}</span>
-            </div>
-            <div class="text-sm text-slate-600">
-              Report Date:
-              <span class="text-slate-800 font-semibold">{{
-                formatDateTime(model.report_at || model.scan_at || model.created_at)
-              }}</span>
+            <div>
+              <div class="text-sm text-slate-600">
+                Patrol Route:
+                <span class="text-slate-800 font-semibold">{{ model.route_name }}</span>
+              </div>
+              <div class="text-sm text-slate-600">
+                Area:
+                <span class="text-slate-800 font-semibold">{{ model.area_name }}</span>
+              </div>
+              <div class="text-sm text-slate-600">
+                Guard:
+                <span class="text-slate-800 font-semibold">{{
+                  model.report_name || model.created_by
+                }}</span>
+              </div>
+              <div class="text-sm text-slate-600">
+                Report Date:
+                <span class="text-slate-800 font-semibold">{{
+                  formatDateTime(model.report_at || model.scan_at || model.created_at)
+                }}</span>
+              </div>
             </div>
           </div>
 
