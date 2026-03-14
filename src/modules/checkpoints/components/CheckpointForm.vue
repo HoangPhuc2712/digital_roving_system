@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue'
 import Dialog from 'primevue/dialog'
-import Dropdown from 'primevue/dropdown'
+import Select from 'primevue/select'
 import MultiSelect from 'primevue/multiselect'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
@@ -189,7 +189,7 @@ function submit() {
         <div>
           <label class="block text-sm text-slate-600 mb-1">Check Point Name</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ form.cp_name }}</div>
-          <BaseInput v-else v-model="form.cp_name" label="" placeholder="Enter name" />
+          <BaseInput v-else v-model="form.cp_name" label="" size="small" placeholder="Enter name" />
         </div>
 
         <div>
@@ -204,6 +204,7 @@ function submit() {
             :options="roleOptions"
             optionLabel="label"
             optionValue="value"
+            size="small"
             placeholder="Select role"
             display="chip"
             filter
@@ -219,6 +220,7 @@ function submit() {
             v-else
             v-model="form.cp_description"
             label=""
+            size="small"
             placeholder="Enter description"
           />
         </div>
@@ -226,12 +228,13 @@ function submit() {
         <div>
           <label class="block text-sm text-slate-600 mb-1">Area</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ areaLabel }}</div>
-          <Dropdown
+          <Select
             v-else
             v-model="form.area_id"
             class="w-full"
             :options="areaOptions"
             optionLabel="label"
+            size="small"
             optionValue="value"
             placeholder="Select area"
             disabled
@@ -241,7 +244,13 @@ function submit() {
         <div>
           <label class="block text-sm text-slate-600 mb-1">Priority</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ form.cp_priority_text }}</div>
-          <BaseInput v-else v-model="form.cp_priority_text" label="" placeholder="Enter priority" />
+          <BaseInput
+            v-else
+            v-model="form.cp_priority_text"
+            label=""
+            size="small"
+            placeholder="Enter priority"
+          />
         </div>
       </div>
 

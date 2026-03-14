@@ -117,13 +117,25 @@ function submit() {
         <div>
           <label class="block text-sm text-slate-600 mb-1">Area Code</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ form.area_code }}</div>
-          <BaseInput v-else v-model="form.area_code" label="" placeholder="Enter code" />
+          <BaseInput
+            v-else
+            v-model="form.area_code"
+            label=""
+            size="small"
+            placeholder="Enter code"
+          />
         </div>
 
         <div>
           <label class="block text-sm text-slate-600 mb-1">Area Name</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ form.area_name }}</div>
-          <BaseInput v-else v-model="form.area_name" label="" placeholder="Enter name" />
+          <BaseInput
+            v-else
+            v-model="form.area_name"
+            label=""
+            size="small"
+            placeholder="Enter name"
+          />
         </div>
       </div>
 
