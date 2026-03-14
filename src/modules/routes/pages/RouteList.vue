@@ -255,6 +255,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
           <BaseIconButton
             icon="pi pi-plus"
             label="New"
+            size="small"
             severity="success"
             :disabled="!canManage"
             @click="openNew"
@@ -262,6 +263,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
           <BaseIconButton
             icon="pi pi-trash"
             label="Delete"
+            size="small"
             severity="danger"
             outlined
             :disabled="!canManage || !selectedRoutes || selectedRoutes.length === 0"

@@ -135,56 +135,54 @@ function submit() {
     <div v-if="!model" class="text-slate-500">No data.</div>
 
     <div v-else class="space-y-4">
-      <div class="grid grid-cols-1 gap-4" :class="isView ? 'md:grid-cols-3' : 'md:grid-cols-2'">
-        <div v-if="isView">
+      <div v-if="isView" class="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div>
           <label class="block text-sm text-slate-600 mb-1">Role Code</label>
           <div class="text-slate-800 font-semibold">{{ form.role_code || '—' }}</div>
         </div>
 
-        <template v-if="isView">
-          <div>
-            <label class="block text-sm text-slate-600 mb-1">Role Name</label>
-            <div class="text-slate-800 font-semibold">{{ form.role_name }}</div>
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Role Name</label>
+          <div class="text-slate-800 font-semibold">{{ form.role_name }}</div>
+        </div>
+
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Administration Permission</label>
+          <div class="text-slate-800 font-semibold">
+            {{ form.role_is_admin ? 'Yes' : 'No' }}
           </div>
+        </div>
 
-          <div>
-            <label class="block text-sm text-slate-600 mb-1">Administration Permission</label>
-            <div class="text-slate-800 font-semibold">
-              {{ form.role_is_admin ? 'Yes' : 'No' }}
-            </div>
+        <div class="md:col-span-3">
+          <label class="block text-sm text-slate-600 mb-1">Permissions</label>
+          <div class="text-slate-800 font-semibold">
+            <span v-if="permissionLabels.length">{{ permissionLabels.join(', ') }}</span>
+            <span v-else class="text-slate-500 font-normal">—</span>
           </div>
-        </template>
+        </div>
+      </div>
 
-        <template v-else>
-          <div>
-            <label class="block text-sm text-slate-600 mb-1">Role Name</label>
-            <BaseInput v-model="form.role_name" label="" placeholder="Enter name" />
-          </div>
-          <div :class="isView ? 'md:col-span-3' : 'md:col-span-2'">
-            <label class="block text-sm text-slate-600 mb-1">Permissions</label>
+      <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Role Name</label>
+          <BaseInput v-model="form.role_name" label="" placeholder="Enter name" />
+        </div>
 
-            <div v-if="isView" class="text-slate-800 font-semibold">
-              <span v-if="permissionLabels.length">{{ permissionLabels.join(', ') }}</span>
-              <span v-else class="text-slate-500 font-normal">—</span>
-            </div>
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Permissions</label>
+          <MultiSelect
+            v-model="form.mc_ids"
+            class="w-full"
+            :options="menuOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Select permissions"
+            display="chip"
+          />
+        </div>
 
-            <MultiSelect
-              v-else
-              v-model="form.mc_ids"
-              class="w-full"
-              :options="menuOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Select permissions"
-              display="chip"
-            />
-          </div>
-        </template>
-
-        <div class="md:pt-6">
-          <div
-            class="flex items-center gap-2 min-h-[42px] px-3 border border-slate-300 rounded-md bg-white"
-          >
+        <div class="sm:col-start-1 flex items-center min-h-[42px]">
+          <div class="flex items-center gap-2 bg-transparent">
             <Checkbox v-model="form.role_is_admin" inputId="role-is-admin" binary />
             <label for="role-is-admin" class="text-sm text-slate-700">
               Administration Permission

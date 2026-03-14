@@ -276,6 +276,7 @@ function goToCtpatReport() {
         <BaseIconButton
           icon="pi pi-file"
           label="C-TPAT Report"
+          size="small"
           severity="secondary"
           outlined
           @click="goToCtpatReport"
@@ -285,8 +286,9 @@ function goToCtpatReport() {
       <template #toolbar-end>
         <div class="flex justify-end gap-2">
           <BaseIconButton
-            icon="pi pi-download"
+            icon="pi pi-file-excel"
             label="Export"
+            size="small"
             severity="secondary"
             outlined
             :disabled="exporting"

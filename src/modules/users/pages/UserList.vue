@@ -227,6 +227,7 @@ function onViewPatrolPath(row: UserRow) {
           <BaseIconButton
             icon="pi pi-plus"
             label="New"
+            size="small"
             severity="success"
             :disabled="!canManage"
             @click="openNew"
@@ -234,6 +235,7 @@ function onViewPatrolPath(row: UserRow) {
           <BaseIconButton
             icon="pi pi-trash"
             label="Delete"
+            size="small"
             severity="danger"
             outlined
             :disabled="!canManage || !selectedUsers || selectedUsers.length === 0"

@@ -132,6 +132,7 @@ function onPage(e: DataTablePageEvent) {
         <BaseIconButton
           icon="pi pi-chart-line"
           label="Patrol Summary Report"
+          size="small"
           severity="secondary"
           outlined
           @click="goToPatrolSummaryReport"
@@ -141,8 +142,9 @@ function onPage(e: DataTablePageEvent) {
       <template #toolbar-end>
         <div class="flex justify-end gap-2">
           <BaseIconButton
-            icon="pi pi-download"
+            icon="pi pi-file-excel"
             label="Export"
+            size="small"
             severity="secondary"
             outlined
             :disabled="exporting"

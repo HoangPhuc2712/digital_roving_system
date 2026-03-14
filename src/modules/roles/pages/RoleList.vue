@@ -218,6 +218,7 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
           <BaseIconButton
             icon="pi pi-plus"
             label="New"
+            size="small"
             severity="success"
             :disabled="!canManage"
             @click="openNew"
@@ -225,6 +226,7 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
           <BaseIconButton
             icon="pi pi-trash"
             label="Delete"
+            size="small"
             severity="danger"
             outlined
             :disabled="!canManage || !selectedRoles || selectedRoles.length === 0"

@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import Calendar from 'primevue/calendar'
-import DatePicker from 'primevue'
+import DatePicker from 'primevue/datepicker'
+
+type SingleDateValue = Date | null
+type DatePickerValue = Date | Date[] | (Date | null)[] | null | undefined
 
 const props = withDefaults(
   defineProps<{
-    modelDateFrom: Date | null
-    modelDateTo: Date | null
+    modelDateFrom: SingleDateValue
+    modelDateTo: SingleDateValue
     inputWidthClass?: string
     showTime?: boolean
     disabled?: boolean
@@ -18,57 +20,59 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  (e: 'update:modelDateFrom', value: Date | null): void
-  (e: 'update:modelDateTo', value: Date | null): void
+  (e: 'update:modelDateFrom', value: SingleDateValue): void
+  (e: 'update:modelDateTo', value: SingleDateValue): void
 }>()
+
+function normalizeDateValue(value: DatePickerValue): SingleDateValue {
+  return value instanceof Date ? value : null
+}
+
+function onUpdateDateFrom(value: DatePickerValue) {
+  emit('update:modelDateFrom', normalizeDateValue(value))
+}
+
+function onUpdateDateTo(value: DatePickerValue) {
+  emit('update:modelDateTo', normalizeDateValue(value))
+}
 </script>
 
 <template>
   <div class="flex flex-wrap gap-3 items-end">
     <div :class="props.inputWidthClass">
       <label class="block text-sm text-slate-600 mb-1">From</label>
-      <Calendar
+      <DatePicker
         :modelValue="props.modelDateFrom"
         class="w-full base-date-selection"
         dateFormat="dd/mm/yy"
         :showTime="props.showTime"
         hourFormat="12"
+        size="small"
         :manualInput="false"
         showButtonBar
         showIcon
         :disabled="props.disabled"
         placeholder="Select start date"
-        @update:modelValue="emit('update:modelDateFrom', $event)"
+        @update:modelValue="onUpdateDateFrom"
       />
     </div>
 
     <div :class="props.inputWidthClass">
       <label class="block text-sm text-slate-600 mb-1">To</label>
-      <Calendar
+      <DatePicker
         :modelValue="props.modelDateTo"
         class="w-full base-date-selection"
         dateFormat="dd/mm/yy"
         :showTime="props.showTime"
         hourFormat="12"
+        size="small"
         :manualInput="false"
         showButtonBar
         showIcon
         :disabled="props.disabled"
         placeholder="Select end date"
-        @update:modelValue="emit('update:modelDateTo', $event)"
+        @update:modelValue="onUpdateDateTo"
       />
     </div>
   </div>
 </template>
-
-<style scoped>
-:deep(.base-date-selection .p-inputtext) {
-  min-height: 42px;
-  border-radius: 12px;
-  font-size: 0.95rem;
-}
-
-:deep(.base-date-selection .p-datepicker-trigger) {
-  min-width: 2.75rem;
-}
-</style>
