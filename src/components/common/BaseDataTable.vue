@@ -1,6 +1,6 @@
 <template>
   <div class="card">
-    <Toolbar class="mb-4">
+    <Toolbar v-if="hasToolbar" class="mb-4">
       <template #start>
         <slot name="toolbar-start" />
       </template>
@@ -43,7 +43,17 @@
 </template>
 
 <script setup lang="ts">
-import { Fragment, computed, defineComponent, h, isVNode, useSlots, type VNode } from 'vue'
+import {
+  Comment,
+  Fragment,
+  Text,
+  computed,
+  defineComponent,
+  h,
+  isVNode,
+  useSlots,
+  type VNode,
+} from 'vue'
 import DataTable, { type DataTablePageEvent } from 'primevue/datatable'
 import Toolbar from 'primevue/toolbar'
 
@@ -112,9 +122,41 @@ const normalizedDefaultNodes = computed(() => {
   return nodes.map(transformNode).filter((node): node is VNode => isVNode(node))
 })
 
+const hasToolbar = computed(() => {
+  const startNodes = slots['toolbar-start']?.() ?? []
+  const endNodes = slots['toolbar-end']?.() ?? []
+  return hasRenderableNodes(startNodes) || hasRenderableNodes(endNodes)
+})
+
 function onPage(ev: DataTablePageEvent) {
   emit('update:first', ev.first)
   emit('page', ev)
+}
+
+function hasRenderableNodes(nodes: any[]): boolean {
+  for (const node of nodes) {
+    if (!isVNode(node)) {
+      if (String(node ?? '').trim()) return true
+      continue
+    }
+
+    if (node.type === Comment) continue
+
+    if (node.type === Text) {
+      if (String((node.children as any) ?? '').trim()) return true
+      continue
+    }
+
+    if (node.type === Fragment) {
+      const children = Array.isArray(node.children) ? node.children : []
+      if (hasRenderableNodes(children as any[])) return true
+      continue
+    }
+
+    return true
+  }
+
+  return false
 }
 
 function transformNode(node: VNode): VNode {
@@ -140,11 +182,6 @@ function transformNode(node: VNode): VNode {
   }
 
   return h(node.type as any, vnodeProps, buildColumnChildren(node, sortable) as any)
-}
-
-function isColumnVNode(node: VNode) {
-  const type = node.type as any
-  return typeof type === 'object' && (type?.name === 'Column' || type?.__name === 'Column')
 }
 
 function buildColumnChildren(node: VNode, sortable: boolean) {

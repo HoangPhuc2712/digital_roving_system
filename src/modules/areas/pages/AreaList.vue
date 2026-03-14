@@ -29,7 +29,7 @@ const confirm = useConfirm()
 const store = useAreasStore()
 const auth = useAuthStore()
 
-const canManage = computed(() => auth.canAccess('areas.manage'))
+const canManage = computed(() => auth.isAdminUser && auth.canAccess('areas.manage'))
 
 const searchDraft = ref(store.searchText)
 let searchTimer: number | undefined
@@ -82,18 +82,6 @@ function mapRowToFormModel(row: AreaRow): AreaFormModel {
     area_code: row.area_code,
     area_name: row.area_name,
   }
-}
-
-function getCheckpointCount(row: AreaRow) {
-  const raw =
-    (row as Record<string, unknown>).checkpoint_count ??
-    (row as Record<string, unknown>).check_point_count ??
-    (row as Record<string, unknown>).scan_point_count ??
-    (row as Record<string, unknown>).scanpoint_count ??
-    0
-
-  const count = Number(raw)
-  return Number.isFinite(count) ? count : 0
 }
 
 function goToAreaCheckPoints(row: AreaRow) {
@@ -288,7 +276,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
       v-model:selection="selectedAreas"
       :rows="store.rowsPerPage"
     >
-      <template #toolbar-start>
+      <template v-if="canManage" #toolbar-start>
         <BaseIconButton
           icon="pi pi-plus"
           label="New"
@@ -311,7 +299,13 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
 
       <template #toolbar-end></template>
 
-      <Column selectionMode="multiple" style="width: 3rem" :exportable="false" sortDisabled />
+      <Column
+        v-if="canManage"
+        selectionMode="multiple"
+        style="width: 3rem"
+        :exportable="false"
+        sortDisabled
+      />
 
       <Column field="area_code" header="Area Code" style="min-width: 10rem" />
       <Column field="area_name" header="Area Name" style="min-width: 14rem" />
@@ -348,21 +342,21 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
               @click="openView(data)"
             />
             <BaseIconButton
+              v-if="canManage"
               icon="pi pi-pencil"
               size="small"
               severity="secondary"
               outlined
               rounded
-              :disabled="!canManage"
               @click="openEdit(data)"
             />
             <BaseIconButton
+              v-if="canManage"
               icon="pi pi-trash"
               size="small"
               severity="danger"
               outlined
               rounded
-              :disabled="!canManage"
               @click="onDelete(data)"
             />
           </div>

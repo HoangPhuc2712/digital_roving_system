@@ -26,7 +26,7 @@ const confirm = useConfirm()
 const store = useRolesStore()
 const auth = useAuthStore()
 
-const canManage = computed(() => auth.canAccess('roles.manage'))
+const canManage = computed(() => auth.isAdminUser && auth.canAccess('roles.manage'))
 
 const searchDraft = ref(store.searchText)
 let searchTimer: number | undefined
@@ -213,7 +213,7 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
       v-model:selection="selectedRoles"
       :rows="store.rowsPerPage"
     >
-      <template #toolbar-start>
+      <template v-if="canManage" #toolbar-start>
         <div class="flex gap-2">
           <BaseIconButton
             icon="pi pi-plus"
@@ -235,7 +235,13 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
         </div>
       </template>
 
-      <Column selectionMode="multiple" style="width: 3rem" :exportable="false" sortDisabled />
+      <Column
+        v-if="canManage"
+        selectionMode="multiple"
+        style="width: 3rem"
+        :exportable="false"
+        sortDisabled
+      />
 
       <Column field="role_code" header="Role Code" style="min-width: 10rem" />
       <Column field="role_name" header="Role Name" style="min-width: 14rem" />
@@ -267,21 +273,21 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
               @click="openView(data)"
             />
             <BaseIconButton
+              v-if="canManage"
               icon="pi pi-pencil"
               size="small"
               severity="secondary"
               outlined
               rounded
-              :disabled="!canManage"
               @click="openEdit(data)"
             />
             <BaseIconButton
+              v-if="canManage"
               icon="pi pi-trash"
               size="small"
               severity="danger"
               outlined
               rounded
-              :disabled="!canManage"
               @click="onDelete(data)"
             />
           </div>

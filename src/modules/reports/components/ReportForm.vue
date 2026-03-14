@@ -20,11 +20,17 @@ type BaseImageItem = {
 export type ReportFormMode = 'view' | 'edit-status'
 export type ReportFormModel = ReportRow
 
-const props = defineProps<{
-  visible: boolean
-  model: ReportFormModel | null
-  mode?: ReportFormMode
-}>()
+const props = withDefaults(
+  defineProps<{
+    visible: boolean
+    model: ReportFormModel | null
+    mode?: ReportFormMode
+    canEditStatus?: boolean
+  }>(),
+  {
+    canEditStatus: true,
+  },
+)
 
 const emit = defineEmits<{
   (e: 'update:visible', v: boolean): void
@@ -40,8 +46,11 @@ const statusDraft = ref(0)
 const inlineStatusEdit = ref(false)
 
 const formMode = computed<ReportFormMode>(() => props.mode ?? 'view')
-const isExternalEditStatus = computed(() => formMode.value === 'edit-status')
-const isEditStatus = computed(() => isExternalEditStatus.value || inlineStatusEdit.value)
+const canEditStatus = computed(() => Boolean(props.canEditStatus))
+const isExternalEditStatus = computed(() => canEditStatus.value && formMode.value === 'edit-status')
+const isEditStatus = computed(
+  () => canEditStatus.value && (isExternalEditStatus.value || inlineStatusEdit.value),
+)
 const inspectionOk = computed(() => (props.model ? props.model.pr_has_problem === false : true))
 
 const issueStatusOptions = [
@@ -139,7 +148,7 @@ function openViewer(items: BaseImageItem[], startIndex: number, title: string) {
 }
 
 function startInlineEditStatus() {
-  if (!props.model?.pr_has_problem) return
+  if (!canEditStatus.value || !props.model?.pr_has_problem) return
   inlineStatusEdit.value = true
   statusDraft.value = Number(props.model.pr_status ?? 0)
 }
@@ -284,7 +293,7 @@ watch(
               />
 
               <BaseIconButton
-                v-if="model.pr_has_problem"
+                v-if="canEditStatus && model.pr_has_problem"
                 icon="pi pi-pencil"
                 size="small"
                 severity="secondary"

@@ -27,7 +27,7 @@ const confirm = useConfirm()
 const store = useRoutesStore()
 const auth = useAuthStore()
 
-const canManage = computed(() => auth.canAccess('routes.manage'))
+const canManage = computed(() => auth.isAdminUser && auth.canAccess('routes.manage'))
 
 const routeFilterAreaOptions = computed(() => {
   const map = new Map<number, string>()
@@ -250,7 +250,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
       v-model:selection="selectedRoutes"
       :rows="store.rowsPerPage"
     >
-      <template #toolbar-start>
+      <template v-if="canManage" #toolbar-start>
         <div class="flex gap-2">
           <BaseIconButton
             icon="pi pi-plus"
@@ -272,7 +272,13 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
         </div>
       </template>
 
-      <Column selectionMode="multiple" style="width: 3rem" :exportable="false" sortDisabled />
+      <Column
+        v-if="canManage"
+        selectionMode="multiple"
+        style="width: 3rem"
+        :exportable="false"
+        sortDisabled
+      />
 
       <Column field="route_code" header="Route Code" style="min-width: 10rem" />
       <Column field="route_name" header="Route Name" style="min-width: 14rem" />
@@ -324,21 +330,21 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
               @click="openView(data)"
             />
             <BaseIconButton
+              v-if="canManage"
               icon="pi pi-pencil"
               size="small"
               severity="secondary"
               outlined
               rounded
-              :disabled="!canManage"
               @click="openEdit(data)"
             />
             <BaseIconButton
+              v-if="canManage"
               icon="pi pi-trash"
               size="small"
               severity="danger"
               outlined
               rounded
-              :disabled="!canManage"
               @click="onDelete(data)"
             />
           </div>
