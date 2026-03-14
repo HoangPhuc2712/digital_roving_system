@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Calendar from 'primevue/calendar'
+import DatePicker from 'primevue'
 
 const props = withDefaults(
   defineProps<{

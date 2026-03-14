@@ -65,6 +65,8 @@ function mapRowToFormModel(row: RoleRow): RoleFormModel {
     role_id: row.role_id,
     role_code: row.role_code,
     role_name: row.role_name,
+    role_hour_report: Boolean(row.role_hour_report),
+    role_is_admin: Boolean(row.role_is_admin),
     mc_ids: Array.isArray(row.menu_ids) ? [...row.menu_ids] : [],
   }
 }
@@ -74,6 +76,8 @@ function openNew() {
   formModel.value = {
     role_code: '',
     role_name: '',
+    role_hour_report: false,
+    role_is_admin: false,
     mc_ids: [],
   }
   formVisible.value = true

@@ -20,6 +20,8 @@ type ApiRoleView = {
   roleKeyword?: string
   roleCode: string
   roleName: string
+  roleHourReport?: boolean
+  roleIsAdmin?: boolean
   createdAt?: string
   createdBy?: string
   createdName?: string
@@ -103,6 +105,8 @@ export async function fetchRoleRows(): Promise<RoleRow[]> {
         role_id: v.roleId,
         role_code: v.roleCode,
         role_name: v.roleName,
+        role_hour_report: Boolean(v.roleHourReport),
+        role_is_admin: Boolean(v.roleIsAdmin),
         role_status: apiStatusToUi(v.roleStatus),
         created_date: v.createdAt ?? nowIso(),
         updated_date: v.updatedAt ?? nowIso(),
@@ -124,20 +128,24 @@ export async function fetchRoleById(role_id: number) {
     role_id: data.roleId,
     role_code: data.roleCode,
     role_name: data.roleName,
+    role_hour_report: Boolean(data.roleHourReport),
+    role_is_admin: Boolean(data.roleIsAdmin),
     role_status: apiStatusToUi(data.roleStatus),
     menu_ids: menus.map((m) => m.mcId),
   }
 }
 
 export async function createRole(payload: {
-  role_code: string
   role_name: string
+  role_hour_report: boolean
+  role_is_admin: boolean
   mc_ids: number[]
   actor_id: string
 }) {
   const body = {
-    roleCode: payload.role_code.trim(),
     roleName: payload.role_name.trim(),
+    roleHourReport: Boolean(payload.role_hour_report),
+    roleIsAdmin: Boolean(payload.role_is_admin),
     mcIds: payload.mc_ids,
     createdBy: payload.actor_id,
     updatedBy: payload.actor_id,
@@ -157,14 +165,16 @@ export async function createRole(payload: {
 
 export async function updateRole(payload: {
   role_id: number
-  role_code: string
   role_name: string
+  role_hour_report: boolean
+  role_is_admin: boolean
   mc_ids: number[]
   actor_id: string
 }) {
   const body = {
-    roleCode: payload.role_code.trim(),
     roleName: payload.role_name.trim(),
+    roleHourReport: Boolean(payload.role_hour_report),
+    roleIsAdmin: Boolean(payload.role_is_admin),
     mcIds: payload.mc_ids,
     updatedBy: payload.actor_id,
   }

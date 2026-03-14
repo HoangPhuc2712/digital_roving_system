@@ -96,6 +96,7 @@ const searchModel = computed({
           <BaseInput
             v-model="searchModel"
             label=""
+            size="small"
             class="w-full"
             :placeholder="props.searchPlaceholder"
           />
