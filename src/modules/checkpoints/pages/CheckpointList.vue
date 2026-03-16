@@ -398,7 +398,15 @@ async function onExport() {
       <Column header="QR Image" style="min-width: 10rem" sortDisabled>
         <template #body="{ data }">
           <div class="flex justify-start">
-            <QrPreview :value="normalizeQr(data.cp_qr)" />
+            <QrPreview
+              :value="normalizeQr(data.cp_qr)"
+              :printItem="{
+                areaLabel: data.area_code || data.area_name,
+                cpName: data.cp_name,
+                cpCode: data.cp_code,
+                cpPriority: data.cp_priority,
+              }"
+            />
           </div>
         </template>
       </Column>

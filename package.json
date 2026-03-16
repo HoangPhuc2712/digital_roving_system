@@ -17,6 +17,7 @@
     "axios": "^1.13.4",
     "chart.js": "^4.5.1",
     "exceljs": "^4.4.0",
+    "pdf-lib": "^1.17.1",
     "pinia": "^3.0.4",
     "primeicons": "^7.0.0",
     "primevue": "^4.5.4",

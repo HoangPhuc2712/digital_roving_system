@@ -309,7 +309,17 @@ function submit() {
         <label class="block text-sm text-slate-600 mb-2">QR Image</label>
 
         <div class="mb-3">
-          <QrPreview v-if="normalizeQr(form.cp_qr)" :value="normalizeQr(form.cp_qr)" :size="72" />
+          <QrPreview
+            v-if="normalizeQr(form.cp_qr)"
+            :value="normalizeQr(form.cp_qr)"
+            :size="72"
+            :printItem="{
+              areaLabel: areaLabel,
+              cpName: form.cp_name,
+              cpCode: form.cp_code,
+              cpPriority: form.cp_priority,
+            }"
+          />
           <div v-else class="text-sm text-slate-500">
             {{ isNew ? 'QR will be generated after saving.' : 'No QR available.' }}
           </div>
