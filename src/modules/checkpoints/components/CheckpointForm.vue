@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, reactive, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import Dialog from 'primevue/dialog'
 import Select from 'primevue/select'
 import MultiSelect from 'primevue/multiselect'
 import InputNumber from 'primevue/inputnumber'
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import BaseInput from '@/components/common/inputs/BaseInput.vue'
+import BaseMessage from '@/components/common/messages/BaseMessage.vue'
 
 import QrPreview from '@/modules/checkpoints/components/QrPreview.vue'
 import { createCheckpointMock, updateCheckpointMock } from '@/modules/checkpoints/checkpoints.api'
@@ -64,6 +65,8 @@ const title = computed(() =>
       : 'Check Point Detail',
 )
 
+const submitted = ref(false)
+
 const form = reactive<FormState>({
   cp_id: undefined,
   cp_code: '',
@@ -75,10 +78,22 @@ const form = reactive<FormState>({
   role_ids: [],
 })
 
+const cpNameError = computed(() => submitted.value && !String(form.cp_name ?? '').trim())
+const areaError = computed(() => submitted.value && !Number(form.area_id ?? 0))
+const roleError = computed(
+  () => submitted.value && (!Array.isArray(form.role_ids) || form.role_ids.length === 0),
+)
+const priorityError = computed(() => {
+  if (!submitted.value) return false
+  const priority = Number(form.cp_priority ?? 0)
+  return !Number.isFinite(priority) || priority < 1
+})
+
 watch(
   () => props.model,
   (m) => {
     if (!m) return
+    submitted.value = false
     form.cp_id = m.cp_id
     form.cp_code = m.cp_code ?? ''
     form.cp_name = m.cp_name ?? ''
@@ -105,6 +120,7 @@ const roleLabels = computed(() => {
 })
 
 function close() {
+  submitted.value = false
   emit('update:visible', false)
   emit('close')
 }
@@ -118,27 +134,19 @@ function normalizeQr(src: string) {
 }
 
 function submit() {
+  submitted.value = true
+
+  const name = (form.cp_name ?? '').trim()
+  const desc = (form.cp_description ?? '').trim()
+  const areaId = Number(form.area_id ?? 0)
+  const priority = Number(form.cp_priority ?? 0)
+  const roleIds = (form.role_ids ?? []).map((x) => Number(x)).filter((x) => x > 0)
+
+  if (!name || !areaId || !roleIds.length) return
+  if (!Number.isFinite(priority) || priority < 1) return
+
   emit('submit', {
     submit: async (actor_id: string) => {
-      const name = (form.cp_name ?? '').trim()
-      const desc = (form.cp_description ?? '').trim()
-      const areaId = Number(form.area_id ?? 0)
-      const priority = Number(form.cp_priority ?? 0)
-      const roleIds = (form.role_ids ?? []).map((x) => Number(x)).filter((x) => x > 0)
-
-      const missing: string[] = []
-      if (!name) missing.push('Check Point Name')
-      if (!areaId) missing.push('Area')
-      if (!roleIds.length) missing.push('Role')
-
-      if (missing.length) {
-        throw new Error(`MISSING_FIELDS:${missing.join(', ')}`)
-      }
-
-      if (!Number.isFinite(priority) || priority < 1) {
-        throw new Error('PRIORITY_MIN_1')
-      }
-
       if (props.mode === 'new') {
         await createCheckpointMock({
           cp_name: name,
@@ -189,7 +197,15 @@ function submit() {
         <div>
           <label class="block text-sm text-slate-600 mb-1">Check Point Name</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ form.cp_name }}</div>
-          <BaseInput v-else v-model="form.cp_name" label="" size="small" placeholder="Enter name" />
+          <BaseInput
+            v-else
+            v-model="form.cp_name"
+            label=""
+            size="small"
+            placeholder="Enter name"
+            :hasError="cpNameError"
+            message="Check Point Name is required"
+          />
         </div>
 
         <div>
@@ -197,18 +213,28 @@ function submit() {
           <div v-if="isView" class="text-slate-800 font-semibold">
             {{ roleLabels.length ? roleLabels.join(', ') : '—' }}
           </div>
-          <MultiSelect
-            v-else
-            v-model="form.role_ids"
-            class="w-full"
-            :options="roleOptions"
-            optionLabel="label"
-            optionValue="value"
-            size="small"
-            placeholder="Select role"
-            display="chip"
-            filter
-          />
+          <template v-else>
+            <MultiSelect
+              v-model="form.role_ids"
+              class="w-full"
+              :class="{ 'p-invalid': roleError }"
+              :options="roleOptions"
+              optionLabel="label"
+              optionValue="value"
+              size="small"
+              placeholder="Select role"
+              display="chip"
+              filter
+            />
+            <BaseMessage
+              style="margin: 8px 0px"
+              :hasError="roleError"
+              severity="error"
+              size="small"
+              variant="simple"
+              message="Role is required"
+            />
+          </template>
         </div>
 
         <div class="md:col-span-2">
@@ -228,35 +254,54 @@ function submit() {
         <div>
           <label class="block text-sm text-slate-600 mb-1">Area</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ areaLabel }}</div>
-          <Select
-            v-else
-            v-model="form.area_id"
-            class="w-full"
-            :options="areaOptions"
-            optionLabel="label"
-            size="small"
-            optionValue="value"
-            placeholder="Select area"
-            disabled
-          />
+          <template v-else>
+            <Select
+              v-model="form.area_id"
+              class="w-full"
+              :class="{ 'p-invalid': areaError }"
+              :options="areaOptions"
+              optionLabel="label"
+              optionValue="value"
+              size="small"
+              placeholder="Select area"
+              disabled
+            />
+            <BaseMessage
+              style="margin: 8px 0px"
+              :hasError="areaError"
+              severity="error"
+              size="small"
+              variant="simple"
+              message="Area is required"
+            />
+          </template>
         </div>
 
         <div>
           <label class="block text-sm text-slate-600 mb-1">Priority</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ form.cp_priority }}</div>
-          <InputNumber
-            v-else
-            v-model="form.cp_priority"
-            label=""
-            class="w-full"
-            size="small"
-            :min="1"
-            :step="1"
-            showButtons
-            buttonLayout="horizontal"
-            decrementButtonIcon="pi pi-minus"
-            incrementButtonIcon="pi pi-plus"
-          />
+          <template v-else>
+            <InputNumber
+              v-model="form.cp_priority"
+              class="w-full"
+              :class="{ 'p-invalid': priorityError }"
+              size="small"
+              :min="1"
+              :step="1"
+              showButtons
+              buttonLayout="horizontal"
+              decrementButtonIcon="pi pi-minus"
+              incrementButtonIcon="pi pi-plus"
+            />
+            <BaseMessage
+              style="margin: 8px 0px"
+              :hasError="priorityError"
+              severity="error"
+              size="small"
+              variant="simple"
+              message="Priority must be greater than or equal to 1"
+            />
+          </template>
         </div>
       </div>
 

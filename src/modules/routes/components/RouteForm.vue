@@ -5,12 +5,12 @@ import MultiSelect from 'primevue/multiselect'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import InputNumber from 'primevue/inputnumber'
-import { useToast } from 'primevue/usetoast'
 import Select from 'primevue/select'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import BaseInput from '@/components/common/inputs/BaseInput.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
+import BaseMessage from '@/components/common/messages/BaseMessage.vue'
 import QrPreview from '@/modules/checkpoints/components/QrPreview.vue'
 
 import type { RouteDetailModel } from '@/modules/routes/routes.types'
@@ -65,8 +65,9 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
-const toast = useToast()
 const initializing = ref(false)
+const submitted = ref(false)
+const addScanPointSubmitted = ref(false)
 
 const isView = computed(() => props.mode === 'view')
 const title = computed(() =>
@@ -100,6 +101,17 @@ const form = reactive<RouteFormState>({
   details: [],
   selected_cp_ids: [],
 })
+
+const routeNameError = computed(() => submitted.value && !String(form.route_name ?? '').trim())
+const areaError = computed(() => submitted.value && !Number(form.area_id ?? 0))
+const roleError = computed(() => submitted.value && !Number(form.role_id ?? 0))
+const detailsError = computed(() => submitted.value && !form.details.length)
+const addScanPointError = computed(
+  () =>
+    addScanPointSubmitted.value &&
+    Number(form.role_id ?? 0) > 0 &&
+    (!Array.isArray(form.selected_cp_ids) || form.selected_cp_ids.length === 0),
+)
 
 const sortedDetails = computed(() => {
   const arr = Array.isArray(form.details) ? [...form.details] : []
@@ -155,6 +167,8 @@ watch(
   async (m) => {
     if (!m) return
     initializing.value = true
+    submitted.value = false
+    addScanPointSubmitted.value = false
 
     form.route_id = m.route_id
     form.route_code = m.route_code ?? ''
@@ -185,6 +199,7 @@ watch(
     const sameRole = Number(newRoleId || 0) === Number(oldRoleId || 0)
     if (sameRole) return
 
+    addScanPointSubmitted.value = false
     form.selected_cp_ids = []
     form.details = []
     await loadScanPoints(Number(newRoleId || 0))
@@ -202,24 +217,17 @@ function reindexDetails() {
 }
 
 function close() {
+  submitted.value = false
+  addScanPointSubmitted.value = false
   emit('update:visible', false)
   emit('close')
 }
 
-function toastError(detail: string) {
-  toast.add({ severity: 'error', summary: 'Validation', detail, life: 2500 })
-}
-
 function addSelectedScanPoint() {
-  if (!form.role_id) {
-    toastError('Please select Role first.')
-    return
-  }
+  addScanPointSubmitted.value = true
 
-  if (!form.selected_cp_ids.length) {
-    toastError('Please select at least one Scan Point.')
-    return
-  }
+  if (!form.role_id) return
+  if (!form.selected_cp_ids.length) return
 
   const optionMap = new Map(availableScanPointOptions.value.map((x) => [x.value, x]))
   const orderedIds = form.selected_cp_ids.slice()
@@ -243,6 +251,7 @@ function addSelectedScanPoint() {
     })
   }
 
+  addScanPointSubmitted.value = false
   form.selected_cp_ids = []
 }
 
@@ -260,19 +269,14 @@ function onRowReorder(e: any) {
 }
 
 function submit() {
+  submitted.value = true
+
   const name = (form.route_name ?? '').trim()
   const areaId = Number(form.area_id ?? 0)
   const roleId = Number(form.role_id ?? 0)
 
-  if (!name || !areaId || !roleId) {
-    toastError('Please fill Route Name, Area, and Role.')
-    return
-  }
-
-  if (!form.details.length) {
-    toastError('Please add at least one Scan Point.')
-    return
-  }
+  if (!name || !areaId || !roleId) return
+  if (!form.details.length) return
 
   emit('submit', {
     submit: async (actor_id: string) => {
@@ -343,37 +347,59 @@ function submit() {
             label=""
             size="small"
             placeholder="Enter name"
+            :hasError="routeNameError"
+            message="Route Name is required"
           />
         </div>
 
         <div>
           <label class="block text-sm text-slate-600 mb-1">Area</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ areaLabel }}</div>
-          <Select
-            v-else
-            v-model="form.area_id"
-            class="w-full"
-            :options="areaOptions"
-            optionLabel="label"
-            size="small"
-            optionValue="value"
-            placeholder="Select area"
-          />
+          <template v-else>
+            <Select
+              v-model="form.area_id"
+              class="w-full"
+              :class="{ 'p-invalid': areaError }"
+              :options="areaOptions"
+              optionLabel="label"
+              size="small"
+              optionValue="value"
+              placeholder="Select area"
+            />
+            <BaseMessage
+              style="margin: 8px 0px"
+              :hasError="areaError"
+              severity="error"
+              size="small"
+              variant="simple"
+              message="Area is required"
+            />
+          </template>
         </div>
 
         <div>
           <label class="block text-sm text-slate-600 mb-1">Role</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ roleLabel }}</div>
-          <Select
-            v-else
-            v-model="form.role_id"
-            class="w-full"
-            :options="roleOptions"
-            optionLabel="label"
-            size="small"
-            optionValue="value"
-            placeholder="Select role"
-          />
+          <template v-else>
+            <Select
+              v-model="form.role_id"
+              class="w-full"
+              :class="{ 'p-invalid': roleError }"
+              :options="roleOptions"
+              optionLabel="label"
+              size="small"
+              optionValue="value"
+              placeholder="Select role"
+            />
+            <BaseMessage
+              style="margin: 8px 0px"
+              :hasError="roleError"
+              severity="error"
+              size="small"
+              variant="simple"
+              message="Role is required"
+            />
+          </template>
         </div>
 
         <div>
@@ -417,6 +443,7 @@ function submit() {
             <MultiSelect
               v-model="form.selected_cp_ids"
               class="w-full"
+              :class="{ 'p-invalid': addScanPointError }"
               :options="availableScanPointOptions"
               optionLabel="label"
               size="small"
@@ -427,6 +454,14 @@ function submit() {
               display="chip"
               filter
               :maxSelectedLabels="2"
+            />
+            <BaseMessage
+              style="margin: 8px 0px"
+              :hasError="addScanPointError"
+              severity="error"
+              size="small"
+              variant="simple"
+              message="Please select at least one Scan Point"
             />
           </div>
 
@@ -446,7 +481,16 @@ function submit() {
           Please select Role to load Scan Points.
         </div>
 
-        <div v-else>
+        <BaseMessage
+          style="margin: 8px 0px"
+          :hasError="detailsError"
+          severity="error"
+          size="small"
+          variant="simple"
+          message="Please add at least one Scan Point"
+        />
+
+        <div v-if="form.role_id || isView">
           <DataTable
             :value="sortedDetails"
             dataKey="cp_id"

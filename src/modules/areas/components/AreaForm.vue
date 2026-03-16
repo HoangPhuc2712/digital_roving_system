@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import Dialog from 'primevue/dialog'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
@@ -42,16 +42,22 @@ const title = computed(() =>
   props.mode === 'new' ? 'New Area' : props.mode === 'edit' ? 'Edit Area' : 'Area Detail',
 )
 
+const submitted = ref(false)
+
 const form = reactive<AreaFormState>({
   area_id: undefined,
   area_code: '',
   area_name: '',
 })
 
+const areaCodeError = computed(() => submitted.value && !String(form.area_code ?? '').trim())
+const areaNameError = computed(() => submitted.value && !String(form.area_name ?? '').trim())
+
 watch(
   () => props.model,
   (m) => {
     if (!m) return
+    submitted.value = false
     form.area_id = m.area_id
     form.area_code = m.area_code ?? ''
     form.area_name = m.area_name ?? ''
@@ -60,24 +66,21 @@ watch(
 )
 
 function close() {
+  submitted.value = false
   emit('update:visible', false)
   emit('close')
 }
 
 function submit() {
+  submitted.value = true
+
+  const code = String(form.area_code ?? '').trim()
+  const name = String(form.area_name ?? '').trim()
+
+  if (!code || !name) return
+
   emit('submit', {
     submit: async (actor_id: string) => {
-      const code = (form.area_code ?? '').trim()
-      const name = (form.area_name ?? '').trim()
-
-      const missing: string[] = []
-      if (!code) missing.push('Area Code')
-      if (!name) missing.push('Area Name')
-
-      if (missing.length) {
-        throw new Error(`MISSING_FIELDS:${missing.join(', ')}`)
-      }
-
       if (props.mode === 'new') {
         await createAreaMock({
           area_code: code,
@@ -123,6 +126,8 @@ function submit() {
             label=""
             size="small"
             placeholder="Enter code"
+            :hasError="areaCodeError"
+            message="Area Code is required"
           />
         </div>
 
@@ -135,6 +140,8 @@ function submit() {
             label=""
             size="small"
             placeholder="Enter name"
+            :hasError="areaNameError"
+            message="Area Name is required"
           />
         </div>
       </div>
