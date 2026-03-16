@@ -81,8 +81,8 @@ function openNew() {
   formModel.value = {
     user_name: '',
     user_code: '',
-    user_role_id: store.roleOptions[0]?.value ?? 0,
-    user_area_id: store.areaOptions[0]?.value ?? 0,
+    user_role_id: 0,
+    user_area_id: 0,
     user_password: '',
   }
   formVisible.value = true

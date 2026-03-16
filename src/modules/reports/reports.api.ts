@@ -69,6 +69,7 @@ type ApiPointReportView = {
   planSeconds?: number
 
   timeProblem?: boolean
+  shiftProblem?: boolean
   psId?: number
   psDay?: number
   psMonth?: number
@@ -141,6 +142,8 @@ type ApiPlannedPatrolShiftView = {
   psYear?: number
   psHourFrom?: number
   psHourTo?: number
+  psFrom?: string | number
+  psTo?: string | number
   psStartAt?: string | null
   psEndAt?: string | null
   routeId?: number
@@ -255,6 +258,121 @@ function formatHms(hours: number, minutes: number, seconds: number) {
   return `${h}:${pad2(m)}:${pad2(s)}`
 }
 
+function formatHourMinute24h(hour: number, minute = 0) {
+  const normalizedHour = ((Math.trunc(hour) % 24) + 24) % 24
+  const normalizedMinute = Math.max(0, Math.min(59, Math.trunc(minute)))
+  return `${normalizedHour}:${String(normalizedMinute).padStart(2, '0')}`
+}
+
+function formatShiftDatePrefix(view: ApiPlannedPatrolShiftView) {
+  const day = Number(view.psDay ?? 0)
+  const month = Number(view.psMonth ?? 0)
+  const year = Number(view.psYear ?? 0)
+
+  if (!day || !month || !year) return ''
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
+function parseShiftValueTo24h(value: unknown): string {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return formatHourMinute24h(value, 0)
+  }
+
+  const raw = String(value ?? '').trim()
+  if (!raw) return ''
+
+  const isoTimeMatch = raw.match(/T(\d{1,2}):(\d{2})/)
+  if (isoTimeMatch) {
+    const hh = Number(isoTimeMatch[1] ?? 0)
+    const mm = Number(isoTimeMatch[2] ?? 0)
+    if (Number.isFinite(hh) && Number.isFinite(mm)) {
+      return formatHourMinute24h(hh, mm)
+    }
+  }
+
+  const timeMatch = raw.match(/^(\d{1,2})(?::(\d{2}))?(?::\d{2})?$/)
+  if (timeMatch) {
+    const hh = Number(timeMatch[1] ?? 0)
+    const mm = Number(timeMatch[2] ?? 0)
+    if (Number.isFinite(hh) && Number.isFinite(mm)) {
+      return formatHourMinute24h(hh, mm)
+    }
+  }
+
+  const dateParsed = new Date(raw)
+  if (Number.isFinite(dateParsed.getTime())) {
+    return formatHourMinute24h(dateParsed.getHours(), dateParsed.getMinutes())
+  }
+
+  return raw
+}
+
+function extractShiftText(view: ApiPlannedPatrolShiftView): string {
+  const datePrefix = formatShiftDatePrefix(view)
+
+  const timeLabel =
+    parseShiftValueTo24h(view.psFrom) ||
+    parseShiftValueTo24h(view.psTo) ||
+    (Number.isFinite(Number(view.psHourFrom))
+      ? formatHourMinute24h(Number(view.psHourFrom), 0)
+      : '') ||
+    (Number.isFinite(Number(view.psHourTo)) ? formatHourMinute24h(Number(view.psHourTo), 0) : '')
+
+  if (datePrefix && timeLabel) return `${datePrefix} ${timeLabel}`
+  if (datePrefix) return datePrefix
+  return timeLabel
+}
+
+async function enrichReportRowShift(row: ReportRow): Promise<ReportRow> {
+  if (!row.ps_id) return row
+
+  const fallbackDateRaw = String(row.report_at || row.scan_at || row.created_at || '').trim()
+  const fallbackDate = fallbackDateRaw ? new Date(fallbackDateRaw) : null
+
+  const psDay =
+    Number(row.ps_day ?? 0) ||
+    (fallbackDate && Number.isFinite(fallbackDate.getTime()) ? fallbackDate.getDate() : 0)
+  const psMonth =
+    Number(row.ps_month ?? 0) ||
+    (fallbackDate && Number.isFinite(fallbackDate.getTime()) ? fallbackDate.getMonth() + 1 : 0)
+  const psYear =
+    Number(row.ps_year ?? 0) ||
+    (fallbackDate && Number.isFinite(fallbackDate.getTime()) ? fallbackDate.getFullYear() : 0)
+
+  if (!psDay || !psMonth || !psYear) return row
+
+  try {
+    const res = await http.post(endpoints.patrolShiftView.getList, {
+      psDay,
+      psMonth,
+      psYear,
+    })
+
+    const payload = ensureSuccess<ApiPlannedPatrolShiftView[] | ApiPlannedPatrolShiftView>(
+      res.data,
+    ).data
+    const views = asArray(payload)
+
+    const matchedById = views.find((x) => Number(x.psId ?? 0) === Number(row.ps_id))
+    const matched =
+      matchedById ??
+      views.find(
+        (x) =>
+          Number(x.routeId ?? 0) === Number(row.route_id) &&
+          String(x.routeName ?? '').trim() === String(row.route_name ?? '').trim(),
+      )
+
+    if (!matched) return row
+
+    return {
+      ...row,
+      shift_text: extractShiftText(matched),
+    }
+  } catch {
+    return row
+  }
+}
+
 function normalizeView(v: ApiPointReportView): ReportRow {
   const noteGroups = normalizeNoteGroups(v).filter(
     (group) => group.report_images.length > 0 || !!group.pri_image_note.trim(),
@@ -290,6 +408,7 @@ function normalizeView(v: ApiPointReportView): ReportRow {
   const planSeconds = Number(v.planSeconds ?? 0)
 
   const timeProblem = Boolean(v.timeProblem)
+  const shiftProblem = Boolean(v.shiftProblem)
 
   const realityTimeStr = formatHms(realityHours, realityMinutes, realitySeconds)
   const planTimeStr = formatHms(planHours, planMinutes, planSeconds)
@@ -321,6 +440,7 @@ function normalizeView(v: ApiPointReportView): ReportRow {
     pr_second: actualSecond,
     route_id: Number(v.routeId ?? 0),
     route_name: String(v.routeName ?? ''),
+    shift_text: '',
     rd_id: Number(v.rdId ?? 0),
     rd_second: planSecond,
 
@@ -342,6 +462,7 @@ function normalizeView(v: ApiPointReportView): ReportRow {
     reality_time_str: realityTimeStr,
     plan_time_str: planTimeStr,
     time_problem: timeProblem,
+    shift_problem: shiftProblem,
 
     report_images: flatImages,
     note_groups: noteGroups,
@@ -351,8 +472,35 @@ function normalizeView(v: ApiPointReportView): ReportRow {
   }
 }
 
-export async function fetchReportRows(): Promise<ReportRow[]> {
-  const res = await http.post(endpoints.pointReportView.getList, {})
+function toApiDateTimeZ(value: Date) {
+  const y = value.getFullYear()
+  const m = String(value.getMonth() + 1).padStart(2, '0')
+  const d = String(value.getDate()).padStart(2, '0')
+  const hh = String(value.getHours()).padStart(2, '0')
+  const mm = String(value.getMinutes()).padStart(2, '0')
+  const ss = String(value.getSeconds()).padStart(2, '0')
+  const ms = String(value.getMilliseconds()).padStart(3, '0')
+
+  return `${y}-${m}-${d}T${hh}:${mm}:${ss}.${ms}Z`
+}
+
+type FetchReportRowsParams = {
+  reportAtFrom?: Date | null
+  reportAtTo?: Date | null
+}
+
+export async function fetchReportRows(params: FetchReportRowsParams = {}): Promise<ReportRow[]> {
+  const body: Record<string, any> = {}
+
+  if (params.reportAtFrom instanceof Date && Number.isFinite(params.reportAtFrom.getTime())) {
+    body.reportAtFrom = toApiDateTimeZ(params.reportAtFrom)
+  }
+
+  if (params.reportAtTo instanceof Date && Number.isFinite(params.reportAtTo.getTime())) {
+    body.reportAtTo = toApiDateTimeZ(params.reportAtTo)
+  }
+
+  const res = await http.post(endpoints.pointReportView.getList, body)
   const payload = ensureSuccess<ApiPointReportView[] | ApiPointReportView>(res.data).data
   const views = asArray(payload)
 
@@ -364,7 +512,9 @@ export async function fetchReportRowById(pr_id: number): Promise<ReportRow | nul
     const res = await http.get(endpoints.pointReportView.getOne(pr_id))
     const payload = ensureSuccess<ApiPointReportView>(res.data).data
     if (!payload) return null
-    return normalizeView(payload)
+
+    const normalized = normalizeView(payload)
+    return await enrichReportRowShift(normalized)
   } catch {
     return null
   }

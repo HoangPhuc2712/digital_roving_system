@@ -130,7 +130,19 @@ export const useReportsStore = defineStore('reports', {
     async load() {
       this.loading = true
       try {
-        this.rows = await fetchReportRows()
+        let from = this.filterDateFrom ? new Date(this.filterDateFrom) : null
+        let to = this.filterDateTo ? new Date(this.filterDateTo) : null
+
+        if (from && to && from.getTime() > to.getTime()) {
+          const tmp = from
+          from = to
+          to = tmp
+        }
+
+        this.rows = await fetchReportRows({
+          reportAtFrom: from,
+          reportAtTo: to,
+        })
       } finally {
         this.loading = false
       }

@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import Dialog from 'primevue/dialog'
 import Dropdown from 'primevue/dropdown'
 import Tag from 'primevue/tag'
+import Select from 'primevue/select'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
@@ -52,6 +53,7 @@ const isEditStatus = computed(
   () => canEditStatus.value && (isExternalEditStatus.value || inlineStatusEdit.value),
 )
 const inspectionOk = computed(() => (props.model ? props.model.pr_has_problem === false : true))
+const shiftText = computed(() => String(props.model?.shift_text ?? '').trim())
 
 const issueStatusOptions = [
   { label: 'Pending', value: 0 },
@@ -215,22 +217,38 @@ watch(
               <div class="text-sm text-slate-600">
                 Patrol Route:
                 <span class="text-slate-800 font-semibold">{{ model.route_name }}</span>
+                <span v-if="shiftText" class="text-slate-600">
+                  - Shift:
+                  <span class="text-slate-800 font-semibold">{{ shiftText }}</span>
+                </span>
               </div>
+
               <div class="text-sm text-slate-600">
                 Area:
                 <span class="text-slate-800 font-semibold">{{ model.area_name }}</span>
               </div>
+
               <div class="text-sm text-slate-600">
                 Guard:
                 <span class="text-slate-800 font-semibold">{{
                   model.report_name || model.created_by
                 }}</span>
               </div>
+
               <div class="text-sm text-slate-600">
                 Report Date:
-                <span class="text-slate-800 font-semibold">{{
-                  formatDateTime(model.report_at || model.scan_at || model.created_at)
-                }}</span>
+                <span
+                  :class="
+                    model.shift_problem
+                      ? 'text-red-600 font-semibold'
+                      : 'text-slate-800 font-semibold'
+                  "
+                >
+                  {{ formatDateTime(model.report_at || model.scan_at || model.created_at) }}
+                </span>
+                <span v-if="model.shift_problem" class="ml-2 text-red-600 font-semibold">
+                  Out of shift time
+                </span>
               </div>
             </div>
           </div>
@@ -259,11 +277,12 @@ watch(
           <div v-if="isEditStatus && model.pr_has_problem" class="space-y-3">
             <div>
               <label class="block text-sm text-slate-600 mb-1">Status</label>
-              <Dropdown
+              <Select
                 v-model="statusDraft"
                 class="w-full"
                 :options="issueStatusOptions"
                 optionLabel="label"
+                size="small"
                 optionValue="value"
                 placeholder="Select status"
               />

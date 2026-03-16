@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed, reactive, watch } from 'vue'
-import { useToast } from 'primevue/usetoast'
+import { computed, reactive, ref, watch } from 'vue'
 import Dialog from 'primevue/dialog'
 import Checkbox from 'primevue/checkbox'
 import InputNumber from 'primevue/inputnumber'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import BaseInput from '@/components/common/inputs/BaseInput.vue'
+import BaseMessage from '@/components/common/messages/BaseMessage.vue'
 
 import { createMenuCategory, updateMenuCategory } from '@/modules/menuCategories/menuCategories.api'
 
@@ -36,8 +36,6 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
-const toast = useToast()
-
 const isView = computed(() => props.mode === 'view')
 const title = computed(() =>
   props.mode === 'new'
@@ -47,6 +45,8 @@ const title = computed(() =>
       : 'Menu Category Detail',
 )
 
+const submitted = ref(false)
+
 const form = reactive<MenuCategoryFormModel>({
   mc_id: undefined,
   mc_code: '',
@@ -55,10 +55,18 @@ const form = reactive<MenuCategoryFormModel>({
   mc_priority: 0,
 })
 
+const mcNameError = computed(() => submitted.value && !String(form.mc_name ?? '').trim())
+const mcPriorityError = computed(() => {
+  if (!submitted.value) return false
+  const priority = Number(form.mc_priority ?? 0)
+  return !Number.isFinite(priority) || priority < 0
+})
+
 watch(
   () => props.model,
   (m) => {
     if (!m) return
+    submitted.value = false
     form.mc_id = m.mc_id
     form.mc_code = m.mc_code ?? ''
     form.mc_name = m.mc_name ?? ''
@@ -69,26 +77,19 @@ watch(
 )
 
 function close() {
+  submitted.value = false
   emit('update:visible', false)
   emit('close')
 }
 
-function toastError(detail: string) {
-  toast.add({
-    severity: 'error',
-    summary: 'Validation',
-    detail,
-    life: 2500,
-  })
-}
-
 function submit() {
-  const name = (form.mc_name ?? '').trim()
+  submitted.value = true
 
-  if (!name) {
-    toastError('Please fill MC Name.')
-    return
-  }
+  const name = (form.mc_name ?? '').trim()
+  const priority = Number(form.mc_priority ?? 0)
+
+  if (!name) return
+  if (!Number.isFinite(priority) || priority < 0) return
 
   emit('submit', {
     submit: async (actor_id: string) => {
@@ -96,7 +97,7 @@ function submit() {
         await createMenuCategory({
           mc_name: name,
           mc_active: Boolean(form.mc_active),
-          mc_priority: Number(form.mc_priority ?? 0),
+          mc_priority: priority,
           actor_id,
         })
         return
@@ -108,7 +109,7 @@ function submit() {
         mc_id: form.mc_id,
         mc_name: name,
         mc_active: Boolean(form.mc_active),
-        mc_priority: Number(form.mc_priority ?? 0),
+        mc_priority: priority,
         actor_id,
       })
     },
@@ -156,7 +157,14 @@ function submit() {
       <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label class="block text-sm text-slate-600 mb-1">MC Name</label>
-          <BaseInput v-model="form.mc_name" label="" size="small" placeholder="Enter name" />
+          <BaseInput
+            v-model="form.mc_name"
+            label=""
+            size="small"
+            placeholder="Enter name"
+            :hasError="mcNameError"
+            message="MC Name is required"
+          />
         </div>
 
         <div>
@@ -165,8 +173,17 @@ function submit() {
             v-model="form.mc_priority"
             class="w-full"
             size="small"
+            :class="{ 'p-invalid': mcPriorityError }"
             :min="0"
             :useGrouping="false"
+          />
+          <BaseMessage
+            style="margin: 8px 0px"
+            :hasError="mcPriorityError"
+            severity="error"
+            size="small"
+            variant="simple"
+            message="Priority must be greater than or equal to 0"
           />
         </div>
 
