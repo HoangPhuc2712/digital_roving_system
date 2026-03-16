@@ -246,9 +246,6 @@ watch(
                 >
                   {{ formatDateTime(model.report_at || model.scan_at || model.created_at) }}
                 </span>
-                <span v-if="model.shift_problem" class="ml-2 text-red-600 font-semibold">
-                  Out of shift time
-                </span>
               </div>
             </div>
           </div>

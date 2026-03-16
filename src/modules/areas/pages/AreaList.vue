@@ -11,6 +11,12 @@ import { useAreasStore } from '@/modules/areas/areas.store'
 import { useAuthStore } from '@/stores/auth.store'
 import type { AreaRow } from '@/modules/areas/areas.types'
 import { deleteAreaMock } from '@/modules/areas/areas.api'
+import { fetchCheckpointRows } from '@/modules/checkpoints/checkpoints.api'
+import type { CheckpointRow } from '@/modules/checkpoints/checkpoints.types'
+import {
+  printCheckpointQrSheets,
+  type CheckpointPrintItem,
+} from '@/services/print/checkpoints.print'
 
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
@@ -30,6 +36,7 @@ const store = useAreasStore()
 const auth = useAuthStore()
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('areas.manage'))
+const canPrintQr = computed(() => auth.isAdminUser)
 
 const searchDraft = ref(store.searchText)
 let searchTimer: number | undefined
@@ -204,6 +211,55 @@ function onDeleteSelected() {
   })
 }
 
+function buildAreaPrintItems(row: AreaRow, checkpoints: CheckpointRow[]): CheckpointPrintItem[] {
+  return (checkpoints ?? [])
+    .filter((cp) => Number(cp.area_id) === Number(row.area_id))
+    .sort(
+      (a, b) =>
+        Number(a.cp_priority ?? 0) - Number(b.cp_priority ?? 0) ||
+        String(a.cp_code ?? '').localeCompare(String(b.cp_code ?? '')),
+    )
+    .map((cp) => ({
+      areaLabel: cp.area_code || cp.area_name || row.area_code || row.area_name,
+      cpName: cp.cp_name,
+      cpCode: cp.cp_code,
+      cpPriority: cp.cp_priority,
+      qrSrc: cp.cp_qr,
+    }))
+}
+
+async function onPrintAreaQr(row: AreaRow) {
+  try {
+    const checkpoints = await fetchCheckpointRows()
+    const items = buildAreaPrintItems(row, checkpoints)
+
+    if (!items.length) {
+      toast.add({
+        severity: 'warn',
+        summary: 'No QR',
+        detail: `No check point QR found for ${row.area_code}.`,
+        life: 3000,
+      })
+      return
+    }
+
+    await printCheckpointQrSheets(items, `${row.area_code || row.area_name} Qr Codes`)
+  } catch (e: any) {
+    const msg = String(e?.message ?? '')
+    toast.add({
+      severity: 'error',
+      summary: 'QR PDF Error',
+      detail:
+        msg === 'QR_IMAGE_NOT_FOUND'
+          ? 'No QR image available to export.'
+          : msg === 'QR_IMAGE_FORMAT_NOT_SUPPORTED'
+            ? 'QR image format is not supported.'
+            : msg || 'Failed to export QR PDF.',
+      life: 3500,
+    })
+  }
+}
+
 async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Promise<void> }) {
   const actor = auth.user?.user_id ?? ''
   if (!actor) return
@@ -330,7 +386,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
         </template>
       </Column>
 
-      <Column header="Action" :exportable="false" style="min-width: 16rem" sortDisabled>
+      <Column header="Action" :exportable="false" style="min-width: 18rem" sortDisabled>
         <template #body="{ data }">
           <div class="flex gap-2 justify-start">
             <BaseIconButton
@@ -340,6 +396,16 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
               outlined
               rounded
               @click="openView(data)"
+            />
+            <BaseIconButton
+              v-if="canPrintQr"
+              icon="pi pi-print"
+              size="small"
+              severity="secondary"
+              outlined
+              rounded
+              ariaLabel="Print Qr"
+              @click="onPrintAreaQr(data)"
             />
             <BaseIconButton
               v-if="canManage"
