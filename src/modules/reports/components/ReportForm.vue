@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import Dialog from 'primevue/dialog'
 import Dropdown from 'primevue/dropdown'
 import Tag from 'primevue/tag'
+import Select from 'primevue/select'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
@@ -276,11 +277,12 @@ watch(
           <div v-if="isEditStatus && model.pr_has_problem" class="space-y-3">
             <div>
               <label class="block text-sm text-slate-600 mb-1">Status</label>
-              <Dropdown
+              <Select
                 v-model="statusDraft"
                 class="w-full"
                 :options="issueStatusOptions"
                 optionLabel="label"
+                size="small"
                 optionValue="value"
                 placeholder="Select status"
               />
