@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed, reactive, watch } from 'vue'
-import { useToast } from 'primevue/usetoast'
+import { computed, reactive, ref, watch } from 'vue'
 import Dialog from 'primevue/dialog'
 import Checkbox from 'primevue/checkbox'
 import MultiSelect from 'primevue/multiselect'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import BaseInput from '@/components/common/inputs/BaseInput.vue'
+import BaseMessage from '@/components/common/messages/BaseMessage.vue'
 
 import { createRole, updateRole } from '@/modules/roles/roles.api'
 
@@ -38,12 +38,12 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
-const toast = useToast()
-
 const isView = computed(() => props.mode === 'view')
 const title = computed(() =>
   props.mode === 'new' ? 'Create New Role' : props.mode === 'edit' ? 'Edit Role' : 'Role Detail',
 )
+
+const submitted = ref(false)
 
 const form = reactive<RoleFormModel>({
   role_id: undefined,
@@ -54,10 +54,17 @@ const form = reactive<RoleFormModel>({
   mc_ids: [],
 })
 
+const roleNameError = computed(() => submitted.value && !String(form.role_name ?? '').trim())
+const permissionsError = computed(
+  () => submitted.value && (!Array.isArray(form.mc_ids) || form.mc_ids.length === 0),
+)
+
 watch(
   () => props.model,
   (m) => {
     if (!m) return
+
+    submitted.value = false
     form.role_id = m.role_id
     form.role_code = m.role_code ?? ''
     form.role_name = m.role_name ?? ''
@@ -74,27 +81,18 @@ const permissionLabels = computed(() => {
 })
 
 function close() {
+  submitted.value = false
   emit('update:visible', false)
   emit('close')
 }
 
-function toastError(detail: string) {
-  toast.add({ severity: 'error', summary: 'Validation', detail, life: 2500 })
-}
-
 function submit() {
-  const name = (form.role_name ?? '').trim()
+  submitted.value = true
+
+  const name = String(form.role_name ?? '').trim()
   const mcIds = Array.isArray(form.mc_ids) ? form.mc_ids : []
 
-  if (!name) {
-    toastError('Please fill Role Name.')
-    return
-  }
-
-  if (!mcIds.length) {
-    toastError('Please select at least one permission.')
-    return
-  }
+  if (!name || !mcIds.length) return
 
   emit('submit', {
     submit: async (actor_id: string) => {
@@ -165,7 +163,14 @@ function submit() {
       <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label class="block text-sm text-slate-600 mb-1">Role Name</label>
-          <BaseInput v-model="form.role_name" label="" size="small" placeholder="Enter name" />
+          <BaseInput
+            v-model="form.role_name"
+            label=""
+            size="small"
+            placeholder="Enter name"
+            :hasError="roleNameError"
+            message="Role Name is required"
+          />
         </div>
 
         <div>
@@ -173,6 +178,7 @@ function submit() {
           <MultiSelect
             v-model="form.mc_ids"
             class="w-full"
+            :class="{ 'p-invalid': permissionsError }"
             :options="menuOptions"
             optionLabel="label"
             size="small"
@@ -180,9 +186,24 @@ function submit() {
             placeholder="Select permissions"
             display="chip"
           />
+          <BaseMessage
+            style="margin: 8px 0px"
+            :hasError="permissionsError"
+            severity="error"
+            size="small"
+            variant="simple"
+            message="Please select at least one permission"
+          />
         </div>
 
-        <div class="sm:col-start-1 flex items-center min-h-[42px]">
+        <div class="sm:col-span-2 flex flex-col gap-3 sm:flex-row sm:items-center min-h-[42px]">
+          <div class="flex items-center gap-2 bg-transparent">
+            <Checkbox v-model="form.role_hour_report" inputId="role-hour-report" binary />
+            <label for="role-hour-report" class="text-sm text-slate-700">
+              Hour Report Permission
+            </label>
+          </div>
+
           <div class="flex items-center gap-2 bg-transparent">
             <Checkbox v-model="form.role_is_admin" inputId="role-is-admin" binary />
             <label for="role-is-admin" class="text-sm text-slate-700">

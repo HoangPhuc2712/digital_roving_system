@@ -325,7 +325,7 @@ export async function deleteUserMock(payload: { user_id: string; actor_id: strin
 }
 
 export async function fetchRoleOptions() {
-  const res = await http.get(endpoints.role.getBaseList)
+  const res = await http.post(endpoints.role.getBaseList, {})
   const list = ensureSuccess<ApiRoleBase[]>(res.data).data ?? []
 
   return list
@@ -338,7 +338,7 @@ export async function fetchRoleOptions() {
 }
 
 export async function fetchAreaOptions() {
-  const res = await http.get(endpoints.area.getBaseList)
+  const res = await http.post(endpoints.area.getBaseList, {})
   const list = ensureSuccess<ApiAreaBase[]>(res.data).data ?? []
 
   return list

@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import { computed, reactive, watch } from 'vue'
-import { useToast } from 'primevue/usetoast'
+import { computed, reactive, ref, watch } from 'vue'
 import Dialog from 'primevue/dialog'
 import Select from 'primevue/select'
-import Dropdown from 'primevue/dropdown'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import BaseInput from '@/components/common/inputs/BaseInput.vue'
 import BasePasswordInput from '@/components/common/inputs/BasePasswordInput.vue'
+import BaseMessage from '@/components/common/messages/BaseMessage.vue'
 
 import { createUserMock, updateUserMock } from '@/modules/users/users.api'
 
@@ -24,7 +23,6 @@ export type UserFormModel = {
 
 type UserFormState = Omit<UserFormModel, 'user_password'> & {
   user_password: string
-  confirm_password: string
 }
 
 export type UserFormSubmitPayload = {
@@ -44,13 +42,14 @@ const emit = defineEmits<{
   (e: 'submit', payload: UserFormSubmitPayload): void
   (e: 'close'): void
 }>()
-const toast = useToast()
 
 const isView = computed(() => props.mode === 'view')
 const isNew = computed(() => props.mode === 'new')
 const title = computed(() =>
   props.mode === 'new' ? 'Create New User' : props.mode === 'edit' ? 'Edit User' : 'User Detail',
 )
+
+const submitted = ref(false)
 
 const form = reactive<UserFormState>({
   user_id: undefined,
@@ -59,7 +58,6 @@ const form = reactive<UserFormState>({
   user_role_id: 0,
   user_area_id: 0,
   user_password: '',
-  confirm_password: '',
 })
 
 const roleLabel = computed(() => {
@@ -76,64 +74,60 @@ const areaLabel = computed(() => {
   )
 })
 
+const userNameError = computed(() => submitted.value && !String(form.user_name ?? '').trim())
+const userCodeError = computed(() => submitted.value && !String(form.user_code ?? '').trim())
+const passwordError = computed(
+  () => submitted.value && isNew.value && !String(form.user_password ?? '').trim(),
+)
+const roleError = computed(() => submitted.value && !Number(form.user_role_id ?? 0))
+const areaError = computed(() => submitted.value && !Number(form.user_area_id ?? 0))
+
 watch(
   () => props.model,
   (m) => {
     if (!m) return
+
+    submitted.value = false
     form.user_id = m.user_id
     form.user_name = m.user_name ?? ''
     form.user_code = m.user_code ?? ''
-    form.user_role_id = m.user_role_id ?? props.roleOptions[0]?.value ?? 0
-    form.user_area_id = m.user_area_id ?? props.areaOptions[0]?.value ?? 0
+    form.user_role_id = Number(m.user_role_id ?? 0)
+    form.user_area_id = Number(m.user_area_id ?? 0)
     form.user_password = ''
-    form.confirm_password = ''
   },
   { immediate: true },
 )
 
 function close() {
+  submitted.value = false
   emit('update:visible', false)
   emit('close')
 }
 
 function submit() {
-  const name = (form.user_name ?? '').trim()
-  const code = (form.user_code ?? '').trim()
+  submitted.value = true
 
-  if (!name || !code || !form.user_role_id || !form.user_area_id) {
-    toastError(mapValidationError('MISSING_FIELDS'))
-    return
-  }
+  const name = String(form.user_name ?? '').trim()
+  const code = String(form.user_code ?? '').trim()
+  const roleId = Number(form.user_role_id ?? 0)
+  const areaId = Number(form.user_area_id ?? 0)
+
+  if (!name || !code || !roleId || !areaId) return
 
   if (props.mode === 'new') {
-    const pwd = (form.user_password ?? '').trim()
-    const confirmPwd = (form.confirm_password ?? '').trim()
-
-    if (!pwd) {
-      toastError(mapValidationError('MISSING_PASSWORD'))
-      return
-    }
-    if (!confirmPwd) {
-      toastError(mapValidationError('MISSING_CONFIRM_PASSWORD'))
-      return
-    }
-    if (pwd !== confirmPwd) {
-      toastError(mapValidationError('PASSWORD_MISMATCH'))
-      return
-    }
+    const pwd = String(form.user_password ?? '').trim()
+    if (!pwd) return
   }
 
   emit('submit', {
     submit: async (actor_id: string) => {
       if (props.mode === 'new') {
-        const pwd = (form.user_password ?? '').trim()
-
         await createUserMock({
           user_name: name,
           user_code: code,
-          user_password: pwd,
-          user_role_id: form.user_role_id,
-          user_area_id: form.user_area_id,
+          user_password: String(form.user_password ?? '').trim(),
+          user_role_id: roleId,
+          user_area_id: areaId,
           actor_id,
         })
       } else {
@@ -143,38 +137,14 @@ function submit() {
           user_id: form.user_id,
           user_name: name,
           user_code: code,
-          user_password: (form.user_password ?? '').trim() || undefined,
-          user_role_id: form.user_role_id,
-          user_area_id: form.user_area_id,
+          user_password: String(form.user_password ?? '').trim() || undefined,
+          user_role_id: roleId,
+          user_area_id: areaId,
           actor_id,
         })
       }
     },
   })
-}
-
-function toastError(detail: string) {
-  toast.add({
-    severity: 'error',
-    summary: 'Validation',
-    detail,
-    life: 2500,
-  })
-}
-
-function mapValidationError(code: string) {
-  switch (code) {
-    case 'MISSING_FIELDS':
-      return 'Please fill User Name, User Code and Role.'
-    case 'MISSING_PASSWORD':
-      return 'Please enter Password.'
-    case 'MISSING_CONFIRM_PASSWORD':
-      return 'Please Confirm your Password.'
-    case 'PASSWORD_MISMATCH':
-      return 'Confirm Password does not match.'
-    default:
-      return 'Please check your input.'
-  }
 }
 </script>
 
@@ -196,12 +166,13 @@ function mapValidationError(code: string) {
           <label class="block text-sm text-slate-600 mb-1">User Name</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ form.user_name }}</div>
           <BaseInput
-            v-if="!isView"
+            v-else
             v-model="form.user_name"
             label=""
             size="small"
             placeholder="Enter Name"
-            :disabled="isView"
+            :hasError="userNameError"
+            message="User Name is required"
           />
         </div>
 
@@ -209,34 +180,25 @@ function mapValidationError(code: string) {
           <label class="block text-sm text-slate-600 mb-1">User Code</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ form.user_code }}</div>
           <BaseInput
-            v-if="!isView"
+            v-else
             v-model="form.user_code"
             label=""
             size="small"
             placeholder="Enter code"
-            :disabled="isView"
+            :hasError="userCodeError"
+            message="User Code is required"
           />
         </div>
 
-        <div v-if="!isView">
+        <div v-if="!isView" class="md:col-span-2">
           <label class="block text-sm text-slate-600 mb-1">Password</label>
           <BasePasswordInput
             v-model="form.user_password"
-            :label="isNew ? '' : ''"
-            size="small"
-            placeholder="Enter password"
-            :disabled="isView"
-          />
-        </div>
-
-        <div v-if="!isView && isNew">
-          <label class="block text-sm text-slate-600 mb-1">Confirm Password</label>
-          <BasePasswordInput
-            v-model="form.confirm_password"
             label=""
             size="small"
-            placeholder="Re-enter password"
-            :disabled="isView"
+            placeholder="Enter password"
+            :hasError="passwordError"
+            :message="isNew ? 'Password is required' : ''"
           />
         </div>
 
@@ -245,17 +207,26 @@ function mapValidationError(code: string) {
           <div v-if="isView" class="text-slate-800 font-semibold">
             {{ roleLabel }}
           </div>
-          <Select
-            v-if="!isView"
-            v-model="form.user_role_id"
-            class="w-full"
-            :options="roleOptions"
-            optionLabel="label"
-            size="small"
-            optionValue="value"
-            placeholder="Select role"
-            :disabled="isView"
-          />
+          <template v-else>
+            <Select
+              v-model="form.user_role_id"
+              class="w-full"
+              :class="{ 'p-invalid': roleError }"
+              :options="roleOptions"
+              optionLabel="label"
+              size="small"
+              optionValue="value"
+              placeholder="Select role"
+            />
+            <BaseMessage
+              style="margin: 8px 0px"
+              :hasError="roleError"
+              severity="error"
+              size="small"
+              variant="simple"
+              message="Role is required"
+            />
+          </template>
         </div>
 
         <div>
@@ -263,17 +234,26 @@ function mapValidationError(code: string) {
           <div v-if="isView" class="text-slate-800 font-semibold">
             {{ areaLabel }}
           </div>
-          <Select
-            v-if="!isView"
-            v-model="form.user_area_id"
-            class="w-full"
-            :options="areaOptions"
-            optionLabel="label"
-            size="small"
-            optionValue="value"
-            placeholder="Select area"
-            :disabled="isView"
-          />
+          <template v-else>
+            <Select
+              v-model="form.user_area_id"
+              class="w-full"
+              :class="{ 'p-invalid': areaError }"
+              :options="areaOptions"
+              optionLabel="label"
+              size="small"
+              optionValue="value"
+              placeholder="Select area"
+            />
+            <BaseMessage
+              style="margin: 8px 0px"
+              :hasError="areaError"
+              severity="error"
+              size="small"
+              variant="simple"
+              message="Area is required"
+            />
+          </template>
         </div>
       </div>
 
