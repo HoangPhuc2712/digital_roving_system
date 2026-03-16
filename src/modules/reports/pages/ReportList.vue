@@ -46,6 +46,24 @@ const formVisible = ref(false)
 const formMode = ref<ReportFormMode>('view')
 const formModel = ref<ReportFormModel | null>(null)
 const canEditStatus = computed(() => auth.isAdminUser)
+const dateReloadTimer = ref<number | null>(null)
+const suppressDateReload = ref(false)
+
+function clearDateReloadTimer() {
+  if (dateReloadTimer.value != null) {
+    window.clearTimeout(dateReloadTimer.value)
+    dateReloadTimer.value = null
+  }
+}
+
+function scheduleReloadByDate() {
+  if (suppressDateReload.value) return
+
+  clearDateReloadTimer()
+  dateReloadTimer.value = window.setTimeout(async () => {
+    await store.load()
+  }, 200)
+}
 
 watch(
   () => [
@@ -54,10 +72,17 @@ watch(
     store.filterIssueStatus,
     store.filterResult,
     store.filterGuardId,
-    store.filterDateFrom,
-    store.filterDateTo,
   ],
   () => store.setFirst(0),
+)
+
+watch(
+  () => [store.filterDateFrom?.getTime() ?? null, store.filterDateTo?.getTime() ?? null],
+  () => {
+    if (suppressDateReload.value) return
+    store.setFirst(0)
+    scheduleReloadByDate()
+  },
 )
 
 function applyRouteFilters() {
@@ -90,7 +115,6 @@ function applyRouteFilters() {
 onMounted(async () => {
   applyRouteFilters()
   await store.load()
-  console.log(store.filteredRows)
 })
 
 onBeforeRouteLeave(() => {
@@ -98,6 +122,7 @@ onBeforeRouteLeave(() => {
 })
 
 onBeforeUnmount(() => {
+  clearDateReloadTimer()
   resetPageState()
 })
 
@@ -157,6 +182,8 @@ function clearAll() {
 }
 
 function resetPageState() {
+  suppressDateReload.value = true
+  clearDateReloadTimer()
   store.clearFilters()
   formVisible.value = false
   formModel.value = null

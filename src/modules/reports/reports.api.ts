@@ -142,6 +142,8 @@ type ApiPlannedPatrolShiftView = {
   psYear?: number
   psHourFrom?: number
   psHourTo?: number
+  psFrom?: string | number
+  psTo?: string | number
   psStartAt?: string | null
   psEndAt?: string | null
   routeId?: number
@@ -256,6 +258,107 @@ function formatHms(hours: number, minutes: number, seconds: number) {
   return `${h}:${pad2(m)}:${pad2(s)}`
 }
 
+function formatHourMinuteTo12h(hour: number, minute = 0) {
+  const normalizedHour = ((Math.trunc(hour) % 24) + 24) % 24
+  const normalizedMinute = Math.max(0, Math.min(59, Math.trunc(minute)))
+  const suffix = normalizedHour >= 12 ? 'PM' : 'AM'
+  const hour12 = normalizedHour % 12 || 12
+  return `${hour12}:${String(normalizedMinute).padStart(2, '0')} ${suffix}`
+}
+
+function parseShiftValueToLabel(value: unknown): string {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return formatHourMinuteTo12h(value, 0)
+  }
+
+  const raw = String(value ?? '').trim()
+  if (!raw) return ''
+
+  const dateParsed = new Date(raw)
+  if (Number.isFinite(dateParsed.getTime())) {
+    return formatHourMinuteTo12h(dateParsed.getHours(), dateParsed.getMinutes())
+  }
+
+  const timeMatch = raw.match(/^(\d{1,2})(?::(\d{2}))?(?::\d{2})?$/)
+  if (timeMatch) {
+    const hh = Number(timeMatch[1] ?? 0)
+    const mm = Number(timeMatch[2] ?? 0)
+    if (Number.isFinite(hh) && Number.isFinite(mm)) {
+      return formatHourMinuteTo12h(hh, mm)
+    }
+  }
+
+  return raw
+}
+
+function extractShiftText(view: ApiPlannedPatrolShiftView): string {
+  const fromLabel = parseShiftValueToLabel(view.psFrom)
+  if (fromLabel) return fromLabel
+
+  const toLabel = parseShiftValueToLabel(view.psTo)
+  if (toLabel) return toLabel
+
+  if (Number.isFinite(Number(view.psHourFrom))) {
+    return formatHourMinuteTo12h(Number(view.psHourFrom), 0)
+  }
+
+  if (Number.isFinite(Number(view.psHourTo))) {
+    return formatHourMinuteTo12h(Number(view.psHourTo), 0)
+  }
+
+  return ''
+}
+
+async function enrichReportRowShift(row: ReportRow): Promise<ReportRow> {
+  if (!row.ps_id) return row
+
+  const fallbackDateRaw = String(row.report_at || row.scan_at || row.created_at || '').trim()
+  const fallbackDate = fallbackDateRaw ? new Date(fallbackDateRaw) : null
+
+  const psDay =
+    Number(row.ps_day ?? 0) ||
+    (fallbackDate && Number.isFinite(fallbackDate.getTime()) ? fallbackDate.getDate() : 0)
+  const psMonth =
+    Number(row.ps_month ?? 0) ||
+    (fallbackDate && Number.isFinite(fallbackDate.getTime()) ? fallbackDate.getMonth() + 1 : 0)
+  const psYear =
+    Number(row.ps_year ?? 0) ||
+    (fallbackDate && Number.isFinite(fallbackDate.getTime()) ? fallbackDate.getFullYear() : 0)
+
+  if (!psDay || !psMonth || !psYear) return row
+
+  try {
+    const res = await http.post(endpoints.patrolShiftView.getList, {
+      psDay,
+      psMonth,
+      psYear,
+    })
+
+    const payload = ensureSuccess<ApiPlannedPatrolShiftView[] | ApiPlannedPatrolShiftView>(
+      res.data,
+    ).data
+    const views = asArray(payload)
+
+    const matchedById = views.find((x) => Number(x.psId ?? 0) === Number(row.ps_id))
+    const matched =
+      matchedById ??
+      views.find(
+        (x) =>
+          Number(x.routeId ?? 0) === Number(row.route_id) &&
+          String(x.routeName ?? '').trim() === String(row.route_name ?? '').trim(),
+      )
+
+    if (!matched) return row
+
+    return {
+      ...row,
+      shift_text: extractShiftText(matched),
+    }
+  } catch {
+    return row
+  }
+}
+
 function normalizeView(v: ApiPointReportView): ReportRow {
   const noteGroups = normalizeNoteGroups(v).filter(
     (group) => group.report_images.length > 0 || !!group.pri_image_note.trim(),
@@ -323,6 +426,7 @@ function normalizeView(v: ApiPointReportView): ReportRow {
     pr_second: actualSecond,
     route_id: Number(v.routeId ?? 0),
     route_name: String(v.routeName ?? ''),
+    shift_text: '',
     rd_id: Number(v.rdId ?? 0),
     rd_second: planSecond,
 
@@ -394,7 +498,9 @@ export async function fetchReportRowById(pr_id: number): Promise<ReportRow | nul
     const res = await http.get(endpoints.pointReportView.getOne(pr_id))
     const payload = ensureSuccess<ApiPointReportView>(res.data).data
     if (!payload) return null
-    return normalizeView(payload)
+
+    const normalized = normalizeView(payload)
+    return await enrichReportRowShift(normalized)
   } catch {
     return null
   }

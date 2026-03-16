@@ -52,6 +52,7 @@ const isEditStatus = computed(
   () => canEditStatus.value && (isExternalEditStatus.value || inlineStatusEdit.value),
 )
 const inspectionOk = computed(() => (props.model ? props.model.pr_has_problem === false : true))
+const shiftText = computed(() => String(props.model?.shift_text ?? '').trim())
 
 const issueStatusOptions = [
   { label: 'Pending', value: 0 },
@@ -215,6 +216,10 @@ watch(
               <div class="text-sm text-slate-600">
                 Patrol Route:
                 <span class="text-slate-800 font-semibold">{{ model.route_name }}</span>
+                <span v-if="shiftText" class="text-slate-600">
+                  - Shift:
+                  <span class="text-slate-800 font-semibold">{{ shiftText }}</span>
+                </span>
               </div>
 
               <div class="text-sm text-slate-600">

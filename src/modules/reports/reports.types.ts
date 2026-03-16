@@ -43,6 +43,7 @@ export type ReportRow = {
   pr_second: number
   route_id: number
   route_name: string
+  shift_text: string
   rd_id: number
   rd_second: number
 
