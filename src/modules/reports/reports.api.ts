@@ -69,6 +69,7 @@ type ApiPointReportView = {
   planSeconds?: number
 
   timeProblem?: boolean
+  shiftProblem?: boolean
   psId?: number
   psDay?: number
   psMonth?: number
@@ -290,6 +291,7 @@ function normalizeView(v: ApiPointReportView): ReportRow {
   const planSeconds = Number(v.planSeconds ?? 0)
 
   const timeProblem = Boolean(v.timeProblem)
+  const shiftProblem = Boolean(v.shiftProblem)
 
   const realityTimeStr = formatHms(realityHours, realityMinutes, realitySeconds)
   const planTimeStr = formatHms(planHours, planMinutes, planSeconds)
@@ -342,6 +344,7 @@ function normalizeView(v: ApiPointReportView): ReportRow {
     reality_time_str: realityTimeStr,
     plan_time_str: planTimeStr,
     time_problem: timeProblem,
+    shift_problem: shiftProblem,
 
     report_images: flatImages,
     note_groups: noteGroups,
@@ -351,8 +354,35 @@ function normalizeView(v: ApiPointReportView): ReportRow {
   }
 }
 
-export async function fetchReportRows(): Promise<ReportRow[]> {
-  const res = await http.post(endpoints.pointReportView.getList, {})
+function toApiDateTimeZ(value: Date) {
+  const y = value.getFullYear()
+  const m = String(value.getMonth() + 1).padStart(2, '0')
+  const d = String(value.getDate()).padStart(2, '0')
+  const hh = String(value.getHours()).padStart(2, '0')
+  const mm = String(value.getMinutes()).padStart(2, '0')
+  const ss = String(value.getSeconds()).padStart(2, '0')
+  const ms = String(value.getMilliseconds()).padStart(3, '0')
+
+  return `${y}-${m}-${d}T${hh}:${mm}:${ss}.${ms}Z`
+}
+
+type FetchReportRowsParams = {
+  reportAtFrom?: Date | null
+  reportAtTo?: Date | null
+}
+
+export async function fetchReportRows(params: FetchReportRowsParams = {}): Promise<ReportRow[]> {
+  const body: Record<string, any> = {}
+
+  if (params.reportAtFrom instanceof Date && Number.isFinite(params.reportAtFrom.getTime())) {
+    body.reportAtFrom = toApiDateTimeZ(params.reportAtFrom)
+  }
+
+  if (params.reportAtTo instanceof Date && Number.isFinite(params.reportAtTo.getTime())) {
+    body.reportAtTo = toApiDateTimeZ(params.reportAtTo)
+  }
+
+  const res = await http.post(endpoints.pointReportView.getList, body)
   const payload = ensureSuccess<ApiPointReportView[] | ApiPointReportView>(res.data).data
   const views = asArray(payload)
 

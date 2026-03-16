@@ -216,21 +216,33 @@ watch(
                 Patrol Route:
                 <span class="text-slate-800 font-semibold">{{ model.route_name }}</span>
               </div>
+
               <div class="text-sm text-slate-600">
                 Area:
                 <span class="text-slate-800 font-semibold">{{ model.area_name }}</span>
               </div>
+
               <div class="text-sm text-slate-600">
                 Guard:
                 <span class="text-slate-800 font-semibold">{{
                   model.report_name || model.created_by
                 }}</span>
               </div>
+
               <div class="text-sm text-slate-600">
                 Report Date:
-                <span class="text-slate-800 font-semibold">{{
-                  formatDateTime(model.report_at || model.scan_at || model.created_at)
-                }}</span>
+                <span
+                  :class="
+                    model.shift_problem
+                      ? 'text-red-600 font-semibold'
+                      : 'text-slate-800 font-semibold'
+                  "
+                >
+                  {{ formatDateTime(model.report_at || model.scan_at || model.created_at) }}
+                </span>
+                <span v-if="model.shift_problem" class="ml-2 text-red-600 font-semibold">
+                  Out of shift time
+                </span>
               </div>
             </div>
           </div>

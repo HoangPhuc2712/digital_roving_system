@@ -64,6 +64,7 @@ export type ReportRow = {
   reality_time_str: string
   plan_time_str: string
   time_problem: boolean
+  shift_problem: boolean
 
   report_images: ReportImage[]
   note_groups: ReportNoteGroup[]
