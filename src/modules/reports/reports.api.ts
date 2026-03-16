@@ -258,25 +258,36 @@ function formatHms(hours: number, minutes: number, seconds: number) {
   return `${h}:${pad2(m)}:${pad2(s)}`
 }
 
-function formatHourMinuteTo12h(hour: number, minute = 0) {
+function formatHourMinute24h(hour: number, minute = 0) {
   const normalizedHour = ((Math.trunc(hour) % 24) + 24) % 24
   const normalizedMinute = Math.max(0, Math.min(59, Math.trunc(minute)))
-  const suffix = normalizedHour >= 12 ? 'PM' : 'AM'
-  const hour12 = normalizedHour % 12 || 12
-  return `${hour12}:${String(normalizedMinute).padStart(2, '0')} ${suffix}`
+  return `${normalizedHour}:${String(normalizedMinute).padStart(2, '0')}`
 }
 
-function parseShiftValueToLabel(value: unknown): string {
+function formatShiftDatePrefix(view: ApiPlannedPatrolShiftView) {
+  const day = Number(view.psDay ?? 0)
+  const month = Number(view.psMonth ?? 0)
+  const year = Number(view.psYear ?? 0)
+
+  if (!day || !month || !year) return ''
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
+function parseShiftValueTo24h(value: unknown): string {
   if (typeof value === 'number' && Number.isFinite(value)) {
-    return formatHourMinuteTo12h(value, 0)
+    return formatHourMinute24h(value, 0)
   }
 
   const raw = String(value ?? '').trim()
   if (!raw) return ''
 
-  const dateParsed = new Date(raw)
-  if (Number.isFinite(dateParsed.getTime())) {
-    return formatHourMinuteTo12h(dateParsed.getHours(), dateParsed.getMinutes())
+  const isoTimeMatch = raw.match(/T(\d{1,2}):(\d{2})/)
+  if (isoTimeMatch) {
+    const hh = Number(isoTimeMatch[1] ?? 0)
+    const mm = Number(isoTimeMatch[2] ?? 0)
+    if (Number.isFinite(hh) && Number.isFinite(mm)) {
+      return formatHourMinute24h(hh, mm)
+    }
   }
 
   const timeMatch = raw.match(/^(\d{1,2})(?::(\d{2}))?(?::\d{2})?$/)
@@ -284,29 +295,32 @@ function parseShiftValueToLabel(value: unknown): string {
     const hh = Number(timeMatch[1] ?? 0)
     const mm = Number(timeMatch[2] ?? 0)
     if (Number.isFinite(hh) && Number.isFinite(mm)) {
-      return formatHourMinuteTo12h(hh, mm)
+      return formatHourMinute24h(hh, mm)
     }
+  }
+
+  const dateParsed = new Date(raw)
+  if (Number.isFinite(dateParsed.getTime())) {
+    return formatHourMinute24h(dateParsed.getHours(), dateParsed.getMinutes())
   }
 
   return raw
 }
 
 function extractShiftText(view: ApiPlannedPatrolShiftView): string {
-  const fromLabel = parseShiftValueToLabel(view.psFrom)
-  if (fromLabel) return fromLabel
+  const datePrefix = formatShiftDatePrefix(view)
 
-  const toLabel = parseShiftValueToLabel(view.psTo)
-  if (toLabel) return toLabel
+  const timeLabel =
+    parseShiftValueTo24h(view.psFrom) ||
+    parseShiftValueTo24h(view.psTo) ||
+    (Number.isFinite(Number(view.psHourFrom))
+      ? formatHourMinute24h(Number(view.psHourFrom), 0)
+      : '') ||
+    (Number.isFinite(Number(view.psHourTo)) ? formatHourMinute24h(Number(view.psHourTo), 0) : '')
 
-  if (Number.isFinite(Number(view.psHourFrom))) {
-    return formatHourMinuteTo12h(Number(view.psHourFrom), 0)
-  }
-
-  if (Number.isFinite(Number(view.psHourTo))) {
-    return formatHourMinuteTo12h(Number(view.psHourTo), 0)
-  }
-
-  return ''
+  if (datePrefix && timeLabel) return `${datePrefix} ${timeLabel}`
+  if (datePrefix) return datePrefix
+  return timeLabel
 }
 
 async function enrichReportRowShift(row: ReportRow): Promise<ReportRow> {
