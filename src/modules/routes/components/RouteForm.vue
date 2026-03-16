@@ -514,7 +514,16 @@ function submit() {
 
             <Column header="QR Image" style="width: 8rem">
               <template #body="{ data }">
-                <QrPreview :value="getQrValue(data)" :size="40" />
+                <QrPreview
+                  :value="getQrValue(data)"
+                  :size="40"
+                  :printItem="{
+                    areaLabel: areaLabel,
+                    cpName: data.cp_name,
+                    cpCode: data.cp_code,
+                    cpPriority: data.cp_priority,
+                  }"
+                />
               </template>
             </Column>
 

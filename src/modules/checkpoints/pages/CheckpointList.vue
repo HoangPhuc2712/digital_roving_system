@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { exportCheckpointsXlsx } from '@/services/export/checkpoints.export'
+import { printSingleCheckpointQr } from '@/services/print/checkpoints.print'
 
 import Column from 'primevue/column'
 import Tag from 'primevue/tag'
@@ -33,6 +34,7 @@ const auth = useAuthStore()
 const exporting = ref(false)
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('checkpoints.manage'))
+const canPrintQr = computed(() => auth.isAdminUser)
 
 const lockedAreaId = computed<number | null>(() => {
   const raw = Array.isArray(route.query.areaId) ? route.query.areaId[0] : route.query.areaId
@@ -305,6 +307,31 @@ function normalizeQr(src: string) {
   return `data:image/png;base64,${s}`
 }
 
+async function onPrintCheckpointQr(row: CheckpointRow) {
+  try {
+    await printSingleCheckpointQr({
+      areaLabel: row.area_code || row.area_name,
+      cpName: row.cp_name,
+      cpCode: row.cp_code,
+      cpPriority: row.cp_priority,
+      qrSrc: row.cp_qr,
+    })
+  } catch (e: any) {
+    const msg = String(e?.message ?? '')
+    toast.add({
+      severity: 'error',
+      summary: 'QR PDF Error',
+      detail:
+        msg === 'QR_IMAGE_NOT_FOUND'
+          ? 'No QR image available to export.'
+          : msg === 'QR_IMAGE_FORMAT_NOT_SUPPORTED'
+            ? 'QR image format is not supported.'
+            : msg || 'Failed to export QR PDF.',
+      life: 3500,
+    })
+  }
+}
+
 async function onExport() {
   exporting.value = true
   try {
@@ -429,7 +456,7 @@ async function onExport() {
         </template>
       </Column>
 
-      <Column header="Action" :exportable="false" style="min-width: 16rem" sortDisabled>
+      <Column header="Action" :exportable="false" style="min-width: 18rem" sortDisabled>
         <template #body="{ data }">
           <div class="flex gap-2 justify-start">
             <BaseIconButton
@@ -439,6 +466,16 @@ async function onExport() {
               outlined
               rounded
               @click="openView(data)"
+            />
+            <BaseIconButton
+              v-if="canPrintQr"
+              icon="pi pi-print"
+              size="small"
+              severity="secondary"
+              outlined
+              rounded
+              ariaLabel="Print Qr"
+              @click="onPrintCheckpointQr(data)"
             />
             <BaseIconButton
               v-if="canManage"
