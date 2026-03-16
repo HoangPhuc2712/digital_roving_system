@@ -52,7 +52,7 @@ function cardMetaOf(item: DashboardTotalAppItem): DashboardCardMeta {
     case 'USERS':
       return { mcCode: 'USERS', to: '/users' }
     case 'MENUCATEGORIES':
-      return { mcCode: 'MENUCATEGORIES' }
+      return { mcCode: 'MENUCATEGORIES', to: '/menuCategories' }
     case 'AREAS':
       return { mcCode: 'AREAS', to: '/areas' }
     case 'CHECKPOINTS':

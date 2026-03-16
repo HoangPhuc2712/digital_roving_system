@@ -9,6 +9,7 @@ import {
   printSingleCheckpointQr,
   type CheckpointPrintItem,
 } from '@/services/print/checkpoints.print'
+import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 
 const props = defineProps<{
   value: string // base64 hoặc text
@@ -88,7 +89,13 @@ async function onPrint() {
 
       <template v-if="canPrint" #footer>
         <div class="flex justify-end">
-          <BaseButton label="Print Qr" severity="secondary" outlined @click="onPrint" />
+          <BaseIconButton
+            icon="pi pi-print"
+            label="Print Qr"
+            severity="secondary"
+            outlined
+            @click="onPrint"
+          />
         </div>
       </template>
     </Dialog>
