@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
+import Toolbar from 'primevue/toolbar'
 
 import BaseButtonGroup from '@/components/common/buttons/BaseButtonGroup.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
@@ -130,18 +131,20 @@ async function onExport() {
     />
 
     <div class="card space-y-4">
-      <div class="flex justify-end">
-        <BaseIconButton
-          icon="pi pi-file-excel"
-          label="Export"
-          size="small"
-          severity="secondary"
-          outlined
-          :loading="exporting"
-          :disabled="store.loading"
-          @click="onExport"
-        />
-      </div>
+      <Toolbar class="mb-4">
+        <template #end>
+          <BaseIconButton
+            icon="pi pi-file-excel"
+            label="Export"
+            size="small"
+            severity="secondary"
+            outlined
+            :loading="exporting"
+            :disabled="store.loading"
+            @click="onExport"
+          />
+        </template>
+      </Toolbar>
 
       <PatrolSummaryTable :groupedRows="groupedRows" :loading="store.loading" />
     </div>

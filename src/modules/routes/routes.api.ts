@@ -246,6 +246,7 @@ export async function fetchScanPointsByArea(
       cpName: String(cp.cpName ?? ''),
       cpQr: String(cp.cpQr ?? ''),
       cpPriority: Number(cp.cpPriority ?? 0) || undefined,
+      areaId: Number(cp.areaId ?? 0),
       label: `${cp.cpCode ?? cp.cpId} - ${cp.cpName ?? ''}`,
     }))
     .filter((x) => x.value > 0)

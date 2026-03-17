@@ -91,6 +91,7 @@ function clearAll() {
   store.searchText = ''
   searchDraft.value = ''
   store.filterStatus = 'ALL'
+  store.filterRoleIds = []
   applyLockedAreaFilter()
   store.setFirst(0)
 }
@@ -359,9 +360,12 @@ async function onExport() {
     <div class="text-[26px] font-semibold text-slate-800">{{ pageTitle }}</div>
 
     <CheckpointFilters
+      :roleOptions="store.roleOptions"
       :modelStatus="store.filterStatus"
+      :modelRoleIds="store.filterRoleIds"
       :modelSearch="searchDraft"
       @update:modelStatus="store.filterStatus = $event"
+      @update:modelRoleIds="store.filterRoleIds = $event"
       @update:modelSearch="searchDraft = $event"
       @clear="clearAll"
     />

@@ -622,7 +622,7 @@ function normalizePatrolDetailRows(views: ApiPatrolShiftReportView[]): PatrolDet
   const shiftColorMap = new Map<string, string>()
   let nextColorIndex = 0
 
-  return sortedViews.flatMap((view) => {
+  const rows = sortedViews.flatMap((view) => {
     const psId = Number(view.psId ?? 0)
     const routeId = Number(view.routeId ?? 0)
     const routeCode = String(view.routeCode ?? '')
@@ -694,6 +694,16 @@ function normalizePatrolDetailRows(views: ApiPatrolShiftReportView[]): PatrolDet
         _q: q,
       }
     })
+  })
+
+  return rows.sort((a, b) => {
+    const aTime = String(a.patrol_time ?? '')
+    const bTime = String(b.patrol_time ?? '')
+
+    if (aTime !== bTime) return aTime.localeCompare(bTime)
+    if (a.ps_id !== b.ps_id) return Number(a.ps_id ?? 0) - Number(b.ps_id ?? 0)
+    if (a.pr_id !== b.pr_id) return Number(a.pr_id ?? 0) - Number(b.pr_id ?? 0)
+    return String(a.row_id ?? '').localeCompare(String(b.row_id ?? ''))
   })
 }
 

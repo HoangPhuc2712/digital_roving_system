@@ -2,6 +2,7 @@ export type CheckpointStatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE'
 
 export type AreaOption = { label: string; value: number }
 export type RoleOption = { label: string; value: number }
+export type CheckpointRoleFilterValue = number[]
 
 export type CheckpointRow = {
   cp_id: number

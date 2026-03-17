@@ -323,7 +323,8 @@ function logout() {
 
     <footer class="border-t border-white/10 px-4 py-4">
       <div class="mb-3">
-        <div class="text-sm font-semibold leading-snug">
+        <div class="text-sm font-semibold flex gap-2 leading-snug">
+          <i class="pi pi-user"></i>
           {{ userFullName }}
         </div>
         <div class="text-xs text-slate-300 mt-1">User Code: {{ userCode }}</div>

@@ -4,6 +4,14 @@ import DatePicker from 'primevue/datepicker'
 type SingleDateValue = Date | null
 type DatePickerValue = Date | Date[] | (Date | null)[] | null | undefined
 
+function endOfToday() {
+  const d = new Date()
+  d.setHours(23, 59, 59, 999)
+  return d
+}
+
+const maxSelectableDate = endOfToday()
+
 const props = withDefaults(
   defineProps<{
     modelDateFrom: SingleDateValue
@@ -54,6 +62,7 @@ function onUpdateDateTo(value: DatePickerValue) {
         showButtonBar
         showIcon
         :disabled="props.disabled"
+        :maxDate="maxSelectableDate"
         placeholder="Select start date"
         @update:modelValue="onUpdateDateFrom"
       />
@@ -72,6 +81,7 @@ function onUpdateDateTo(value: DatePickerValue) {
         showButtonBar
         showIcon
         :disabled="props.disabled"
+        :maxDate="maxSelectableDate"
         placeholder="Select end date"
         @update:modelValue="onUpdateDateTo"
       />

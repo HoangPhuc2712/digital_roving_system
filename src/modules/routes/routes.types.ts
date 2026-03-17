@@ -9,6 +9,7 @@ export type ScanPointOption = {
   cpName: string
   cpPriority?: number
   cpQr?: string
+  areaId: number
 }
 
 export type RouteDetailModel = {

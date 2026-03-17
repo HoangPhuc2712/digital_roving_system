@@ -4,6 +4,7 @@ import type {
   CheckpointStatusFilter,
   AreaOption,
   RoleOption,
+  CheckpointRoleFilterValue,
 } from './checkpoints.types'
 import { fetchAreaOptions, fetchCheckpointRows, fetchRoleOptions } from './checkpoints.api'
 
@@ -15,6 +16,7 @@ export const useCheckpointsStore = defineStore('checkpoints', {
     searchText: '' as string,
     filterAreaId: null as number | null,
     filterStatus: 'ALL' as CheckpointStatusFilter,
+    filterRoleIds: [] as CheckpointRoleFilterValue,
 
     areaOptions: [] as AreaOption[],
     roleOptions: [] as RoleOption[],
@@ -34,6 +36,12 @@ export const useCheckpointsStore = defineStore('checkpoints', {
 
         if (state.filterStatus === 'ACTIVE' && r.cp_status !== 1) return false
         if (state.filterStatus === 'INACTIVE' && r.cp_status !== 0) return false
+
+        if (Array.isArray(state.filterRoleIds) && state.filterRoleIds.length > 0) {
+          const roleIds = Array.isArray(r.role_ids) ? r.role_ids : []
+          const hasMatchedRole = state.filterRoleIds.some((roleId) => roleIds.includes(roleId))
+          if (!hasMatchedRole) return false
+        }
 
         return true
       })
@@ -61,6 +69,7 @@ export const useCheckpointsStore = defineStore('checkpoints', {
       this.searchText = ''
       this.filterAreaId = null
       this.filterStatus = 'ALL'
+      this.filterRoleIds = []
       this.first = 0
     },
 
