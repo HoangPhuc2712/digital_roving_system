@@ -267,7 +267,7 @@ function goToCtpatReport() {
 
 <template>
   <div class="page-reports space-y-3">
-    <div class="text-xl font-semibold text-slate-800">Patrol Reports</div>
+    <div class="text-[26px] font-semibold text-slate-800">Patrol Reports</div>
 
     <ReportFilters
       :areaOptions="store.areaOptions"

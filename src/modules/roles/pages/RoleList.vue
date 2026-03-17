@@ -192,7 +192,7 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
 
 <template>
   <div class="space-y-3">
-    <div class="text-xl font-semibold text-slate-800">Roles Management</div>
+    <div class="text-[26px] font-semibold text-slate-800">Roles Management</div>
 
     <RoleFilters
       :menuOptions="store.menuOptions"

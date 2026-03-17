@@ -102,7 +102,7 @@ async function onExport() {
 <template>
   <div class="page-reports space-y-3">
     <div class="flex items-center justify-between gap-3">
-      <div class="text-xl font-semibold text-slate-800">Patrol Summary Report</div>
+      <div class="text-[26px] font-semibold text-slate-800">Patrol Summary Report</div>
     </div>
 
     <PatrolSummaryReportFilters

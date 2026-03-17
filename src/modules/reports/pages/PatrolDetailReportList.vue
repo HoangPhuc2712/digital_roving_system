@@ -98,7 +98,7 @@ function onPage(e: DataTablePageEvent) {
 
 <template>
   <div class="page-reports space-y-3">
-    <div class="text-xl font-semibold text-slate-800">Patrol Detail Report</div>
+    <div class="text-[26px] font-semibold text-slate-800">Patrol Detail Report</div>
 
     <PatrolDetailReportFilters
       :areaOptions="store.areaOptions"

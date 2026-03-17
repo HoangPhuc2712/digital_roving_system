@@ -314,7 +314,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
 
 <template>
   <div class="space-y-3">
-    <div class="text-xl font-semibold text-slate-800">Areas Management</div>
+    <div class="text-[26px] font-semibold text-slate-800">Areas Management</div>
 
     <AreaFilters
       :modelStatus="store.filterStatus"

@@ -231,7 +231,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
 
 <template>
   <div class="space-y-3">
-    <div class="text-xl font-semibold text-slate-800">Patrol Routes</div>
+    <div class="text-[26px] font-semibold text-slate-800">Patrol Routes</div>
 
     <RouteFilters
       :areaOptions="routeFilterAreaOptions"

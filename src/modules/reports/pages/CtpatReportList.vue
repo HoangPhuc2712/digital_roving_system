@@ -82,7 +82,7 @@ function onPage(e: DataTablePageEvent) {
 
 <template>
   <div class="page-reports space-y-3">
-    <div class="text-xl font-semibold text-slate-800">C-TPAT Report</div>
+    <div class="text-[26px] font-semibold text-slate-800">C-TPAT Report</div>
 
     <CtpatReportFilters
       :areaOptions="store.areaOptions"

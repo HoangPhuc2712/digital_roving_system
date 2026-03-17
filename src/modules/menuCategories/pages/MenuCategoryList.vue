@@ -228,7 +228,7 @@ async function handleSubmit(payload: MenuCategoryFormSubmitPayload) {
 
 <template>
   <div class="space-y-3">
-    <div class="text-xl font-semibold text-slate-800">Menu Categories Management</div>
+    <div class="text-[26px] font-semibold text-slate-800">Menu Categories Management</div>
 
     <MenuCategoryFilters
       :modelStatus="store.filterStatus"

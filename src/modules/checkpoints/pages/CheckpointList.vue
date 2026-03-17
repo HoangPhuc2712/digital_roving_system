@@ -356,7 +356,7 @@ async function onExport() {
 
 <template>
   <div class="space-y-3">
-    <div class="text-xl font-semibold text-slate-800">{{ pageTitle }}</div>
+    <div class="text-[26px] font-semibold text-slate-800">{{ pageTitle }}</div>
 
     <CheckpointFilters
       :modelStatus="store.filterStatus"
