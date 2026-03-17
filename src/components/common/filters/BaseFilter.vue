@@ -160,6 +160,7 @@ const desktopControlClass = computed(() => {
           <BaseInput
             v-model="searchModel"
             label=""
+            inputIcon="pi pi-search"
             size="small"
             class="w-full"
             :placeholder="props.searchPlaceholder"
