@@ -439,7 +439,7 @@ function submit() {
       <div class="border-t border-slate-200 pt-3 space-y-3">
         <div v-if="!isView" class="flex items-end gap-3">
           <div class="flex-1">
-            <label class="block text-sm text-slate-600 mb-1">Add Scan Point</label>
+            <label class="block text-sm text-slate-600 mb-1">Add Check Point</label>
             <MultiSelect
               v-model="form.selected_cp_ids"
               class="w-full"
@@ -448,7 +448,7 @@ function submit() {
               optionLabel="label"
               size="small"
               optionValue="value"
-              placeholder="Select scan point"
+              placeholder="Select Check point"
               :loading="scanLoading"
               :disabled="isView || !form.role_id"
               display="chip"
@@ -461,7 +461,7 @@ function submit() {
               severity="error"
               size="small"
               variant="simple"
-              message="Please select at least one Scan Point"
+              message="Please select at least one Check Point"
             />
           </div>
 
@@ -478,7 +478,7 @@ function submit() {
         </div>
 
         <div v-if="!form.role_id" class="text-sm text-slate-500">
-          Please select Role to load Scan Points.
+          Please select Role to load Check Points.
         </div>
 
         <BaseMessage
@@ -487,7 +487,7 @@ function submit() {
           severity="error"
           size="small"
           variant="simple"
-          message="Please add at least one Scan Point"
+          message="Please add at least one Check Point"
         />
 
         <div v-if="form.role_id || isView">

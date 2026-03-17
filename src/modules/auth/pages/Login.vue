@@ -2,7 +2,7 @@
   <div class="min-h-screen flex items-center justify-center p-4">
     <form class="w-full max-w-md p-6 rounded-2xl shadow bg-white" @submit.prevent="onLogin">
       <h1 class="text-2xl text-gray-700 font-semibold mb-1 flex justify-center">
-        Digital Patrol System
+        Internal Patrol System
       </h1>
 
       <div class="space-y-4 mt-6">
