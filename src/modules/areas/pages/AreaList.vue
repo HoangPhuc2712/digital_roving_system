@@ -27,6 +27,7 @@ import AreaForm, {
   type AreaFormModel,
 } from '@/modules/areas/components/AreaForm.vue'
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
+import { exportAreasXlsx } from '@/services/export/areas.export'
 
 const router = useRouter()
 const toast = useToast()
@@ -37,6 +38,7 @@ const auth = useAuthStore()
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('areas.manage'))
 const canPrintQr = computed(() => auth.isAdminUser)
+const exporting = ref(false)
 
 const searchDraft = ref(store.searchText)
 let searchTimer: number | undefined
@@ -75,6 +77,25 @@ function statusSeverity(s: number) {
 function clearAll() {
   store.clearFilters()
   searchDraft.value = ''
+}
+
+async function onExport() {
+  exporting.value = true
+  try {
+    await exportAreasXlsx({
+      rows: store.filteredRows,
+      fileName: `areas_${new Date().toISOString().slice(0, 10)}.xlsx`,
+    })
+  } catch (e: any) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: String(e?.message ?? 'Failed to export areas.'),
+      life: 3000,
+    })
+  } finally {
+    exporting.value = false
+  }
 }
 
 const selectedAreas = ref<AreaRow[] | null>(null)
@@ -353,7 +374,17 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
         />
       </template>
 
-      <template #toolbar-end></template>
+      <template #toolbar-end>
+        <BaseIconButton
+          icon="pi pi-file-excel"
+          label="Export"
+          size="small"
+          severity="secondary"
+          outlined
+          :disabled="exporting"
+          @click="onExport"
+        />
+      </template>
 
       <Column
         v-if="canManage"

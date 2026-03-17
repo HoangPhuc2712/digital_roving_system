@@ -12,6 +12,7 @@ import { useRolesStore } from '@/modules/roles/roles.store'
 import { useAuthStore } from '@/stores/auth.store'
 import type { RoleRow } from '@/modules/roles/roles.types'
 import { deleteRole } from '@/modules/roles/roles.api'
+import { exportRolesXlsx } from '@/services/export/roles.export'
 
 import RoleFilters from '../components/RoleFilters.vue'
 import RoleForm, {
@@ -27,6 +28,7 @@ const store = useRolesStore()
 const auth = useAuthStore()
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('roles.manage'))
+const exporting = ref(false)
 
 const searchDraft = ref(store.searchText)
 let searchTimer: number | undefined
@@ -165,6 +167,25 @@ function clearAll() {
   selectedRoles.value = null
 }
 
+async function onExport() {
+  exporting.value = true
+  try {
+    await exportRolesXlsx({
+      rows: store.filteredRows,
+      fileName: `roles_${new Date().toISOString().slice(0, 10)}.xlsx`,
+    })
+  } catch (e: any) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: String(e?.message ?? 'Failed to export roles.'),
+      life: 3000,
+    })
+  } finally {
+    exporting.value = false
+  }
+}
+
 async function handleSubmit(payload: RoleFormSubmitPayload) {
   try {
     const actor = auth.user?.user_id ?? ''
@@ -233,6 +254,18 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
             @click="confirmDeleteSelected"
           />
         </div>
+      </template>
+
+      <template #toolbar-end>
+        <BaseIconButton
+          icon="pi pi-file-excel"
+          label="Export"
+          size="small"
+          severity="secondary"
+          outlined
+          :disabled="exporting"
+          @click="onExport"
+        />
       </template>
 
       <Column

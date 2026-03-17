@@ -13,6 +13,7 @@ import { useAuthStore } from '@/stores/auth.store'
 import { useRoutesStore } from '@/modules/routes/routes.store'
 import type { RouteRow } from '@/modules/routes/routes.types'
 import { deleteRouteMock, fetchRouteById } from '@/modules/routes/routes.api'
+import { exportRoutesXlsx } from '@/services/export/routes.export'
 
 import RouteFilters from '../components/RouteFilters.vue'
 import RouteForm, {
@@ -28,6 +29,7 @@ const store = useRoutesStore()
 const auth = useAuthStore()
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('routes.manage'))
+const exporting = ref(false)
 
 const routeFilterAreaOptions = computed(() => {
   const map = new Map<number, string>()
@@ -203,6 +205,25 @@ function clearAll() {
   selectedRoutes.value = null
 }
 
+async function onExport() {
+  exporting.value = true
+  try {
+    await exportRoutesXlsx({
+      rows: store.filteredRows,
+      fileName: `patrol_routes_${new Date().toISOString().slice(0, 10)}.xlsx`,
+    })
+  } catch (e: any) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: String(e?.message ?? 'Failed to export routes.'),
+      life: 3000,
+    })
+  } finally {
+    exporting.value = false
+  }
+}
+
 async function handleSubmit(payload: RouteFormSubmitPayload) {
   try {
     const actor = auth.user?.user_id ?? ''
@@ -272,6 +293,18 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
             @click="confirmDeleteSelected"
           />
         </div>
+      </template>
+
+      <template #toolbar-end>
+        <BaseIconButton
+          icon="pi pi-file-excel"
+          label="Export"
+          size="small"
+          severity="secondary"
+          outlined
+          :disabled="exporting"
+          @click="onExport"
+        />
       </template>
 
       <Column
