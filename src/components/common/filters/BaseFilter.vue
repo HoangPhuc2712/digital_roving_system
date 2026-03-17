@@ -42,8 +42,8 @@ const props = withDefaults(
     modelDateTo: null,
     showDateSelection: false,
     clearDisabled: false,
-    searchWidthClass: 'w-full md:w-[320px]',
-    dateInputWidthClass: 'w-full md:w-[280px]',
+    searchWidthClass: 'w-full xl:w-[320px]',
+    dateInputWidthClass: 'w-full min-w-0 xl:w-[280px] xl:flex-none',
   },
 )
 
@@ -59,12 +59,38 @@ const searchModel = computed({
   get: () => props.modelSearch ?? '',
   set: (value: string) => emit('update:modelSearch', value),
 })
+
+const dropdownGridClass = computed(() => {
+  const count = props.dropdowns.length
+
+  if (count <= 1) {
+    return 'grid-cols-1 xl:grid-cols-2'
+  }
+
+  if (count === 2) {
+    return 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-2'
+  }
+
+  if (count === 3) {
+    return 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'
+  }
+
+  return 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4'
+})
+
+const desktopControlClass = computed(() => {
+  if (props.showDateSelection && props.showSearch) {
+    return 'grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] xl:flex xl:flex-wrap xl:items-end'
+  }
+
+  return 'grid-cols-1 xl:flex xl:flex-wrap xl:items-end'
+})
 </script>
 
 <template>
   <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-3">
-    <div v-if="props.dropdowns.length" class="flex flex-wrap gap-3 items-end">
-      <div v-for="item in props.dropdowns" :key="item.key">
+    <div v-if="props.dropdowns.length" class="grid gap-3 items-end" :class="dropdownGridClass">
+      <div v-for="item in props.dropdowns" :key="item.key" class="min-w-0">
         <label class="block text-sm text-slate-600 mb-1">{{ item.label }}</label>
         <BaseDropdown
           :modelValue="item.modelValue"
@@ -75,24 +101,62 @@ const searchModel = computed({
           :showClear="item.showClear"
           :filter="item.filter"
           :disabled="item.disabled"
-          :widthClass="item.widthClass"
+          widthClass="w-full"
           @update:modelValue="emit('update:dropdown', { key: item.key, value: $event })"
         />
       </div>
     </div>
 
-    <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-3">
-      <div class="flex flex-wrap gap-3 items-end">
-        <BaseDateSelection
-          v-if="props.showDateSelection"
-          :modelDateFrom="props.modelDateFrom ?? null"
-          :modelDateTo="props.modelDateTo ?? null"
-          :inputWidthClass="props.dateInputWidthClass"
-          @update:modelDateFrom="emit('update:modelDateFrom', $event)"
-          @update:modelDateTo="emit('update:modelDateTo', $event)"
-        />
+    <div class="space-y-3 md:hidden">
+      <BaseDateSelection
+        v-if="props.showDateSelection"
+        :modelDateFrom="props.modelDateFrom ?? null"
+        :modelDateTo="props.modelDateTo ?? null"
+        wrapperClass="grid grid-cols-1 gap-3 items-end sm:grid-cols-2"
+        inputWidthClass="w-full min-w-0"
+        @update:modelDateFrom="emit('update:modelDateFrom', $event)"
+        @update:modelDateTo="emit('update:modelDateTo', $event)"
+      />
 
-        <div v-if="props.showSearch" :class="props.searchWidthClass">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div v-if="props.showSearch" class="w-full min-w-0 sm:flex-1">
+          <BaseInput
+            v-model="searchModel"
+            label=""
+            size="small"
+            class="w-full"
+            :placeholder="props.searchPlaceholder"
+          />
+        </div>
+
+        <div class="flex justify-end sm:shrink-0 sm:justify-start">
+          <BaseIconButton
+            icon="pi pi-filter-slash"
+            label="Clear Filters"
+            size="small"
+            severity="secondary"
+            outlined
+            :disabled="props.clearDisabled"
+            @click="emit('clear')"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="hidden md:flex md:items-end md:justify-between md:gap-3">
+      <div class="grid gap-3 items-end flex-1 min-w-0" :class="desktopControlClass">
+        <div v-if="props.showDateSelection" class="min-w-0">
+          <BaseDateSelection
+            :modelDateFrom="props.modelDateFrom ?? null"
+            :modelDateTo="props.modelDateTo ?? null"
+            wrapperClass="grid grid-cols-2 gap-3 items-end xl:flex xl:flex-wrap xl:items-end"
+            :inputWidthClass="props.dateInputWidthClass"
+            @update:modelDateFrom="emit('update:modelDateFrom', $event)"
+            @update:modelDateTo="emit('update:modelDateTo', $event)"
+          />
+        </div>
+
+        <div v-if="props.showSearch" :class="props.searchWidthClass" class="min-w-0">
           <BaseInput
             v-model="searchModel"
             label=""
@@ -103,7 +167,7 @@ const searchModel = computed({
         </div>
       </div>
 
-      <div class="flex xl:justify-end">
+      <div class="flex shrink-0 justify-end">
         <BaseIconButton
           icon="pi pi-filter-slash"
           label="Clear Filters"

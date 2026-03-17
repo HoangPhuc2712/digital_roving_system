@@ -21,6 +21,7 @@ import UserForm, {
   type UserFormSubmitPayload,
 } from '../components/UserForm.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
+import { exportUsersXlsx } from '@/services/export/users.export'
 
 const toast = useToast()
 const confirm = useConfirm()
@@ -30,6 +31,7 @@ const auth = useAuthStore()
 const router = useRouter()
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('users.manage'))
+const exporting = ref(false)
 
 const searchDraft = ref(store.searchText)
 let searchTimer: number | undefined
@@ -170,6 +172,25 @@ function clearAll() {
   selectedUsers.value = null
 }
 
+async function onExport() {
+  exporting.value = true
+  try {
+    await exportUsersXlsx({
+      rows: store.filteredRows,
+      fileName: `users_${new Date().toISOString().slice(0, 10)}.xlsx`,
+    })
+  } catch (e: any) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: String(e?.message ?? 'Failed to export users.'),
+      life: 3000,
+    })
+  } finally {
+    exporting.value = false
+  }
+}
+
 async function handleSubmit(payload: UserFormSubmitPayload) {
   try {
     const actor = auth.user?.user_id ?? ''
@@ -200,7 +221,7 @@ function onViewPatrolPath(row: UserRow) {
 
 <template>
   <div class="space-y-3">
-    <div class="text-xl font-semibold text-slate-800">Users Management</div>
+    <div class="text-[26px] font-semibold text-slate-800">Users Management</div>
 
     <UserFilters
       :roleOptions="store.roleOptions"
@@ -245,7 +266,15 @@ function onViewPatrolPath(row: UserRow) {
       </template>
 
       <template #toolbar-end>
-        <!-- Import/Export -->
+        <BaseIconButton
+          icon="pi pi-file-excel"
+          label="Export"
+          size="small"
+          severity="secondary"
+          outlined
+          :disabled="exporting"
+          @click="onExport"
+        />
       </template>
 
       <Column

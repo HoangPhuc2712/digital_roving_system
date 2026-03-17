@@ -1,8 +1,8 @@
 <template>
   <div class="min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-md p-6 rounded-2xl shadow bg-white">
+    <form class="w-full max-w-md p-6 rounded-2xl shadow bg-white" @submit.prevent="onLogin">
       <h1 class="text-2xl text-gray-700 font-semibold mb-1 flex justify-center">
-        Digital Patrol System
+        Internal Patrol System
       </h1>
 
       <div class="space-y-4 mt-6">
@@ -25,8 +25,9 @@
         />
 
         <BaseButton class="w-full" label="Login" :loading="auth.loading" @click="onLogin" />
+        <button type="submit" class="hidden" aria-hidden="true"></button>
       </div>
-    </div>
+    </form>
   </div>
 </template>
 
@@ -35,6 +36,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '@/stores/auth.store'
+import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import { BaseInput, BasePasswordInput } from '@/components/common/inputs'
 
 const auth = useAuthStore()

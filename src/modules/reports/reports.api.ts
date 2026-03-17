@@ -273,9 +273,9 @@ function formatShiftDatePrefix(view: ApiPlannedPatrolShiftView) {
   return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 }
 
-function parseShiftValueTo24h(value: unknown): string {
+function parseShiftValueTo24h(value: unknown, fallbackMinute = 0): string {
   if (typeof value === 'number' && Number.isFinite(value)) {
-    return formatHourMinute24h(value, 0)
+    return formatHourMinute24h(value, fallbackMinute)
   }
 
   const raw = String(value ?? '').trim()
@@ -293,7 +293,8 @@ function parseShiftValueTo24h(value: unknown): string {
   const timeMatch = raw.match(/^(\d{1,2})(?::(\d{2}))?(?::\d{2})?$/)
   if (timeMatch) {
     const hh = Number(timeMatch[1] ?? 0)
-    const mm = Number(timeMatch[2] ?? 0)
+    const minuteRaw = timeMatch[2]
+    const mm = minuteRaw == null || minuteRaw === '' ? fallbackMinute : Number(minuteRaw)
     if (Number.isFinite(hh) && Number.isFinite(mm)) {
       return formatHourMinute24h(hh, mm)
     }
@@ -310,13 +311,17 @@ function parseShiftValueTo24h(value: unknown): string {
 function extractShiftText(view: ApiPlannedPatrolShiftView): string {
   const datePrefix = formatShiftDatePrefix(view)
 
-  const timeLabel =
-    parseShiftValueTo24h(view.psFrom) ||
-    parseShiftValueTo24h(view.psTo) ||
+  const startTime =
+    parseShiftValueTo24h(view.psFrom, 0) ||
     (Number.isFinite(Number(view.psHourFrom))
       ? formatHourMinute24h(Number(view.psHourFrom), 0)
-      : '') ||
-    (Number.isFinite(Number(view.psHourTo)) ? formatHourMinute24h(Number(view.psHourTo), 0) : '')
+      : '')
+
+  const endTime =
+    parseShiftValueTo24h(view.psTo, 59) ||
+    (Number.isFinite(Number(view.psHourTo)) ? formatHourMinute24h(Number(view.psHourTo), 59) : '')
+
+  const timeLabel = startTime && endTime ? `${startTime} - ${endTime}` : startTime || endTime
 
   if (datePrefix && timeLabel) return `${datePrefix} ${timeLabel}`
   if (datePrefix) return datePrefix
@@ -617,7 +622,7 @@ function normalizePatrolDetailRows(views: ApiPatrolShiftReportView[]): PatrolDet
   const shiftColorMap = new Map<string, string>()
   let nextColorIndex = 0
 
-  return sortedViews.flatMap((view) => {
+  const rows = sortedViews.flatMap((view) => {
     const psId = Number(view.psId ?? 0)
     const routeId = Number(view.routeId ?? 0)
     const routeCode = String(view.routeCode ?? '')
@@ -689,6 +694,16 @@ function normalizePatrolDetailRows(views: ApiPatrolShiftReportView[]): PatrolDet
         _q: q,
       }
     })
+  })
+
+  return rows.sort((a, b) => {
+    const aTime = String(a.patrol_time ?? '')
+    const bTime = String(b.patrol_time ?? '')
+
+    if (aTime !== bTime) return aTime.localeCompare(bTime)
+    if (a.ps_id !== b.ps_id) return Number(a.ps_id ?? 0) - Number(b.ps_id ?? 0)
+    if (a.pr_id !== b.pr_id) return Number(a.pr_id ?? 0) - Number(b.pr_id ?? 0)
+    return String(a.row_id ?? '').localeCompare(String(b.row_id ?? ''))
   })
 }
 

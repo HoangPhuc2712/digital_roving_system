@@ -201,7 +201,7 @@ onMounted(async () => {
 
 <template>
   <div class="space-y-6">
-    <div class="text-xl font-semibold text-slate-800">Dashboard</div>
+    <div class="text-[26px] font-semibold text-slate-800">Dashboard</div>
 
     <div v-if="store.error" class="p-4">
       <div class="text-slate-800 font-semibold text-lg">Server Maintenance</div>

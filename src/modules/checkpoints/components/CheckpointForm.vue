@@ -223,7 +223,6 @@ function submit() {
               optionValue="value"
               size="small"
               placeholder="Select role"
-              display="chip"
               filter
             />
             <BaseMessage

@@ -8,6 +8,7 @@ import { type DataTablePageEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
+import BaseButtonGroup from '@/components/common/buttons/BaseButtonGroup.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 
 import { useAuthStore } from '@/stores/auth.store'
@@ -48,6 +49,25 @@ const formModel = ref<ReportFormModel | null>(null)
 const canEditStatus = computed(() => auth.isAdminUser)
 const dateReloadTimer = ref<number | null>(null)
 const suppressDateReload = ref(false)
+
+const reportSwitchButtons = computed(() => [
+  {
+    label: 'Patrol Reports',
+    icon: 'pi pi-file',
+    size: 'small',
+    severity: 'info' as const,
+    outlined: false,
+    onClick: () => router.push({ name: 'reports' }),
+  },
+  {
+    label: 'C-TPAT Report',
+    icon: 'pi pi-file',
+    size: 'small',
+    severity: 'secondary' as const,
+    outlined: true,
+    onClick: () => router.push({ name: 'ctpat-reports' }),
+  },
+])
 
 function clearDateReloadTimer() {
   if (dateReloadTimer.value != null) {
@@ -259,15 +279,14 @@ async function onExport() {
 function onPage(e: DataTablePageEvent) {
   store.setFirst(e.first)
 }
-
-function goToCtpatReport() {
-  router.push({ name: 'ctpat-reports' })
-}
 </script>
 
 <template>
   <div class="page-reports space-y-3">
-    <div class="text-xl font-semibold text-slate-800">Patrol Reports</div>
+    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div class="text-[26px] font-semibold text-slate-800">Patrol Reports</div>
+      <BaseButtonGroup :buttons="reportSwitchButtons" />
+    </div>
 
     <ReportFilters
       :areaOptions="store.areaOptions"
@@ -300,17 +319,6 @@ function goToCtpatReport() {
       :first="store.first"
       @page="onPage"
     >
-      <template #toolbar-start>
-        <BaseIconButton
-          icon="pi pi-file"
-          label="C-TPAT Report"
-          size="small"
-          severity="secondary"
-          outlined
-          @click="goToCtpatReport"
-        />
-      </template>
-
       <template #toolbar-end>
         <div class="flex justify-end gap-2">
           <BaseIconButton

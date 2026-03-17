@@ -49,6 +49,12 @@ type ScanPointOption = {
   cpName: string
   cpQr?: string
   cpPriority?: number
+  areaId: number
+}
+
+type GroupedScanPointOption = {
+  label: string
+  items: ScanPointOption[]
 }
 
 const props = defineProps<{
@@ -121,6 +127,25 @@ const sortedDetails = computed(() => {
 const availableScanPointOptions = computed(() => {
   const used = new Set((form.details ?? []).map((d) => d.cp_id))
   return (scanPointOptions.value ?? []).filter((x) => !used.has(x.value))
+})
+
+const groupedAvailableScanPointOptions = computed<GroupedScanPointOption[]>(() => {
+  const areaLabelMap = new Map(props.areaOptions.map((option) => [option.value, option.label]))
+  const groupMap = new Map<string, ScanPointOption[]>()
+
+  for (const option of availableScanPointOptions.value) {
+    const areaLabel = areaLabelMap.get(Number(option.areaId ?? 0)) ?? `Area ${option.areaId}`
+    const list = groupMap.get(areaLabel) ?? []
+    list.push(option)
+    groupMap.set(areaLabel, list)
+  }
+
+  return Array.from(groupMap.entries())
+    .map(([label, items]) => ({
+      label,
+      items: items.slice().sort((a, b) => String(a.cpCode).localeCompare(String(b.cpCode))),
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label))
 })
 
 function getDisplayOrder(detail: RouteDetailModel) {
@@ -439,16 +464,18 @@ function submit() {
       <div class="border-t border-slate-200 pt-3 space-y-3">
         <div v-if="!isView" class="flex items-end gap-3">
           <div class="flex-1">
-            <label class="block text-sm text-slate-600 mb-1">Add Scan Point</label>
+            <label class="block text-sm text-slate-600 mb-1">Add Check Point</label>
             <MultiSelect
               v-model="form.selected_cp_ids"
               class="w-full"
               :class="{ 'p-invalid': addScanPointError }"
-              :options="availableScanPointOptions"
+              :options="groupedAvailableScanPointOptions"
               optionLabel="label"
+              optionGroupLabel="label"
+              optionGroupChildren="items"
               size="small"
               optionValue="value"
-              placeholder="Select scan point"
+              placeholder="Select Check point"
               :loading="scanLoading"
               :disabled="isView || !form.role_id"
               display="chip"
@@ -461,7 +488,7 @@ function submit() {
               severity="error"
               size="small"
               variant="simple"
-              message="Please select at least one Scan Point"
+              message="Please select at least one Check Point"
             />
           </div>
 
@@ -478,7 +505,7 @@ function submit() {
         </div>
 
         <div v-if="!form.role_id" class="text-sm text-slate-500">
-          Please select Role to load Scan Points.
+          Please select Role to load Check Points.
         </div>
 
         <BaseMessage
@@ -487,7 +514,7 @@ function submit() {
           severity="error"
           size="small"
           variant="simple"
-          message="Please add at least one Scan Point"
+          message="Please add at least one Check Point"
         />
 
         <div v-if="form.role_id || isView">
@@ -532,6 +559,7 @@ function submit() {
                 <InputNumber
                   v-model="data.rd_minute"
                   class="w-full"
+                  size="small"
                   :min="0"
                   :step="1"
                   :useGrouping="false"

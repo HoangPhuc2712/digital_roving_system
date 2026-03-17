@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
-import Toolbar from 'primevue/toolbar'
 import { useToast } from 'primevue/usetoast'
+import Toolbar from 'primevue/toolbar'
 
+import BaseButtonGroup from '@/components/common/buttons/BaseButtonGroup.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import PatrolSummaryReportFilters from '@/modules/reports/components/PatrolSummaryReportFilters.vue'
 import PatrolSummaryTable from '@/modules/reports/components/PatrolSummaryTable.vue'
@@ -25,6 +26,24 @@ const chartCardRef = ref<PatrolSummaryChartExpose | null>(null)
 let filterLoadTimer: ReturnType<typeof setTimeout> | null = null
 
 const groupedRows = computed(() => store.groupedRows)
+const reportSwitchButtons = computed(() => [
+  {
+    label: 'Patrol Detail Report',
+    icon: 'pi pi-file',
+    size: 'small',
+    severity: 'secondary' as const,
+    outlined: true,
+    onClick: () => router.push({ name: 'patrol-detail-reports' }),
+  },
+  {
+    label: 'Patrol Summary Report',
+    icon: 'pi pi-chart-line',
+    size: 'small',
+    severity: 'info' as const,
+    outlined: false,
+    onClick: () => router.push({ name: 'patrol-summary-reports' }),
+  },
+])
 
 onMounted(async () => {
   await store.load()
@@ -65,10 +84,6 @@ function resetPageState() {
   store.clearFilters()
 }
 
-function goToPatrolDetailReport() {
-  router.push({ name: 'patrol-detail-reports' })
-}
-
 async function onClear() {
   autoLoadEnabled.value = false
   clearFilterLoadTimer()
@@ -101,8 +116,9 @@ async function onExport() {
 
 <template>
   <div class="page-reports space-y-3">
-    <div class="flex items-center justify-between gap-3">
-      <div class="text-xl font-semibold text-slate-800">Patrol Summary Report</div>
+    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div class="text-[26px] font-semibold text-slate-800">Patrol Summary Report</div>
+      <BaseButtonGroup :buttons="reportSwitchButtons" />
     </div>
 
     <PatrolSummaryReportFilters
@@ -114,19 +130,8 @@ async function onExport() {
       @clear="onClear"
     />
 
-    <div class="card">
+    <div class="card space-y-4">
       <Toolbar class="mb-4">
-        <template #start>
-          <BaseIconButton
-            icon="pi pi-file"
-            label="Patrol Detail Report"
-            size="small"
-            severity="secondary"
-            outlined
-            @click="goToPatrolDetailReport"
-          />
-        </template>
-
         <template #end>
           <BaseIconButton
             icon="pi pi-file-excel"

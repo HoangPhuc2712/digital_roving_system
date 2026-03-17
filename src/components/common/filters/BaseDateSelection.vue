@@ -4,15 +4,25 @@ import DatePicker from 'primevue/datepicker'
 type SingleDateValue = Date | null
 type DatePickerValue = Date | Date[] | (Date | null)[] | null | undefined
 
+function endOfToday() {
+  const d = new Date()
+  d.setHours(23, 59, 59, 999)
+  return d
+}
+
+const maxSelectableDate = endOfToday()
+
 const props = withDefaults(
   defineProps<{
     modelDateFrom: SingleDateValue
     modelDateTo: SingleDateValue
+    wrapperClass?: string
     inputWidthClass?: string
     showTime?: boolean
     disabled?: boolean
   }>(),
   {
+    wrapperClass: 'flex flex-wrap gap-3 items-end',
     inputWidthClass: 'w-full md:w-[280px]',
     showTime: true,
     disabled: false,
@@ -38,7 +48,7 @@ function onUpdateDateTo(value: DatePickerValue) {
 </script>
 
 <template>
-  <div class="flex flex-wrap gap-3 items-end">
+  <div :class="props.wrapperClass">
     <div :class="props.inputWidthClass">
       <label class="block text-sm text-slate-600 mb-1">From</label>
       <DatePicker
@@ -52,6 +62,7 @@ function onUpdateDateTo(value: DatePickerValue) {
         showButtonBar
         showIcon
         :disabled="props.disabled"
+        :maxDate="maxSelectableDate"
         placeholder="Select start date"
         @update:modelValue="onUpdateDateFrom"
       />
@@ -70,6 +81,7 @@ function onUpdateDateTo(value: DatePickerValue) {
         showButtonBar
         showIcon
         :disabled="props.disabled"
+        :maxDate="maxSelectableDate"
         placeholder="Select end date"
         @update:modelValue="onUpdateDateTo"
       />
