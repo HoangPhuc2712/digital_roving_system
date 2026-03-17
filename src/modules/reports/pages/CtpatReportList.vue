@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, watch, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, watch, ref } from 'vue'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import { type DataTablePageEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
 import { useToast } from 'primevue/usetoast'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
+import BaseButtonGroup from '@/components/common/buttons/BaseButtonGroup.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import CtpatReportFilters from '@/modules/reports/components/CtpatReportFilters.vue'
 import { useCtpatReportsStore } from '@/modules/reports/ctpatReports.store'
@@ -15,6 +16,25 @@ const toast = useToast()
 const router = useRouter()
 const store = useCtpatReportsStore()
 const exporting = ref(false)
+
+const reportSwitchButtons = computed(() => [
+  {
+    label: 'Patrol Reports',
+    icon: 'pi pi-file',
+    size: 'small',
+    severity: 'secondary' as const,
+    outlined: true,
+    onClick: () => router.push({ name: 'reports' }),
+  },
+  {
+    label: 'C-TPAT Report',
+    icon: 'pi pi-file',
+    size: 'small',
+    severity: 'info' as const,
+    outlined: false,
+    onClick: () => router.push({ name: 'ctpat-reports' }),
+  },
+])
 
 watch(
   () => [store.searchText, store.filterAreaName, store.filterDateFrom, store.filterDateTo],
@@ -52,10 +72,6 @@ function resetPageState() {
   store.clearFilters()
 }
 
-function goToPatrolsReport() {
-  router.push({ name: 'reports' })
-}
-
 async function onExport() {
   exporting.value = true
   try {
@@ -82,7 +98,10 @@ function onPage(e: DataTablePageEvent) {
 
 <template>
   <div class="page-reports space-y-3">
-    <div class="text-[26px] font-semibold text-slate-800">C-TPAT Report</div>
+    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div class="text-[26px] font-semibold text-slate-800">C-TPAT Report</div>
+      <BaseButtonGroup :buttons="reportSwitchButtons" />
+    </div>
 
     <CtpatReportFilters
       :areaOptions="store.areaOptions"
@@ -106,17 +125,6 @@ function onPage(e: DataTablePageEvent) {
       :first="store.first"
       @page="onPage"
     >
-      <template #toolbar-start>
-        <BaseIconButton
-          icon="pi pi-file"
-          label="Patrols Report"
-          size="small"
-          severity="secondary"
-          outlined
-          @click="goToPatrolsReport"
-        />
-      </template>
-
       <template #toolbar-end>
         <div class="flex justify-end gap-2">
           <BaseIconButton

@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import { type DataTablePageEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
 import { useToast } from 'primevue/usetoast'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
+import BaseButtonGroup from '@/components/common/buttons/BaseButtonGroup.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import PatrolDetailReportFilters from '@/modules/reports/components/PatrolDetailReportFilters.vue'
 import { usePatrolDetailReportsStore } from '@/modules/reports/patrolDetailReports.store'
@@ -15,6 +16,25 @@ const toast = useToast()
 const router = useRouter()
 const store = usePatrolDetailReportsStore()
 const exporting = ref(false)
+
+const reportSwitchButtons = computed(() => [
+  {
+    label: 'Patrol Detail Report',
+    icon: 'pi pi-file',
+    size: 'small',
+    severity: 'info' as const,
+    outlined: false,
+    onClick: () => router.push({ name: 'patrol-detail-reports' }),
+  },
+  {
+    label: 'Patrol Summary Report',
+    icon: 'pi pi-chart-line',
+    size: 'small',
+    severity: 'secondary' as const,
+    outlined: true,
+    onClick: () => router.push({ name: 'patrol-summary-reports' }),
+  },
+])
 
 watch(
   () => [
@@ -59,10 +79,6 @@ function resetPageState() {
   store.clearFilters()
 }
 
-function goToPatrolSummaryReport() {
-  router.push({ name: 'patrol-summary-reports' })
-}
-
 function shiftCellStyle(hex: string) {
   return {
     backgroundColor: hex,
@@ -98,7 +114,10 @@ function onPage(e: DataTablePageEvent) {
 
 <template>
   <div class="page-reports space-y-3">
-    <div class="text-[26px] font-semibold text-slate-800">Patrol Detail Report</div>
+    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div class="text-[26px] font-semibold text-slate-800">Patrol Detail Report</div>
+      <BaseButtonGroup :buttons="reportSwitchButtons" />
+    </div>
 
     <PatrolDetailReportFilters
       :areaOptions="store.areaOptions"
@@ -128,17 +147,6 @@ function onPage(e: DataTablePageEvent) {
       :first="store.first"
       @page="onPage"
     >
-      <template #toolbar-start>
-        <BaseIconButton
-          icon="pi pi-chart-line"
-          label="Patrol Summary Report"
-          size="small"
-          severity="secondary"
-          outlined
-          @click="goToPatrolSummaryReport"
-        />
-      </template>
-
       <template #toolbar-end>
         <div class="flex justify-end gap-2">
           <BaseIconButton

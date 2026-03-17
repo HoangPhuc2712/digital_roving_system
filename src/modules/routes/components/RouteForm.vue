@@ -532,6 +532,7 @@ function submit() {
                 <InputNumber
                   v-model="data.rd_minute"
                   class="w-full"
+                  size="small"
                   :min="0"
                   :step="1"
                   :useGrouping="false"

@@ -8,11 +8,13 @@ const props = withDefaults(
   defineProps<{
     modelDateFrom: SingleDateValue
     modelDateTo: SingleDateValue
+    wrapperClass?: string
     inputWidthClass?: string
     showTime?: boolean
     disabled?: boolean
   }>(),
   {
+    wrapperClass: 'flex flex-wrap gap-3 items-end',
     inputWidthClass: 'w-full md:w-[280px]',
     showTime: true,
     disabled: false,
@@ -38,7 +40,7 @@ function onUpdateDateTo(value: DatePickerValue) {
 </script>
 
 <template>
-  <div class="flex flex-wrap gap-3 items-end">
+  <div :class="props.wrapperClass">
     <div :class="props.inputWidthClass">
       <label class="block text-sm text-slate-600 mb-1">From</label>
       <DatePicker

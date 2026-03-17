@@ -468,7 +468,7 @@ async function onExport() {
               @click="openView(data)"
             />
             <BaseIconButton
-              v-if="canPrintQr"
+              v-if="canManage"
               icon="pi pi-print"
               size="small"
               severity="secondary"
