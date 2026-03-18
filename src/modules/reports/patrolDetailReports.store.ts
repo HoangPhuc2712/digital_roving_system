@@ -1,6 +1,11 @@
 import { defineStore } from 'pinia'
 import { fetchAreaRows } from '@/modules/areas/areas.api'
-import { fetchPatrolDetailReportRows } from './reports.api'
+import {
+  fetchPatrolDetailCheckpointOptions,
+  fetchPatrolDetailGuardOptions,
+  fetchPatrolDetailReportRows,
+  fetchReportAreaOptions,
+} from './reports.api'
 import type { PatrolDetailReportRow } from './reports.types'
 
 function startOfToday() {
@@ -28,13 +33,18 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
     filterDateTo: endOfToday() as Date | null,
 
     areaLabelMap: {} as Record<number, string>,
+    areaFilterOptions: [] as { label: string; value: number }[],
+    checkPointFilterOptions: [] as { label: string; value: string }[],
+    guardFilterOptions: [] as { label: string; value: string }[],
 
     first: 0,
     rowsPerPage: 10,
   }),
 
   getters: {
-    areaOptions(): { label: string; value: number }[] {
+    areaOptions(state): { label: string; value: number }[] {
+      if (state.areaFilterOptions.length) return state.areaFilterOptions
+
       const seen = new Set<number>()
       const options: { label: string; value: number }[] = []
 
@@ -51,7 +61,9 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
       return options.sort((a, b) => a.label.localeCompare(b.label))
     },
 
-    checkPointOptions(): { label: string; value: string }[] {
+    checkPointOptions(state): { label: string; value: string }[] {
+      if (state.checkPointFilterOptions.length) return state.checkPointFilterOptions
+
       const seen = new Set<string>()
       const options: { label: string; value: string }[] = []
 
@@ -65,7 +77,9 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
       return options.sort((a, b) => a.label.localeCompare(b.label))
     },
 
-    guardOptions(): { label: string; value: string }[] {
+    guardOptions(state): { label: string; value: string }[] {
+      if (state.guardFilterOptions.length) return state.guardFilterOptions
+
       const seen = new Set<string>()
       const options: { label: string; value: string }[] = []
 
@@ -110,12 +124,39 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
   },
 
   actions: {
+    async ensureFilterOptionsLoaded() {
+      if (
+        this.areaFilterOptions.length &&
+        this.checkPointFilterOptions.length &&
+        this.guardFilterOptions.length
+      ) {
+        return
+      }
+
+      const [areas, checkpoints, guards] = await Promise.all([
+        this.areaFilterOptions.length
+          ? Promise.resolve(this.areaFilterOptions)
+          : fetchReportAreaOptions().catch(() => []),
+        this.checkPointFilterOptions.length
+          ? Promise.resolve(this.checkPointFilterOptions)
+          : fetchPatrolDetailCheckpointOptions().catch(() => []),
+        this.guardFilterOptions.length
+          ? Promise.resolve(this.guardFilterOptions)
+          : fetchPatrolDetailGuardOptions().catch(() => []),
+      ])
+
+      if (!this.areaFilterOptions.length) this.areaFilterOptions = areas
+      if (!this.checkPointFilterOptions.length) this.checkPointFilterOptions = checkpoints
+      if (!this.guardFilterOptions.length) this.guardFilterOptions = guards
+    },
+
     async load() {
       this.loading = true
       try {
         const [rows, areaRows] = await Promise.all([
           fetchPatrolDetailReportRows(),
           fetchAreaRows().catch(() => []),
+          this.ensureFilterOptionsLoaded(),
         ])
 
         this.rows = rows
