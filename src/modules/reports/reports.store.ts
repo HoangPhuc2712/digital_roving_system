@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { fetchReportRows } from './reports.api'
+import { fetchReportAreaOptions, fetchReportGuardOptions, fetchReportRows } from './reports.api'
 import type { ReportRow, ResultFilter } from './reports.types'
 import { useAuthStore } from '@/stores/auth.store'
 
@@ -31,6 +31,9 @@ export const useReportsStore = defineStore('reports', {
 
     first: 0,
     rowsPerPage: 10,
+
+    areaFilterOptions: [] as { label: string; value: number }[],
+    guardFilterOptions: [] as { label: string; value: string }[],
   }),
 
   getters: {
@@ -43,7 +46,9 @@ export const useReportsStore = defineStore('reports', {
       return state.rows.filter((r) => r.created_by === uid)
     },
 
-    areaOptions(): { label: string; value: number }[] {
+    areaOptions(state): { label: string; value: number }[] {
+      if (state.areaFilterOptions.length) return state.areaFilterOptions
+
       const seen = new Map<number, string>()
       for (const r of this.visibleRows) {
         if (!r.area_id) continue
@@ -57,7 +62,9 @@ export const useReportsStore = defineStore('reports', {
         .sort((a, b) => a.label.localeCompare(b.label))
     },
 
-    guardOptions(): { label: string; value: string }[] {
+    guardOptions(state): { label: string; value: string }[] {
+      if (state.guardFilterOptions.length) return state.guardFilterOptions
+
       const seen = new Map<string, string>()
 
       for (const r of this.visibleRows) {
@@ -127,6 +134,22 @@ export const useReportsStore = defineStore('reports', {
   },
 
   actions: {
+    async ensureFilterOptionsLoaded() {
+      if (this.areaFilterOptions.length && this.guardFilterOptions.length) return
+
+      const [areas, guards] = await Promise.all([
+        this.areaFilterOptions.length
+          ? Promise.resolve(this.areaFilterOptions)
+          : fetchReportAreaOptions().catch(() => []),
+        this.guardFilterOptions.length
+          ? Promise.resolve(this.guardFilterOptions)
+          : fetchReportGuardOptions().catch(() => []),
+      ])
+
+      if (!this.areaFilterOptions.length) this.areaFilterOptions = areas
+      if (!this.guardFilterOptions.length) this.guardFilterOptions = guards
+    },
+
     async load() {
       this.loading = true
       try {
@@ -139,10 +162,15 @@ export const useReportsStore = defineStore('reports', {
           to = tmp
         }
 
-        this.rows = await fetchReportRows({
-          reportAtFrom: from,
-          reportAtTo: to,
-        })
+        const [rows] = await Promise.all([
+          fetchReportRows({
+            reportAtFrom: from,
+            reportAtTo: to,
+          }),
+          this.ensureFilterOptionsLoaded(),
+        ])
+
+        this.rows = rows
       } finally {
         this.loading = false
       }

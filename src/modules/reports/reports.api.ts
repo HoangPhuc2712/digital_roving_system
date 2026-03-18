@@ -169,6 +169,28 @@ type ApiPlannedPatrolShiftView = {
   routeDetails?: ApiPlannedPatrolShiftRouteDetail[]
 }
 
+type ApiAreaBase = {
+  areaId?: number
+  areaCode?: string
+  areaName?: string
+}
+
+type ApiCheckpointBase = {
+  cpId?: number
+  cpCode?: string
+  cpName?: string
+  areaId?: number
+  areaCode?: string
+  areaName?: string
+}
+
+type ApiUserViewOption = {
+  userId?: string
+  userName?: string
+  userCode?: string
+  userRoleIsAdmin?: boolean
+}
+
 function ensureSuccess<T>(payload: any): ApiEnvelope<T> {
   const e = payload as ApiEnvelope<T>
   if (!e || typeof e !== 'object' || !('success' in e)) throw new Error('API_ERROR')
@@ -561,6 +583,103 @@ export async function changeReportStatus(payload: ChangeReportStatusPayload): Pr
     if (msg) throw new Error(msg)
     throw e
   }
+}
+
+export async function fetchReportAreaOptions(): Promise<{ label: string; value: number }[]> {
+  const res = await http.post(endpoints.area.getBaseList, {})
+  const list = ensureSuccess<ApiAreaBase[] | ApiAreaBase>(res.data).data
+  const items = asArray(list)
+
+  return items
+    .map((area) => {
+      const value = Number(area?.areaId ?? 0)
+      const areaCode = String(area?.areaCode ?? '').trim()
+      const areaName = String(area?.areaName ?? '').trim()
+      const label = areaCode && areaName ? `${areaName}` : areaName || areaCode || String(value)
+      return { label, value }
+    })
+    .filter((x) => x.value > 0)
+    .sort((a, b) => a.label.localeCompare(b.label))
+}
+
+export async function fetchCtpatAreaOptions(): Promise<{ label: string; value: string }[]> {
+  const res = await http.post(endpoints.area.getBaseList, {})
+  const list = ensureSuccess<ApiAreaBase[] | ApiAreaBase>(res.data).data
+  const items = asArray(list)
+  const seen = new Set<string>()
+
+  return items
+    .map((area) => {
+      const value = String(area?.areaName ?? '').trim()
+      return { label: value, value }
+    })
+    .filter((x) => {
+      if (!x.value || seen.has(x.value)) return false
+      seen.add(x.value)
+      return true
+    })
+    .sort((a, b) => a.label.localeCompare(b.label))
+}
+
+export async function fetchReportGuardOptions(): Promise<{ label: string; value: string }[]> {
+  const res = await http.post(endpoints.userView.getList, {})
+  const list = ensureSuccess<ApiUserViewOption[] | ApiUserViewOption>(res.data).data
+  const items = asArray(list)
+  const seen = new Set<string>()
+
+  return items
+    .filter((user) => !Boolean(user?.userRoleIsAdmin))
+    .map((user) => ({
+      label: String(user?.userName ?? '').trim(),
+      value: String(user?.userId ?? '').trim(),
+    }))
+    .filter((x) => {
+      if (!x.label || !x.value || seen.has(x.value)) return false
+      seen.add(x.value)
+      return true
+    })
+    .sort((a, b) => a.label.localeCompare(b.label))
+}
+
+export async function fetchPatrolDetailGuardOptions(): Promise<{ label: string; value: string }[]> {
+  const res = await http.post(endpoints.userView.getList, {})
+  const list = ensureSuccess<ApiUserViewOption[] | ApiUserViewOption>(res.data).data
+  const items = asArray(list)
+  const seen = new Set<string>()
+
+  return items
+    .filter((user) => !Boolean(user?.userRoleIsAdmin))
+    .map((user) => {
+      const value = String(user?.userName ?? '').trim()
+      return { label: value, value }
+    })
+    .filter((x) => {
+      if (!x.label || seen.has(x.value)) return false
+      seen.add(x.value)
+      return true
+    })
+    .sort((a, b) => a.label.localeCompare(b.label))
+}
+
+export async function fetchPatrolDetailCheckpointOptions(): Promise<
+  { label: string; value: string }[]
+> {
+  const res = await http.post(endpoints.checkPoint.getBaseList, {})
+  const list = ensureSuccess<ApiCheckpointBase[] | ApiCheckpointBase>(res.data).data
+  const items = asArray(list)
+  const seen = new Set<string>()
+
+  return items
+    .map((cp) => {
+      const value = String(cp?.cpName ?? '').trim()
+      return { label: value, value }
+    })
+    .filter((x) => {
+      if (!x.value || seen.has(x.value)) return false
+      seen.add(x.value)
+      return true
+    })
+    .sort((a, b) => a.label.localeCompare(b.label))
 }
 
 function normalizeCtpatView(v: ApiCtpatReportView): CtpatReportRow {

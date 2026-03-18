@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import type { CtpatReportRow } from './reports.types'
-import { fetchCtpatReportRows } from './reports.api'
+import { fetchCtpatAreaOptions, fetchCtpatReportRows } from './reports.api'
 
 function startOfToday() {
   const d = new Date()
@@ -26,10 +26,13 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
 
     first: 0,
     rowsPerPage: 10,
+    areaFilterOptions: [] as { label: string; value: string }[],
   }),
 
   getters: {
-    areaOptions(): { label: string; value: string }[] {
+    areaOptions(state): { label: string; value: string }[] {
+      if (state.areaFilterOptions.length) return state.areaFilterOptions
+
       const seen = new Set<string>()
       const options: { label: string; value: string }[] = []
 
@@ -72,10 +75,16 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
   },
 
   actions: {
+    async ensureFilterOptionsLoaded() {
+      if (this.areaFilterOptions.length) return
+      this.areaFilterOptions = await fetchCtpatAreaOptions().catch(() => [])
+    },
+
     async load() {
       this.loading = true
       try {
-        this.rows = await fetchCtpatReportRows()
+        const [rows] = await Promise.all([fetchCtpatReportRows(), this.ensureFilterOptionsLoaded()])
+        this.rows = rows
       } finally {
         this.loading = false
       }
