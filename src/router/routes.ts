@@ -7,7 +7,6 @@ import { checkpointsRoutes } from '@/modules/checkpoints/checkpoints.routes'
 import { reportsRoutes } from '@/modules/reports/reports.routes'
 import { rolesRoutes } from '@/modules/roles/roles.routes'
 import { routesRoutes } from '@/modules/routes/routes.routes'
-import { menuCategoriesRoutes } from '@/modules/menuCategories/menuCategories.routes'
 
 export const routes = [
   ...authRoutes,
@@ -24,7 +23,11 @@ export const routes = [
       ...areasRoutes,
       ...checkpointsRoutes,
       ...routesRoutes,
-      ...menuCategoriesRoutes,
+      {
+        path: 'tutorial',
+        name: 'tutorial',
+        component: () => import('@/modules/tutorial/pages/TutorialPage.vue'),
+      },
       {
         path: '403',
         name: 'forbidden',

@@ -31,8 +31,10 @@ const items = computed<BreadcrumbItem[]>(() => {
       return [root, { label: 'Areas', to: { name: 'areas' } }, { label: 'Check Points' }]
     case 'routes':
       return [root, { label: 'Patrol Routes' }]
-    case 'menuCategories':
-      return [root, { label: 'Menu Categories' }]
+    case 'user-info':
+      return [root, { label: 'User Information' }]
+    case 'tutorial':
+      return [root, { label: 'Tutorial' }]
     case 'reports':
       return [root, { label: 'Patrols Data', to: { name: 'reports' } }, { label: 'Patrol Reports' }]
     case 'ctpat-reports':

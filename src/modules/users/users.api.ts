@@ -349,3 +349,39 @@ export async function fetchAreaOptions() {
     .filter((x) => x.value > 0)
     .sort((a, b) => a.label.localeCompare(b.label))
 }
+
+export async function changeCurrentUserPassword(payload: {
+  user_id: string
+  user_code: string
+  current_password: string
+  new_password: string
+  actor_id: string
+}) {
+  const validateRes = await http.post(endpoints.user.validate, {
+    userCode: payload.user_code.trim(),
+    userPassword: payload.current_password,
+  })
+
+  const validatePayload = validateRes?.data
+  if (!validatePayload?.success) {
+    const msg = String(validatePayload?.message ?? '')
+    const lower = msg.toLowerCase()
+    if (lower.includes('mật khẩu') || lower.includes('password')) {
+      throw new Error('CURRENT_PASSWORD_INCORRECT')
+    }
+    throw new Error(msg || 'CURRENT_PASSWORD_INCORRECT')
+  }
+
+  const current = await fetchUserById(payload.user_id)
+  if (!current) throw new Error('USER_NOT_FOUND')
+
+  return updateUserMock({
+    user_id: payload.user_id,
+    user_name: current.user_name,
+    user_code: current.user_code,
+    user_password: payload.new_password,
+    user_role_id: current.user_role_id,
+    user_area_id: current.user_area_id,
+    actor_id: payload.actor_id,
+  })
+}
