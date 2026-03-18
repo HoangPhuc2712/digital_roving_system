@@ -39,6 +39,7 @@ const auth = useAuthStore()
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('areas.manage'))
 const canPrintQr = computed(() => auth.isAdminUser)
 const exporting = ref(false)
+const DELETE_AREA_API_DRY_RUN = true
 
 const searchDraft = ref(store.searchText)
 let searchTimer: number | undefined
@@ -143,11 +144,38 @@ function openEdit(row: AreaRow) {
   formVisible.value = true
 }
 
+function getAreaDeleteBlockedCount(row: AreaRow) {
+  return Number(row.checkpoint_count ?? 0)
+}
+
+function logAreaDeleteDryRun(row: AreaRow) {
+  console.log('[DRY RUN] deleteArea skipped', {
+    payload: { area_id: row.area_id, actor_id: auth.user?.user_id ?? '' },
+    row,
+  })
+}
+
 async function doDeleteOne(row: AreaRow) {
+  if (DELETE_AREA_API_DRY_RUN) {
+    logAreaDeleteDryRun(row)
+    return
+  }
+
   await deleteAreaMock({ area_id: row.area_id, actor_id: auth.user?.user_id ?? '' })
 }
 
 async function onDelete(row: AreaRow) {
+  const checkpointCount = getAreaDeleteBlockedCount(row)
+  if (checkpointCount > 0) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Cannot Delete',
+      detail: `Can't delete Area ${row.area_code} because it has ${checkpointCount} check point(s).`,
+      life: 3500,
+    })
+    return
+  }
+
   confirm.require({
     header: 'Confirm Delete',
     message: `Delete area ${row.area_code} - ${row.area_name}?`,
@@ -156,6 +184,17 @@ async function onDelete(row: AreaRow) {
     accept: async () => {
       try {
         await doDeleteOne(row)
+
+        if (DELETE_AREA_API_DRY_RUN) {
+          toast.add({
+            severity: 'info',
+            summary: 'Delete API Disabled',
+            detail: 'Delete API is disabled for testing. Check console log.',
+            life: 3000,
+          })
+          return
+        }
+
         await store.load()
         selectedAreas.value = null
         toast.add({
@@ -191,6 +230,17 @@ function onDeleteSelected() {
   const sel = selectedAreas.value ?? []
   if (!sel.length) return
 
+  const blocked = sel.filter((row) => getAreaDeleteBlockedCount(row) > 0)
+  if (blocked.length) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Cannot Delete',
+      detail: `Can't delete ${blocked.length} selected area(s) because they still contain check point(s).`,
+      life: 3500,
+    })
+    return
+  }
+
   confirm.require({
     header: 'Confirm Delete',
     message: `Delete ${sel.length} selected areas?`,
@@ -201,6 +251,17 @@ function onDeleteSelected() {
         for (const row of sel) {
           await doDeleteOne(row)
         }
+
+        if (DELETE_AREA_API_DRY_RUN) {
+          toast.add({
+            severity: 'info',
+            summary: 'Delete API Disabled',
+            detail: 'Delete API is disabled for testing. Check console log.',
+            life: 3000,
+          })
+          return
+        }
+
         await store.load()
         selectedAreas.value = null
         toast.add({

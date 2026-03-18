@@ -17,6 +17,8 @@ import { useAuthStore } from '@/stores/auth.store'
 import { useCheckpointsStore } from '@/modules/checkpoints/checkpoints.store'
 import type { CheckpointRow } from '@/modules/checkpoints/checkpoints.types'
 import { deleteCheckpointMock, fetchCheckpointById } from '@/modules/checkpoints/checkpoints.api'
+import { fetchRouteRows } from '@/modules/routes/routes.api'
+import type { RouteRow } from '@/modules/routes/routes.types'
 
 import QrPreview from '@/modules/checkpoints/components/QrPreview.vue'
 import CheckpointForm, {
@@ -32,6 +34,7 @@ const confirm = useConfirm()
 const store = useCheckpointsStore()
 const auth = useAuthStore()
 const exporting = ref(false)
+const DELETE_CHECKPOINT_API_DRY_RUN = true
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('checkpoints.manage'))
 const canPrintQr = computed(() => auth.isAdminUser)
@@ -52,6 +55,31 @@ const pageTitle = computed(() =>
     ? `${lockedAreaCode.value} Check Points Management`
     : 'Check Points Management',
 )
+
+const routeRowsCache = ref<RouteRow[] | null>(null)
+
+async function getRouteRowsForDeleteCheck() {
+  if (!routeRowsCache.value) {
+    routeRowsCache.value = await fetchRouteRows()
+  }
+  return routeRowsCache.value
+}
+
+function logCheckpointDeleteDryRun(row: CheckpointRow) {
+  console.log('[DRY RUN] deleteCheckpoint skipped', {
+    payload: { cp_id: row.cp_id, actor_id: auth.user?.user_id ?? '' },
+    row,
+  })
+}
+
+async function findCheckpointUsage(row: CheckpointRow) {
+  const routes = await getRouteRowsForDeleteCheck()
+  return routes.filter(
+    (route) =>
+      Array.isArray(route.details) &&
+      route.details.some((detail) => Number(detail.cp_id) === Number(row.cp_id)),
+  )
+}
 
 function applyLockedAreaFilter() {
   store.filterAreaId = lockedAreaId.value
@@ -182,10 +210,36 @@ async function openEdit(row: CheckpointRow) {
 }
 
 async function deleteOne(row: CheckpointRow) {
+  if (DELETE_CHECKPOINT_API_DRY_RUN) {
+    logCheckpointDeleteDryRun(row)
+    return
+  }
+
   await deleteCheckpointMock({ cp_id: row.cp_id, actor_id: auth.user?.user_id ?? '' })
 }
 
-function onDelete(row: CheckpointRow) {
+async function onDelete(row: CheckpointRow) {
+  try {
+    const usedInRoutes = await findCheckpointUsage(row)
+    if (usedInRoutes.length > 0) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Cannot Delete',
+        detail: `Can't delete Check Point ${row.cp_code} because it exists in ${usedInRoutes.length} route(s).`,
+        life: 3500,
+      })
+      return
+    }
+  } catch (e: any) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: String(e?.message ?? 'Failed to validate check point delete.'),
+      life: 3000,
+    })
+    return
+  }
+
   confirm.require({
     header: 'Confirm Delete',
     message: `Delete check point ${row.cp_code} - ${row.cp_name}?`,
@@ -194,7 +248,19 @@ function onDelete(row: CheckpointRow) {
     accept: async () => {
       try {
         await deleteOne(row)
+
+        if (DELETE_CHECKPOINT_API_DRY_RUN) {
+          toast.add({
+            severity: 'info',
+            summary: 'Delete API Disabled',
+            detail: 'Delete API is disabled for testing. Check console log.',
+            life: 3000,
+          })
+          return
+        }
+
         await store.load()
+        routeRowsCache.value = null
         applyLockedAreaFilter()
         selectedRows.value = null
         toast.add({
@@ -215,9 +281,38 @@ function onDelete(row: CheckpointRow) {
   })
 }
 
-function onDeleteSelected() {
+async function onDeleteSelected() {
   const sel = selectedRows.value ?? []
   if (!sel.length) return
+
+  try {
+    const routes = await getRouteRowsForDeleteCheck()
+    const blocked = sel.filter((row) =>
+      routes.some(
+        (route) =>
+          Array.isArray(route.details) &&
+          route.details.some((detail) => Number(detail.cp_id) === Number(row.cp_id)),
+      ),
+    )
+
+    if (blocked.length > 0) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Cannot Delete',
+        detail: `Can't delete ${blocked.length} selected check point(s) because they already exist in route(s).`,
+        life: 3500,
+      })
+      return
+    }
+  } catch (e: any) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: String(e?.message ?? 'Failed to validate check point delete.'),
+      life: 3000,
+    })
+    return
+  }
 
   confirm.require({
     header: 'Confirm Delete',
@@ -229,7 +324,19 @@ function onDeleteSelected() {
         for (const row of sel) {
           await deleteOne(row)
         }
+
+        if (DELETE_CHECKPOINT_API_DRY_RUN) {
+          toast.add({
+            severity: 'info',
+            summary: 'Delete API Disabled',
+            detail: 'Delete API is disabled for testing. Check console log.',
+            life: 3000,
+          })
+          return
+        }
+
         await store.load()
+        routeRowsCache.value = null
         applyLockedAreaFilter()
         selectedRows.value = null
         toast.add({
