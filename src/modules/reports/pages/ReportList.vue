@@ -105,6 +105,36 @@ watch(
   },
 )
 
+const REPORTS_DASHBOARD_RELOAD_KEY = 'reports:dashboard-query-reload'
+
+function hasDashboardQuery() {
+  return (
+    route.name === 'reports' &&
+    (route.query.result != null ||
+      route.query.issueStatus != null ||
+      route.query.fromDashboard != null)
+  )
+}
+
+function handleBeforeUnload() {
+  if (hasDashboardQuery()) {
+    sessionStorage.setItem(REPORTS_DASHBOARD_RELOAD_KEY, '1')
+  } else {
+    sessionStorage.removeItem(REPORTS_DASHBOARD_RELOAD_KEY)
+  }
+}
+
+function shouldResetDashboardQueryAfterReload() {
+  if (!hasDashboardQuery()) return false
+
+  const shouldReset = sessionStorage.getItem(REPORTS_DASHBOARD_RELOAD_KEY) === '1'
+  if (shouldReset) {
+    sessionStorage.removeItem(REPORTS_DASHBOARD_RELOAD_KEY)
+  }
+
+  return shouldReset
+}
+
 function applyRouteFilters() {
   const result = String(route.query.result ?? '')
     .trim()
@@ -133,7 +163,18 @@ function applyRouteFilters() {
 }
 
 onMounted(async () => {
+  window.addEventListener('beforeunload', handleBeforeUnload)
+
+  if (shouldResetDashboardQueryAfterReload()) {
+    resetPageState()
+    await router.replace({ name: 'reports' })
+    suppressDateReload.value = false
+    await store.load()
+    return
+  }
+
   applyRouteFilters()
+  suppressDateReload.value = false
   await store.load()
 })
 
@@ -142,7 +183,9 @@ onBeforeRouteLeave(() => {
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
   clearDateReloadTimer()
+  sessionStorage.removeItem(REPORTS_DASHBOARD_RELOAD_KEY)
   resetPageState()
 })
 

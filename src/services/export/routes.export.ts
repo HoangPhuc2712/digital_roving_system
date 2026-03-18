@@ -22,12 +22,6 @@ function formatSeconds(sec: number) {
 
 function buildRouteDetailText(row: RouteRow) {
   const parts = (row.details ?? [])
-    .slice()
-    .sort(
-      (a, b) =>
-        Number(a.cp_priority ?? 0) - Number(b.cp_priority ?? 0) ||
-        Number(a.rd_priority ?? 0) - Number(b.rd_priority ?? 0),
-    )
     .map((detail) => String(detail.cp_priority ?? '').trim())
     .filter(Boolean)
 
