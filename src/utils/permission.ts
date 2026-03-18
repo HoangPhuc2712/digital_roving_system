@@ -25,7 +25,7 @@ const ALL_KEYS: PermissionKey[] = [
 
 const MACRO_MAP: Record<string, PermissionKey[]> = {
   ALL: ALL_KEYS,
-  IT_ONLY: ALL_KEYS,
+  IT_ONLY: [],
   ASSIGNED_AREA: ['reports.view_mine'],
 }
 
@@ -51,7 +51,7 @@ export function derivePermissions(roleCode?: string, roleAllowView?: string): Se
 
   const code = String(roleCode ?? '').toUpperCase()
 
-  if (code === 'ADMIN' || code === 'IT') return new Set(MACRO_MAP.ALL)
+  if (code === 'ADMIN') return new Set(MACRO_MAP.ALL)
   if (code === 'SECURITY' || code === 'EXPAT') return new Set(MACRO_MAP.ASSIGNED_AREA)
   return new Set()
 }
