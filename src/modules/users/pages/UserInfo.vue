@@ -1,0 +1,145 @@
+<script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
+import { useToast } from 'primevue/usetoast'
+
+import BaseButton from '@/components/common/buttons/BaseButton.vue'
+import ChangePasswordForm from '@/modules/users/components/ChangePasswordForm.vue'
+import { fetchUserById, changeCurrentUserPassword } from '@/modules/users/users.api'
+import { useAuthStore } from '@/stores/auth.store'
+
+const auth = useAuthStore()
+const toast = useToast()
+
+const loading = ref(false)
+const changingPassword = ref(false)
+const changePasswordVisible = ref(false)
+const userInfo = ref<{
+  user_name: string
+  user_code: string
+  area_name: string
+  role_name: string
+} | null>(null)
+
+const userId = computed(() => String(auth.user?.user_id ?? ''))
+const userCode = computed(() => String(auth.user?.user_code ?? ''))
+
+async function loadUserInfo() {
+  if (!userId.value) return
+
+  loading.value = true
+  try {
+    const user = await fetchUserById(userId.value)
+    userInfo.value = user
+      ? {
+          user_name: String(user.user_name ?? ''),
+          user_code: String(user.user_code ?? ''),
+          area_name: String(user.area_name ?? ''),
+          role_name: String(user.role_name ?? ''),
+        }
+      : {
+          user_name: String(auth.user?.user_name ?? ''),
+          user_code: String(auth.user?.user_code ?? ''),
+          area_name: '',
+          role_name: String(auth.user?.role?.role_name ?? ''),
+        }
+  } catch {
+    userInfo.value = {
+      user_name: String(auth.user?.user_name ?? ''),
+      user_code: String(auth.user?.user_code ?? ''),
+      area_name: '',
+      role_name: String(auth.user?.role?.role_name ?? ''),
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+async function onSubmitChangePassword(payload: { currentPassword: string; newPassword: string }) {
+  if (!userId.value || !userCode.value) return
+
+  changingPassword.value = true
+  try {
+    await changeCurrentUserPassword({
+      user_id: userId.value,
+      user_code: userCode.value,
+      current_password: payload.currentPassword,
+      new_password: payload.newPassword,
+      actor_id: userId.value,
+    })
+
+    await auth.fetchMe()
+    changePasswordVisible.value = false
+    toast.add({
+      severity: 'success',
+      summary: 'Saved',
+      detail: 'Password has been changed successfully.',
+      life: 2500,
+    })
+  } catch (e: any) {
+    const msg = String(e?.message ?? '')
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail:
+        msg === 'CURRENT_PASSWORD_INCORRECT'
+          ? 'Current Password is incorrect.'
+          : msg || 'Failed to change password.',
+      life: 3500,
+    })
+  } finally {
+    changingPassword.value = false
+  }
+}
+
+onMounted(async () => {
+  await loadUserInfo()
+})
+</script>
+
+<template>
+  <div class="space-y-4">
+    <div class="text-[26px] font-semibold text-slate-800">User Information</div>
+
+    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div v-if="loading" class="text-slate-500">Loading...</div>
+
+      <div v-else class="space-y-5">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <div class="text-sm text-slate-500 mb-1">User Name</div>
+            <div class="text-lg text-slate-800 font-semibold">{{ userInfo?.user_name || '-' }}</div>
+          </div>
+
+          <div>
+            <div class="text-sm text-slate-500 mb-1">User Code</div>
+            <div class="text-lg text-slate-800 font-semibold">{{ userInfo?.user_code || '-' }}</div>
+          </div>
+
+          <div>
+            <div class="text-sm text-slate-500 mb-1">Area</div>
+            <div class="text-lg text-slate-800 font-semibold">{{ userInfo?.area_name || '-' }}</div>
+          </div>
+
+          <div>
+            <div class="text-sm text-slate-500 mb-1">Role</div>
+            <div class="text-lg text-slate-800 font-semibold">{{ userInfo?.role_name || '-' }}</div>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-slate-200">
+          <BaseButton
+            label="Change Password"
+            severity="secondary"
+            @click="changePasswordVisible = true"
+          />
+        </div>
+      </div>
+    </div>
+
+    <ChangePasswordForm
+      v-model:visible="changePasswordVisible"
+      :loading="changingPassword"
+      @submit="onSubmitChangePassword"
+    />
+  </div>
+</template>

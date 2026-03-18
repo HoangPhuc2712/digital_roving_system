@@ -34,10 +34,9 @@ const confirm = useConfirm()
 const store = useCheckpointsStore()
 const auth = useAuthStore()
 const exporting = ref(false)
-const DELETE_CHECKPOINT_API_DRY_RUN = true
+const DELETE_CHECKPOINT_API_DRY_RUN = false
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('checkpoints.manage'))
-const canPrintQr = computed(() => auth.isAdminUser)
 
 const lockedAreaId = computed<number | null>(() => {
   const raw = Array.isArray(route.query.areaId) ? route.query.areaId[0] : route.query.areaId
@@ -367,6 +366,8 @@ async function handleCheckpointFormSubmit(payload: {
     await payload.submit(actor)
     await store.load()
     applyLockedAreaFilter()
+    formVisible.value = false
+    formModel.value = null
 
     toast.add({
       severity: 'success',

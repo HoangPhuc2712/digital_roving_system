@@ -29,7 +29,6 @@ const auth = useAuthStore()
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('roles.manage'))
 const exporting = ref(false)
-const DELETE_ROLE_API_DRY_RUN = true
 
 const searchDraft = ref(store.searchText)
 let searchTimer: number | undefined
@@ -98,39 +97,7 @@ function openEdit(row: RoleRow) {
   formVisible.value = true
 }
 
-function getRoleDeleteBlockedCount(row: RoleRow) {
-  const menuIds = Array.isArray(row.menu_ids) ? row.menu_ids : []
-  return Number(row.menu_count ?? menuIds.length ?? 0)
-}
-
-function logRoleDeleteDryRun(row: RoleRow) {
-  console.log('[DRY RUN] deleteRole skipped', {
-    payload: { role_id: row.role_id, actor_id: auth.user?.user_id ?? '' },
-    row,
-  })
-}
-
-async function runDeleteRole(row: RoleRow) {
-  if (DELETE_ROLE_API_DRY_RUN) {
-    logRoleDeleteDryRun(row)
-    return
-  }
-
-  await deleteRole({ role_id: row.role_id, actor_id: auth.user?.user_id ?? '' })
-}
-
 async function onDelete(row: RoleRow) {
-  const permissionCount = getRoleDeleteBlockedCount(row)
-  if (permissionCount > 0) {
-    toast.add({
-      severity: 'warn',
-      summary: 'Cannot Delete',
-      detail: `Can't delete Role ${row.role_name} because it has ${permissionCount} permission(s).`,
-      life: 3500,
-    })
-    return
-  }
-
   confirm.require({
     header: 'Confirm Delete',
     message: `Delete role ${row.role_name}?`,
@@ -138,18 +105,7 @@ async function onDelete(row: RoleRow) {
     rejectLabel: 'Cancel',
     accept: async () => {
       try {
-        await runDeleteRole(row)
-
-        if (DELETE_ROLE_API_DRY_RUN) {
-          toast.add({
-            severity: 'info',
-            summary: 'Delete API Disabled',
-            detail: 'Delete API is disabled for testing. Check console log.',
-            life: 3000,
-          })
-          return
-        }
-
+        await deleteRole({ role_id: row.role_id, actor_id: auth.user?.user_id ?? '' })
         await store.load()
         selectedRoles.value = null
         toast.add({
@@ -174,17 +130,6 @@ function confirmDeleteSelected() {
   const items = selectedRoles.value ?? []
   if (!items.length) return
 
-  const blocked = items.filter((row) => getRoleDeleteBlockedCount(row) > 0)
-  if (blocked.length) {
-    toast.add({
-      severity: 'warn',
-      summary: 'Cannot Delete',
-      detail: `Can't delete ${blocked.length} selected role(s) because they still have permission(s).`,
-      life: 3500,
-    })
-    return
-  }
-
   confirm.require({
     header: 'Confirm Delete',
     message: `Delete ${items.length} selected role(s)?`,
@@ -192,20 +137,10 @@ function confirmDeleteSelected() {
     rejectLabel: 'Cancel',
     accept: async () => {
       try {
+        const actor = auth.user?.user_id ?? ''
         for (const r of items) {
-          await runDeleteRole(r)
+          await deleteRole({ role_id: r.role_id, actor_id: actor })
         }
-
-        if (DELETE_ROLE_API_DRY_RUN) {
-          toast.add({
-            severity: 'info',
-            summary: 'Delete API Disabled',
-            detail: 'Delete API is disabled for testing. Check console log.',
-            life: 3000,
-          })
-          return
-        }
-
         await store.load()
         selectedRoles.value = null
         toast.add({

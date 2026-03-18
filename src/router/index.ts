@@ -3,7 +3,6 @@ import { routes } from './routes'
 import { useAuthStore } from '@/stores/auth.store'
 import { useAreasStore } from '@/modules/areas/areas.store'
 import { useCheckpointsStore } from '@/modules/checkpoints/checkpoints.store'
-import { useMenuCategoriesStore } from '@/modules/menuCategories/menuCategories.store'
 import { useCtpatReportsStore } from '@/modules/reports/ctpatReports.store'
 import { usePatrolDetailReportsStore } from '@/modules/reports/patrolDetailReports.store'
 import { usePatrolSummaryReportsStore } from '@/modules/reports/patrolSummaryReports.store'
@@ -24,9 +23,6 @@ function clearPageFiltersByRouteName(routeName: string | symbol | null | undefin
       break
     case 'checkpoints':
       useCheckpointsStore().clearFilters()
-      break
-    case 'menuCategories':
-      useMenuCategoriesStore().clearFilters()
       break
     case 'reports':
       useReportsStore().clearFilters()

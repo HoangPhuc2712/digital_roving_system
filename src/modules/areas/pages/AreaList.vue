@@ -37,9 +37,8 @@ const store = useAreasStore()
 const auth = useAuthStore()
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('areas.manage'))
-const canPrintQr = computed(() => auth.isAdminUser)
 const exporting = ref(false)
-const DELETE_AREA_API_DRY_RUN = true
+const DELETE_AREA_API_DRY_RUN = false
 
 const searchDraft = ref(store.searchText)
 let searchTimer: number | undefined
@@ -60,12 +59,6 @@ onMounted(async () => {
   await store.load()
   console.log(store.filteredRows)
 })
-
-const statusOptions = [
-  { label: 'All', value: 'ALL' },
-  { label: 'Active', value: 'ACTIVE' },
-  { label: 'Inactive', value: 'INACTIVE' },
-]
 
 function statusLabel(s: number) {
   return s === 1 ? 'Active' : 'Inactive'
@@ -490,7 +483,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
               @click="openView(data)"
             />
             <BaseIconButton
-              v-if="canPrintQr"
+              v-if="canManage"
               icon="pi pi-print"
               size="small"
               severity="secondary"

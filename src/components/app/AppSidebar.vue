@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+defineOptions({ inheritAttrs: false })
+import { computed, onMounted, ref, watch, useAttrs } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { http } from '@/services/http/axios'
@@ -22,6 +23,7 @@ const emit = defineEmits<{
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
+const attrs = useAttrs()
 
 type ApiEnvelope<T> = { data: T; success: boolean; message: string }
 
@@ -92,7 +94,6 @@ const MENU_MAP: Record<string, Omit<NavItem, 'key' | 'priority' | 'label'>> = {
   AREAS: { to: '/areas', icon: 'pi pi-map-marker', prefix: '/areas' },
   ROUTES: { to: '/routes', icon: 'pi pi-map', prefix: '/routes' },
   TUTORIAL: { to: '/tutorial', icon: 'pi pi-info', prefix: '/tutorial' },
-  MENUCATEGORIES: { to: '/menuCategories', icon: 'pi pi-book', prefix: '/menuCategories' },
 }
 
 const allowedMenuNames = computed(() => {
@@ -237,6 +238,11 @@ function goToReportsData() {
   closeMobile()
 }
 
+function goToUserInfo() {
+  router.push({ name: 'user-info' })
+  closeMobile()
+}
+
 function logout() {
   auth.logout?.()
   router.replace({ name: 'login' })
@@ -248,6 +254,7 @@ function logout() {
   <div v-if="mobileOpen" class="fixed inset-0 bg-black/40 z-40 lg:hidden" @click="closeMobile" />
 
   <aside
+    v-bind="attrs"
     class="h-screen w-72 flex flex-col bg-slate-900 text-slate-100 z-50 fixed inset-y-0 left-0 transform transition-transform duration-200 lg:static lg:translate-x-0"
     :class="mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
   >
@@ -323,10 +330,14 @@ function logout() {
 
     <footer class="border-t border-white/10 px-4 py-4">
       <div class="mb-3">
-        <div class="text-sm font-semibold flex gap-2 leading-snug">
+        <button
+          type="button"
+          class="text-sm font-semibold flex items-center gap-2 leading-snug text-left hover:text-white transition"
+          @click="goToUserInfo"
+        >
           <i class="pi pi-user"></i>
-          {{ userFullName }}
-        </div>
+          <span class="hover:underline cursor-pointer">{{ userFullName }}</span>
+        </button>
         <div class="text-xs text-slate-300 mt-1">User Code: {{ userCode }}</div>
         <div class="text-xs text-slate-300">Role: {{ userRoleName }}</div>
       </div>

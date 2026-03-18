@@ -51,8 +51,6 @@ function cardMetaOf(item: DashboardTotalAppItem): DashboardCardMeta {
       return { mcCode: 'ROLES', to: '/roles' }
     case 'USERS':
       return { mcCode: 'USERS', to: '/users' }
-    case 'MENUCATEGORIES':
-      return { mcCode: 'MENUCATEGORIES', to: '/menuCategories' }
     case 'AREAS':
       return { mcCode: 'AREAS', to: '/areas' }
     case 'CHECKPOINTS':
@@ -66,6 +64,7 @@ function cardMetaOf(item: DashboardTotalAppItem): DashboardCardMeta {
 
 const cards = computed(() => {
   return store.cards
+    .filter((item) => normalizeName(item.name) !== 'MENUCATEGORIES')
     .map((item) => ({
       ...item,
       ...cardMetaOf(item),
