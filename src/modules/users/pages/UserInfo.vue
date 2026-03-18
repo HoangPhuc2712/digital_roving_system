@@ -129,7 +129,7 @@ onMounted(async () => {
         <div class="pt-4 border-t border-slate-200">
           <BaseButton
             label="Change Password"
-            severity="info"
+            severity="secondary"
             @click="changePasswordVisible = true"
           />
         </div>

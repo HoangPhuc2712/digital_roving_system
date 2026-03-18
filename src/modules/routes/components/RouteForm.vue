@@ -554,16 +554,21 @@ function submit() {
               </template>
             </Column>
 
-            <Column header="Minutes" style="width: 8rem">
+            <Column header="Minutes" style="width: 10rem">
               <template #body="{ data }">
+                <div v-if="isView" class="text-slate-800">{{ data.rd_minute }}</div>
                 <InputNumber
+                  v-else
                   v-model="data.rd_minute"
                   class="w-full"
                   size="small"
                   :min="0"
                   :step="1"
                   :useGrouping="false"
-                  :disabled="isView"
+                  showButtons
+                  buttonLayout="horizontal"
+                  decrementButtonIcon="pi pi-minus"
+                  incrementButtonIcon="pi pi-plus"
                 />
               </template>
             </Column>

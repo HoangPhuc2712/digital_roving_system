@@ -366,6 +366,8 @@ async function handleCheckpointFormSubmit(payload: {
     await payload.submit(actor)
     await store.load()
     applyLockedAreaFilter()
+    formVisible.value = false
+    formModel.value = null
 
     toast.add({
       severity: 'success',

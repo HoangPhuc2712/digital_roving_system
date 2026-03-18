@@ -336,7 +336,7 @@ function logout() {
           @click="goToUserInfo"
         >
           <i class="pi pi-user"></i>
-          <span>{{ userFullName }}</span>
+          <span class="hover:underline cursor-pointer">{{ userFullName }}</span>
         </button>
         <div class="text-xs text-slate-300 mt-1">User Code: {{ userCode }}</div>
         <div class="text-xs text-slate-300">Role: {{ userRoleName }}</div>
