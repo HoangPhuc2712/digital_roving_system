@@ -84,7 +84,7 @@ function formatReportDateTime(iso: string) {
   const d = new Date(raw)
   if (!Number.isFinite(d.getTime())) return raw
 
-  return `${pad2(d.getDate())}-${pad2(d.getMonth() + 1)}-${d.getFullYear()} ${d.getHours()}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`
+  return `${pad2(d.getFullYear())}-${pad2(d.getMonth() + 1)}-${d.getDate()} ${d.getHours()}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`
 }
 
 function sanitizeSheetName(name: string) {
