@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { fetchReportAreaOptions, fetchReportGuardOptions, fetchReportRows } from './reports.api'
 import type { ReportRow, ResultFilter } from './reports.types'
-import { useAuthStore } from '@/stores/auth.store'
 
 function startOfToday() {
   const d = new Date()
@@ -38,12 +37,7 @@ export const useReportsStore = defineStore('reports', {
 
   getters: {
     visibleRows(state): ReportRow[] {
-      const auth = useAuthStore()
-
-      if (auth.canAccess('reports.view_all')) return state.rows
-
-      const uid = auth.user?.user_id ?? ''
-      return state.rows.filter((r) => r.created_by === uid)
+      return state.rows
     },
 
     areaOptions(state): { label: string; value: number }[] {

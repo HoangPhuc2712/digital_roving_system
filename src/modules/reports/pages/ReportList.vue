@@ -176,6 +176,9 @@ onMounted(async () => {
   applyRouteFilters()
   suppressDateReload.value = false
   await store.load()
+  console.log('rows:', store.rows.length)
+  console.log('can view all:', auth.canAccess('reports.view_all'))
+  console.log('visibleRows:', store.visibleRows.length)
 })
 
 onBeforeRouteLeave(() => {
