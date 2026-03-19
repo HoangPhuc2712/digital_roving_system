@@ -32,7 +32,7 @@
 import { computed } from 'vue'
 import FloatLabel from 'primevue/floatlabel'
 import Password from 'primevue/password'
-import BaseMessage from '../messages/baseMessage.vue'
+import BaseMessage from '../messages/BaseMessage.vue'
 
 const props = withDefaults(
   defineProps<{

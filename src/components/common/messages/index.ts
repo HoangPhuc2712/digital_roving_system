@@ -1,1 +1,1 @@
-export { default as BaseMessage } from './baseMessage.vue'
+export { default as BaseMessage } from './BaseMessage.vue'
