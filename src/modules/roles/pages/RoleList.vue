@@ -346,9 +346,9 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
       <Column field="role_code" header="Role Code" style="min-width: 10rem" />
       <Column field="role_name" header="Role Name" style="min-width: 14rem" />
 
-      <Column header="Permissions" style="min-width: 16rem" sortField="menu_count">
+      <Column header="Access Permissions" style="min-width: 16rem" sortField="menu_count">
         <template #body="{ data }">
-          <div class="text-slate-800">{{ data.menu_count }} permission(s)</div>
+          <div class="text-slate-800">{{ data.menu_count }} access permission(s)</div>
         </template>
       </Column>
 

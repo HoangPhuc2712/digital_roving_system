@@ -174,7 +174,7 @@ function submit() {
         </div>
 
         <div>
-          <label class="block text-sm text-slate-600 mb-1">Permissions</label>
+          <label class="block text-sm text-slate-600 mb-1">Access Permissions</label>
           <MultiSelect
             v-model="form.mc_ids"
             class="w-full"
@@ -183,7 +183,7 @@ function submit() {
             optionLabel="label"
             size="small"
             optionValue="value"
-            placeholder="Select permissions"
+            placeholder="Select access permissions"
             display="chip"
           />
           <BaseMessage
@@ -192,7 +192,7 @@ function submit() {
             severity="error"
             size="small"
             variant="simple"
-            message="Please select at least one permission"
+            message="Please select at least one access permission"
           />
         </div>
 
