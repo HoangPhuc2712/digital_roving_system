@@ -29,14 +29,12 @@ export const useAuthStore = defineStore('auth', {
       this.token = payload.token
       this.user = payload.user
 
-      const roleCode = payload.user.role?.role_code
       const allow = payload.user.role?.role_allow_view
-      this.permissions = derivePermissionsFromAllowViews(roleCode, payload.user.allow_views, allow)
+      this.permissions = derivePermissionsFromAllowViews(payload.user.allow_views, allow)
 
       localStorage.setItem('token', payload.token)
       localStorage.setItem('user', JSON.stringify(payload.user))
       localStorage.setItem('role_allow_view', allow ?? '')
-      localStorage.setItem('role_code', roleCode ?? '')
       localStorage.setItem('allow_views', JSON.stringify(payload.user.allow_views ?? []))
     },
 
@@ -48,7 +46,6 @@ export const useAuthStore = defineStore('auth', {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       localStorage.removeItem('role_allow_view')
-      localStorage.removeItem('role_code')
       localStorage.removeItem('allow_views')
     },
 
@@ -67,11 +64,10 @@ export const useAuthStore = defineStore('auth', {
       this.user = user
 
       const allow = localStorage.getItem('role_allow_view') ?? user.role?.role_allow_view ?? ''
-      const roleCode = localStorage.getItem('role_code') ?? user.role?.role_code ?? ''
       const allowViewsRaw = localStorage.getItem('allow_views')
       const allowViews = allowViewsRaw ? JSON.parse(allowViewsRaw) : user.allow_views
 
-      this.permissions = derivePermissionsFromAllowViews(roleCode, allowViews, allow)
+      this.permissions = derivePermissionsFromAllowViews(allowViews, allow)
     },
 
     async login(user_code: string, user_password: string) {
@@ -91,14 +87,12 @@ export const useAuthStore = defineStore('auth', {
 
       this.user = res.user as AuthUser
 
-      const roleCode = res.user.role?.role_code ?? ''
       const allow = res.user.role?.role_allow_view ?? ''
       const allowViews = (res.user as any)?.allow_views
-      this.permissions = derivePermissionsFromAllowViews(roleCode, allowViews, allow)
+      this.permissions = derivePermissionsFromAllowViews(allowViews, allow)
 
       localStorage.setItem('user', JSON.stringify(res.user))
       localStorage.setItem('role_allow_view', allow)
-      localStorage.setItem('role_code', roleCode)
       localStorage.setItem('allow_views', JSON.stringify(allowViews ?? []))
     },
   },

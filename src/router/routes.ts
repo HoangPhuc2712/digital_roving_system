@@ -33,6 +33,20 @@ export const routes = [
         name: 'forbidden',
         component: () => import('@/components/common/BaseEmptyState.vue'),
       },
+      {
+        path: '404',
+        name: 'not-found',
+        component: () => import('@/components/common/BasePageNotFound.vue'),
+      },
+      {
+        path: ':pathMatch(.*)*',
+        name: 'app-not-found',
+        component: () => import('@/components/common/BasePageNotFound.vue'),
+      },
     ],
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/404',
   },
 ]

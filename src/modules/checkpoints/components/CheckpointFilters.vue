@@ -71,6 +71,7 @@ const searchModel = computed({
       <div class="w-full min-w-0 sm:flex-1 xl:max-w-[320px]">
         <BaseInput
           v-model="searchModel"
+          inputIcon="pi pi-search"
           label=""
           size="small"
           class="w-full"

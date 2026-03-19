@@ -25,11 +25,17 @@ const ALL_KEYS: PermissionKey[] = [
 
 const MACRO_MAP: Record<string, PermissionKey[]> = {
   ALL: ALL_KEYS,
-  IT_ONLY: ALL_KEYS,
   ASSIGNED_AREA: ['reports.view_mine'],
 }
 
 const KEY_SET = new Set<PermissionKey>(ALL_KEYS)
+const NON_MENU_PERMISSION_SET = new Set<PermissionKey>([
+  'reports.view_all',
+  'reports.view_mine',
+  'reports.edit',
+  'reports.delete',
+  'settings.manage',
+])
 
 export function parseRoleAllowView(input?: string): Set<PermissionKey> {
   if (!input) return new Set()
@@ -45,15 +51,11 @@ export function parseRoleAllowView(input?: string): Set<PermissionKey> {
   return new Set(keys)
 }
 
-export function derivePermissions(roleCode?: string, roleAllowView?: string): Set<PermissionKey> {
-  const fromAllow = parseRoleAllowView(roleAllowView)
-  if (fromAllow.size > 0) return fromAllow
+export function derivePermissions(roleAllowView?: string): Set<PermissionKey> {
+  const parsed = parseRoleAllowView(roleAllowView)
+  if (!parsed.size) return new Set()
 
-  const code = String(roleCode ?? '').toUpperCase()
-
-  if (code === 'ADMIN' || code === 'IT') return new Set(MACRO_MAP.ALL)
-  if (code === 'SECURITY' || code === 'EXPAT') return new Set(MACRO_MAP.ASSIGNED_AREA)
-  return new Set()
+  return new Set(Array.from(parsed).filter((key) => NON_MENU_PERMISSION_SET.has(key)))
 }
 
 type AllowViewItem = {
@@ -72,23 +74,21 @@ function normalizeMenuName(input?: string) {
 const MENU_NAME_TO_PERMS: Record<string, PermissionKey[]> = {
   ROLES: ['roles.manage'],
   USERS: ['users.manage'],
-  AREAS: ['areas.manage'],
-  ROUTES: ['routes.manage', 'checkpoints.manage'],
-  // REPORTS giữ theo roleCode: view_all / view_mine
-  // TUTORIAL chưa map permission riêng
+  AREAS: ['areas.manage', 'checkpoints.manage'],
+  ROUTES: ['routes.manage'],
+  REPORTS: ['reports.view_mine'],
+  TUTORIAL: [],
 }
 
 export function derivePermissionsFromAllowViews(
-  roleCode?: string,
   allowViews?: AllowViewItem[] | null,
   roleAllowView?: string,
 ): Set<PermissionKey> {
-  const base = derivePermissions(roleCode, roleAllowView)
+  const perms = derivePermissions(roleAllowView)
 
   const list = Array.isArray(allowViews) ? allowViews : []
-  if (!list.length) return base
+  if (!list.length) return perms
 
-  const perms = new Set<PermissionKey>(base)
   for (const it of list) {
     const name = normalizeMenuName(it?.mcName)
     if (!name) continue

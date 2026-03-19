@@ -25,6 +25,68 @@ function getImgSize(dataUrl: string) {
   })
 }
 
+function loadImageElement(dataUrl: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = dataUrl
+  })
+}
+
+async function buildHorizontalImageStrip(params: {
+  images: string[]
+  maxWidth: number
+  maxHeight: number
+}) {
+  const { images, maxWidth, maxHeight } = params
+  if (!images.length) return null
+
+  const GAP_X = 8
+  const SLOT_INSET_X = 2
+  const SLOT_INSET_Y = 2
+
+  const slotCount = images.length
+  const slotW = Math.max(20, Math.floor((maxWidth - GAP_X * (slotCount - 1)) / slotCount))
+  const innerSlotW = Math.max(12, slotW - SLOT_INSET_X * 2)
+  const innerSlotH = Math.max(12, maxHeight - SLOT_INSET_Y * 2)
+
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.max(1, maxWidth)
+  canvas.height = Math.max(1, maxHeight)
+
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return null
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+  for (const [index, raw] of images.entries()) {
+    const { ext, b64 } = stripDataUrl(raw)
+    if (!b64) continue
+
+    const safeExt = ext === 'jpg' ? 'jpeg' : ext
+    const dataUrl = raw.startsWith('data:image/') ? raw : `data:image/${safeExt};base64,${b64}`
+
+    const img = await loadImageElement(dataUrl)
+
+    const scale = Math.min(innerSlotW / img.naturalWidth, innerSlotH / img.naturalHeight, 1)
+    const drawW = Math.max(1, Math.floor(img.naturalWidth * scale))
+    const drawH = Math.max(1, Math.floor(img.naturalHeight * scale))
+
+    const slotLeft = index * (slotW + GAP_X)
+    const drawX = slotLeft + Math.max(0, Math.floor((slotW - drawW) / 2))
+    const drawY = Math.max(0, Math.floor((maxHeight - drawH) / 2))
+
+    ctx.drawImage(img, drawX, drawY, drawW, drawH)
+  }
+
+  return {
+    dataUrl: canvas.toDataURL('image/png'),
+    width: canvas.width,
+    height: canvas.height,
+  }
+}
+
 async function addImagesToCellHorizontally(
   ws: ExcelJS.Worksheet,
   wb: ExcelJS.Workbook,
@@ -32,9 +94,9 @@ async function addImagesToCellHorizontally(
   c: number,
   images: ReportImage[],
 ) {
-  const validImages = (images ?? [])
+  const validImages: string[] = (images ?? [])
     .map((img) => String(img?.pri_image ?? '').trim())
-    .filter(Boolean)
+    .filter((v): v is string => Boolean(v))
     .slice(0, 10)
 
   if (!validImages.length) return
@@ -46,57 +108,34 @@ async function addImagesToCellHorizontally(
 
   const INSET_X = 10
   const INSET_Y = 8
-  const GAP_X = 8
-  const SLOT_INSET_X = 2
-  const SLOT_INSET_Y = 2
 
   const availW = Math.max(20, cellWpx - INSET_X * 2)
   const availH = Math.max(20, cellHpx - INSET_Y * 2)
 
-  const slotW = Math.max(
-    18,
-    Math.floor((availW - GAP_X * (validImages.length - 1)) / validImages.length),
-  )
+  const strip = await buildHorizontalImageStrip({
+    images: validImages,
+    maxWidth: availW,
+    maxHeight: availH,
+  })
 
-  const contentStartX = Math.max(
-    0,
-    Math.floor((cellWpx - (slotW * validImages.length + GAP_X * (validImages.length - 1))) / 2),
-  )
+  if (!strip) return
 
-  for (const [index, raw] of validImages.entries()) {
-    const { ext, b64 } = stripDataUrl(raw)
-    if (!b64) continue
+  const imgId = wb.addImage({
+    extension: 'png',
+    base64: strip.dataUrl,
+  })
 
-    const safeExt = ext === 'jpg' ? 'jpeg' : ext
-    const dataUrl = raw.startsWith('data:image/') ? raw : `data:image/${safeExt};base64,${b64}`
-
-    const { w: iw, h: ih } = await getImgSize(dataUrl)
-
-    const innerSlotW = Math.max(12, slotW - SLOT_INSET_X * 2)
-    const innerSlotH = Math.max(12, availH - SLOT_INSET_Y * 2)
-
-    const scale = Math.min(innerSlotW / iw, innerSlotH / ih, 1)
-    const drawW = Math.max(1, Math.floor(iw * scale))
-    const drawH = Math.max(1, Math.floor(ih * scale))
-
-    const slotLeftX = contentStartX + index * (slotW + GAP_X)
-    const offX = slotLeftX + Math.max(0, Math.floor((slotW - drawW) / 2))
-    const offY = INSET_Y + Math.max(0, Math.floor((availH - drawH) / 2))
-
-    const imgId = wb.addImage({
-      extension: safeExt as any,
-      base64: dataUrl,
-    })
-
-    ws.addImage(imgId, {
-      tl: {
-        col: c - 1 + offX / Math.max(1, cellWpx),
-        row: r - 1 + offY / Math.max(1, cellHpx),
-      },
-      ext: { width: drawW, height: drawH },
-      editAs: 'oneCell',
-    } as any)
-  }
+  ws.addImage(imgId, {
+    tl: {
+      col: c - 1 + INSET_X / Math.max(1, cellWpx),
+      row: r - 1 + INSET_Y / Math.max(1, cellHpx),
+    },
+    ext: {
+      width: strip.width,
+      height: strip.height,
+    },
+    editAs: 'oneCell',
+  } as any)
 }
 
 function pad2(n: number) {
@@ -186,7 +225,7 @@ export async function exportPatrolReportXlsx(params: { rows: ReportRow[]; fileNa
       buildNoteBlocks(row).map((block) => Math.min(block.images.length, 10)),
     ),
   )
-  const photoColumnWidth = Math.max(24, Math.min(72, 12 + maxImagesPerBlock * 6))
+  const photoColumnWidth = Math.max(28, Math.min(90, 16 + maxImagesPerBlock * 7))
 
   ws.columns = [
     { key: 'area', width: 16 },
