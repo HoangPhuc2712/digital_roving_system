@@ -12,6 +12,7 @@ import { useRolesStore } from '@/modules/roles/roles.store'
 import { useAuthStore } from '@/stores/auth.store'
 import type { RoleRow } from '@/modules/roles/roles.types'
 import { deleteRole } from '@/modules/roles/roles.api'
+import { fetchUserRows } from '@/modules/users/users.api'
 import { exportRolesXlsx } from '@/services/export/roles.export'
 
 import RoleFilters from '../components/RoleFilters.vue'
@@ -97,68 +98,134 @@ function openEdit(row: RoleRow) {
   formVisible.value = true
 }
 
-async function onDelete(row: RoleRow) {
-  confirm.require({
-    header: 'Confirm Delete',
-    message: `Delete role ${row.role_name}?`,
-    acceptLabel: 'Delete',
-    rejectLabel: 'Cancel',
-    accept: async () => {
-      try {
-        await deleteRole({ role_id: row.role_id, actor_id: auth.user?.user_id ?? '' })
-        await store.load()
-        selectedRoles.value = null
-        toast.add({
-          severity: 'success',
-          summary: 'Deleted',
-          detail: 'Role has been deleted.',
-          life: 2000,
-        })
-      } catch (e: any) {
-        toast.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: e?.message ?? 'Failed to delete role.',
-          life: 3000,
-        })
-      }
-    },
-  })
+async function getAssignedUserCounts(roleIds: number[]) {
+  const users = await fetchUserRows()
+  const counts = new Map<number, number>()
+
+  for (const user of users) {
+    const roleId = Number(user.user_role_id ?? 0)
+    if (!roleIds.includes(roleId)) continue
+    counts.set(roleId, (counts.get(roleId) ?? 0) + 1)
+  }
+
+  return counts
 }
 
-function confirmDeleteSelected() {
+async function onDelete(row: RoleRow) {
+  try {
+    const counts = await getAssignedUserCounts([row.role_id])
+    const assignedCount = counts.get(row.role_id) ?? 0
+
+    if (assignedCount > 0) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Delete Restricted',
+        detail: `Cannot delete because this role is assigned to ${assignedCount} user(s).`,
+        life: 3500,
+      })
+      return
+    }
+
+    confirm.require({
+      header: 'Confirm Delete',
+      message: `Delete role ${row.role_name}?`,
+      acceptLabel: 'Delete',
+      rejectLabel: 'Cancel',
+      accept: async () => {
+        try {
+          await deleteRole({ role_id: row.role_id, actor_id: auth.user?.user_id ?? '' })
+          await store.load()
+          selectedRoles.value = null
+          toast.add({
+            severity: 'success',
+            summary: 'Deleted',
+            detail: 'Role has been deleted.',
+            life: 2000,
+          })
+        } catch (e: any) {
+          toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: e?.message ?? 'Failed to delete role.',
+            life: 3000,
+          })
+        }
+      },
+    })
+  } catch (e: any) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: e?.message ?? 'Failed to validate role delete restriction.',
+      life: 3000,
+    })
+  }
+}
+
+async function confirmDeleteSelected() {
   const items = selectedRoles.value ?? []
   if (!items.length) return
 
-  confirm.require({
-    header: 'Confirm Delete',
-    message: `Delete ${items.length} selected role(s)?`,
-    acceptLabel: 'Delete',
-    rejectLabel: 'Cancel',
-    accept: async () => {
-      try {
-        const actor = auth.user?.user_id ?? ''
-        for (const r of items) {
-          await deleteRole({ role_id: r.role_id, actor_id: actor })
+  try {
+    const roleIds = items.map((r) => r.role_id)
+    const counts = await getAssignedUserCounts(roleIds)
+
+    const blocked = items.filter((r) => (counts.get(r.role_id) ?? 0) > 0)
+    if (blocked.length > 0) {
+      const totalAssigned = blocked.reduce((sum, r) => sum + (counts.get(r.role_id) ?? 0), 0)
+      const firstBlocked = blocked[0]
+
+      toast.add({
+        severity: 'warn',
+        summary: 'Delete Restricted',
+        detail:
+          blocked.length === 1 && firstBlocked
+            ? `Cannot delete because role "${firstBlocked.role_name}" is assigned to ${counts.get(firstBlocked.role_id) ?? 0} user(s).`
+            : `Cannot delete because ${blocked.length} selected role(s) are still assigned to ${totalAssigned} user(s).`,
+        life: 4000,
+      })
+      return
+    }
+
+    confirm.require({
+      header: 'Confirm Delete',
+      message: `Delete ${items.length} selected role(s)?`,
+      acceptLabel: 'Delete',
+      rejectLabel: 'Cancel',
+      accept: async () => {
+        try {
+          const actor = auth.user?.user_id ?? ''
+
+          for (const r of items) {
+            await deleteRole({ role_id: r.role_id, actor_id: actor })
+          }
+
+          await store.load()
+          selectedRoles.value = null
+          toast.add({
+            severity: 'success',
+            summary: 'Deleted',
+            detail: 'Selected roles have been deleted.',
+            life: 2000,
+          })
+        } catch (e: any) {
+          toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: e?.message ?? 'Failed to delete roles.',
+            life: 3000,
+          })
         }
-        await store.load()
-        selectedRoles.value = null
-        toast.add({
-          severity: 'success',
-          summary: 'Deleted',
-          detail: 'Selected roles have been deleted.',
-          life: 2000,
-        })
-      } catch (e: any) {
-        toast.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: e?.message ?? 'Failed to delete roles.',
-          life: 3000,
-        })
-      }
-    },
-  })
+      },
+    })
+  } catch (e: any) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: e?.message ?? 'Failed to validate role delete restriction.',
+      life: 3000,
+    })
+  }
 }
 
 function clearAll() {
