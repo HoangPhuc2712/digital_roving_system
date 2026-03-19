@@ -367,21 +367,25 @@ export async function changeCurrentUserPassword(payload: {
     const msg = String(validatePayload?.message ?? '')
     const lower = msg.toLowerCase()
     if (lower.includes('mật khẩu') || lower.includes('password')) {
-      throw new Error('CURRENT_PASSWORD_INCORRECT')
+      throw new Error(msg || 'CURRENT_PASSWORD_INCORRECT')
     }
     throw new Error(msg || 'CURRENT_PASSWORD_INCORRECT')
   }
 
-  const current = await fetchUserById(payload.user_id)
-  if (!current) throw new Error('USER_NOT_FOUND')
-
-  return updateUserMock({
-    user_id: payload.user_id,
-    user_name: current.user_name,
-    user_code: current.user_code,
-    user_password: payload.new_password,
-    user_role_id: current.user_role_id,
-    user_area_id: current.user_area_id,
-    actor_id: payload.actor_id,
-  })
+  try {
+    const res = await http.patch(endpoints.user.changePassword(payload.user_id), {
+      userPassword: payload.new_password,
+      updatedBy: payload.actor_id,
+    })
+    const env = ensureSuccess<boolean>(res.data)
+    return {
+      success: env.data === true,
+      message: String(env.message ?? 'Password has been changed successfully.'),
+    }
+  } catch (e) {
+    const err = e as AxiosError<any>
+    const msg = String(err?.response?.data?.message ?? '')
+    if (msg) throw new Error(msg)
+    throw e
+  }
 }

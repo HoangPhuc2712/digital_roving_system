@@ -59,7 +59,7 @@ async function onSubmitChangePassword(payload: { currentPassword: string; newPas
 
   changingPassword.value = true
   try {
-    await changeCurrentUserPassword({
+    const result = await changeCurrentUserPassword({
       user_id: userId.value,
       user_code: userCode.value,
       current_password: payload.currentPassword,
@@ -72,7 +72,7 @@ async function onSubmitChangePassword(payload: { currentPassword: string; newPas
     toast.add({
       severity: 'success',
       summary: 'Saved',
-      detail: 'Password has been changed successfully.',
+      detail: String(result?.message ?? 'Password has been changed successfully.'),
       life: 2500,
     })
   } catch (e: any) {
@@ -80,10 +80,7 @@ async function onSubmitChangePassword(payload: { currentPassword: string; newPas
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail:
-        msg === 'CURRENT_PASSWORD_INCORRECT'
-          ? 'Current Password is incorrect.'
-          : msg || 'Failed to change password.',
+      detail: msg || 'Failed to change password.',
       life: 3500,
     })
   } finally {

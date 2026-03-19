@@ -5,6 +5,7 @@ export const endpoints = {
     validate: '/user/validate',
     create: '/user/create',
     update: (userId: string) => `/user/update/${userId}`,
+    changePassword: (userId: string) => `/user/changepassword/${userId}`,
     delete: (userId: string) => `/user/delete/${userId}`,
   },
   userBaseView: {
