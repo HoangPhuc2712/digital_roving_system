@@ -15,6 +15,8 @@ const auth = useAuthStore()
 const store = useDashboardStore()
 const router = useRouter()
 
+const canSeeAdminDashboardSummary = computed(() => auth.isAdminUser)
+
 function normalizeMenuName(input?: string) {
   return String(input ?? '')
     .trim()
@@ -232,7 +234,7 @@ onMounted(async () => {
       </button>
     </div>
 
-    <div class="mt-20 flex flex-col gap-3">
+    <div v-if="canSeeAdminDashboardSummary" class="mt-20 flex flex-col gap-3">
       <div class="text-xl font-semibold text-slate-800">Report Summary</div>
       <div
         v-if="pointReportStatusCards.length"
@@ -262,7 +264,7 @@ onMounted(async () => {
       </div>
     </div>
 
-    <div class="mt-20 grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div v-if="canSeeAdminDashboardSummary" class="mt-20 grid grid-cols-1 lg:grid-cols-3 gap-4">
       <div
         v-animateonscroll="{
           enterClass: 'dashboard-chart-enter',

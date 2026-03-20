@@ -417,7 +417,11 @@ function onPage(e: DataTablePageEvent) {
         </template>
       </Column>
 
-      <Column field="report_name" header="Guard Name" style="min-width: 12rem" />
+      <Column header="Report Date" style="min-width: 12rem" sortField="report_at">
+        <template #body="{ data }">
+          {{ formatDateTime(data.report_at || data.scan_at || data.created_at) }}
+        </template>
+      </Column>
 
       <Column header="Issue Status" style="min-width: 12rem" sortField="pr_status">
         <template #body="{ data }">
@@ -428,11 +432,7 @@ function onPage(e: DataTablePageEvent) {
         </template>
       </Column>
 
-      <Column header="Report Date" style="min-width: 12rem" sortField="report_at">
-        <template #body="{ data }">
-          {{ formatDateTime(data.report_at || data.scan_at || data.created_at) }}
-        </template>
-      </Column>
+      <Column field="report_name" header="Guard Name" style="min-width: 12rem" />
 
       <Column header="Action" style="width: 160px" sortDisabled>
         <template #body="{ data }">
