@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 type BreadcrumbItem = {
   label: string
@@ -9,12 +10,13 @@ type BreadcrumbItem = {
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 
 const routeName = computed(() => String(route.name ?? ''))
 
 const items = computed<BreadcrumbItem[]>(() => {
   const root: BreadcrumbItem = {
-    label: 'Internal Patrol Report',
+    label: t('breadcrumb.root'),
     to: { name: 'dashboard' },
   }
 
@@ -22,34 +24,46 @@ const items = computed<BreadcrumbItem[]>(() => {
     case 'dashboard':
       return [root]
     case 'users':
-      return [root, { label: 'Users' }]
+      return [root, { label: t('breadcrumb.users') }]
     case 'roles':
-      return [root, { label: 'Roles' }]
+      return [root, { label: t('breadcrumb.roles') }]
     case 'areas':
-      return [root, { label: 'Areas' }]
+      return [root, { label: t('breadcrumb.areas') }]
     case 'checkpoints':
-      return [root, { label: 'Areas', to: { name: 'areas' } }, { label: 'Check Points' }]
+      return [
+        root,
+        { label: t('breadcrumb.areas'), to: { name: 'areas' } },
+        { label: t('breadcrumb.checkpoints') },
+      ]
     case 'routes':
-      return [root, { label: 'Patrol Routes' }]
+      return [root, { label: t('breadcrumb.routes') }]
     case 'user-info':
-      return [root, { label: 'User Information' }]
+      return [root, { label: t('breadcrumb.userInfo') }]
     case 'tutorial':
-      return [root, { label: 'Tutorial' }]
+      return [root, { label: t('breadcrumb.tutorial') }]
     case 'reports':
-      return [root, { label: 'Patrols Data', to: { name: 'reports' } }, { label: 'Patrol Reports' }]
+      return [
+        root,
+        { label: t('breadcrumb.patrolsData'), to: { name: 'reports' } },
+        { label: t('breadcrumb.patrolReports') },
+      ]
     case 'ctpat-reports':
-      return [root, { label: 'Patrols Data', to: { name: 'reports' } }, { label: 'C-TPAT Report' }]
+      return [
+        root,
+        { label: t('breadcrumb.patrolsData'), to: { name: 'reports' } },
+        { label: t('breadcrumb.ctpatReport') },
+      ]
     case 'patrol-detail-reports':
       return [
         root,
-        { label: 'Reports Data', to: { name: 'patrol-detail-reports' } },
-        { label: 'Patrol Detail Report' },
+        { label: t('breadcrumb.reportsData'), to: { name: 'patrol-detail-reports' } },
+        { label: t('breadcrumb.patrolDetailReport') },
       ]
     case 'patrol-summary-reports':
       return [
         root,
-        { label: 'Reports Data', to: { name: 'patrol-detail-reports' } },
-        { label: 'Patrol Summary Report' },
+        { label: t('breadcrumb.reportsData'), to: { name: 'patrol-detail-reports' } },
+        { label: t('breadcrumb.patrolSummaryReport') },
       ]
     default:
       return [root]

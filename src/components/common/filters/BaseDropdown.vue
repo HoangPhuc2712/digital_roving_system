@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Select from 'primevue/select'
 
 const props = withDefaults(
@@ -17,7 +18,7 @@ const props = withDefaults(
   {
     optionLabel: 'label',
     optionValue: 'value',
-    placeholder: 'All',
+    placeholder: '',
     showClear: true,
     filter: false,
     disabled: false,
@@ -28,6 +29,8 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: 'update:modelValue', value: any): void
 }>()
+
+const { t } = useI18n()
 
 const model = computed({
   get: () => props.modelValue,
@@ -44,7 +47,7 @@ const model = computed({
       :options="props.options"
       :optionLabel="props.optionLabel"
       :optionValue="props.optionValue"
-      :placeholder="props.placeholder"
+      :placeholder="props.placeholder || t('common.all')"
       :showClear="props.showClear"
       :filter="props.filter"
       :disabled="props.disabled"

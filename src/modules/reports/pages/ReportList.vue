@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, watch, ref } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
@@ -27,20 +28,24 @@ const auth = useAuthStore()
 const store = useReportsStore()
 const route = useRoute()
 const router = useRouter()
+const { t, locale } = useI18n()
 
-const resultOptions = [
-  { label: 'All', value: 'ALL' },
-  { label: 'OK', value: 'OK' },
-  { label: 'Not OK', value: 'NOT_OK' },
-] satisfies { label: string; value: ResultFilter }[]
+const resultOptions = computed(
+  () =>
+    [
+      { label: t('reportList.resultOptions.all'), value: 'ALL' },
+      { label: t('reportList.resultOptions.ok'), value: 'OK' },
+      { label: t('reportList.resultOptions.notOk'), value: 'NOT_OK' },
+    ] satisfies { label: string; value: ResultFilter }[],
+)
 
-const issueStatusOptions = [
-  { label: 'All', value: null },
-  { label: 'Pending', value: 0 },
-  { label: 'In Progress', value: 1 },
-  { label: 'Completed', value: 2 },
-  { label: 'Incompleted', value: 3 },
-]
+const issueStatusOptions = computed(() => [
+  { label: t('reportList.issueStatusOptions.all'), value: null },
+  { label: t('reportList.issueStatusOptions.pending'), value: 0 },
+  { label: t('reportList.issueStatusOptions.inProgress'), value: 1 },
+  { label: t('reportList.issueStatusOptions.completed'), value: 2 },
+  { label: t('reportList.issueStatusOptions.incompleted'), value: 3 },
+])
 
 const exporting = ref(false)
 const formVisible = ref(false)
@@ -52,7 +57,7 @@ const suppressDateReload = ref(false)
 
 const reportSwitchButtons = computed(() => [
   {
-    label: 'Patrol Reports',
+    label: t('reportList.switchPatrolReports'),
     icon: 'pi pi-file',
     size: 'small',
     severity: 'info' as const,
@@ -60,7 +65,7 @@ const reportSwitchButtons = computed(() => [
     onClick: () => router.push({ name: 'reports' }),
   },
   {
-    label: 'C-TPAT Report',
+    label: t('reportList.switchCtpatReport'),
     icon: 'pi pi-file',
     size: 'small',
     severity: 'secondary' as const,
@@ -176,9 +181,6 @@ onMounted(async () => {
   applyRouteFilters()
   suppressDateReload.value = false
   await store.load()
-  console.log('rows:', store.rows.length)
-  console.log('can view all:', auth.canAccess('reports.view_all'))
-  console.log('visibleRows:', store.visibleRows.length)
 })
 
 onBeforeRouteLeave(() => {
@@ -204,18 +206,18 @@ function formatDateTime(iso: string) {
 }
 
 function issueStatusLabel(s: number, hasProblem: boolean) {
-  if (!hasProblem) return 'No Issue'
+  if (!hasProblem) return t('reportList.issueStatusTag.noIssue')
   switch (s) {
     case 0:
-      return 'Pending'
+      return t('reportList.issueStatusTag.pending')
     case 1:
-      return 'In Progress'
+      return t('reportList.issueStatusTag.inProgress')
     case 2:
-      return 'Completed'
+      return t('reportList.issueStatusTag.completed')
     case 3:
-      return 'Incompleted'
+      return t('reportList.issueStatusTag.incompleted')
     default:
-      return 'No Issue'
+      return t('reportList.issueStatusTag.noIssue')
   }
 }
 
@@ -236,7 +238,9 @@ function issueStatusSeverity(s: number, hasProblem: boolean) {
 }
 
 function inspectionLabel(hasProblem: boolean) {
-  return hasProblem ? 'Not OK' : 'OK'
+  return hasProblem
+    ? t('reportList.inspectionResultTag.notOk')
+    : t('reportList.inspectionResultTag.ok')
 }
 
 function inspectionSeverity(hasProblem: boolean) {
@@ -281,7 +285,7 @@ async function handleSubmitStatus(payload: { pr_id: number; pr_status: number })
 
     const refreshed = await fetchReportRowById(payload.pr_id)
     if (!refreshed) {
-      throw new Error('Failed to reload updated report.')
+      throw new Error(t('reportList.toast.failedToUpdate'))
     }
 
     const idx = store.rows.findIndex((x) => x.pr_id === payload.pr_id)
@@ -296,15 +300,15 @@ async function handleSubmitStatus(payload: { pr_id: number; pr_status: number })
     formVisible.value = false
     toast.add({
       severity: 'success',
-      summary: 'Saved',
-      detail: 'Issue status has been updated.',
+      summary: t('common.save'),
+      detail: t('reportList.toast.updated'),
       life: 2000,
     })
   } catch (e: any) {
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: String(e?.message ?? 'Failed to update issue status.'),
+      summary: t('common.error'),
+      detail: String(e?.message ?? t('reportList.toast.failedToUpdate')),
       life: 3000,
     })
   }
@@ -330,7 +334,7 @@ function onPage(e: DataTablePageEvent) {
 <template>
   <div class="page-reports space-y-3">
     <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-      <div class="text-[26px] font-semibold text-slate-800">Patrol Reports</div>
+      <div class="text-[26px] font-semibold text-slate-800">{{ t('reportList.title') }}</div>
       <BaseButtonGroup :buttons="reportSwitchButtons" />
     </div>
 
@@ -357,6 +361,7 @@ function onPage(e: DataTablePageEvent) {
     />
 
     <BaseDataTable
+      :key="`report-list-table-${locale}`"
       title=""
       :value="store.filteredRows"
       :loading="store.loading"
@@ -369,7 +374,7 @@ function onPage(e: DataTablePageEvent) {
         <div class="flex justify-end gap-2">
           <BaseIconButton
             icon="pi pi-file-excel"
-            label="Export"
+            :label="t('common.export')"
             size="small"
             severity="secondary"
             outlined
@@ -380,10 +385,16 @@ function onPage(e: DataTablePageEvent) {
       </template>
 
       <template #empty>
-        <div class="p-4 text-slate-600 flex justify-center">No reports found.</div>
+        <div class="p-4 text-slate-600 flex justify-center">
+          {{ t('reportList.noReportsFound') }}
+        </div>
       </template>
 
-      <Column header="Route Name" style="min-width: 10rem" sortField="route_name">
+      <Column
+        :header="t('reportList.table.routeName')"
+        style="min-width: 10rem"
+        sortField="route_name"
+      >
         <template #body="{ data }">
           <div class="text-slate-800 font-semibold">
             {{ data.route_name || '-' }}
@@ -391,7 +402,11 @@ function onPage(e: DataTablePageEvent) {
         </template>
       </Column>
 
-      <Column header="Check Point" style="min-width: 16rem" sortField="cp_code">
+      <Column
+        :header="t('reportList.table.checkPoint')"
+        style="min-width: 16rem"
+        sortField="cp_code"
+      >
         <template #body="{ data }">
           <div class="flex flex-col">
             <div class="text-slate-800 font-semibold">{{ data.cp_name }}</div>
@@ -400,7 +415,11 @@ function onPage(e: DataTablePageEvent) {
         </template>
       </Column>
 
-      <Column header="Inspection Result" style="min-width: 10rem" sortField="pr_has_problem">
+      <Column
+        :header="t('reportList.table.inspectionResult')"
+        style="min-width: 10rem"
+        sortField="pr_has_problem"
+      >
         <template #body="{ data }">
           <Tag
             :value="inspectionLabel(data.pr_has_problem)"
@@ -409,21 +428,29 @@ function onPage(e: DataTablePageEvent) {
         </template>
       </Column>
 
-      <Column header="Note" style="min-width: 16rem" sortField="pr_note">
+      <Column :header="t('reportList.table.note')" style="min-width: 16rem" sortField="pr_note">
         <template #body="{ data }">
           <div class="max-w-[420px] truncate" :title="data.pr_note || ''">
-            {{ data.pr_note || '-' }}
+            {{ data.pr_note || t('reportList.emptyNote') }}
           </div>
         </template>
       </Column>
 
-      <Column header="Report Date" style="min-width: 12rem" sortField="report_at">
+      <Column
+        :header="t('reportList.table.reportDate')"
+        style="min-width: 12rem"
+        sortField="report_at"
+      >
         <template #body="{ data }">
           {{ formatDateTime(data.report_at || data.scan_at || data.created_at) }}
         </template>
       </Column>
 
-      <Column header="Issue Status" style="min-width: 12rem" sortField="pr_status">
+      <Column
+        :header="t('reportList.table.issueStatus')"
+        style="min-width: 12rem"
+        sortField="pr_status"
+      >
         <template #body="{ data }">
           <Tag
             :value="issueStatusLabel(data.pr_status, data.pr_has_problem)"
@@ -432,9 +459,13 @@ function onPage(e: DataTablePageEvent) {
         </template>
       </Column>
 
-      <Column field="report_name" header="Guard Name" style="min-width: 12rem" />
+      <Column
+        field="report_name"
+        :header="t('reportList.table.guardName')"
+        style="min-width: 12rem"
+      />
 
-      <Column header="Action" style="width: 160px" sortDisabled>
+      <Column :header="t('reportList.table.action')" style="width: 160px" sortDisabled>
         <template #body="{ data }">
           <div class="flex gap-2 justify-start">
             <BaseIconButton

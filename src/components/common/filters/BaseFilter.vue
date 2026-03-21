@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import BaseInput from '@/components/common/inputs/BaseInput.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
@@ -37,7 +38,7 @@ const props = withDefaults(
     dropdowns: () => [],
     modelSearch: '',
     showSearch: true,
-    searchPlaceholder: 'Search...',
+    searchPlaceholder: '',
     modelDateFrom: null,
     modelDateTo: null,
     showDateSelection: false,
@@ -54,6 +55,8 @@ const emit = defineEmits<{
   (e: 'update:modelDateTo', value: Date | null): void
   (e: 'clear'): void
 }>()
+
+const { t } = useI18n()
 
 const searchModel = computed({
   get: () => props.modelSearch ?? '',
@@ -125,14 +128,14 @@ const desktopControlClass = computed(() => {
             label=""
             size="small"
             class="w-full"
-            :placeholder="props.searchPlaceholder"
+            :placeholder="props.searchPlaceholder || t('common.searchPlaceholder')"
           />
         </div>
 
         <div class="flex justify-end sm:shrink-0 sm:justify-start">
           <BaseIconButton
             icon="pi pi-filter-slash"
-            label="Clear Filters"
+            :label="t('common.clearFilters')"
             size="small"
             severity="secondary"
             outlined
@@ -163,7 +166,7 @@ const desktopControlClass = computed(() => {
             inputIcon="pi pi-search"
             size="small"
             class="w-full"
-            :placeholder="props.searchPlaceholder"
+            :placeholder="props.searchPlaceholder || t('common.searchPlaceholder')"
           />
         </div>
       </div>
@@ -171,7 +174,7 @@ const desktopControlClass = computed(() => {
       <div class="flex shrink-0 justify-end">
         <BaseIconButton
           icon="pi pi-filter-slash"
-          label="Clear Filters"
+          :label="t('common.clearFilters')"
           size="small"
           severity="secondary"
           outlined
