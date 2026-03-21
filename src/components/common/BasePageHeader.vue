@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppBreadcrumb from '@/components/app/AppBreadcrumb.vue'
+import AppLanguageSwitcher from '@/components/app/AppLanguageSwitcher.vue'
 
 defineEmits<{
   (e: 'open-menu'): void
@@ -16,6 +17,12 @@ defineEmits<{
       <i class="pi pi-bars"></i>
     </button>
 
-    <AppBreadcrumb />
+    <div class="min-w-0 flex-1">
+      <AppBreadcrumb />
+    </div>
+
+    <div class="shrink-0">
+      <AppLanguageSwitcher />
+    </div>
   </div>
 </template>

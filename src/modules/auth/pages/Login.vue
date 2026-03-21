@@ -1,33 +1,44 @@
 <template>
   <div class="min-h-screen flex items-center justify-center p-4">
-    <form class="w-full max-w-md p-6 rounded-2xl shadow bg-white" @submit.prevent="onLogin">
-      <h1 class="text-2xl text-gray-700 font-semibold mb-1 flex justify-center">
-        Internal Patrol System
-      </h1>
-
-      <div class="space-y-4 mt-6">
-        <BaseInput
-          v-model="code"
-          label="User Code"
-          :hasError="submitted && !code.trim()"
-          message="User Code is required"
-          size="medium"
-        />
-
-        <BasePasswordInput
-          v-model="password"
-          label="Password"
-          :hasError="submitted && !password"
-          message="Password is required"
-          size="medium"
-          :feedback="false"
-          :toggleMask="true"
-        />
-
-        <BaseButton class="w-full" label="Login" :loading="auth.loading" @click="onLogin" />
-        <button type="submit" class="hidden" aria-hidden="true"></button>
+    <div class="relative w-full max-w-md">
+      <div class="absolute -top-14 right-0">
+        <AppLanguageSwitcher />
       </div>
-    </form>
+
+      <form class="w-full p-6 rounded-2xl shadow bg-white" @submit.prevent="onLogin">
+        <h1 class="text-2xl text-gray-700 font-semibold mb-1 flex justify-center">
+          {{ t('login.title') }}
+        </h1>
+
+        <div class="space-y-4 mt-6">
+          <BaseInput
+            v-model="code"
+            :label="t('login.userCode')"
+            :hasError="submitted && !code.trim()"
+            :message="t('login.userCodeRequired')"
+            size="medium"
+          />
+
+          <BasePasswordInput
+            v-model="password"
+            :label="t('login.password')"
+            :hasError="submitted && !password"
+            :message="t('login.passwordRequired')"
+            size="medium"
+            :feedback="false"
+            :toggleMask="true"
+          />
+
+          <BaseButton
+            class="w-full"
+            :label="t('login.button')"
+            :loading="auth.loading"
+            @click="onLogin"
+          />
+          <button type="submit" class="hidden" aria-hidden="true"></button>
+        </div>
+      </form>
+    </div>
   </div>
 </template>
 
@@ -35,13 +46,16 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth.store'
+import AppLanguageSwitcher from '@/components/app/AppLanguageSwitcher.vue'
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import { BaseInput, BasePasswordInput } from '@/components/common/inputs'
 
 const auth = useAuthStore()
 const router = useRouter()
 const toast = useToast()
+const { t } = useI18n()
 
 const code = ref('')
 const password = ref('')
@@ -59,14 +73,14 @@ async function onLogin() {
     auth.clearSession()
     const msg =
       e?.message === 'USER_NOT_FOUND'
-        ? 'User not found'
+        ? t('login.errors.userNotFound')
         : e?.message === 'INVALID_PASSWORD'
-          ? 'Invalid password'
+          ? t('login.errors.invalidPassword')
           : e?.message === 'USER_INACTIVE'
-            ? 'Your account is not activated'
-            : 'Login failed'
+            ? t('login.errors.inactive')
+            : t('login.errors.failed')
 
-    toast.add({ severity: 'error', summary: 'Login', detail: msg, life: 2500 })
+    toast.add({ severity: 'error', summary: t('login.toastTitle'), detail: msg, life: 2500 })
   }
 }
 </script>

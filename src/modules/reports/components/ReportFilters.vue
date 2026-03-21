@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import BaseFilter from '@/components/common/filters/BaseFilter.vue'
 import type { ResultFilter } from '@/modules/reports/reports.types'
 
@@ -28,24 +29,26 @@ const emit = defineEmits<{
   (e: 'clear'): void
 }>()
 
+const { t } = useI18n()
+
 const dropdowns = computed(() => [
   {
     key: 'areaId',
-    label: 'Area',
+    label: t('reportList.filters.area'),
     modelValue: props.modelAreaId,
     options: props.areaOptions,
     widthClass: 'w-full md:w-[260px]',
   },
   {
     key: 'issueStatus',
-    label: 'Issue Status',
+    label: t('reportList.filters.issueStatus'),
     modelValue: props.modelIssueStatus,
     options: props.issueStatusOptions,
     widthClass: 'w-full md:w-[260px]',
   },
   {
     key: 'result',
-    label: 'Inspection Result',
+    label: t('reportList.filters.inspectionResult'),
     modelValue: props.modelResult,
     options: props.resultOptions,
     showClear: false,
@@ -53,7 +56,7 @@ const dropdowns = computed(() => [
   },
   {
     key: 'guardId',
-    label: 'Guard Name',
+    label: t('reportList.filters.guardName'),
     modelValue: props.modelGuardId,
     options: props.guardOptions,
     filter: true,

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import DatePicker from 'primevue/datepicker'
+import { useI18n } from 'vue-i18n'
 
 type SingleDateValue = Date | null
 type DatePickerValue = Date | Date[] | (Date | null)[] | null | undefined
@@ -34,6 +35,8 @@ const emit = defineEmits<{
   (e: 'update:modelDateTo', value: SingleDateValue): void
 }>()
 
+const { t } = useI18n()
+
 function normalizeDateValue(value: DatePickerValue): SingleDateValue {
   return value instanceof Date ? value : null
 }
@@ -50,7 +53,7 @@ function onUpdateDateTo(value: DatePickerValue) {
 <template>
   <div :class="props.wrapperClass">
     <div :class="props.inputWidthClass">
-      <label class="block text-sm text-slate-600 mb-1">From</label>
+      <label class="block text-sm text-slate-600 mb-1">{{ t('dateFilter.from') }}</label>
       <DatePicker
         :modelValue="props.modelDateFrom"
         class="w-full base-date-selection"
@@ -63,13 +66,13 @@ function onUpdateDateTo(value: DatePickerValue) {
         showIcon
         :disabled="props.disabled"
         :maxDate="maxSelectableDate"
-        placeholder="Select start date"
+        :placeholder="t('dateFilter.selectStartDate')"
         @update:modelValue="onUpdateDateFrom"
       />
     </div>
 
     <div :class="props.inputWidthClass">
-      <label class="block text-sm text-slate-600 mb-1">To</label>
+      <label class="block text-sm text-slate-600 mb-1">{{ t('dateFilter.to') }}</label>
       <DatePicker
         :modelValue="props.modelDateTo"
         class="w-full base-date-selection"
@@ -82,7 +85,7 @@ function onUpdateDateTo(value: DatePickerValue) {
         showIcon
         :disabled="props.disabled"
         :maxDate="maxSelectableDate"
-        placeholder="Select end date"
+        :placeholder="t('dateFilter.selectEndDate')"
         @update:modelValue="onUpdateDateTo"
       />
     </div>
