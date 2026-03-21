@@ -16,6 +16,17 @@ import {
 import { BaseInput, BasePasswordInput } from '@/components/common/inputs'
 import { BaseMessage } from '@/components/common/messages'
 
+const { origin, pathname, search, hash } = window.location
+
+if (pathname !== '/' && pathname !== '/index.html') {
+  const routePart = hash && hash.startsWith('#/') ? hash.slice(1) : `${pathname}${search}`
+  const normalizedUrl = `${origin}/#${routePart}`
+
+  if (`${origin}${pathname}${search}${hash}` !== normalizedUrl) {
+    window.location.replace(normalizedUrl)
+  }
+}
+
 const app = createApp(App)
 
 app.use(createPinia())
