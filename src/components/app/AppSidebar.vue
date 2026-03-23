@@ -169,10 +169,12 @@ watch(
   (path) => {
     if (
       path === '/reports' ||
+      path === '/incorrect-scan-reports' ||
       path === '/ctpat-reports' ||
       path === '/patrol-detail-reports' ||
       path === '/patrol-summary-reports' ||
       path.startsWith('/reports/') ||
+      path.startsWith('/incorrect-scan-reports/') ||
       path.startsWith('/ctpat-reports/') ||
       path.startsWith('/patrol-detail-reports/') ||
       path.startsWith('/patrol-summary-reports/')
@@ -214,10 +216,12 @@ function isActivePath(prefix: string) {
 function isReportsGroupActive() {
   return (
     route.path === '/reports' ||
+    route.path === '/incorrect-scan-reports' ||
     route.path === '/ctpat-reports' ||
     route.path === '/patrol-detail-reports' ||
     route.path === '/patrol-summary-reports' ||
     route.path.startsWith('/reports/') ||
+    route.path.startsWith('/incorrect-scan-reports/') ||
     route.path.startsWith('/ctpat-reports/') ||
     route.path.startsWith('/patrol-detail-reports/') ||
     route.path.startsWith('/patrol-summary-reports/')
@@ -261,7 +265,7 @@ function logout() {
     <header class="px-4 py-4 border-b border-white/10">
       <div class="flex items-center gap-3">
         <div class="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center text-xs">
-          Logo
+          <img src="/src/styles/logo/JiaHsinLogo.png" alt="" />
         </div>
         <div class="leading-tight">
           <div class="text-base font-semibold">JIAHSIN CO., LTD</div>
@@ -287,7 +291,13 @@ function logout() {
             <div v-if="reportsOpen" class="mt-1 ml-4 space-y-1">
               <button
                 type="button"
-                :class="subItemClass(isActivePath('/reports') || isActivePath('/ctpat-reports'))"
+                :class="
+                  subItemClass(
+                    isActivePath('/reports') ||
+                      isActivePath('/incorrect-scan-reports') ||
+                      isActivePath('/ctpat-reports'),
+                  )
+                "
                 @click="goToPatrolsData"
               >
                 <span class="flex items-center gap-3">

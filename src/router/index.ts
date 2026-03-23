@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth.store'
 import { useAreasStore } from '@/modules/areas/areas.store'
 import { useCheckpointsStore } from '@/modules/checkpoints/checkpoints.store'
 import { useCtpatReportsStore } from '@/modules/reports/ctpatReports.store'
+import { useIncorrectScanReportsStore } from '@/modules/reports/incorrectScanReports.store'
 import { usePatrolDetailReportsStore } from '@/modules/reports/patrolDetailReports.store'
 import { usePatrolSummaryReportsStore } from '@/modules/reports/patrolSummaryReports.store'
 import { useReportsStore } from '@/modules/reports/reports.store'
@@ -29,6 +30,9 @@ function clearPageFiltersByRouteName(routeName: string | symbol | null | undefin
       break
     case 'ctpat-reports':
       useCtpatReportsStore().clearFilters()
+      break
+    case 'incorrect-scan-reports':
+      useIncorrectScanReportsStore().clearFilters()
       break
     case 'patrol-detail-reports':
       usePatrolDetailReportsStore().clearFilters()

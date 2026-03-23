@@ -6,6 +6,12 @@ export const reportsRoutes = [
     meta: { permission: ['reports.view_all', 'reports.view_mine'] },
   },
   {
+    path: 'incorrect-scan-reports',
+    name: 'incorrect-scan-reports',
+    component: () => import('@/modules/reports/pages/IncorrectScanReportList.vue'),
+    meta: { permission: ['reports.view_all', 'reports.view_mine'] },
+  },
+  {
     path: 'ctpat-reports',
     name: 'ctpat-reports',
     component: () => import('@/modules/reports/pages/CtpatReportList.vue'),

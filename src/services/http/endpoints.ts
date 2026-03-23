@@ -76,6 +76,7 @@ export const endpoints = {
     ctpatReport: '/report/reportctpat',
     patrolDetailReport: '/report/reportpatrolshift',
     totalPatrolShift: '/report/totalpatrolshift',
+    scanCpQrLog: '/report/reportscancpqrlog',
   },
   pointReport: {
     changeStatus: (prId: number | string) => `/pointreport/changestatus/${prId}`,
