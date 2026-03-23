@@ -261,7 +261,7 @@ function logout() {
     <header class="px-4 py-4 border-b border-white/10">
       <div class="flex items-center gap-3">
         <div class="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center text-xs">
-          Logo
+          <img src="/src/styles/logo/JiaHsinLogo.png" alt="" />
         </div>
         <div class="leading-tight">
           <div class="text-base font-semibold">JIAHSIN CO., LTD</div>
