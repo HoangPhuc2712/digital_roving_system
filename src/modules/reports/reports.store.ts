@@ -92,6 +92,7 @@ export const useReportsStore = defineStore('reports', {
             [
               r.area_code,
               r.area_name,
+              r.route_name,
               r.cp_code,
               r.cp_name,
               r.cp_description,

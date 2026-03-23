@@ -417,7 +417,22 @@ function normalizeView(v: ApiPointReportView): ReportRow {
   const note = String(v.prNote ?? '')
   const groupNotes = noteGroups.map((group) => group.pri_image_note).filter(Boolean)
 
-  const q = [areaCode, areaName, cpCode, cpName, reportName].join(' ').toLowerCase()
+  const routeName = String(v.routeName ?? '')
+
+  const q = [
+    areaCode,
+    areaName,
+    routeName,
+    cpCode,
+    cpName,
+    cpDesc,
+    reportName,
+    reportBy,
+    note,
+    ...groupNotes,
+  ]
+    .join(' ')
+    .toLowerCase()
 
   const scanAt = String(v.scanAt ?? v.reportAt ?? v.updatedAt ?? nowIso())
   const reportAt = String(v.reportAt ?? v.scanAt ?? v.updatedAt ?? nowIso())
@@ -466,7 +481,7 @@ function normalizeView(v: ApiPointReportView): ReportRow {
 
     pr_second: actualSecond,
     route_id: Number(v.routeId ?? 0),
-    route_name: String(v.routeName ?? ''),
+    route_name: routeName,
     shift_text: '',
     rd_id: Number(v.rdId ?? 0),
     rd_second: planSecond,
