@@ -57,6 +57,7 @@ const vi = {
   reportList: {
     title: 'Báo cáo tuần tra',
     switchPatrolReports: 'Báo cáo tuần tra',
+    switchIncorrectScanReports: 'Báo cáo điểm quét sai',
     switchCtpatReport: 'Báo cáo C-TPAT',
     noReportsFound: 'Không tìm thấy báo cáo nào.',
     emptyNote: '-',
@@ -103,6 +104,14 @@ const vi = {
       updated: 'Đã cập nhật trạng thái sự cố.',
       failedToUpdate: 'Không thể cập nhật trạng thái sự cố.',
     },
+  },
+  dashboard: {
+    title: 'Bảng điều khiển',
+    clickToView: 'Nhấn để Xem',
+    reportSummary: 'Tóm tắt Báo cáo',
+    totalUsersByRole: 'Tổng Người dùng theo Chức vụ',
+    totalUsersByArea: 'Tổng Người dùng theo Khu vực',
+    totalCheckpointsByArea: 'Tổng Check Point theo Khu vực',
   },
 }
 

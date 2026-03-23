@@ -65,7 +65,7 @@ const reportSwitchButtons = computed(() => [
     onClick: () => router.push({ name: 'reports' }),
   },
   {
-    label: 'Incorrect Scan Reports',
+    label: t('reportList.switchIncorrectScanReports'),
     icon: 'pi pi-file',
     size: 'small',
     severity: 'secondary' as const,
@@ -73,7 +73,7 @@ const reportSwitchButtons = computed(() => [
     onClick: () => router.push({ name: 'incorrect-scan-reports' }),
   },
   {
-    label: 'C-TPAT Reports',
+    label: t('reportList.switchCtpatReport'),
     icon: 'pi pi-file',
     size: 'small',
     severity: 'secondary' as const,

@@ -57,6 +57,7 @@ const zhTW = {
   reportList: {
     title: '巡檢報表',
     switchPatrolReports: '巡檢報表',
+    switchIncorrectScanReports: '扫描报告错误',
     switchCtpatReport: 'C-TPAT 報表',
     noReportsFound: '找不到任何報表。',
     emptyNote: '-',
@@ -103,6 +104,14 @@ const zhTW = {
       updated: '問題狀態已更新。',
       failedToUpdate: '無法更新問題狀態。',
     },
+  },
+  dashboard: {
+    title: '仪表板',
+    clickToView: '点击查看',
+    reportSummary: '报告摘要',
+    totalUsersByRole: '按角色划分的用户总数',
+    totalUsersByArea: '按区域划分的总用户数',
+    totalCheckpointsByArea: '按区域划分的检查点总数',
   },
 }
 

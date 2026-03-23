@@ -57,6 +57,7 @@ const en = {
   reportList: {
     title: 'Patrol Reports',
     switchPatrolReports: 'Patrol Reports',
+    switchIncorrectScanReports: 'Incorrect Scan Reports',
     switchCtpatReport: 'C-TPAT Report',
     noReportsFound: 'No reports found.',
     emptyNote: '-',
@@ -103,6 +104,14 @@ const en = {
       updated: 'Issue status has been updated.',
       failedToUpdate: 'Failed to update issue status.',
     },
+  },
+  dashboard: {
+    title: 'Dashboard',
+    clickToView: 'Click to View',
+    reportSummary: 'Report Summary',
+    totalUsersByRole: 'Total Users By Role',
+    totalUsersByArea: 'Total Users By Area',
+    totalCheckpointsByArea: 'Total Check Points By Area',
   },
 }
 
