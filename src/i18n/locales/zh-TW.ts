@@ -68,7 +68,7 @@ const zhTW = {
     resultOptions: {
       all: '全部',
       ok: 'OK',
-      notOk: '異常',
+      notOk: 'Not OK',
     },
     issueStatusOptions: {
       all: '全部',
@@ -89,7 +89,7 @@ const zhTW = {
     },
     inspectionResultTag: {
       ok: 'OK',
-      notOk: '異常',
+      notOk: 'Not OK',
     },
     issueStatusTag: {
       noIssue: '無問題',

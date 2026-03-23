@@ -68,7 +68,7 @@ const vi = {
     resultOptions: {
       all: 'Tất cả',
       ok: 'OK',
-      notOk: 'Không OK',
+      notOk: 'Not OK',
     },
     issueStatusOptions: {
       all: 'Tất cả',
@@ -89,7 +89,7 @@ const vi = {
     },
     inspectionResultTag: {
       ok: 'OK',
-      notOk: 'Không OK',
+      notOk: 'Not OK',
     },
     issueStatusTag: {
       noIssue: 'Không có sự cố',
