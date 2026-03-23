@@ -36,6 +36,7 @@ const en = {
     patrolsData: 'Patrols Data',
     patrolReports: 'Patrol Reports',
     ctpatReport: 'C-TPAT Report',
+    incorrectScanReports: 'Incorrect Check Point Scan Reports',
     reportsData: 'Reports Data',
     patrolDetailReport: 'Patrol Detail Report',
     patrolSummaryReport: 'Patrol Summary Report',

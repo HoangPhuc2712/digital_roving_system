@@ -35,6 +35,7 @@ const zhTW = {
     root: '內部巡檢報表',
     patrolsData: '巡檢資料',
     patrolReports: '巡檢報表',
+    incorrectScanReports: '错误的检查点扫描报告',
     ctpatReport: 'C-TPAT 報表',
     reportsData: '報表資料',
     patrolDetailReport: '巡檢明細報表',

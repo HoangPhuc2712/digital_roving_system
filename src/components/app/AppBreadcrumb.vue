@@ -53,6 +53,12 @@ const items = computed<BreadcrumbItem[]>(() => {
         { label: t('breadcrumb.patrolsData'), to: { name: 'reports' } },
         { label: t('breadcrumb.ctpatReport') },
       ]
+    case 'incorrect-scan-reports':
+      return [
+        root,
+        { label: t('breadcrumb.patrolsData'), to: { name: 'reports' } },
+        { label: t('breadcrumb.incorrectScanReports') },
+      ]
     case 'patrol-detail-reports':
       return [
         root,

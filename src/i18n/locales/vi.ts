@@ -35,6 +35,7 @@ const vi = {
     root: 'Báo cáo tuần tra nội bộ',
     patrolsData: 'Dữ liệu tuần tra',
     patrolReports: 'Báo cáo tuần tra',
+    incorrectScanReports: 'Báo cáo điểm quét sai',
     ctpatReport: 'Báo cáo C-TPAT',
     reportsData: 'Dữ liệu báo cáo',
     patrolDetailReport: 'Báo cáo chi tiết tuần tra',
