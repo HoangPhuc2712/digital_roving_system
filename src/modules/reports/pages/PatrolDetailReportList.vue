@@ -168,14 +168,14 @@ function onPage(e: DataTablePageEvent) {
       <Column
         field="route_name"
         header="Route Name"
-        style="min-width: 10rem"
+        style="min-width: 14rem"
         sortField="route_name"
       />
 
       <Column
         field="check_point_name"
         header="Check Point"
-        style="min-width: 18rem"
+        style="min-width: 12rem"
         sortField="check_point_name"
       />
 
@@ -195,7 +195,7 @@ function onPage(e: DataTablePageEvent) {
         </template>
       </Column>
 
-      <Column header="Patrol Time" style="min-width: 12rem" sortField="patrol_time">
+      <Column header="Patrol Time" style="min-width: 14rem" sortField="patrol_time">
         <template #body="{ data }">
           {{ formatDateTime(data.patrol_time) }}
         </template>
@@ -204,11 +204,11 @@ function onPage(e: DataTablePageEvent) {
       <Column
         field="report_name"
         header="Patrol Guard"
-        style="min-width: 12rem"
+        style="min-width: 16rem"
         sortField="report_name"
       />
 
-      <Column
+      <!-- <Column
         field="event_zh"
         header="Event Information Zh"
         style="min-width: 14rem"
@@ -228,7 +228,7 @@ function onPage(e: DataTablePageEvent) {
         <template #body="{ data }">
           {{ data.event_vi || '' }}
         </template>
-      </Column>
+      </Column> -->
     </BaseDataTable>
   </div>
 </template>

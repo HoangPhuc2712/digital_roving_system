@@ -4,6 +4,7 @@ import { endpoints } from '@/services/http/endpoints'
 
 import type {
   CtpatReportRow,
+  IncorrectScanReportRow,
   PatrolDetailReportRow,
   PatrolSummaryReportRow,
   ReportImage,
@@ -97,6 +98,24 @@ type ApiCtpatReportView = {
   reportName?: string
   routeId?: number
   routeName?: string
+}
+
+type ApiIncorrectScanReportView = {
+  scqlId?: number
+  psId?: number
+  psStartAt?: string
+  psEndAt?: string
+  routeId?: number
+  routeCode?: string
+  routeName?: string
+  wrongCpId?: number
+  wrongCpCode?: string
+  wrongCpName?: string
+  correctCpId?: number
+  correctCpCode?: string
+  correctCpName?: string
+  createdAt?: string
+  createdName?: string
 }
 
 type ApiPatrolShiftPointReport = {
@@ -848,6 +867,76 @@ export async function fetchPatrolDetailReportRows(): Promise<PatrolDetailReportR
   ).data
   const views = asArray(payload)
   return normalizePatrolDetailRows(views)
+}
+
+function normalizeIncorrectScanReportRow(view: ApiIncorrectScanReportView): IncorrectScanReportRow {
+  const routeCode = String(view.routeCode ?? '').trim()
+  const routeName = String(view.routeName ?? '').trim()
+  const wrongCpCode = String(view.wrongCpCode ?? '').trim()
+  const wrongCpName = String(view.wrongCpName ?? '').trim()
+  const correctCpCode = String(view.correctCpCode ?? '').trim()
+  const correctCpName = String(view.correctCpName ?? '').trim()
+  const createdName = String(view.createdName ?? '').trim()
+
+  const q = [
+    routeCode,
+    routeName,
+    wrongCpCode,
+    wrongCpName,
+    correctCpCode,
+    correctCpName,
+    createdName,
+  ]
+    .join(' ')
+    .toLowerCase()
+
+  return {
+    scql_id: Number(view.scqlId ?? 0),
+    ps_id: Number(view.psId ?? 0),
+    route_id: Number(view.routeId ?? 0),
+    route_code: routeCode,
+    route_name: routeName,
+    ps_start_at: String(view.psStartAt ?? ''),
+    ps_end_at: String(view.psEndAt ?? ''),
+    created_at: String(view.createdAt ?? ''),
+    wrong_cp_id: Number(view.wrongCpId ?? 0),
+    wrong_cp_code: wrongCpCode,
+    wrong_cp_name: wrongCpName,
+    correct_cp_id: Number(view.correctCpId ?? 0),
+    correct_cp_code: correctCpCode,
+    correct_cp_name: correctCpName,
+    created_name: createdName,
+    _q: q,
+  }
+}
+
+type FetchIncorrectScanReportRowsParams = {
+  createdAtFrom?: Date | null
+  createdAtTo?: Date | null
+}
+
+export async function fetchIncorrectScanReportRows(
+  params: FetchIncorrectScanReportRowsParams = {},
+): Promise<IncorrectScanReportRow[]> {
+  const body: Record<string, any> = {}
+
+  if (params.createdAtFrom instanceof Date && Number.isFinite(params.createdAtFrom.getTime())) {
+    body.createdAtFrom = toApiDateTimeZ(params.createdAtFrom)
+  }
+
+  if (params.createdAtTo instanceof Date && Number.isFinite(params.createdAtTo.getTime())) {
+    body.createdAtTo = toApiDateTimeZ(params.createdAtTo)
+  }
+
+  const res = await http.post(endpoints.report.scanCpQrLog, body)
+  const payload = ensureSuccess<ApiIncorrectScanReportView[] | ApiIncorrectScanReportView>(
+    res.data,
+  ).data
+  const views = asArray(payload)
+
+  return views
+    .map(normalizeIncorrectScanReportRow)
+    .sort((a, b) => String(b.created_at ?? '').localeCompare(String(a.created_at ?? '')))
 }
 
 const SECURITY_ROLE_ID = 4

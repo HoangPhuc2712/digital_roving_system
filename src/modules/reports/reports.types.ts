@@ -125,3 +125,23 @@ export type PatrolSummaryReportRow = {
   insufficient_count: number
   abnormal_rate: number
 }
+
+export type IncorrectScanReportRow = {
+  scql_id: number
+  ps_id: number
+  route_id: number
+  route_code: string
+  route_name: string
+  ps_start_at: string
+  ps_end_at: string
+  created_at: string
+  wrong_cp_id: number
+  wrong_cp_code: string
+  wrong_cp_name: string
+  correct_cp_id: number
+  correct_cp_code: string
+  correct_cp_name: string
+  created_name: string
+
+  _q: string
+}

@@ -28,20 +28,20 @@ export async function exportPatrolDetailReportXlsx(params: {
   const ws = wb.addWorksheet('Patrol Detail Report')
 
   ws.columns = [
-    { header: 'Route Name', key: 'route_name', width: 14 },
-    { header: 'Check Point', key: 'check_point_name', width: 32 },
+    { header: 'Route Name', key: 'route_name', width: 30 },
+    { header: 'Check Point', key: 'check_point_name', width: 28 },
     { header: 'Start Time', key: 'start_time', width: 24 },
     { header: 'Finish Time', key: 'finish_time', width: 24 },
     { header: 'Patrol Time', key: 'patrol_time', width: 24 },
     { header: 'Patrol Guard', key: 'report_name', width: 20 },
-    { header: 'Event Information Zh', key: 'event_zh', width: 24 },
-    { header: 'Event Information Vi', key: 'event_vi', width: 24 },
+    //{ header: 'Event Information Zh', key: 'event_zh', width: 24 },
+    //{ header: 'Event Information Vi', key: 'event_vi', width: 24 },
   ]
 
   const headerRow = ws.getRow(1)
   headerRow.height = 22
 
-  for (let c = 1; c <= 8; c++) {
+  for (let c = 1; c <= 6; c++) {
     const cell = ws.getCell(1, c)
     cell.font = { bold: true, color: { argb: 'FF0F172A' } }
     cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }
@@ -62,8 +62,8 @@ export async function exportPatrolDetailReportXlsx(params: {
       finish_time: formatDateTime(row.finish_time),
       patrol_time: formatDateTime(row.patrol_time),
       report_name: row.report_name || '-',
-      event_zh: row.event_zh || '',
-      event_vi: row.event_vi || '',
+      //event_zh: row.event_zh || '',
+      //event_vi: row.event_vi || '',
     })
   }
 
@@ -75,7 +75,7 @@ export async function exportPatrolDetailReportXlsx(params: {
     const fillColor = hexToArgb(data?.shift_color || '#FFFFFF')
 
     row.eachCell((cell, colNumber) => {
-      cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true }
+      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }
       cell.border = {
         top: { style: 'thin' },
         left: { style: 'thin' },
