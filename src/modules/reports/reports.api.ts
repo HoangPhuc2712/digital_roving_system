@@ -972,6 +972,12 @@ async function fetchPlannedPatrolShiftByDate(date: Date) {
   }
 
   const res = await http.post(endpoints.patrolShiftView.getList, body)
+
+  console.log('[PatrolSummary] patrolShiftView raw response:', {
+    requestBody: body,
+    response: res.data,
+  }) //Show list of Patrol Shift View
+
   const payload = ensureSuccess<ApiPlannedPatrolShiftView[] | ApiPlannedPatrolShiftView>(
     res.data,
   ).data
