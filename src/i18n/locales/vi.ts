@@ -8,6 +8,9 @@ const vi = {
     error: 'Lỗi',
     view: 'Xem',
     edit: 'Chỉnh sửa',
+    close: 'Đóng',
+    submit: 'Xác nhận',
+    cancel: 'Hủy',
   },
   languageSwitcher: {
     languages: {
@@ -54,11 +57,13 @@ const vi = {
     selectStartDate: 'Chọn ngày bắt đầu',
     selectEndDate: 'Chọn ngày kết thúc',
   },
-  reportList: {
-    title: 'Báo cáo tuần tra',
+  patrolDataButtonSwitch: {
     switchPatrolReports: 'Báo cáo tuần tra',
     switchIncorrectScanReports: 'Báo cáo điểm quét sai',
     switchCtpatReport: 'Báo cáo C-TPAT',
+  },
+  reportList: {
+    title: 'Báo cáo tuần tra',
     noReportsFound: 'Không tìm thấy báo cáo nào.',
     emptyNote: '-',
     filters: {
@@ -149,12 +154,31 @@ const vi = {
     status: 'Trạng thái',
     selectStatus: 'Cập nhật trạng thái',
     updatedBy: 'Cập nhật bởi',
-    cancel: 'Hủy',
     detail: 'Chi tiết',
     noDetailAvailable: 'Không có',
     noImages: 'Không có dữ liệu ảnh',
-    close: 'Đóng',
-    sumbit: 'Gửi',
+  },
+  incorrectScanReportList: {
+    title: 'Báo cáo quét sai điểm kiểm tra',
+    noIncorrectScan: 'Không tìm thấy báo cáo quét sai',
+    routeName: 'Tên lộ trình',
+    startTime: 'Thời gian bắt đầu',
+    finishTime: 'Thời gian kết thúc',
+    patrolTime: 'Thời gian tuần tra',
+    incorrectScanPoint: 'Điểm quét sai',
+    correctScanPoint: 'Điểm quét đúng',
+    guardName: 'Tên bảo vệ',
+  },
+  ctpatReportList: {
+    title: 'Báo cáo C-TPAT',
+    noReports: 'Không tìm thấy báo cáo',
+    routeName: 'Tên lộ trình',
+    checkpointName: 'Điểm kiểm tra',
+    startTime: 'Thời gian bắt đầu',
+    finishTime: 'Thời gian kết thúc',
+    patrolTime: 'Thời gian tuần tra',
+    guardName: 'Tên bảo vệ',
+    routeOrder: 'Thứ tự lộ trình',
   },
 }
 

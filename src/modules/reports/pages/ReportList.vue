@@ -57,7 +57,7 @@ const suppressDateReload = ref(false)
 
 const reportSwitchButtons = computed(() => [
   {
-    label: t('reportList.switchPatrolReports'),
+    label: t('patrolDataButtonSwitch.switchPatrolReports'),
     icon: 'pi pi-file',
     size: 'small',
     severity: 'info' as const,
@@ -65,7 +65,7 @@ const reportSwitchButtons = computed(() => [
     onClick: () => router.push({ name: 'reports' }),
   },
   {
-    label: t('reportList.switchIncorrectScanReports'),
+    label: t('patrolDataButtonSwitch.switchIncorrectScanReports'),
     icon: 'pi pi-file',
     size: 'small',
     severity: 'secondary' as const,
@@ -73,7 +73,7 @@ const reportSwitchButtons = computed(() => [
     onClick: () => router.push({ name: 'incorrect-scan-reports' }),
   },
   {
-    label: t('reportList.switchCtpatReport'),
+    label: t('patrolDataButtonSwitch.switchCtpatReport'),
     icon: 'pi pi-file',
     size: 'small',
     severity: 'secondary' as const,

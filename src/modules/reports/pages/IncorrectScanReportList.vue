@@ -4,6 +4,7 @@ import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { type DataTablePageEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
+import { useI18n } from 'vue-i18n'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import BaseButtonGroup from '@/components/common/buttons/BaseButtonGroup.vue'
@@ -17,10 +18,11 @@ const router = useRouter()
 const store = useIncorrectScanReportsStore()
 const dateReloadTimer = ref<number | null>(null)
 const exporting = ref(false)
+const { t, locale } = useI18n()
 
 const reportSwitchButtons = computed(() => [
   {
-    label: 'Patrol Reports',
+    label: t('patrolDataButtonSwitch.switchPatrolReports'),
     icon: 'pi pi-file',
     size: 'small',
     severity: 'secondary' as const,
@@ -28,7 +30,7 @@ const reportSwitchButtons = computed(() => [
     onClick: () => router.push({ name: 'reports' }),
   },
   {
-    label: 'Incorrect Scan Reports',
+    label: t('patrolDataButtonSwitch.switchIncorrectScanReports'),
     icon: 'pi pi-file',
     size: 'small',
     severity: 'info' as const,
@@ -36,7 +38,7 @@ const reportSwitchButtons = computed(() => [
     onClick: () => router.push({ name: 'incorrect-scan-reports' }),
   },
   {
-    label: 'C-TPAT Reports',
+    label: t('patrolDataButtonSwitch.switchCtpatReport'),
     icon: 'pi pi-file',
     size: 'small',
     severity: 'secondary' as const,
@@ -131,7 +133,9 @@ function onPage(e: DataTablePageEvent) {
 <template>
   <div class="page-reports space-y-3">
     <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-      <div class="text-[26px] font-semibold text-slate-800">Incorrect Scan Point Reports</div>
+      <div class="text-[26px] font-semibold text-slate-800">
+        {{ t('incorrectScanReportList.title') }}
+      </div>
       <BaseButtonGroup :buttons="reportSwitchButtons" />
     </div>
 
@@ -147,6 +151,7 @@ function onPage(e: DataTablePageEvent) {
     />
 
     <BaseDataTable
+      :key="`incorrect-scan-report-list-table-${locale}`"
       title=""
       :value="store.filteredRows"
       :loading="store.loading"
@@ -159,7 +164,7 @@ function onPage(e: DataTablePageEvent) {
         <div class="flex justify-end gap-2">
           <BaseIconButton
             icon="pi pi-file-excel"
-            label="Export"
+            :label="t('common.export')"
             size="small"
             severity="secondary"
             outlined
@@ -170,12 +175,14 @@ function onPage(e: DataTablePageEvent) {
         </div>
       </template>
       <template #empty>
-        <div class="p-4 text-slate-600 flex justify-center">No incorrect scan reports found.</div>
+        <div class="p-4 text-slate-600 flex justify-center">
+          {{ t('incorrectScanReportList.noIncorrectScan') }}.
+        </div>
       </template>
 
       <Column
         field="route_name"
-        header="Route Name"
+        :header="t('incorrectScanReportList.routeName')"
         style="min-width: 14rem"
         sortField="route_name"
       >
@@ -184,25 +191,41 @@ function onPage(e: DataTablePageEvent) {
         </template>
       </Column>
 
-      <Column header="Start Time" style="min-width: 12rem" sortField="ps_start_at">
+      <Column
+        :header="t('incorrectScanReportList.startTime')"
+        style="min-width: 12rem"
+        sortField="ps_start_at"
+      >
         <template #body="{ data }">
           {{ formatDateTime(data.ps_start_at) }}
         </template>
       </Column>
 
-      <Column header="Finish Time" style="min-width: 12rem" sortField="ps_end_at">
+      <Column
+        :header="t('incorrectScanReportList.finishTime')"
+        style="min-width: 12rem"
+        sortField="ps_end_at"
+      >
         <template #body="{ data }">
           {{ formatDateTime(data.ps_end_at) }}
         </template>
       </Column>
 
-      <Column header="Patrol Time" style="min-width: 12rem" sortField="created_at">
+      <Column
+        :header="t('incorrectScanReportList.patrolTime')"
+        style="min-width: 12rem"
+        sortField="created_at"
+      >
         <template #body="{ data }">
           {{ formatDateTime(data.created_at) }}
         </template>
       </Column>
 
-      <Column header="Incorrect Scan Point" style="min-width: 16rem" sortField="wrong_cp_code">
+      <Column
+        :header="t('incorrectScanReportList.incorrectScanPoint')"
+        style="min-width: 16rem"
+        sortField="wrong_cp_code"
+      >
         <template #body="{ data }">
           <div class="flex flex-col">
             <div class="text-red-600 font-semibold">{{ data.wrong_cp_name || '-' }}</div>
@@ -211,7 +234,11 @@ function onPage(e: DataTablePageEvent) {
         </template>
       </Column>
 
-      <Column header="Correct Scan Point" style="min-width: 16rem" sortField="correct_cp_code">
+      <Column
+        :header="t('incorrectScanReportList.correctScanPoint')"
+        style="min-width: 16rem"
+        sortField="correct_cp_code"
+      >
         <template #body="{ data }">
           <div class="flex flex-col">
             <div class="text-slate-800 font-semibold">{{ data.correct_cp_name || '-' }}</div>
@@ -222,7 +249,7 @@ function onPage(e: DataTablePageEvent) {
 
       <Column
         field="created_name"
-        header="Guard Name"
+        :header="t('incorrectScanReportList.guardName')"
         style="min-width: 12rem"
         sortField="created_name"
       />

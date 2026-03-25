@@ -8,6 +8,9 @@ const en = {
     error: 'Error',
     view: 'View',
     edit: 'Edit',
+    close: 'Close',
+    submit: 'Submit',
+    cancel: 'Cancel',
   },
   languageSwitcher: {
     languages: {
@@ -54,11 +57,13 @@ const en = {
     selectStartDate: 'Select start date',
     selectEndDate: 'Select end date',
   },
-  reportList: {
-    title: 'Patrol Reports',
+  patrolDataButtonSwitch: {
     switchPatrolReports: 'Patrol Reports',
     switchIncorrectScanReports: 'Incorrect Scan Reports',
     switchCtpatReport: 'C-TPAT Reports',
+  },
+  reportList: {
+    title: 'Patrol Reports',
     noReportsFound: 'No reports found.',
     emptyNote: '-',
     filters: {
@@ -149,17 +154,11 @@ const en = {
     status: 'Status',
     selectStatus: 'Select Status',
     updatedBy: 'Updated by',
-    cancel: 'Cancel',
     detail: 'Detail',
     noDetailAvailable: 'No detail available',
     noImages: 'No images',
-    close: 'Close',
-    sumbit: 'Submit',
   },
-  IncorrectScanReportList: {
-    switchPatrolReports: 'Patrol Reports',
-    switchIncorrectScanReports: 'Incorrect Scan Reports',
-    switchCtpatReport: 'C-TPAT Reports',
+  incorrectScanReportList: {
     title: 'Incorrect Scan Point Reports',
     noIncorrectScan: 'No incorrect scan reports found',
     routeName: 'Route Name',
@@ -169,6 +168,17 @@ const en = {
     incorrectScanPoint: 'Incorrect Scan Point',
     correctScanPoint: 'Correct Scan Point',
     guardName: 'Guard Name',
+  },
+  ctpatReportList: {
+    title: 'C-TPAT Reports',
+    noReports: 'No Reports found',
+    routeName: 'Route Name',
+    checkpointName: 'Check Point',
+    startTime: 'Start Time',
+    finishTime: 'Finish Time',
+    patrolTime: 'Patrol Time',
+    guardName: 'Guard Name',
+    routeOrder: 'Route Order',
   },
 }
 

@@ -8,6 +8,9 @@ const zhTW = {
     error: '錯誤',
     view: '檢視',
     edit: '編輯',
+    close: '關閉',
+    sumbit: '提交',
+    cancel: '取消',
   },
   languageSwitcher: {
     languages: {
@@ -54,11 +57,13 @@ const zhTW = {
     selectStartDate: '選擇開始日期',
     selectEndDate: '選擇結束日期',
   },
-  reportList: {
-    title: '巡檢報表',
+  patrolDataButtonSwitch: {
     switchPatrolReports: '巡檢報表',
     switchIncorrectScanReports: '扫描报告错误',
     switchCtpatReport: 'C-TPAT 報表',
+  },
+  reportList: {
+    title: '巡檢報表',
     noReportsFound: '找不到任何報表。',
     emptyNote: '-',
     filters: {
@@ -149,12 +154,31 @@ const zhTW = {
     status: '狀態',
     selectStatus: '選擇狀態',
     updatedBy: '更新者',
-    cancel: '取消',
     detail: '詳細內容',
     noDetailAvailable: '無詳細內容',
     noImages: '無圖片',
-    close: '關閉',
-    sumbit: '提交',
+  },
+  incorrectScanReportList: {
+    title: '錯誤掃描檢查點報告',
+    noIncorrectScan: '找不到錯誤掃描報告',
+    routeName: '路線名稱',
+    startTime: '開始時間',
+    finishTime: '結束時間',
+    patrolTime: '巡邏時間',
+    incorrectScanPoint: '錯誤掃描點',
+    correctScanPoint: '正確掃描點',
+    guardName: '警衛姓名',
+  },
+  ctpatReportList: {
+    title: 'C-TPAT 報告',
+    noReports: '找不到報告',
+    routeName: '路線名稱',
+    checkpointName: '檢查點',
+    startTime: '開始時間',
+    finishTime: '結束時間',
+    patrolTime: '巡邏時間',
+    guardName: '警衛姓名',
+    routeOrder: '路線順序',
   },
 }
 

@@ -80,7 +80,7 @@ function formatDateTime(iso: string) {
 }
 
 function issueStatusLabel(s: number, hasProblem = true) {
-  if (!hasProblem) return 'No Issue'
+  if (!hasProblem) return t('reportForm.issueStatusOptions.noIssue')
   switch (s) {
     case 0:
       return t('reportForm.issueStatusOptions.pending')
@@ -306,7 +306,7 @@ watch(
             <div class="flex justify-end gap-2">
               <BaseButton
                 v-if="inlineStatusEdit"
-                :label="t('reportForm.cancel')"
+                :label="t('common.cancel')"
                 severity="secondary"
                 outlined
                 @click="cancelInlineEditStatus"
@@ -373,10 +373,10 @@ watch(
       </div>
 
       <div class="flex justify-end gap-2 pt-3 border-t border-slate-200">
-        <BaseButton :label="t('reportForm.close')" severity="secondary" outlined @click="close" />
+        <BaseButton :label="t('common.close')" severity="secondary" outlined @click="close" />
         <BaseButton
           v-if="isEditStatus && model.pr_has_problem"
-          :label="t('reportForm.submit')"
+          :label="t('common.submit')"
           severity="success"
           @click="submitStatus"
         />
