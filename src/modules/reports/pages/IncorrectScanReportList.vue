@@ -1,17 +1,22 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
+import { useToast } from 'primevue/usetoast'
 import { type DataTablePageEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import BaseButtonGroup from '@/components/common/buttons/BaseButtonGroup.vue'
+import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import IncorrectScanReportFilters from '@/modules/reports/components/IncorrectScanReportFilters.vue'
 import { useIncorrectScanReportsStore } from '@/modules/reports/incorrectScanReports.store'
+import { exportIncorrectScanReportXlsx } from '@/services/export/incorrectScanReport.export'
 
+const toast = useToast()
 const router = useRouter()
 const store = useIncorrectScanReportsStore()
 const dateReloadTimer = ref<number | null>(null)
+const exporting = ref(false)
 
 const reportSwitchButtons = computed(() => [
   {
@@ -99,6 +104,25 @@ function formatDateTime(iso: string) {
   )}:${pad2(d.getSeconds())}`
 }
 
+async function onExport() {
+  exporting.value = true
+  try {
+    await exportIncorrectScanReportXlsx({
+      rows: store.filteredRows,
+      fileName: `incorrect_scan_reports_${new Date().toISOString().slice(0, 10)}.xlsx`,
+    })
+  } catch (e: any) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: String(e?.message ?? 'Failed to export incorrect scan reports.'),
+      life: 3000,
+    })
+  } finally {
+    exporting.value = false
+  }
+}
+
 function onPage(e: DataTablePageEvent) {
   store.setFirst(e.first)
 }
@@ -131,6 +155,20 @@ function onPage(e: DataTablePageEvent) {
       :first="store.first"
       @page="onPage"
     >
+      <template #toolbar-end>
+        <div class="flex justify-end gap-2">
+          <BaseIconButton
+            icon="pi pi-file-excel"
+            label="Export"
+            size="small"
+            severity="secondary"
+            outlined
+            :loading="exporting"
+            :disabled="exporting"
+            @click="onExport"
+          />
+        </div>
+      </template>
       <template #empty>
         <div class="p-4 text-slate-600 flex justify-center">No incorrect scan reports found.</div>
       </template>

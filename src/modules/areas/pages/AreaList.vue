@@ -27,6 +27,7 @@ import AreaForm, {
   type AreaFormModel,
 } from '@/modules/areas/components/AreaForm.vue'
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
+import AreaPrintOptionsDialog from '@/modules/areas/components/AreaPrintOptionsDialog.vue'
 import { exportAreasXlsx } from '@/services/export/areas.export'
 
 const router = useRouter()
@@ -37,7 +38,17 @@ const store = useAreasStore()
 const auth = useAuthStore()
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('areas.manage'))
+const areaPrintOptions = computed(() =>
+  [...store.rows]
+    .sort((a, b) => String(a.area_name ?? '').localeCompare(String(b.area_name ?? '')))
+    .map((row) => ({
+      label: row.area_name || row.area_code || String(row.area_id),
+      value: row.area_id,
+    })),
+)
 const exporting = ref(false)
+const printOptionsVisible = ref(false)
+const printingAreaId = ref<number | null>(null)
 const DELETE_AREA_API_DRY_RUN = false
 
 const searchDraft = ref(store.searchText)
@@ -304,6 +315,7 @@ function buildAreaPrintItems(row: AreaRow, checkpoints: CheckpointRow[]): Checkp
 }
 
 async function onPrintAreaQr(row: AreaRow) {
+  printingAreaId.value = row.area_id
   try {
     const checkpoints = await fetchCheckpointRows()
     const items = buildAreaPrintItems(row, checkpoints)
@@ -332,6 +344,8 @@ async function onPrintAreaQr(row: AreaRow) {
             : msg || 'Failed to export QR PDF.',
       life: 3500,
     })
+  } finally {
+    printingAreaId.value = null
   }
 }
 
@@ -429,15 +443,27 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
       </template>
 
       <template #toolbar-end>
-        <BaseIconButton
-          icon="pi pi-file-excel"
-          label="Export"
-          size="small"
-          severity="secondary"
-          outlined
-          :disabled="exporting"
-          @click="onExport"
-        />
+        <div class="flex justify-end gap-2">
+          <BaseIconButton
+            v-if="canManage"
+            icon="pi pi-file-pdf"
+            label="CP Print All"
+            size="small"
+            severity="secondary"
+            outlined
+            @click="printOptionsVisible = true"
+          />
+          <BaseIconButton
+            icon="pi pi-file-excel"
+            label="Export"
+            size="small"
+            severity="secondary"
+            outlined
+            :loading="exporting"
+            :disabled="exporting"
+            @click="onExport"
+          />
+        </div>
       </template>
 
       <Column
@@ -490,6 +516,8 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
               outlined
               rounded
               ariaLabel="Print Qr"
+              :loading="printingAreaId === data.area_id"
+              :disabled="printingAreaId === data.area_id"
               @click="onPrintAreaQr(data)"
             />
             <BaseIconButton
@@ -522,5 +550,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
       @submit="handleAreaFormSubmit"
       @close="formModel = null"
     />
+
+    <AreaPrintOptionsDialog v-model:visible="printOptionsVisible" :areaOptions="areaPrintOptions" />
   </div>
 </template>

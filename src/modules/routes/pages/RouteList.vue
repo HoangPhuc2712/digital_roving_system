@@ -302,6 +302,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
           size="small"
           severity="secondary"
           outlined
+          :loading="exporting"
           :disabled="exporting"
           @click="onExport"
         />

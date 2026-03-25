@@ -34,6 +34,7 @@ const confirm = useConfirm()
 const store = useCheckpointsStore()
 const auth = useAuthStore()
 const exporting = ref(false)
+const printingCheckpointId = ref<number | null>(null)
 const DELETE_CHECKPOINT_API_DRY_RUN = false
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('checkpoints.manage'))
@@ -417,6 +418,7 @@ function normalizeQr(src: string) {
 }
 
 async function onPrintCheckpointQr(row: CheckpointRow) {
+  printingCheckpointId.value = row.cp_id
   try {
     await printSingleCheckpointQr({
       areaLabel: row.area_code || row.area_name,
@@ -438,6 +440,8 @@ async function onPrintCheckpointQr(row: CheckpointRow) {
             : msg || 'Failed to export QR PDF.',
       life: 3500,
     })
+  } finally {
+    printingCheckpointId.value = null
   }
 }
 
@@ -517,6 +521,7 @@ async function onExport() {
             size="small"
             severity="secondary"
             outlined
+            :loading="exporting"
             :disabled="exporting"
             @click="onExport"
           />
@@ -587,6 +592,8 @@ async function onExport() {
               outlined
               rounded
               ariaLabel="Print Qr"
+              :loading="printingCheckpointId === data.cp_id"
+              :disabled="printingCheckpointId === data.cp_id"
               @click="onPrintCheckpointQr(data)"
             />
             <BaseIconButton

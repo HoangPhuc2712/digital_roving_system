@@ -35,7 +35,7 @@ const en = {
     root: 'Internal Patrol Report',
     patrolsData: 'Patrols Data',
     patrolReports: 'Patrol Reports',
-    ctpatReport: 'C-TPAT Report',
+    ctpatReport: 'C-TPAT Reports',
     incorrectScanReports: 'Incorrect Scan Point Reports',
     reportsData: 'Reports Data',
     patrolDetailReport: 'Patrol Detail Report',
@@ -58,7 +58,7 @@ const en = {
     title: 'Patrol Reports',
     switchPatrolReports: 'Patrol Reports',
     switchIncorrectScanReports: 'Incorrect Scan Reports',
-    switchCtpatReport: 'C-TPAT Report',
+    switchCtpatReport: 'C-TPAT Reports',
     noReportsFound: 'No reports found.',
     emptyNote: '-',
     filters: {
@@ -155,6 +155,20 @@ const en = {
     noImages: 'No images',
     close: 'Close',
     sumbit: 'Submit',
+  },
+  IncorrectScanReportList: {
+    switchPatrolReports: 'Patrol Reports',
+    switchIncorrectScanReports: 'Incorrect Scan Reports',
+    switchCtpatReport: 'C-TPAT Reports',
+    title: 'Incorrect Scan Point Reports',
+    noIncorrectScan: 'No incorrect scan reports found',
+    routeName: 'Route Name',
+    startTime: 'Start Time',
+    finishTime: 'Finish Time',
+    patrolTime: 'Patrol Time',
+    incorrectScanPoint: 'Incorrect Scan Point',
+    correctScanPoint: 'Correct Scan Point',
+    guardName: 'Guard Name',
   },
 }
 

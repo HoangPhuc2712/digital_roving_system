@@ -20,6 +20,7 @@ const props = defineProps<{
 const auth = useAuthStore()
 const toast = useToast()
 const visible = ref(false)
+const printing = ref(false)
 
 function normalizeSrc(v: string) {
   const s = (v ?? '').trim()
@@ -41,6 +42,7 @@ function open() {
 async function onPrint() {
   if (!props.printItem || !src.value) return
 
+  printing.value = true
   try {
     await printSingleCheckpointQr({
       ...props.printItem,
@@ -59,6 +61,8 @@ async function onPrint() {
             : msg || 'Failed to export QR PDF.',
       life: 3500,
     })
+  } finally {
+    printing.value = false
   }
 }
 </script>
@@ -94,6 +98,8 @@ async function onPrint() {
             label="Print Qr"
             severity="secondary"
             outlined
+            :loading="printing"
+            :disabled="printing"
             @click="onPrint"
           />
         </div>

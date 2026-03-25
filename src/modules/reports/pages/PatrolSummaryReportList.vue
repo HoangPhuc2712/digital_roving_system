@@ -163,7 +163,7 @@ async function onExport() {
             severity="secondary"
             outlined
             :loading="exporting"
-            :disabled="store.loading"
+            :disabled="store.loading || exporting"
             @click="onExport"
           />
         </template>

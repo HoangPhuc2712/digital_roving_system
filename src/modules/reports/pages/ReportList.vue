@@ -386,6 +386,7 @@ function onPage(e: DataTablePageEvent) {
             size="small"
             severity="secondary"
             outlined
+            :loading="exporting"
             :disabled="exporting"
             @click="onExport"
           />
