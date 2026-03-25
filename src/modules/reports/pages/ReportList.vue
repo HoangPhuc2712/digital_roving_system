@@ -19,7 +19,6 @@ import ReportForm, {
   type ReportFormMode,
   type ReportFormModel,
 } from '@/modules/reports/components/ReportForm.vue'
-import ReportFilters from '@/modules/reports/components/ReportFilters.vue'
 import { exportPatrolReportXlsx } from '@/services/export/patrolReport.export'
 import { changeReportStatus, fetchReportRowById } from '@/modules/reports/reports.api'
 
@@ -101,7 +100,7 @@ function scheduleReloadByDate() {
 watch(
   () => [
     store.searchText,
-    store.filterAreaId,
+    store.filterRouteName,
     store.filterIssueStatus,
     store.filterResult,
     store.filterGuardId,
@@ -169,6 +168,7 @@ function applyRouteFilters() {
   if (fromDashboard) {
     store.searchText = ''
     store.filterAreaId = null
+    store.filterRouteName = null
     store.filterGuardId = ''
     store.filterDateFrom = null
     store.filterDateTo = null
@@ -253,6 +253,13 @@ function inspectionLabel(hasProblem: boolean) {
 
 function inspectionSeverity(hasProblem: boolean) {
   return hasProblem ? 'danger' : 'success'
+}
+
+function onColumnFilter(payload: { key: string; value: any }) {
+  if (payload.key === 'routeName') store.filterRouteName = payload.value ?? null
+  if (payload.key === 'issueStatus') store.filterIssueStatus = payload.value ?? null
+  if (payload.key === 'result') store.filterResult = payload.value ?? 'ALL'
+  if (payload.key === 'guardId') store.filterGuardId = payload.value ?? ''
 }
 
 function clearAll() {
@@ -346,28 +353,6 @@ function onPage(e: DataTablePageEvent) {
       <BaseButtonGroup :buttons="reportSwitchButtons" />
     </div>
 
-    <ReportFilters
-      :areaOptions="store.areaOptions"
-      :guardOptions="store.guardOptions"
-      :resultOptions="resultOptions"
-      :issueStatusOptions="issueStatusOptions"
-      :modelAreaId="store.filterAreaId"
-      :modelIssueStatus="store.filterIssueStatus"
-      :modelResult="store.filterResult"
-      :modelGuardId="store.filterGuardId"
-      :modelDateFrom="store.filterDateFrom"
-      :modelDateTo="store.filterDateTo"
-      :modelSearch="store.searchText"
-      @update:modelAreaId="store.filterAreaId = $event"
-      @update:modelIssueStatus="store.filterIssueStatus = $event"
-      @update:modelResult="store.filterResult = $event"
-      @update:modelGuardId="store.filterGuardId = $event"
-      @update:modelDateFrom="store.filterDateFrom = $event"
-      @update:modelDateTo="store.filterDateTo = $event"
-      @update:modelSearch="store.searchText = $event"
-      @clear="clearAll"
-    />
-
     <BaseDataTable
       :key="`report-list-table-${locale}`"
       title=""
@@ -376,6 +361,15 @@ function onPage(e: DataTablePageEvent) {
       dataKey="pr_id"
       :rows="store.rowsPerPage"
       :first="store.first"
+      :modelSearch="store.searchText"
+      :modelDateFrom="store.filterDateFrom"
+      :modelDateTo="store.filterDateTo"
+      :showDateSelection="true"
+      @update:modelSearch="store.searchText = $event"
+      @update:modelDateFrom="store.filterDateFrom = $event"
+      @update:modelDateTo="store.filterDateTo = $event"
+      @update:columnFilter="onColumnFilter"
+      @clear="clearAll"
       @page="onPage"
     >
       <template #toolbar-end>
@@ -403,6 +397,13 @@ function onPage(e: DataTablePageEvent) {
         :header="t('reportList.table.routeName')"
         style="min-width: 10rem"
         sortField="route_name"
+        :filterMenu="{
+          key: 'routeName',
+          type: 'select',
+          value: store.filterRouteName,
+          options: store.routeOptions,
+          filter: true,
+        }"
       >
         <template #body="{ data }">
           <div class="text-slate-800 font-semibold">
@@ -428,6 +429,13 @@ function onPage(e: DataTablePageEvent) {
         :header="t('reportList.table.inspectionResult')"
         style="min-width: 10rem"
         sortField="pr_has_problem"
+        :filterMenu="{
+          key: 'result',
+          type: 'select',
+          value: store.filterResult,
+          options: resultOptions,
+          showClear: false,
+        }"
       >
         <template #body="{ data }">
           <Tag
@@ -459,6 +467,13 @@ function onPage(e: DataTablePageEvent) {
         :header="t('reportList.table.issueStatus')"
         style="min-width: 12rem"
         sortField="pr_status"
+        :filterMenu="{
+          key: 'issueStatus',
+          type: 'select',
+          value: store.filterIssueStatus,
+          options: issueStatusOptions,
+          showClear: true,
+        }"
       >
         <template #body="{ data }">
           <Tag
@@ -472,6 +487,13 @@ function onPage(e: DataTablePageEvent) {
         field="report_name"
         :header="t('reportList.table.guardName')"
         style="min-width: 12rem"
+        :filterMenu="{
+          key: 'guardId',
+          type: 'select',
+          value: store.filterGuardId,
+          options: store.guardOptions,
+          filter: true,
+        }"
       />
 
       <Column :header="t('reportList.table.action')" style="width: 160px" sortDisabled>

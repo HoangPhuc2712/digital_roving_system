@@ -9,7 +9,6 @@ import { useI18n } from 'vue-i18n'
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import BaseButtonGroup from '@/components/common/buttons/BaseButtonGroup.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
-import IncorrectScanReportFilters from '@/modules/reports/components/IncorrectScanReportFilters.vue'
 import { useIncorrectScanReportsStore } from '@/modules/reports/incorrectScanReports.store'
 import { exportIncorrectScanReportXlsx } from '@/services/export/incorrectScanReport.export'
 
@@ -139,17 +138,6 @@ function onPage(e: DataTablePageEvent) {
       <BaseButtonGroup :buttons="reportSwitchButtons" />
     </div>
 
-    <IncorrectScanReportFilters
-      :modelDateFrom="store.filterDateFrom"
-      :modelDateTo="store.filterDateTo"
-      :modelSearch="store.searchText"
-      :loading="store.loading"
-      @update:modelDateFrom="store.filterDateFrom = $event"
-      @update:modelDateTo="store.filterDateTo = $event"
-      @update:modelSearch="store.searchText = $event"
-      @clear="clearAll"
-    />
-
     <BaseDataTable
       :key="`incorrect-scan-report-list-table-${locale}`"
       title=""
@@ -158,6 +146,15 @@ function onPage(e: DataTablePageEvent) {
       dataKey="scql_id"
       :rows="store.rowsPerPage"
       :first="store.first"
+      :modelSearch="store.searchText"
+      :modelDateFrom="store.filterDateFrom"
+      :modelDateTo="store.filterDateTo"
+      :showDateSelection="true"
+      :clearDisabled="store.loading"
+      @update:modelSearch="store.searchText = $event"
+      @update:modelDateFrom="store.filterDateFrom = $event"
+      @update:modelDateTo="store.filterDateTo = $event"
+      @clear="clearAll"
       @page="onPage"
     >
       <template #toolbar-end>

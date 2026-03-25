@@ -5,16 +5,15 @@ import { useRouter } from 'vue-router'
 import Column from 'primevue/column'
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
-import { useConfirm } from 'primevue/useconfirm'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
+import BaseConfirmDelete from '@/components/common/BaseConfirmDelete.vue'
 
 import { useUsersStore } from '@/modules/users/users.store'
 import { useAuthStore } from '@/stores/auth.store'
 import type { UserRow } from '@/modules/users/users.types'
 import { deleteUserMock } from '@/modules/users/users.api'
 
-import UserFilters from '../components/UserFilters.vue'
 import UserForm, {
   type UserFormModel,
   type UserFormMode,
@@ -24,7 +23,6 @@ import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import { exportUsersXlsx } from '@/services/export/users.export'
 
 const toast = useToast()
-const confirm = useConfirm()
 
 const store = useUsersStore()
 const auth = useAuthStore()
@@ -32,8 +30,13 @@ const router = useRouter()
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('users.manage'))
 const exporting = ref(false)
+const confirmDeleteVisible = ref(false)
+const confirmDeleteMessage = ref('')
+const confirmDeleteLoading = ref(false)
+const pendingDeleteAction = ref<null | (() => Promise<void>)>(null)
 
 const searchDraft = ref(store.searchText)
+
 let searchTimer: number | undefined
 
 watch(searchDraft, (val) => {
@@ -50,7 +53,6 @@ watch(
 
 onMounted(async () => {
   await store.load()
-  console.log(store.filteredRows)
 })
 
 function statusLabel(s: number) {
@@ -102,32 +104,52 @@ function openEdit(row: UserRow) {
   formVisible.value = true
 }
 
+function openDeleteConfirm(message: string, action: () => Promise<void>) {
+  confirmDeleteMessage.value = message
+  pendingDeleteAction.value = action
+  confirmDeleteVisible.value = true
+}
+
+async function onConfirmDelete() {
+  if (!pendingDeleteAction.value || confirmDeleteLoading.value) return
+
+  confirmDeleteLoading.value = true
+  try {
+    await pendingDeleteAction.value()
+    confirmDeleteVisible.value = false
+    pendingDeleteAction.value = null
+  } finally {
+    confirmDeleteLoading.value = false
+  }
+}
+
+function closeDeleteConfirm() {
+  confirmDeleteVisible.value = false
+  confirmDeleteLoading.value = false
+  pendingDeleteAction.value = null
+}
+
 async function onDelete(row: UserRow) {
-  confirm.require({
-    header: 'Confirm Delete',
-    message: `Delete user ${row.user_name}?`,
-    acceptLabel: 'Delete',
-    rejectLabel: 'Cancel',
-    accept: async () => {
-      try {
-        await deleteUserMock({ user_id: row.user_id, actor_id: auth.user?.user_id ?? '' })
-        await store.load()
-        selectedUsers.value = null
-        toast.add({
-          severity: 'success',
-          summary: 'Deleted',
-          detail: 'User has been deleted.',
-          life: 2000,
-        })
-      } catch (e: any) {
-        toast.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: e?.message ?? 'Failed to delete user.',
-          life: 3000,
-        })
-      }
-    },
+  openDeleteConfirm(`Are you sure you want to delete user ${row.user_name}?`, async () => {
+    try {
+      await deleteUserMock({ user_id: row.user_id, actor_id: auth.user?.user_id ?? '' })
+      await store.load()
+      selectedUsers.value = null
+      toast.add({
+        severity: 'success',
+        summary: 'Deleted',
+        detail: 'User has been deleted.',
+        life: 2000,
+      })
+    } catch (e: any) {
+      toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: e?.message ?? 'Failed to delete user.',
+        life: 3000,
+      })
+      throw e
+    }
   })
 }
 
@@ -135,12 +157,9 @@ function confirmDeleteSelected() {
   const items = selectedUsers.value ?? []
   if (!items.length) return
 
-  confirm.require({
-    header: 'Confirm Delete',
-    message: `Delete ${items.length} selected user(s)?`,
-    acceptLabel: 'Delete',
-    rejectLabel: 'Cancel',
-    accept: async () => {
+  openDeleteConfirm(
+    `Are you sure you want to delete ${items.length} selected user(s)?`,
+    async () => {
       try {
         const actor = auth.user?.user_id ?? ''
         for (const u of items) {
@@ -161,9 +180,15 @@ function confirmDeleteSelected() {
           detail: e?.message ?? 'Failed to delete users.',
           life: 3000,
         })
+        throw e
       }
     },
-  })
+  )
+}
+
+function onColumnFilter(payload: { key: string; value: any }) {
+  if (payload.key === 'roleId') store.filterRoleId = payload.value ?? null
+  if (payload.key === 'areaId') store.filterAreaId = payload.value ?? null
 }
 
 function clearAll() {
@@ -223,18 +248,6 @@ function onViewPatrolPath(row: UserRow) {
   <div class="space-y-3">
     <div class="text-[26px] font-semibold text-slate-800">Users Management</div>
 
-    <UserFilters
-      :roleOptions="store.roleOptions"
-      :areaOptions="store.areaOptions"
-      :modelRoleId="store.filterRoleId"
-      :modelAreaId="store.filterAreaId"
-      :modelSearch="searchDraft"
-      @update:modelRoleId="store.filterRoleId = $event"
-      @update:modelAreaId="store.filterAreaId = $event"
-      @update:modelSearch="searchDraft = $event"
-      @clear="clearAll"
-    />
-
     <BaseDataTable
       title="Users"
       :value="store.filteredRows"
@@ -242,6 +255,10 @@ function onViewPatrolPath(row: UserRow) {
       dataKey="user_id"
       v-model:selection="selectedUsers"
       :rows="store.rowsPerPage"
+      :modelSearch="searchDraft"
+      @update:modelSearch="searchDraft = $event"
+      @update:columnFilter="onColumnFilter"
+      @clear="clearAll"
     >
       <template v-if="canManage" #toolbar-start>
         <div class="flex gap-2">
@@ -288,13 +305,33 @@ function onViewPatrolPath(row: UserRow) {
 
       <Column field="user_name" header="Name" style="min-width: 14rem" />
       <Column field="user_code" header="User Code" style="min-width: 10rem" />
-      <Column header="Area" style="min-width: 14rem" sortField="area_name">
+      <Column
+        header="Area"
+        style="min-width: 14rem"
+        sortField="area_name"
+        :filterMenu="{
+          key: 'areaId',
+          type: 'select',
+          value: store.filterAreaId,
+          options: store.areaOptions,
+        }"
+      >
         <template #body="{ data }">
           <div class="text-slate-800">{{ data.area_name }}</div>
         </template>
       </Column>
 
-      <Column header="Role" style="min-width: 12rem" sortField="role_name">
+      <Column
+        header="Role"
+        style="min-width: 12rem"
+        sortField="role_name"
+        :filterMenu="{
+          key: 'roleId',
+          type: 'select',
+          value: store.filterRoleId,
+          options: store.roleOptions,
+        }"
+      >
         <template #body="{ data }">
           <div class="text-slate-800">{{ data.role_name }}</div>
         </template>
@@ -308,21 +345,6 @@ function onViewPatrolPath(row: UserRow) {
           />
         </template>
       </Column>
-
-      <!-- <Column header="Patrol Routes" style="min-width: 12rem" :exportable="false">
-        <template #body="{ data }">
-          <div class="flex justify-start">
-            <BaseIconButton
-              icon="pi pi-eye"
-              label="View"
-              size="small"
-              severity="secondary"
-              outlined
-              @click="onViewPatrolPath(data)"
-            />
-          </div>
-        </template>
-      </Column> -->
 
       <Column header="Action" style="width: 260px" sortDisabled>
         <template #body="{ data }">
@@ -357,6 +379,15 @@ function onViewPatrolPath(row: UserRow) {
         </template>
       </Column>
     </BaseDataTable>
+
+    <BaseConfirmDelete
+      :visible="confirmDeleteVisible"
+      :message="confirmDeleteMessage"
+      :loading="confirmDeleteLoading"
+      @update:visible="confirmDeleteVisible = $event"
+      @cancel="closeDeleteConfirm"
+      @confirm="onConfirmDelete"
+    />
 
     <UserForm
       v-model:visible="formVisible"

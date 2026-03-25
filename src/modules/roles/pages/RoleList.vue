@@ -3,10 +3,10 @@ import { computed, onMounted, ref, watch } from 'vue'
 import Column from 'primevue/column'
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
-import { useConfirm } from 'primevue/useconfirm'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
+import BaseConfirmDelete from '@/components/common/BaseConfirmDelete.vue'
 
 import { useRolesStore } from '@/modules/roles/roles.store'
 import { useAuthStore } from '@/stores/auth.store'
@@ -15,7 +15,6 @@ import { deleteRole } from '@/modules/roles/roles.api'
 import { fetchUserRows } from '@/modules/users/users.api'
 import { exportRolesXlsx } from '@/services/export/roles.export'
 
-import RoleFilters from '../components/RoleFilters.vue'
 import RoleForm, {
   type RoleFormModel,
   type RoleFormMode,
@@ -23,13 +22,21 @@ import RoleForm, {
 } from '../components/RoleForm.vue'
 
 const toast = useToast()
-const confirm = useConfirm()
-
 const store = useRolesStore()
 const auth = useAuthStore()
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('roles.manage'))
 const exporting = ref(false)
+
+const roleStatusOptions = [
+  { label: 'All', value: 'ALL' },
+  { label: 'Active', value: 'ACTIVE' },
+  { label: 'Inactive', value: 'INACTIVE' },
+]
+const confirmDeleteVisible = ref(false)
+const confirmDeleteMessage = ref('')
+const confirmDeleteLoading = ref(false)
+const pendingDeleteAction = ref<null | (() => Promise<void>)>(null)
 
 const searchDraft = ref(store.searchText)
 let searchTimer: number | undefined
@@ -111,6 +118,31 @@ async function getAssignedUserCounts(roleIds: number[]) {
   return counts
 }
 
+function openDeleteConfirm(message: string, action: () => Promise<void>) {
+  confirmDeleteMessage.value = message
+  pendingDeleteAction.value = action
+  confirmDeleteVisible.value = true
+}
+
+async function onConfirmDelete() {
+  if (!pendingDeleteAction.value || confirmDeleteLoading.value) return
+
+  confirmDeleteLoading.value = true
+  try {
+    await pendingDeleteAction.value()
+    confirmDeleteVisible.value = false
+    pendingDeleteAction.value = null
+  } finally {
+    confirmDeleteLoading.value = false
+  }
+}
+
+function closeDeleteConfirm() {
+  confirmDeleteVisible.value = false
+  confirmDeleteLoading.value = false
+  pendingDeleteAction.value = null
+}
+
 async function onDelete(row: RoleRow) {
   try {
     const counts = await getAssignedUserCounts([row.role_id])
@@ -126,31 +158,26 @@ async function onDelete(row: RoleRow) {
       return
     }
 
-    confirm.require({
-      header: 'Confirm Delete',
-      message: `Delete role ${row.role_name}?`,
-      acceptLabel: 'Delete',
-      rejectLabel: 'Cancel',
-      accept: async () => {
-        try {
-          await deleteRole({ role_id: row.role_id, actor_id: auth.user?.user_id ?? '' })
-          await store.load()
-          selectedRoles.value = null
-          toast.add({
-            severity: 'success',
-            summary: 'Deleted',
-            detail: 'Role has been deleted.',
-            life: 2000,
-          })
-        } catch (e: any) {
-          toast.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: e?.message ?? 'Failed to delete role.',
-            life: 3000,
-          })
-        }
-      },
+    openDeleteConfirm(`Are you sure you want to delete role ${row.role_name}?`, async () => {
+      try {
+        await deleteRole({ role_id: row.role_id, actor_id: auth.user?.user_id ?? '' })
+        await store.load()
+        selectedRoles.value = null
+        toast.add({
+          severity: 'success',
+          summary: 'Deleted',
+          detail: 'Role has been deleted.',
+          life: 2000,
+        })
+      } catch (e: any) {
+        toast.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: e?.message ?? 'Failed to delete role.',
+          life: 3000,
+        })
+        throw e
+      }
     })
   } catch (e: any) {
     toast.add({
@@ -187,12 +214,9 @@ async function confirmDeleteSelected() {
       return
     }
 
-    confirm.require({
-      header: 'Confirm Delete',
-      message: `Delete ${items.length} selected role(s)?`,
-      acceptLabel: 'Delete',
-      rejectLabel: 'Cancel',
-      accept: async () => {
+    openDeleteConfirm(
+      `Are you sure you want to delete ${items.length} selected role(s)?`,
+      async () => {
         try {
           const actor = auth.user?.user_id ?? ''
 
@@ -215,9 +239,10 @@ async function confirmDeleteSelected() {
             detail: e?.message ?? 'Failed to delete roles.',
             life: 3000,
           })
+          throw e
         }
       },
-    })
+    )
   } catch (e: any) {
     toast.add({
       severity: 'error',
@@ -226,6 +251,11 @@ async function confirmDeleteSelected() {
       life: 3000,
     })
   }
+}
+
+function onColumnFilter(payload: { key: string; value: any }) {
+  if (payload.key === 'status') store.filterStatus = payload.value ?? 'ALL'
+  if (payload.key === 'menuId') store.filterMenuId = payload.value ?? null
 }
 
 function clearAll() {
@@ -282,17 +312,6 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
   <div class="space-y-3">
     <div class="text-[26px] font-semibold text-slate-800">Roles Management</div>
 
-    <RoleFilters
-      :menuOptions="store.menuOptions"
-      :modelStatus="store.filterStatus"
-      :modelMenuId="store.filterMenuId"
-      :modelSearch="searchDraft"
-      @update:modelStatus="store.filterStatus = $event"
-      @update:modelMenuId="store.filterMenuId = $event"
-      @update:modelSearch="searchDraft = $event"
-      @clear="clearAll"
-    />
-
     <BaseDataTable
       title="Roles"
       :value="store.filteredRows"
@@ -300,6 +319,10 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
       dataKey="role_id"
       v-model:selection="selectedRoles"
       :rows="store.rowsPerPage"
+      :modelSearch="searchDraft"
+      @update:modelSearch="searchDraft = $event"
+      @update:columnFilter="onColumnFilter"
+      @clear="clearAll"
     >
       <template v-if="canManage" #toolbar-start>
         <div class="flex gap-2">
@@ -347,13 +370,34 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
       <Column field="role_code" header="Role Code" style="min-width: 10rem" />
       <Column field="role_name" header="Role Name" style="min-width: 14rem" />
 
-      <Column header="Access Permissions" style="min-width: 16rem" sortField="menu_count">
+      <Column
+        header="Access Permissions"
+        style="min-width: 16rem"
+        sortField="menu_count"
+        :filterMenu="{
+          key: 'menuId',
+          type: 'select',
+          value: store.filterMenuId,
+          options: store.menuOptions,
+        }"
+      >
         <template #body="{ data }">
           <div class="text-slate-800">{{ data.menu_count }} access permission(s)</div>
         </template>
       </Column>
 
-      <Column header="Status" style="min-width: 10rem" sortField="role_status">
+      <Column
+        header="Status"
+        style="min-width: 10rem"
+        sortField="role_status"
+        :filterMenu="{
+          key: 'status',
+          type: 'select',
+          value: store.filterStatus,
+          options: roleStatusOptions,
+          showClear: false,
+        }"
+      >
         <template #body="{ data }">
           <Tag
             :value="statusLabel(data.role_status)"
@@ -395,6 +439,15 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
         </template>
       </Column>
     </BaseDataTable>
+
+    <BaseConfirmDelete
+      :visible="confirmDeleteVisible"
+      :message="confirmDeleteMessage"
+      :loading="confirmDeleteLoading"
+      @update:visible="confirmDeleteVisible = $event"
+      @cancel="closeDeleteConfirm"
+      @confirm="onConfirmDelete"
+    />
 
     <RoleForm
       v-model:visible="formVisible"

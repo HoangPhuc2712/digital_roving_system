@@ -120,6 +120,7 @@ const en = {
   },
   reportForm: {
     issueStatusOptions: {
+      noIssue: 'No Issue',
       pending: 'Pending',
       inProgress: 'In Progress',
       completed: 'Completed',
@@ -199,6 +200,16 @@ const en = {
     loadingData: 'Đang tải dữ liệu',
     patrolDate: 'Patrol Date',
     patrolArea: 'Patrol Area',
+    requiredNumberOfPatrols: 'Required Number of Patrols',
+    actualPatrolCount: 'Actual Patrols Count',
+    missedPatrolCount: 'Missed Patrols Count',
+    timeProblemCount: 'Time Problem Count',
+    insufficientNumberOfPatrol: 'Insufficient Number of Patrols',
+    abnormalRate: 'Abnormal Rate',
+    noReportFound: 'No Reports Found',
+  },
+  patrolSummaryMissedPatrolDialog: {
+    patrolDate: 'Patrol Date',
   },
 }
 

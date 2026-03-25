@@ -8,8 +8,6 @@ import Column from 'primevue/column'
 import Tag from 'primevue/tag'
 
 import { useToast } from 'primevue/usetoast'
-import { useConfirm } from 'primevue/useconfirm'
-import CheckpointFilters from '@/modules/checkpoints/components/CheckpointFilters.vue'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 
@@ -26,16 +24,25 @@ import CheckpointForm, {
   type CheckpointFormModel,
 } from '@/modules/checkpoints/components/CheckpointForm.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
+import BaseConfirmDelete from '@/components/common/BaseConfirmDelete.vue'
 
 const route = useRoute()
 const toast = useToast()
-const confirm = useConfirm()
-
 const store = useCheckpointsStore()
 const auth = useAuthStore()
 const exporting = ref(false)
 const printingCheckpointId = ref<number | null>(null)
 const DELETE_CHECKPOINT_API_DRY_RUN = false
+
+const checkpointStatusOptions = [
+  { label: 'All', value: 'ALL' },
+  { label: 'Active', value: 'ACTIVE' },
+  { label: 'Inactive', value: 'INACTIVE' },
+]
+const confirmDeleteVisible = ref(false)
+const confirmDeleteMessage = ref('')
+const confirmDeleteLoading = ref(false)
+const pendingDeleteAction = ref<null | (() => Promise<void>)>(null)
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('checkpoints.manage'))
 
@@ -114,6 +121,13 @@ onMounted(async () => {
   applyLockedAreaFilter()
   console.log(store.filteredRows)
 })
+
+function onColumnFilter(payload: { key: string; value: any }) {
+  if (payload.key === 'areaId') store.filterAreaId = payload.value ?? null
+  if (payload.key === 'status') store.filterStatus = payload.value ?? 'ALL'
+  if (payload.key === 'roleIds')
+    store.filterRoleIds = Array.isArray(payload.value) ? payload.value : []
+}
 
 function clearAll() {
   store.searchText = ''
@@ -218,6 +232,31 @@ async function deleteOne(row: CheckpointRow) {
   await deleteCheckpointMock({ cp_id: row.cp_id, actor_id: auth.user?.user_id ?? '' })
 }
 
+function openDeleteConfirm(message: string, action: () => Promise<void>) {
+  confirmDeleteMessage.value = message
+  pendingDeleteAction.value = action
+  confirmDeleteVisible.value = true
+}
+
+async function onConfirmDelete() {
+  if (!pendingDeleteAction.value || confirmDeleteLoading.value) return
+
+  confirmDeleteLoading.value = true
+  try {
+    await pendingDeleteAction.value()
+    confirmDeleteVisible.value = false
+    pendingDeleteAction.value = null
+  } finally {
+    confirmDeleteLoading.value = false
+  }
+}
+
+function closeDeleteConfirm() {
+  confirmDeleteVisible.value = false
+  confirmDeleteLoading.value = false
+  pendingDeleteAction.value = null
+}
+
 async function onDelete(row: CheckpointRow) {
   try {
     const usedInRoutes = await findCheckpointUsage(row)
@@ -240,12 +279,9 @@ async function onDelete(row: CheckpointRow) {
     return
   }
 
-  confirm.require({
-    header: 'Confirm Delete',
-    message: `Delete check point ${row.cp_code} - ${row.cp_name}?`,
-    acceptLabel: 'Delete',
-    rejectLabel: 'Cancel',
-    accept: async () => {
+  openDeleteConfirm(
+    `Are you sure you want to delete check point ${row.cp_code} - ${row.cp_name}?`,
+    async () => {
       try {
         await deleteOne(row)
 
@@ -276,9 +312,10 @@ async function onDelete(row: CheckpointRow) {
           detail: e?.message ?? 'Failed to delete check point.',
           life: 3000,
         })
+        throw e
       }
     },
-  })
+  )
 }
 
 async function onDeleteSelected() {
@@ -314,12 +351,9 @@ async function onDeleteSelected() {
     return
   }
 
-  confirm.require({
-    header: 'Confirm Delete',
-    message: `Delete ${sel.length} selected check points?`,
-    acceptLabel: 'Delete',
-    rejectLabel: 'Cancel',
-    accept: async () => {
+  openDeleteConfirm(
+    `Are you sure you want to delete ${sel.length} selected check points?`,
+    async () => {
       try {
         for (const row of sel) {
           await deleteOne(row)
@@ -352,9 +386,10 @@ async function onDeleteSelected() {
           detail: e?.message ?? 'Failed to delete check points.',
           life: 3000,
         })
+        throw e
       }
     },
-  })
+  )
 }
 
 async function handleCheckpointFormSubmit(payload: {
@@ -471,17 +506,6 @@ async function onExport() {
   <div class="space-y-3">
     <div class="text-[26px] font-semibold text-slate-800">{{ pageTitle }}</div>
 
-    <CheckpointFilters
-      :roleOptions="store.roleOptions"
-      :modelStatus="store.filterStatus"
-      :modelRoleIds="store.filterRoleIds"
-      :modelSearch="searchDraft"
-      @update:modelStatus="store.filterStatus = $event"
-      @update:modelRoleIds="store.filterRoleIds = $event"
-      @update:modelSearch="searchDraft = $event"
-      @clear="clearAll"
-    />
-
     <BaseDataTable
       :title="pageTitle"
       :value="store.filteredRows"
@@ -489,7 +513,11 @@ async function onExport() {
       dataKey="cp_id"
       :rows="store.rowsPerPage"
       :first="store.first"
+      :modelSearch="searchDraft"
       v-model:selection="selectedRows"
+      @update:modelSearch="searchDraft = $event"
+      @update:columnFilter="onColumnFilter"
+      @clear="clearAll"
       @page="(e) => store.setFirst(e.first)"
     >
       <template v-if="canManage" #toolbar-start>
@@ -555,7 +583,18 @@ async function onExport() {
         </template>
       </Column>
 
-      <Column header="Area" style="min-width: 14rem" sortField="area_code">
+      <Column
+        header="Area"
+        style="min-width: 14rem"
+        sortField="area_code"
+        :filterMenu="{
+          key: 'areaId',
+          type: 'select',
+          value: store.filterAreaId,
+          options: store.areaOptions,
+          disabled: lockedAreaId != null,
+        }"
+      >
         <template #body="{ data }">
           <div class="flex flex-col">
             <div class="text-slate-800 font-medium">{{ data.area_code }}</div>
@@ -565,9 +604,38 @@ async function onExport() {
       </Column>
 
       <Column field="cp_description" header="Description" style="min-width: 18rem" />
+
+      <Column
+        header="Role"
+        style="min-width: 14rem"
+        :filterMenu="{
+          key: 'roleIds',
+          type: 'multiselect',
+          value: store.filterRoleIds,
+          options: store.roleOptions,
+          placeholder: 'Select role',
+        }"
+      >
+        <template #body="{ data }">
+          <div class="text-slate-800">
+            {{ Array.isArray(data.role_names) ? data.role_names.join(', ') : '-' }}
+          </div>
+        </template>
+      </Column>
       <Column field="cp_priority" header="Priority" style="min-width: 8rem" />
 
-      <Column header="Status" style="min-width: 10rem" sortField="cp_status">
+      <Column
+        header="Status"
+        style="min-width: 10rem"
+        sortField="cp_status"
+        :filterMenu="{
+          key: 'status',
+          type: 'select',
+          value: store.filterStatus,
+          options: checkpointStatusOptions,
+          showClear: false,
+        }"
+      >
         <template #body="{ data }">
           <Tag :value="statusLabel(data.cp_status)" :severity="statusSeverity(data.cp_status)" />
         </template>
@@ -618,6 +686,15 @@ async function onExport() {
         </template>
       </Column>
     </BaseDataTable>
+
+    <BaseConfirmDelete
+      :visible="confirmDeleteVisible"
+      :message="confirmDeleteMessage"
+      :loading="confirmDeleteLoading"
+      @update:visible="confirmDeleteVisible = $event"
+      @cancel="closeDeleteConfirm"
+      @confirm="onConfirmDelete"
+    />
 
     <CheckpointForm
       v-model:visible="formVisible"

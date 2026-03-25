@@ -9,7 +9,6 @@ import { useI18n } from 'vue-i18n'
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import BaseButtonGroup from '@/components/common/buttons/BaseButtonGroup.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
-import PatrolDetailReportFilters from '@/modules/reports/components/PatrolDetailReportFilters.vue'
 import { usePatrolDetailReportsStore } from '@/modules/reports/patrolDetailReports.store'
 import { exportPatrolDetailReportXlsx } from '@/services/export/patrolDetailReport.export'
 
@@ -21,7 +20,7 @@ const { t, locale } = useI18n()
 
 const reportSwitchButtons = computed(() => [
   {
-    label: 'Patrol Detail Report',
+    label: t('reportDataButtonSwitch.switchPatrolDetailReport'),
     icon: 'pi pi-file',
     size: 'small',
     severity: 'info' as const,
@@ -29,7 +28,7 @@ const reportSwitchButtons = computed(() => [
     onClick: () => router.push({ name: 'patrol-detail-reports' }),
   },
   {
-    label: 'Patrol Summary Report',
+    label: t('reportDataButtonSwitch.switchPatrolSummaryReport'),
     icon: 'pi pi-chart-line',
     size: 'small',
     severity: 'secondary' as const,
@@ -61,6 +60,10 @@ onBeforeRouteLeave(() => {
 onBeforeUnmount(() => {
   resetPageState()
 })
+
+function areaLabel(areaId: number) {
+  return store.areaOptions.find((option) => option.value === areaId)?.label || `Area ${areaId}`
+}
 
 function formatDateTime(iso: string) {
   const s = (iso ?? '').trim()
@@ -109,6 +112,12 @@ async function onExport() {
   }
 }
 
+function onColumnFilter(payload: { key: string; value: any }) {
+  if (payload.key === 'areaId') store.filterAreaId = payload.value ?? null
+  if (payload.key === 'checkPointName') store.filterCheckPointName = payload.value ?? null
+  if (payload.key === 'guardName') store.filterGuardName = payload.value ?? null
+}
+
 function onPage(e: DataTablePageEvent) {
   store.setFirst(e.first)
 }
@@ -117,28 +126,11 @@ function onPage(e: DataTablePageEvent) {
 <template>
   <div class="page-reports space-y-3">
     <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-      <div class="text-[26px] font-semibold text-slate-800">Patrol Detail Report</div>
+      <div class="text-[26px] font-semibold text-slate-800">
+        {{ t('patrolDetailReport.title') }}
+      </div>
       <BaseButtonGroup :buttons="reportSwitchButtons" />
     </div>
-
-    <PatrolDetailReportFilters
-      :areaOptions="store.areaOptions"
-      :checkPointOptions="store.checkPointOptions"
-      :guardOptions="store.guardOptions"
-      :modelAreaId="store.filterAreaId"
-      :modelCheckPointName="store.filterCheckPointName"
-      :modelGuardName="store.filterGuardName"
-      :modelDateFrom="store.filterDateFrom"
-      :modelDateTo="store.filterDateTo"
-      :modelSearch="store.searchText"
-      @update:modelAreaId="store.filterAreaId = $event"
-      @update:modelCheckPointName="store.filterCheckPointName = $event"
-      @update:modelGuardName="store.filterGuardName = $event"
-      @update:modelDateFrom="store.filterDateFrom = $event"
-      @update:modelDateTo="store.filterDateTo = $event"
-      @update:modelSearch="store.searchText = $event"
-      @clear="clearAll"
-    />
 
     <BaseDataTable
       :key="`patrol-detail-report-list-table-${locale}`"
@@ -148,6 +140,15 @@ function onPage(e: DataTablePageEvent) {
       dataKey="row_id"
       :rows="store.rowsPerPage"
       :first="store.first"
+      :modelSearch="store.searchText"
+      :modelDateFrom="store.filterDateFrom"
+      :modelDateTo="store.filterDateTo"
+      :showDateSelection="true"
+      @update:modelSearch="store.searchText = $event"
+      @update:modelDateFrom="store.filterDateFrom = $event"
+      @update:modelDateTo="store.filterDateTo = $event"
+      @update:columnFilter="onColumnFilter"
+      @clear="clearAll"
       @page="onPage"
     >
       <template #toolbar-end>
@@ -170,6 +171,21 @@ function onPage(e: DataTablePageEvent) {
       </template>
 
       <Column
+        header="Area"
+        style="min-width: 12rem"
+        :filterMenu="{
+          key: 'areaId',
+          type: 'select',
+          value: store.filterAreaId,
+          options: store.areaOptions,
+        }"
+      >
+        <template #body="{ data }">
+          {{ areaLabel(data.area_id) }}
+        </template>
+      </Column>
+
+      <Column
         field="route_name"
         header="Route Name"
         style="min-width: 14rem"
@@ -181,6 +197,13 @@ function onPage(e: DataTablePageEvent) {
         header="Check Point"
         style="min-width: 12rem"
         sortField="check_point_name"
+        :filterMenu="{
+          key: 'checkPointName',
+          type: 'select',
+          value: store.filterCheckPointName,
+          options: store.checkPointOptions,
+          filter: true,
+        }"
       />
 
       <Column header="Start Time" style="min-width: 12rem" sortField="start_time">
@@ -210,6 +233,13 @@ function onPage(e: DataTablePageEvent) {
         header="Patrol Guard"
         style="min-width: 16rem"
         sortField="report_name"
+        :filterMenu="{
+          key: 'guardName',
+          type: 'select',
+          value: store.filterGuardName,
+          options: store.guardOptions,
+          filter: true,
+        }"
       />
 
       <!-- <Column

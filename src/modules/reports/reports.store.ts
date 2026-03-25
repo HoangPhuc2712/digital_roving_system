@@ -22,6 +22,7 @@ export const useReportsStore = defineStore('reports', {
     searchText: '' as string,
 
     filterAreaId: null as number | null,
+    filterRouteName: null as string | null,
     filterResult: 'ALL' as ResultFilter,
     filterIssueStatus: null as number | null,
     filterGuardId: '' as string,
@@ -54,6 +55,20 @@ export const useReportsStore = defineStore('reports', {
       return [...seen.entries()]
         .map(([value, label]) => ({ value, label }))
         .sort((a, b) => a.label.localeCompare(b.label))
+    },
+
+    routeOptions(): { label: string; value: string }[] {
+      const seen = new Set<string>()
+      const options: { label: string; value: string }[] = []
+
+      for (const r of this.visibleRows) {
+        const value = String(r.route_name ?? '').trim()
+        if (!value || seen.has(value)) continue
+        seen.add(value)
+        options.push({ label: value, value })
+      }
+
+      return options.sort((a, b) => a.label.localeCompare(b.label))
     },
 
     guardOptions(state): { label: string; value: string }[] {
@@ -105,6 +120,7 @@ export const useReportsStore = defineStore('reports', {
         }
 
         if (this.filterAreaId != null && r.area_id !== this.filterAreaId) return false
+        if (this.filterRouteName != null && r.route_name !== this.filterRouteName) return false
         if (this.filterResult === 'OK' && r.pr_has_problem !== false) return false
         if (this.filterResult === 'NOT_OK' && r.pr_has_problem !== true) return false
         if (this.filterIssueStatus != null) {
@@ -174,6 +190,7 @@ export const useReportsStore = defineStore('reports', {
     clearFilters() {
       this.searchText = ''
       this.filterAreaId = null
+      this.filterRouteName = null
       this.filterResult = 'ALL'
       this.filterIssueStatus = null
       this.filterGuardId = ''

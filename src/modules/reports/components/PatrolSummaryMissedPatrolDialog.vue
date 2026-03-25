@@ -2,10 +2,12 @@
 import { computed } from 'vue'
 import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
+import { useI18n } from 'vue-i18n'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import type { PatrolSummaryMissedPatrolDetailRow } from '@/modules/reports/reports.types'
 
+const { t, locale } = useI18n()
 const props = defineProps<{
   visible: boolean
   patrolDate: string
@@ -40,6 +42,7 @@ const tableRows = computed(() =>
     :contentStyle="{ padding: '1rem 1rem 1.25rem' }"
   >
     <BaseDataTable
+      :key="`missed-patrol-report-list-table-${locale}`"
       title=""
       :value="tableRows"
       dataKey="row_id"
