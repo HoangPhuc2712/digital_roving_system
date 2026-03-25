@@ -4,6 +4,7 @@ import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import { type DataTablePageEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
 import { useToast } from 'primevue/usetoast'
+import { useI18n } from 'vue-i18n'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import BaseButtonGroup from '@/components/common/buttons/BaseButtonGroup.vue'
@@ -16,10 +17,11 @@ const toast = useToast()
 const router = useRouter()
 const store = useCtpatReportsStore()
 const exporting = ref(false)
+const { t, locale } = useI18n()
 
 const reportSwitchButtons = computed(() => [
   {
-    label: 'Patrol Reports',
+    label: t('patrolDataButtonSwitch.switchPatrolReports'),
     icon: 'pi pi-file',
     size: 'small',
     severity: 'secondary' as const,
@@ -27,7 +29,7 @@ const reportSwitchButtons = computed(() => [
     onClick: () => router.push({ name: 'reports' }),
   },
   {
-    label: 'Incorrect Scan Reports',
+    label: t('patrolDataButtonSwitch.switchIncorrectScanReports'),
     icon: 'pi pi-file',
     size: 'small',
     severity: 'secondary' as const,
@@ -35,7 +37,7 @@ const reportSwitchButtons = computed(() => [
     onClick: () => router.push({ name: 'incorrect-scan-reports' }),
   },
   {
-    label: 'C-TPAT Reports',
+    label: t('patrolDataButtonSwitch.switchCtpatReport'),
     icon: 'pi pi-file',
     size: 'small',
     severity: 'info' as const,
@@ -107,7 +109,7 @@ function onPage(e: DataTablePageEvent) {
 <template>
   <div class="page-reports space-y-3">
     <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-      <div class="text-[26px] font-semibold text-slate-800">C-TPAT Report</div>
+      <div class="text-[26px] font-semibold text-slate-800">{{ t('ctpatReportList.title') }}</div>
       <BaseButtonGroup :buttons="reportSwitchButtons" />
     </div>
 
@@ -125,6 +127,7 @@ function onPage(e: DataTablePageEvent) {
     />
 
     <BaseDataTable
+      :key="`ctpat-report-list-table-${locale}`"
       title=""
       :value="store.filteredRows"
       :loading="store.loading"
@@ -137,10 +140,11 @@ function onPage(e: DataTablePageEvent) {
         <div class="flex justify-end gap-2">
           <BaseIconButton
             icon="pi pi-file-excel"
-            label="Export"
+            :label="t('common.export')"
             size="small"
             severity="secondary"
             outlined
+            :loading="exporting"
             :disabled="exporting"
             @click="onExport"
           />
@@ -148,36 +152,46 @@ function onPage(e: DataTablePageEvent) {
       </template>
 
       <template #empty>
-        <div class="p-4 text-slate-600 flex justify-center">No reports found.</div>
+        <div class="p-4 text-slate-600 flex justify-center">
+          {{ t('ctpatReportList.noReports') }}.
+        </div>
       </template>
 
       <Column
         field="route_name"
-        header="Route Name"
+        :header="t('ctpatReportList.routeName')"
         style="min-width: 12rem"
         sortField="route_name"
       />
 
       <Column
         field="check_point_name"
-        header="Check Point"
+        :header="t('ctpatReportList.checkpointName')"
         style="min-width: 18rem"
         sortField="check_point_name"
       />
 
-      <Column header="Start Time" style="min-width: 12rem" sortField="start_at">
+      <Column
+        :header="t('ctpatReportList.startTime')"
+        style="min-width: 12rem"
+        sortField="start_at"
+      >
         <template #body="{ data }">
           {{ formatDateTime(data.start_at) }}
         </template>
       </Column>
 
-      <Column header="Finish Time" style="min-width: 12rem" sortField="end_at">
+      <Column :header="t('ctpatReportList.finishTime')" style="min-width: 12rem" sortField="end_at">
         <template #body="{ data }">
           {{ formatDateTime(data.end_at) }}
         </template>
       </Column>
 
-      <Column header="Patrol Time" style="min-width: 12rem" sortField="scan_at">
+      <Column
+        :header="t('ctpatReportList.patrolTime')"
+        style="min-width: 12rem"
+        sortField="scan_at"
+      >
         <template #body="{ data }">
           {{ formatDateTime(data.scan_at) }}
         </template>
@@ -185,14 +199,14 @@ function onPage(e: DataTablePageEvent) {
 
       <Column
         field="report_name"
-        header="Guard Name"
+        :header="t('ctpatReportList.guardName')"
         style="min-width: 12rem"
         sortField="report_name"
       />
 
       <Column
         field="cp_priority"
-        header="Route Order"
+        :header="t('ctpatReportList.routeOrder')"
         style="min-width: 10rem"
         sortField="cp_priority"
       />

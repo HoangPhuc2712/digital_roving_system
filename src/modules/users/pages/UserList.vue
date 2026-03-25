@@ -272,6 +272,7 @@ function onViewPatrolPath(row: UserRow) {
           size="small"
           severity="secondary"
           outlined
+          :loading="exporting"
           :disabled="exporting"
           @click="onExport"
         />

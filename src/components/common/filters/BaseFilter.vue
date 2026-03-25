@@ -88,11 +88,23 @@ const desktopControlClass = computed(() => {
 
   return 'grid-cols-1 xl:flex xl:flex-wrap xl:items-end'
 })
+
+const showInlineClearWithSingleDropdown = computed(() => {
+  return props.dropdowns.length === 1 && !props.showSearch && !props.showDateSelection
+})
 </script>
 
 <template>
   <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-3">
-    <div v-if="props.dropdowns.length" class="grid gap-3 items-end" :class="dropdownGridClass">
+    <div
+      v-if="props.dropdowns.length"
+      class="grid gap-3 items-end"
+      :class="
+        showInlineClearWithSingleDropdown
+          ? 'grid-cols-1 md:grid-cols-[minmax(0,50%)_auto]'
+          : dropdownGridClass
+      "
+    >
       <div v-for="item in props.dropdowns" :key="item.key" class="min-w-0">
         <label class="block text-sm text-slate-600 mb-1">{{ item.label }}</label>
         <BaseDropdown
@@ -106,6 +118,20 @@ const desktopControlClass = computed(() => {
           :disabled="item.disabled"
           widthClass="w-full"
           @update:modelValue="emit('update:dropdown', { key: item.key, value: $event })"
+        />
+      </div>
+      <div
+        v-if="showInlineClearWithSingleDropdown"
+        class="hidden md:flex md:shrink-0 md:justify-end"
+      >
+        <BaseIconButton
+          icon="pi pi-filter-slash"
+          :label="t('common.clearFilters')"
+          size="small"
+          severity="secondary"
+          outlined
+          :disabled="props.clearDisabled"
+          @click="emit('clear')"
         />
       </div>
     </div>
@@ -146,7 +172,10 @@ const desktopControlClass = computed(() => {
       </div>
     </div>
 
-    <div class="hidden md:flex md:items-end md:justify-between md:gap-3">
+    <div
+      v-if="!showInlineClearWithSingleDropdown"
+      class="hidden md:flex md:items-end md:justify-between md:gap-3"
+    >
       <div class="grid gap-3 items-end flex-1 min-w-0" :class="desktopControlClass">
         <div v-if="props.showDateSelection" class="min-w-0">
           <BaseDateSelection

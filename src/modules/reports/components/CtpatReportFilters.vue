@@ -37,7 +37,7 @@ function onDropdownUpdate(payload: { key: string; value: any }) {
   <BaseFilter
     :dropdowns="dropdowns"
     :modelSearch="props.modelSearch"
-    :showSearch="true"
+    :showSearch="false"
     :showDateSelection="true"
     :modelDateFrom="props.modelDateFrom"
     :modelDateTo="props.modelDateTo"

@@ -6,6 +6,7 @@ import type {
   CtpatReportRow,
   IncorrectScanReportRow,
   PatrolDetailReportRow,
+  PatrolSummaryMissedPatrolDetailRow,
   PatrolSummaryReportRow,
   ReportImage,
   ReportNoteGroup,
@@ -349,9 +350,7 @@ function parseShiftValueTo24h(value: unknown, fallbackMinute = 0): string {
   return raw
 }
 
-function extractShiftText(view: ApiPlannedPatrolShiftView): string {
-  const datePrefix = formatShiftDatePrefix(view)
-
+function extractShiftTimeRange(view: ApiPlannedPatrolShiftView): string {
   const startTime =
     parseShiftValueTo24h(view.psFrom, 0) ||
     (Number.isFinite(Number(view.psHourFrom))
@@ -362,7 +361,12 @@ function extractShiftText(view: ApiPlannedPatrolShiftView): string {
     parseShiftValueTo24h(view.psTo, 59) ||
     (Number.isFinite(Number(view.psHourTo)) ? formatHourMinute24h(Number(view.psHourTo), 59) : '')
 
-  const timeLabel = startTime && endTime ? `${startTime} - ${endTime}` : startTime || endTime
+  return startTime && endTime ? `${startTime} - ${endTime}` : startTime || endTime
+}
+
+function extractShiftText(view: ApiPlannedPatrolShiftView): string {
+  const datePrefix = formatShiftDatePrefix(view)
+  const timeLabel = extractShiftTimeRange(view)
 
   if (datePrefix && timeLabel) return `${datePrefix} ${timeLabel}`
   if (datePrefix) return datePrefix
@@ -1073,6 +1077,25 @@ async function fetchPlannedPatrolShiftByDate(date: Date) {
   return asArray(payload)
 }
 
+function hasActualPatrolData(view: ApiPlannedPatrolShiftView) {
+  const startAt = String(view.psStartAt ?? '').trim()
+  const endAt = String(view.psEndAt ?? '').trim()
+  const realityPoint = Number(view.realityPoint ?? 0)
+  const realitySecond = Number(view.realitySecond ?? 0)
+
+  return !!startAt || !!endAt || realityPoint > 0 || realitySecond > 0
+}
+
+function buildMissedPatrolDetails(
+  views: ApiPlannedPatrolShiftView[],
+): PatrolSummaryMissedPatrolDetailRow[] {
+  return views.map((item, index) => ({
+    row_id: `${Number(item.psId ?? 0)}-${Number(item.routeId ?? 0)}-${index}`,
+    route_name: String(item.routeName ?? '').trim() || '-',
+    patrol_time: extractShiftTimeRange(item) || '-',
+  }))
+}
+
 export async function fetchPatrolSummaryRows(
   dateFrom: Date,
   dateTo: Date,
@@ -1121,17 +1144,12 @@ export async function fetchPatrolSummaryRows(
 
       const requiredCount = plannedRows.length
 
-      const actualRows = plannedRows.filter((item) => {
-        const startAt = String(item.psStartAt ?? '').trim()
-        const endAt = String(item.psEndAt ?? '').trim()
-        const realityPoint = Number(item.realityPoint ?? 0)
-        const realitySecond = Number(item.realitySecond ?? 0)
-
-        return !!startAt || !!endAt || realityPoint > 0 || realitySecond > 0
-      })
+      const actualRows = plannedRows.filter(hasActualPatrolData)
+      const missedRows = plannedRows.filter((item) => !hasActualPatrolData(item))
 
       const actualCount = actualRows.length
       const missedCount = Math.max(requiredCount - actualCount, 0)
+      const missedPatrolDetails = buildMissedPatrolDetails(missedRows)
       const timeProblemCount = actualRows.filter((item) => Boolean(item.timeProblem)).length
       const insufficientCount = actualRows.filter((item) => Boolean(item.pointProblem)).length
       const abnormalTotal = missedCount + timeProblemCount + insufficientCount
@@ -1148,6 +1166,7 @@ export async function fetchPatrolSummaryRows(
         time_problem_count: timeProblemCount,
         insufficient_count: insufficientCount,
         abnormal_rate: Number(abnormalRate.toFixed(2)),
+        missed_patrol_details: missedPatrolDetails,
       })
     }
   }

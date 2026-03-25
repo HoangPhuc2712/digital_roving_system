@@ -2,6 +2,7 @@
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Chart from 'primevue/chart'
+import { useI18n } from 'vue-i18n'
 
 import { useAuthStore } from '@/stores/auth.store'
 import { useDashboardStore } from '@/modules/dashboard/dashboard.store'
@@ -14,6 +15,7 @@ import type {
 const auth = useAuthStore()
 const store = useDashboardStore()
 const router = useRouter()
+const { t, locale } = useI18n()
 
 const canSeeAdminDashboardSummary = computed(() => auth.isAdminUser)
 
@@ -202,7 +204,7 @@ onMounted(async () => {
 
 <template>
   <div class="space-y-6">
-    <div class="text-[26px] font-semibold text-slate-800">Dashboard</div>
+    <div class="text-[26px] font-semibold text-slate-800">{{ t('dashboard.title') }}</div>
 
     <div v-if="store.error" class="p-4">
       <div class="text-slate-800 font-semibold text-lg">Server Maintenance</div>
@@ -230,12 +232,12 @@ onMounted(async () => {
           <span v-else>{{ card.totalItem }}</span>
         </div>
 
-        <div class="mt-2 text-xs text-white/80">Click to view</div>
+        <div class="mt-2 text-xs text-white/80">{{ t('dashboard.clickToView') }}</div>
       </button>
     </div>
 
     <div v-if="canSeeAdminDashboardSummary" class="mt-20 flex flex-col gap-3">
-      <div class="text-xl font-semibold text-slate-800">Report Summary</div>
+      <div class="text-xl font-semibold text-slate-800">{{ t('dashboard.reportSummary') }}</div>
       <div
         v-if="pointReportStatusCards.length"
         class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"
@@ -259,7 +261,7 @@ onMounted(async () => {
             <span v-else>{{ card.total_problem }}</span>
           </div>
 
-          <div class="mt-2 text-xs text-white/80">Click to view</div>
+          <div class="mt-2 text-xs text-white/80">{{ t('dashboard.clickToView') }}</div>
         </button>
       </div>
     </div>
@@ -272,7 +274,9 @@ onMounted(async () => {
         }"
         class="rounded-2xl border border-slate-200 bg-white p-4"
       >
-        <div class="text-base font-semibold text-slate-800">Total Users by Roles</div>
+        <div class="text-base font-semibold text-slate-800">
+          {{ t('dashboard.totalUsersByRole') }}
+        </div>
         <div class="mt-4 h-[320px]">
           <Chart
             type="doughnut"
@@ -291,7 +295,9 @@ onMounted(async () => {
         class="rounded-2xl border border-slate-200 bg-white p-4"
         style="animation-delay: 100ms"
       >
-        <div class="text-base font-semibold text-slate-800">Total Users by Area</div>
+        <div class="text-base font-semibold text-slate-800">
+          {{ t('dashboard.totalUsersByArea') }}
+        </div>
         <div class="mt-4 h-[320px]">
           <Chart
             type="doughnut"
@@ -310,7 +316,9 @@ onMounted(async () => {
         class="rounded-2xl border border-slate-200 bg-white p-4"
         style="animation-delay: 200ms"
       >
-        <div class="text-base font-semibold text-slate-800">Total Checkpoints by Area</div>
+        <div class="text-base font-semibold text-slate-800">
+          {{ t('dashboard.totalCheckpointsByArea') }}
+        </div>
         <div class="mt-4 h-[320px]">
           <Chart
             type="doughnut"

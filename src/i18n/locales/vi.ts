@@ -8,6 +8,9 @@ const vi = {
     error: 'Lỗi',
     view: 'Xem',
     edit: 'Chỉnh sửa',
+    close: 'Đóng',
+    submit: 'Xác nhận',
+    cancel: 'Hủy',
   },
   languageSwitcher: {
     languages: {
@@ -35,6 +38,7 @@ const vi = {
     root: 'Báo cáo tuần tra nội bộ',
     patrolsData: 'Dữ liệu tuần tra',
     patrolReports: 'Báo cáo tuần tra',
+    incorrectScanReports: 'Báo cáo điểm quét sai',
     ctpatReport: 'Báo cáo C-TPAT',
     reportsData: 'Dữ liệu báo cáo',
     patrolDetailReport: 'Báo cáo chi tiết tuần tra',
@@ -53,10 +57,13 @@ const vi = {
     selectStartDate: 'Chọn ngày bắt đầu',
     selectEndDate: 'Chọn ngày kết thúc',
   },
+  patrolDataButtonSwitch: {
+    switchPatrolReports: 'Báo cáo tuần tra',
+    switchIncorrectScanReports: 'Báo cáo điểm quét sai',
+    switchCtpatReport: 'Báo cáo C-TPAT',
+  },
   reportList: {
     title: 'Báo cáo tuần tra',
-    switchPatrolReports: 'Báo cáo tuần tra',
-    switchCtpatReport: 'Báo cáo C-TPAT',
     noReportsFound: 'Không tìm thấy báo cáo nào.',
     emptyNote: '-',
     filters: {
@@ -68,7 +75,7 @@ const vi = {
     resultOptions: {
       all: 'Tất cả',
       ok: 'OK',
-      notOk: 'Not OK',
+      notOk: 'Không OK',
     },
     issueStatusOptions: {
       all: 'Tất cả',
@@ -89,7 +96,7 @@ const vi = {
     },
     inspectionResultTag: {
       ok: 'OK',
-      notOk: 'Not OK',
+      notOk: 'Không OK',
     },
     issueStatusTag: {
       noIssue: 'Không có sự cố',
@@ -102,6 +109,76 @@ const vi = {
       updated: 'Đã cập nhật trạng thái sự cố.',
       failedToUpdate: 'Không thể cập nhật trạng thái sự cố.',
     },
+  },
+  dashboard: {
+    title: 'Bảng điều khiển',
+    clickToView: 'Nhấn để Xem',
+    reportSummary: 'Tóm tắt Báo cáo',
+    totalUsersByRole: 'Tổng Người dùng theo Chức vụ',
+    totalUsersByArea: 'Tổng Người dùng theo Khu vực',
+    totalCheckpointsByArea: 'Tổng Check Point theo Khu vực',
+  },
+  reportForm: {
+    issueStatusOptions: {
+      pending: 'Đang chờ xử lý',
+      inProgress: 'Đang xử lý',
+      completed: 'Đã xử lý',
+      incompleted: 'Chưa xử lý được',
+    },
+    issueStatusTag: {
+      noIssue: 'Không có vấn đề',
+      pending: 'Đang chờ xử lý',
+      inProgress: 'Đang xử lý',
+      completed: 'Đã xử lý',
+      incompleted: 'Chưa xử lý được',
+    },
+    photo: 'Ảnh',
+    editIssueStatus: 'Cập nhật tình trạng xử lý',
+    reportDetail: 'Chi tiết báo cáo',
+    noData: 'Không có dữ liệu.',
+    patrolRoute: 'Lộ trình tuần tra',
+    shift: 'Ca',
+    area: 'Khu vực',
+    guard: 'Người tuần tra',
+    reportDate: 'Thời gian báo cáo',
+    inspectionResultTag: {
+      ok: 'OK',
+      notOk: 'Không OK',
+    },
+    patrolTime: 'Thời gian đi tuần',
+    timeCheck: {
+      actual: 'Thực tế',
+      standard: 'Tiêu chuẩn',
+    },
+    issueStatus: 'Trạng thái xử lý',
+    status: 'Trạng thái',
+    selectStatus: 'Cập nhật trạng thái',
+    updatedBy: 'Cập nhật bởi',
+    detail: 'Chi tiết',
+    noDetailAvailable: 'Không có',
+    noImages: 'Không có dữ liệu ảnh',
+  },
+  incorrectScanReportList: {
+    title: 'Báo cáo quét sai điểm kiểm tra',
+    noIncorrectScan: 'Không tìm thấy báo cáo quét sai',
+    routeName: 'Tên lộ trình',
+    startTime: 'Thời gian bắt đầu',
+    finishTime: 'Thời gian kết thúc',
+    patrolTime: 'Thời gian tuần tra',
+    incorrectScanPoint: 'Điểm quét sai',
+    correctScanPoint: 'Điểm quét đúng',
+    guardName: 'Tên bảo vệ',
+  },
+  ctpatReportList: {
+    title: 'Báo cáo C-TPAT',
+    noReports: 'Không tìm thấy báo cáo',
+    routeName: 'Tên lộ trình',
+    checkpointName: 'Điểm kiểm tra',
+    startTime: 'Thời gian bắt đầu',
+    finishTime: 'Thời gian kết thúc',
+    patrolTime: 'Thời gian tuần tra',
+    guardName: 'Tên bảo vệ',
+    routeOrder: 'Thứ tự lộ trình',
   },
 }
 

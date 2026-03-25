@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import Dialog from 'primevue/dialog'
-import Dropdown from 'primevue/dropdown'
 import Tag from 'primevue/tag'
 import Select from 'primevue/select'
+import { useI18n } from 'vue-i18n'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
@@ -45,6 +45,7 @@ const viewerItems = ref<BaseImageItem[]>([])
 const viewerStartIndex = ref(0)
 const statusDraft = ref(0)
 const inlineStatusEdit = ref(false)
+const { t, locale } = useI18n()
 
 const formMode = computed<ReportFormMode>(() => props.mode ?? 'view')
 const canEditStatus = computed(() => Boolean(props.canEditStatus))
@@ -56,10 +57,10 @@ const inspectionOk = computed(() => (props.model ? props.model.pr_has_problem ==
 const shiftText = computed(() => String(props.model?.shift_text ?? '').trim())
 
 const issueStatusOptions = [
-  { label: 'Pending', value: 0 },
-  { label: 'In Progress', value: 1 },
-  { label: 'Completed', value: 2 },
-  { label: 'Incompleted', value: 3 },
+  { label: t('reportForm.issueStatusOptions.pending'), value: 0 },
+  { label: t('reportForm.issueStatusOptions.inProgress'), value: 1 },
+  { label: t('reportForm.issueStatusOptions.completed'), value: 2 },
+  { label: t('reportForm.issueStatusOptions.incompleted'), value: 3 },
 ]
 
 function close() {
@@ -79,18 +80,18 @@ function formatDateTime(iso: string) {
 }
 
 function issueStatusLabel(s: number, hasProblem = true) {
-  if (!hasProblem) return 'No Issue'
+  if (!hasProblem) return t('reportForm.issueStatusOptions.noIssue')
   switch (s) {
     case 0:
-      return 'Pending'
+      return t('reportForm.issueStatusOptions.pending')
     case 1:
-      return 'In Progress'
+      return t('reportForm.issueStatusOptions.inProgress')
     case 2:
-      return 'Completed'
+      return t('reportForm.issueStatusOptions.completed')
     case 3:
-      return 'Incompleted'
+      return t('reportForm.issueStatusOptions.incompleted')
     default:
-      return 'No Issue'
+      return t('reportForm.issueStatusOptions.noIssue')
   }
 }
 
@@ -119,8 +120,8 @@ const detailGroups = computed(() => {
       .map((img: ReportImage, idx) => ({
         id: img.pri_id || `${group.pr_group}-${idx + 1}`,
         src: img.pri_image,
-        title: group.pri_image_note || 'Photo',
-        alt: `${group.pri_image_note || 'Photo'} ${idx + 1}`,
+        title: group.pri_image_note || t('reportForm.photo'),
+        alt: `${group.pri_image_note || t('reportForm.photo')} ${idx + 1}`,
       }))
       .filter((x) => !!(x.src ?? '').trim()),
   }))
@@ -198,13 +199,13 @@ watch(
   <Dialog
     :visible="visible"
     modal
-    :header="isExternalEditStatus ? 'Edit Issue Status' : 'Report Detail'"
+    :header="isExternalEditStatus ? t('reportForm.editIssueStatus') : t('reportForm.reportDetail')"
     :style="{ width: '980px', maxWidth: '95vw' }"
     :contentStyle="{ maxHeight: '78vh', overflow: 'auto' }"
     @update:visible="emit('update:visible', $event)"
     @hide="close"
   >
-    <div v-if="!model" class="text-slate-500">No data.</div>
+    <div v-if="!model" class="text-slate-500">{{ t('reportForm.noData') }}</div>
 
     <div v-else class="space-y-4">
       <div class="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
@@ -215,28 +216,28 @@ watch(
             </div>
             <div>
               <div class="text-sm text-slate-600">
-                Patrol Route:
+                {{ t('reportForm.patrolRoute') }}:
                 <span class="text-slate-800 font-semibold">{{ model.route_name }}</span>
                 <span v-if="shiftText" class="text-slate-600">
-                  - Shift:
+                  - {{ t('reportForm.shift') }}:
                   <span class="text-slate-800 font-semibold">{{ shiftText }}</span>
                 </span>
               </div>
 
               <div class="text-sm text-slate-600">
-                Area:
+                {{ t('reportForm.area') }}:
                 <span class="text-slate-800 font-semibold">{{ model.area_name }}</span>
               </div>
 
               <div class="text-sm text-slate-600">
-                Guard:
+                {{ t('reportForm.guard') }}:
                 <span class="text-slate-800 font-semibold">{{
                   model.report_name || model.created_by
                 }}</span>
               </div>
 
               <div class="text-sm text-slate-600">
-                Report Date:
+                {{ t('reportForm.reportDate') }}:
                 <span
                   :class="
                     model.shift_problem
@@ -253,27 +254,39 @@ watch(
           <div class="space-y-3">
             <div class="flex flex-wrap gap-2">
               <Tag
-                :value="inspectionOk ? 'OK' : 'Not OK'"
+                :value="
+                  inspectionOk
+                    ? t('reportForm.inspectionResultTag.ok')
+                    : t('reportForm.inspectionResultTag.notOk')
+                "
                 :severity="inspectionOk ? 'success' : 'danger'"
               />
             </div>
 
             <div class="space-y-2">
-              <div class="text-sm font-semibold text-slate-800">Patrol Time</div>
+              <div class="text-sm font-semibold text-slate-800">
+                {{ t('reportForm.patrolTime') }}
+              </div>
               <div class="flex flex-wrap gap-2">
-                <Tag :value="`Actual: ${actualTimeText}`" :severity="actualTimeSeverity" />
-                <Tag :value="`Standard: ${standardTimeText}`" severity="secondary" />
+                <Tag
+                  :value="`${t('reportForm.timeCheck.actual')}: ${actualTimeText}`"
+                  :severity="actualTimeSeverity"
+                />
+                <Tag
+                  :value="`${t('reportForm.timeCheck.standard')}: ${standardTimeText}`"
+                  severity="secondary"
+                />
               </div>
             </div>
           </div>
         </div>
 
         <div class="space-y-3">
-          <div class="text-sm font-semibold text-slate-800">Issue Status</div>
+          <div class="text-sm font-semibold text-slate-800">{{ t('reportForm.issueStatus') }}</div>
 
           <div v-if="isEditStatus && model.pr_has_problem" class="space-y-3">
             <div>
-              <label class="block text-sm text-slate-600 mb-1">Status</label>
+              <label class="block text-sm text-slate-600 mb-1">{{ t('reportForm.status') }}</label>
               <Select
                 v-model="statusDraft"
                 class="w-full"
@@ -281,19 +294,19 @@ watch(
                 optionLabel="label"
                 size="small"
                 optionValue="value"
-                placeholder="Select status"
+                :placeholder="t('reportForm.selectStatus')"
               />
             </div>
 
             <div class="text-sm text-slate-600">
-              Updated by:
+              {{ t('reportForm.updatedBy') }}:
               <span class="text-slate-800 font-semibold">{{ model.updated_name || '—' }}</span>
             </div>
 
             <div class="flex justify-end gap-2">
               <BaseButton
                 v-if="inlineStatusEdit"
-                label="Cancel"
+                :label="t('common.cancel')"
                 severity="secondary"
                 outlined
                 @click="cancelInlineEditStatus"
@@ -320,7 +333,7 @@ watch(
             </div>
 
             <div class="text-sm text-slate-600">
-              Updated by:
+              {{ t('reportForm.updatedBy') }}:
               <span class="text-slate-800 font-semibold">{{ model.updated_name || '—' }}</span>
             </div>
           </div>
@@ -328,10 +341,10 @@ watch(
       </div>
 
       <div class="border-t border-slate-200 pt-3">
-        <div class="text-sm font-semibold text-slate-800 mb-2">Detail</div>
+        <div class="text-sm font-semibold text-slate-800 mb-2">{{ t('reportForm.detail') }}</div>
 
         <div v-if="detailGroups.length === 0" class="text-sm text-slate-500">
-          No detail available.
+          {{ t('reportForm.noDetailAvailable') }}.
         </div>
 
         <div v-else class="space-y-3">
@@ -360,10 +373,10 @@ watch(
       </div>
 
       <div class="flex justify-end gap-2 pt-3 border-t border-slate-200">
-        <BaseButton label="Close" severity="secondary" outlined @click="close" />
+        <BaseButton :label="t('common.close')" severity="secondary" outlined @click="close" />
         <BaseButton
           v-if="isEditStatus && model.pr_has_problem"
-          label="Submit"
+          :label="t('common.submit')"
           severity="success"
           @click="submitStatus"
         />

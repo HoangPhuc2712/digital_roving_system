@@ -9,7 +9,9 @@ import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import PatrolSummaryReportFilters from '@/modules/reports/components/PatrolSummaryReportFilters.vue'
 import PatrolSummaryTable from '@/modules/reports/components/PatrolSummaryTable.vue'
 import PatrolSummaryChartCard from '@/modules/reports/components/PatrolSummaryChartCard.vue'
+import PatrolSummaryMissedPatrolDialog from '@/modules/reports/components/PatrolSummaryMissedPatrolDialog.vue'
 import { usePatrolSummaryReportsStore } from '@/modules/reports/patrolSummaryReports.store'
+import type { PatrolSummaryReportRow } from '@/modules/reports/reports.types'
 import { exportPatrolSummaryReportXlsx } from '@/services/export/patrolSummaryReport.export'
 
 type PatrolSummaryChartExpose = {
@@ -22,6 +24,8 @@ const store = usePatrolSummaryReportsStore()
 const exporting = ref(false)
 const autoLoadEnabled = ref(false)
 const chartCardRef = ref<PatrolSummaryChartExpose | null>(null)
+const missedDialogVisible = ref(false)
+const selectedMissedRow = ref<PatrolSummaryReportRow | null>(null)
 
 let filterLoadTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -81,7 +85,26 @@ function clearFilterLoadTimer() {
 function resetPageState() {
   autoLoadEnabled.value = false
   clearFilterLoadTimer()
+  missedDialogVisible.value = false
+  selectedMissedRow.value = null
   store.clearFilters()
+}
+
+const selectedMissedPatrolDate = computed(() => selectedMissedRow.value?.date_label ?? '')
+const selectedMissedPatrolRows = computed(
+  () => selectedMissedRow.value?.missed_patrol_details ?? [],
+)
+
+function openMissedDetails(row: PatrolSummaryReportRow) {
+  selectedMissedRow.value = row
+  missedDialogVisible.value = true
+}
+
+function onMissedDialogVisibleChange(value: boolean) {
+  missedDialogVisible.value = value
+  if (!value) {
+    selectedMissedRow.value = null
+  }
 }
 
 async function onClear() {
@@ -140,14 +163,25 @@ async function onExport() {
             severity="secondary"
             outlined
             :loading="exporting"
-            :disabled="store.loading"
+            :disabled="store.loading || exporting"
             @click="onExport"
           />
         </template>
       </Toolbar>
 
-      <PatrolSummaryTable :groupedRows="groupedRows" :loading="store.loading" />
+      <PatrolSummaryTable
+        :groupedRows="groupedRows"
+        :loading="store.loading"
+        @open-missed-details="openMissedDetails"
+      />
     </div>
+
+    <PatrolSummaryMissedPatrolDialog
+      :visible="missedDialogVisible"
+      :patrolDate="selectedMissedPatrolDate"
+      :rows="selectedMissedPatrolRows"
+      @update:visible="onMissedDialogVisibleChange"
+    />
 
     <PatrolSummaryChartCard
       ref="chartCardRef"

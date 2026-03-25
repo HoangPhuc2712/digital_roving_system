@@ -330,6 +330,7 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
           size="small"
           severity="secondary"
           outlined
+          :loading="exporting"
           :disabled="exporting"
           @click="onExport"
         />
