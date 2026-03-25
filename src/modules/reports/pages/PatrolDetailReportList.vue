@@ -4,6 +4,7 @@ import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import { type DataTablePageEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
 import { useToast } from 'primevue/usetoast'
+import { useI18n } from 'vue-i18n'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import BaseButtonGroup from '@/components/common/buttons/BaseButtonGroup.vue'
@@ -16,6 +17,7 @@ const toast = useToast()
 const router = useRouter()
 const store = usePatrolDetailReportsStore()
 const exporting = ref(false)
+const { t, locale } = useI18n()
 
 const reportSwitchButtons = computed(() => [
   {
@@ -139,6 +141,7 @@ function onPage(e: DataTablePageEvent) {
     />
 
     <BaseDataTable
+      :key="`patrol-detail-report-list-table-${locale}`"
       title=""
       :value="store.filteredRows"
       :loading="store.loading"

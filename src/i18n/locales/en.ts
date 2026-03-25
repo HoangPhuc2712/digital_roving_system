@@ -180,6 +180,26 @@ const en = {
     guardName: 'Guard Name',
     routeOrder: 'Route Order',
   },
+  reportDataButtonSwitch: {
+    switchPatrolDetailReport: 'Patrol Detail Report',
+    switchPatrolSummaryReport: 'Patrol Summary Report',
+  },
+  patrolDetailReport: {
+    title: 'Patrol Detail Report',
+    noReport: 'No reports found',
+    routeName: 'Route Name',
+    checkpointName: 'Check Point Name',
+    startTime: 'Start Time',
+    finishTime: 'Finish Time',
+    patrolTime: 'Patrol Time',
+    guardName: 'Guard Name',
+  },
+  patrolSummaryReportList: {
+    title: 'Patrol Summary Report',
+    loadingData: 'Đang tải dữ liệu',
+    patrolDate: 'Patrol Date',
+    patrolArea: 'Patrol Area',
+  },
 }
 
 export default en
