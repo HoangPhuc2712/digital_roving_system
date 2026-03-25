@@ -484,7 +484,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
             />
             <BaseIconButton
               v-if="canManage"
-              icon="pi pi-print"
+              icon="pi pi-file-pdf"
               size="small"
               severity="secondary"
               outlined

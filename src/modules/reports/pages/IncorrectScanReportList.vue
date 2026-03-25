@@ -107,7 +107,7 @@ function onPage(e: DataTablePageEvent) {
 <template>
   <div class="page-reports space-y-3">
     <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-      <div class="text-[26px] font-semibold text-slate-800">Incorrect Check Point Scan Reports</div>
+      <div class="text-[26px] font-semibold text-slate-800">Incorrect Scan Point Reports</div>
       <BaseButtonGroup :buttons="reportSwitchButtons" />
     </div>
 
@@ -164,7 +164,7 @@ function onPage(e: DataTablePageEvent) {
         </template>
       </Column>
 
-      <Column header="Incorrect CP Scan" style="min-width: 16rem" sortField="wrong_cp_code">
+      <Column header="Incorrect Scan Point" style="min-width: 16rem" sortField="wrong_cp_code">
         <template #body="{ data }">
           <div class="flex flex-col">
             <div class="text-red-600 font-semibold">{{ data.wrong_cp_name || '-' }}</div>
@@ -173,7 +173,7 @@ function onPage(e: DataTablePageEvent) {
         </template>
       </Column>
 
-      <Column header="Correct CP Scan" style="min-width: 16rem" sortField="correct_cp_code">
+      <Column header="Correct Scan Point" style="min-width: 16rem" sortField="correct_cp_code">
         <template #body="{ data }">
           <div class="flex flex-col">
             <div class="text-slate-800 font-semibold">{{ data.correct_cp_name || '-' }}</div>

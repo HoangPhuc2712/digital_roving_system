@@ -2,13 +2,17 @@
 import ProgressSpinner from 'primevue/progressspinner'
 import type { PatrolSummaryReportRow } from '@/modules/reports/reports.types'
 
-defineProps<{
+const props = defineProps<{
   groupedRows: Array<{
     date_key: string
     date_label: string
     items: PatrolSummaryReportRow[]
   }>
   loading?: boolean
+}>()
+
+const emit = defineEmits<{
+  (e: 'open-missed-details', row: PatrolSummaryReportRow): void
 }>()
 
 function formatRate(rate: number) {
@@ -23,12 +27,21 @@ function actualCountClass(row: PatrolSummaryReportRow) {
 function abnormalCountClass(value: number) {
   return Number(value ?? 0) > 0 ? 'text-red-500 font-medium' : ''
 }
+
+function canOpenMissedDetails(row: PatrolSummaryReportRow) {
+  return Number(row.missed_count ?? 0) > 0
+}
+
+function openMissedDetails(row: PatrolSummaryReportRow) {
+  if (!canOpenMissedDetails(row)) return
+  emit('open-missed-details', row)
+}
 </script>
 
 <template>
   <div class="relative overflow-x-auto rounded-xl border border-slate-200 bg-white">
     <div
-      v-if="loading"
+      v-if="props.loading"
       class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-white/75 backdrop-blur-[1px]"
     >
       <ProgressSpinner
@@ -89,7 +102,15 @@ function abnormalCountClass(value: number) {
               class="border border-slate-200 px-4 py-3 text-center"
               :class="abnormalCountClass(row.missed_count)"
             >
-              {{ row.missed_count }}
+              <button
+                v-if="canOpenMissedDetails(row)"
+                type="button"
+                class="font-medium text-red-500 hover:text-red-800 hover:cursor-pointer"
+                @click="openMissedDetails(row)"
+              >
+                {{ row.missed_count }}
+              </button>
+              <span v-else>{{ row.missed_count }}</span>
             </td>
             <td
               class="border border-slate-200 px-4 py-3 text-center"
@@ -110,7 +131,7 @@ function abnormalCountClass(value: number) {
         </template>
       </tbody>
 
-      <tbody v-else-if="!loading">
+      <tbody v-else-if="!props.loading">
         <tr>
           <td colspan="8" class="border border-slate-200 px-4 py-8 text-center text-slate-500">
             No reports found.

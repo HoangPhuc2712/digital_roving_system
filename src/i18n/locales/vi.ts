@@ -70,7 +70,7 @@ const vi = {
     resultOptions: {
       all: 'Tất cả',
       ok: 'OK',
-      notOk: 'Not OK',
+      notOk: 'Không OK',
     },
     issueStatusOptions: {
       all: 'Tất cả',
@@ -91,7 +91,7 @@ const vi = {
     },
     inspectionResultTag: {
       ok: 'OK',
-      notOk: 'Not OK',
+      notOk: 'Không OK',
     },
     issueStatusTag: {
       noIssue: 'Không có sự cố',
@@ -112,6 +112,49 @@ const vi = {
     totalUsersByRole: 'Tổng Người dùng theo Chức vụ',
     totalUsersByArea: 'Tổng Người dùng theo Khu vực',
     totalCheckpointsByArea: 'Tổng Check Point theo Khu vực',
+  },
+  reportForm: {
+    issueStatusOptions: {
+      pending: 'Đang chờ xử lý',
+      inProgress: 'Đang xử lý',
+      completed: 'Đã xử lý',
+      incompleted: 'Chưa xử lý được',
+    },
+    issueStatusTag: {
+      noIssue: 'Không có vấn đề',
+      pending: 'Đang chờ xử lý',
+      inProgress: 'Đang xử lý',
+      completed: 'Đã xử lý',
+      incompleted: 'Chưa xử lý được',
+    },
+    photo: 'Ảnh',
+    editIssueStatus: 'Cập nhật tình trạng xử lý',
+    reportDetail: 'Chi tiết báo cáo',
+    noData: 'Không có dữ liệu.',
+    patrolRoute: 'Lộ trình tuần tra',
+    shift: 'Ca',
+    area: 'Khu vực',
+    guard: 'Người tuần tra',
+    reportDate: 'Thời gian báo cáo',
+    inspectionResultTag: {
+      ok: 'OK',
+      notOk: 'Không OK',
+    },
+    patrolTime: 'Thời gian đi tuần',
+    timeCheck: {
+      actual: 'Thực tế',
+      standard: 'Tiêu chuẩn',
+    },
+    issueStatus: 'Trạng thái xử lý',
+    status: 'Trạng thái',
+    selectStatus: 'Cập nhật trạng thái',
+    updatedBy: 'Cập nhật bởi',
+    cancel: 'Hủy',
+    detail: 'Chi tiết',
+    noDetailAvailable: 'Không có',
+    noImages: 'Không có dữ liệu ảnh',
+    close: 'Đóng',
+    sumbit: 'Gửi',
   },
 }
 
