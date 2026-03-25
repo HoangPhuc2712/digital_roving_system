@@ -90,7 +90,7 @@ async function onPrint() {
       <template v-if="canPrint" #footer>
         <div class="flex justify-end">
           <BaseIconButton
-            icon="pi pi-print"
+            icon="pi pi-file-pdf"
             label="Print Qr"
             severity="secondary"
             outlined

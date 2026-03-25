@@ -41,7 +41,7 @@ function onDropdownUpdate(payload: { key: string; value: any }) {
   <BaseFilter
     :dropdowns="dropdowns"
     :modelSearch="props.modelSearch"
-    :showSearch="true"
+    :showSearch="false"
     :showDateSelection="false"
     @update:modelSearch="emit('update:modelSearch', $event)"
     @update:dropdown="onDropdownUpdate"

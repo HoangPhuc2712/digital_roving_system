@@ -19,7 +19,7 @@ const emit = defineEmits<{
 <template>
   <BaseFilter
     :dropdowns="[]"
-    :showSearch="true"
+    :showSearch="false"
     :showDateSelection="true"
     :modelSearch="props.modelSearch"
     :modelDateFrom="props.modelDateFrom"
