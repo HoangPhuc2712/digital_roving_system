@@ -447,7 +447,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
           <BaseIconButton
             v-if="canManage"
             icon="pi pi-file-pdf"
-            label="CP Print All"
+            label="CP Export PDF All"
             size="small"
             severity="secondary"
             outlined
@@ -455,7 +455,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
           />
           <BaseIconButton
             icon="pi pi-file-excel"
-            label="Export"
+            label="Export Excel"
             size="small"
             severity="secondary"
             outlined
@@ -515,7 +515,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
               severity="secondary"
               outlined
               rounded
-              ariaLabel="Print Qr"
+              ariaLabel="Export Qr PDF"
               :loading="printingAreaId === data.area_id"
               :disabled="printingAreaId === data.area_id"
               @click="onPrintAreaQr(data)"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import Dialog from 'primevue/dialog'
 import MultiSelect from 'primevue/multiselect'
 import Select from 'primevue/select'
@@ -15,6 +15,7 @@ import {
   type CheckpointPrintItem,
 } from '@/services/print/checkpoints.print'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
+import QrPreview from '@/modules/checkpoints/components/QrPreview.vue'
 
 type AreaOption = {
   label: string
@@ -29,6 +30,7 @@ type PreviewRow = {
   cp_qr: string
   area_id: number
   area_label: string
+  role_label: string
 }
 
 const props = defineProps<{
@@ -45,7 +47,7 @@ const toast = useToast()
 const loading = ref(false)
 const printing = ref(false)
 const selectedAreaIds = ref<number[]>([])
-const selectedRoleId = ref<number | 'ALL'>('ALL')
+const selectedRoleId = ref<number | 'ALL' | null>(null)
 const checkpoints = ref<CheckpointRow[]>([])
 const roleOptions = ref<RoleOption[]>([])
 const initialized = ref(false)
@@ -61,7 +63,10 @@ const roleFilterOptions = computed(() => [
 ])
 
 const hasAppliedFilter = computed(
-  () => selectedAreaIds.value.length > 0 || selectedRoleId.value !== 'ALL',
+  () =>
+    selectedAreaIds.value.length > 0 ||
+    selectedRoleId.value === 'ALL' ||
+    typeof selectedRoleId.value === 'number',
 )
 
 const previewRows = computed<PreviewRow[]>(() => {
@@ -76,7 +81,7 @@ const previewRows = computed<PreviewRow[]>(() => {
         return false
       }
 
-      if (selectedRoleId.value !== 'ALL') {
+      if (typeof selectedRoleId.value === 'number') {
         const roleIds = Array.isArray(row.role_ids) ? row.role_ids : []
         if (!roleIds.includes(Number(selectedRoleId.value))) return false
       }
@@ -91,6 +96,7 @@ const previewRows = computed<PreviewRow[]>(() => {
       cp_qr: row.cp_qr,
       area_id: Number(row.area_id ?? 0),
       area_label: row.area_code || row.area_name || '',
+      role_label: Array.isArray(row.role_names) ? row.role_names.join(', ') : '',
     }))
     .sort(
       (a, b) =>
@@ -103,8 +109,13 @@ const previewRows = computed<PreviewRow[]>(() => {
 watch(
   () => props.visible,
   async (visible) => {
-    if (!visible) return
-    await ensureLoaded()
+    if (visible) {
+      await ensureLoaded()
+      return
+    }
+
+    resetFilters()
+    await nextTick()
   },
 )
 
@@ -137,7 +148,17 @@ async function ensureLoaded() {
   }
 }
 
+function resetFilters() {
+  selectedAreaIds.value = []
+  selectedRoleId.value = null
+}
+
+function clearFilters() {
+  resetFilters()
+}
+
 function closeDialog() {
+  resetFilters()
   visibleProxy.value = false
 }
 
@@ -147,7 +168,7 @@ function buildPrintItems(rows: PreviewRow[]): CheckpointPrintItem[] {
     cpName: row.cp_name,
     cpCode: row.cp_code,
     cpPriority: row.cp_priority,
-    qrSrc: row.cp_qr,
+    qrSrc: normalizeQr(row.cp_qr),
   }))
 }
 
@@ -183,39 +204,54 @@ async function onPrint() {
     header="Print Options"
     :style="{ width: '1100px', maxWidth: '96vw' }"
   >
-    <div class="space-y-4">
-      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div class="space-y-2">
-          <label class="block text-sm font-medium text-slate-700">Area</label>
-          <MultiSelect
-            v-model="selectedAreaIds"
-            :options="areaOptions"
-            optionLabel="label"
-            optionValue="value"
-            filter
-            display="chip"
-            placeholder="Select area"
-            class="w-full"
-            :disabled="loading"
-            :maxSelectedLabels="2"
-          />
-        </div>
+    <div class="flex max-h-[78vh] flex-col gap-4 overflow-hidden">
+      <div class="shrink-0 space-y-4 bg-white">
+        <div
+          class="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end"
+        >
+          <div class="space-y-2">
+            <label class="block text-sm font-medium text-slate-700">Area</label>
+            <MultiSelect
+              v-model="selectedAreaIds"
+              :options="areaOptions"
+              optionLabel="label"
+              optionValue="value"
+              filter
+              display="chip"
+              placeholder="Select Area"
+              class="w-full"
+              :disabled="loading"
+              :maxSelectedLabels="2"
+            />
+          </div>
 
-        <div class="space-y-2">
-          <label class="block text-sm font-medium text-slate-700">Role</label>
-          <Select
-            v-model="selectedRoleId"
-            :options="roleFilterOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Select role"
-            class="w-full"
-            :disabled="loading"
-          />
+          <div class="space-y-2">
+            <label class="block text-sm font-medium text-slate-700">Role</label>
+            <Select
+              v-model="selectedRoleId"
+              :options="roleFilterOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Select Role"
+              showClear
+              class="w-full"
+              :disabled="loading"
+            />
+          </div>
+
+          <div class="flex md:justify-end">
+            <BaseButton
+              label="Clear Filter"
+              severity="secondary"
+              outlined
+              :disabled="loading"
+              @click="clearFilters"
+            />
+          </div>
         </div>
       </div>
 
-      <div v-if="hasAppliedFilter">
+      <div class="min-h-0 flex-1 overflow-auto rounded-lg border border-slate-200 bg-white p-3">
         <BaseDataTable
           title=""
           :value="previewRows"
@@ -224,12 +260,18 @@ async function onPrint() {
           :paginator="false"
         >
           <template #empty>
-            <div class="py-6 text-center text-slate-500">No check points found.</div>
+            <div class="py-10 text-center text-slate-500">
+              {{
+                hasAppliedFilter
+                  ? 'No check points found.'
+                  : 'No Check Point to export, please Select Area/Role.'
+              }}
+            </div>
           </template>
 
           <Column header="CP Priority" style="min-width: 8rem" sortField="cp_priority">
             <template #body="{ data }">
-              <div class="text-center">{{ data.cp_priority }}</div>
+              <div class="text-left">{{ data.cp_priority }}</div>
             </template>
           </Column>
 
@@ -242,23 +284,24 @@ async function onPrint() {
             </template>
           </Column>
 
-          <Column header="Qr Code" style="min-width: 10rem" sortDisabled>
+          <Column header="Area" style="min-width: 10rem" sortField="area_label">
             <template #body="{ data }">
-              <div class="flex justify-center">
-                <div class="border border-slate-200 rounded-md overflow-hidden bg-white w-12 h-12">
-                  <img
-                    v-if="normalizeQr(data.cp_qr)"
-                    :src="normalizeQr(data.cp_qr)"
-                    alt="QR"
-                    class="w-full h-full object-cover block"
-                  />
-                  <div
-                    v-else
-                    class="w-full h-full flex items-center justify-center text-[10px] text-slate-500"
-                  >
-                    N/A
-                  </div>
-                </div>
+              <div class="text-slate-800">{{ data.area_label || '-' }}</div>
+            </template>
+          </Column>
+
+          <Column header="Qr Image" style="min-width: 10rem" sortDisabled>
+            <template #body="{ data }">
+              <div class="flex justify-start">
+                <QrPreview
+                  :value="data.cp_qr"
+                  :printItem="{
+                    areaLabel: data.area_label,
+                    cpName: data.cp_name,
+                    cpCode: data.cp_code,
+                    cpPriority: data.cp_priority,
+                  }"
+                />
               </div>
             </template>
           </Column>
@@ -271,7 +314,7 @@ async function onPrint() {
         <BaseButton label="Cancel" severity="secondary" outlined @click="closeDialog" />
         <BaseIconButton
           icon="pi pi-file-pdf"
-          label="Print"
+          label="Export PDF"
           severity="secondary"
           :disabled="!previewRows.length"
           :loading="printing"

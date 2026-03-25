@@ -95,7 +95,7 @@ async function onPrint() {
         <div class="flex justify-end">
           <BaseIconButton
             icon="pi pi-file-pdf"
-            label="Print Qr"
+            label="Export Qr PDF"
             severity="secondary"
             outlined
             :loading="printing"
