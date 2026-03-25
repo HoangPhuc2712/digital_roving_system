@@ -155,7 +155,7 @@ function onPage(e: DataTablePageEvent) {
         <div class="flex justify-end gap-2">
           <BaseIconButton
             icon="pi pi-file-excel"
-            label="Export"
+            :label="t('common.export')"
             size="small"
             severity="secondary"
             outlined
@@ -167,11 +167,14 @@ function onPage(e: DataTablePageEvent) {
       </template>
 
       <template #empty>
-        <div class="p-4 text-slate-600 flex justify-center">No reports found.</div>
+        <div class="p-4 text-slate-600 flex justify-center">
+          {{ t('patrolDetailReport.noReport') }}.
+        </div>
       </template>
 
       <Column
-        header="Area"
+        :header="t('patrolDetailReport.area')"
+        sortField="area_id"
         style="min-width: 12rem"
         :filterMenu="{
           key: 'areaId',
@@ -187,14 +190,14 @@ function onPage(e: DataTablePageEvent) {
 
       <Column
         field="route_name"
-        header="Route Name"
+        :header="t('patrolDetailReport.routeName')"
         style="min-width: 14rem"
         sortField="route_name"
       />
 
       <Column
         field="check_point_name"
-        header="Check Point"
+        :header="t('patrolDetailReport.checkpointName')"
         style="min-width: 12rem"
         sortField="check_point_name"
         :filterMenu="{
@@ -206,7 +209,11 @@ function onPage(e: DataTablePageEvent) {
         }"
       />
 
-      <Column header="Start Time" style="min-width: 12rem" sortField="start_time">
+      <Column
+        :header="t('patrolDetailReport.startTime')"
+        style="min-width: 12rem"
+        sortField="start_time"
+      >
         <template #body="{ data }">
           <div :style="shiftCellStyle(data.shift_color)">
             {{ formatDateTime(data.start_time) }}
@@ -214,7 +221,11 @@ function onPage(e: DataTablePageEvent) {
         </template>
       </Column>
 
-      <Column header="Finish Time" style="min-width: 12rem" sortField="finish_time">
+      <Column
+        :header="t('patrolDetailReport.finishTime')"
+        style="min-width: 12rem"
+        sortField="finish_time"
+      >
         <template #body="{ data }">
           <div :style="shiftCellStyle(data.shift_color)">
             {{ formatDateTime(data.finish_time) }}
@@ -222,7 +233,11 @@ function onPage(e: DataTablePageEvent) {
         </template>
       </Column>
 
-      <Column header="Patrol Time" style="min-width: 14rem" sortField="patrol_time">
+      <Column
+        :header="t('patrolDetailReport.patrolTime')"
+        style="min-width: 14rem"
+        sortField="patrol_time"
+      >
         <template #body="{ data }">
           {{ formatDateTime(data.patrol_time) }}
         </template>
@@ -230,7 +245,7 @@ function onPage(e: DataTablePageEvent) {
 
       <Column
         field="report_name"
-        header="Patrol Guard"
+        :header="t('patrolDetailReport.guardName')"
         style="min-width: 16rem"
         sortField="report_name"
         :filterMenu="{

@@ -180,6 +180,53 @@ const zhTW = {
     guardName: '警衛姓名',
     routeOrder: '路線順序',
   },
+  reportDataButtonSwitch: {
+    switchPatrolDetailReport: '巡邏詳細報告',
+    switchPatrolSummaryReport: '巡邏總結報告',
+  },
+  patrolDetailReport: {
+    title: '巡邏詳細報告',
+    noReport: '找不到報告',
+    area: '區域',
+    routeName: '路線名稱',
+    checkpointName: '檢查點名稱',
+    startTime: '開始時間',
+    finishTime: '結束時間',
+    patrolTime: '巡邏時間',
+    guardName: '警衛姓名',
+  },
+  patrolSummaryReportList: {
+    title: '巡邏總結報告',
+    loadingData: '資料載入中',
+    patrolDate: '巡邏日期',
+    patrolArea: '巡邏區域',
+    requiredNumberOfPatrols: '要求巡邏次數',
+    actualPatrolCount: '實際巡邏次數',
+    missedPatrolCount: '缺少巡邏次數',
+    timeProblemCount: '時間異常次數',
+    insufficientNumberOfPatrol: '巡邏次數不足',
+    abnormalRate: '異常率',
+    noReportFound: '找不到報告',
+  },
+  patrolSummaryMissedPatrolDialog: {
+    patrolDate: '巡邏日期',
+    routeName: '路線名稱',
+    patrolTime: '巡邏時間',
+    patrolDetail: '巡邏詳情',
+    noData: '無資料',
+  },
+  areaList: {
+    areaStatusOptions: {
+      all: '全部',
+      active: '啟用',
+      inactive: '停用',
+    },
+    title: '區域管理',
+    areaCode: '區域代碼',
+    areaName: '區域名稱',
+    areaCheckPoints: '區域檢查點',
+    status: '狀態',
+  },
 }
 
 export default zhTW

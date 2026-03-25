@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
+import { useI18n } from 'vue-i18n'
 
 import Column from 'primevue/column'
 import Tag from 'primevue/tag'
@@ -33,6 +34,7 @@ const router = useRouter()
 const toast = useToast()
 const store = useAreasStore()
 const auth = useAuthStore()
+const { t, locale } = useI18n()
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('areas.manage'))
 const areaPrintOptions = computed(() =>
@@ -435,6 +437,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
     <div class="text-[26px] font-semibold text-slate-800">Areas Management</div>
 
     <BaseDataTable
+      :key="`area-list-table-${locale}`"
       title="Areas"
       :value="store.filteredRows"
       :loading="store.loading"

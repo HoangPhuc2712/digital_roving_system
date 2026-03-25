@@ -417,11 +417,11 @@ function transformNode(node: VNode): VNode {
 function buildColumnChildren(node: VNode, sortable: boolean, filterMenu?: ColumnFilterMenuConfig) {
   const children = node.children
 
-  if (!children || Array.isArray(children) || typeof children !== 'object') {
-    return children
-  }
+  const currentSlots =
+    children && !Array.isArray(children) && typeof children === 'object'
+      ? (children as Record<string, (...args: any[]) => any>)
+      : {}
 
-  const currentSlots = children as Record<string, (...args: any[]) => any>
   const nextSlots: Record<string, (...args: any[]) => any> = { ...currentSlots }
   const sortField = String((node.props as any)?.sortField ?? (node.props as any)?.field ?? '')
 
@@ -487,7 +487,7 @@ function buildColumnChildren(node: VNode, sortable: boolean, filterMenu?: Column
   }
 
   if (!sortable || currentSlots.sorticon) {
-    return nextSlots
+    return Object.keys(nextSlots).length ? nextSlots : children
   }
 
   return {
@@ -510,7 +510,7 @@ function renderHeaderContent(
 
   return h(
     'span',
-    { class: 'font-medium text-slate-800 tracking-wide' },
+    { class: 'font-medium text-slate-700 tracking-wide' },
     String(nodeProps?.header ?? ''),
   )
 }

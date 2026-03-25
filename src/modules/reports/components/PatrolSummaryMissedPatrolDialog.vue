@@ -23,7 +23,9 @@ const visibleProxy = computed({
   set: (value: boolean) => emit('update:visible', value),
 })
 
-const dialogTitle = computed(() => `Patrol Date: ${props.patrolDate || '-'}`)
+const dialogTitle = computed(
+  () => `${t('patrolSummaryMissedPatrolDialog.patrolDate')}: ${props.patrolDate || '-'}`,
+)
 
 const tableRows = computed(() =>
   (props.rows ?? []).map((row, index) => ({
@@ -55,26 +57,38 @@ const tableRows = computed(() =>
         </template>
       </Column>
 
-      <Column field="route_name" header="Route Name" style="min-width: 15rem">
+      <Column
+        field="route_name"
+        :header="'patrolSummaryMissedPatrolDialog.routeName'"
+        style="min-width: 15rem"
+      >
         <template #body="{ data }">
           <div class="text-slate-800 font-medium">{{ data.route_name || '-' }}</div>
         </template>
       </Column>
 
-      <Column field="patrol_time" header="Patrol Time" style="min-width: 14rem">
+      <Column
+        field="patrol_time"
+        :header="'patrolSummaryMissedPatrolDialog.patrolTime'"
+        style="min-width: 14rem"
+      >
         <template #body="{ data }">
           <div class="text-left">{{ data.patrol_time || '-' }}</div>
         </template>
       </Column>
 
-      <Column header="Patrol Detail" style="min-width: 14rem">
+      <Column :header="t('patrolSummaryMissedPatrolDialog.patrolDetail')" style="min-width: 14rem">
         <template #body>
-          <div class="text-left text-red-500">No Data</div>
+          <div class="text-left text-red-500">
+            {{ t('patrolSummaryMissedPatrolDialog.noData') }}
+          </div>
         </template>
       </Column>
 
       <template #empty>
-        <div class="py-6 text-left text-slate-500">No data</div>
+        <div class="py-6 text-left text-slate-500">
+          {{ t('patrolSummaryMissedPatrolDialog.noData') }}
+        </div>
       </template>
     </BaseDataTable>
   </Dialog>
