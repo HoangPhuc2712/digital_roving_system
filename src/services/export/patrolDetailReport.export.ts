@@ -34,14 +34,14 @@ export async function exportPatrolDetailReportXlsx(params: {
     { header: 'Finish Time', key: 'finish_time', width: 24 },
     { header: 'Patrol Time', key: 'patrol_time', width: 24 },
     { header: 'Patrol Guard', key: 'report_name', width: 20 },
-    //{ header: 'Event Information Zh', key: 'event_zh', width: 24 },
-    //{ header: 'Event Information Vi', key: 'event_vi', width: 24 },
+    { header: 'Event Information Zh', key: 'event_zh', width: 24 },
+    { header: 'Event Information Vi', key: 'event_vi', width: 24 },
   ]
 
   const headerRow = ws.getRow(1)
   headerRow.height = 22
 
-  for (let c = 1; c <= 6; c++) {
+  for (let c = 1; c <= 8; c++) {
     const cell = ws.getCell(1, c)
     cell.font = { bold: true, color: { argb: 'FF0F172A' } }
     cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }
@@ -62,8 +62,8 @@ export async function exportPatrolDetailReportXlsx(params: {
       finish_time: formatDateTime(row.finish_time),
       patrol_time: formatDateTime(row.patrol_time),
       report_name: row.report_name || '-',
-      //event_zh: row.event_zh || '',
-      //event_vi: row.event_vi || '',
+      event_zh: row.event_zh || '',
+      event_vi: row.event_vi || '',
     })
   }
 

@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, watch, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
-import { type DataTablePageEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
@@ -11,6 +10,8 @@ import BaseButtonGroup from '@/components/common/buttons/BaseButtonGroup.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import { useCtpatReportsStore } from '@/modules/reports/ctpatReports.store'
 import { exportCtpatReportXlsx } from '@/services/export/ctpatReport.export'
+import { useResetFirstOnFilterChange } from '@/composables/useFilters'
+import { usePagination } from '@/composables/usePagination'
 
 const toast = useToast()
 const router = useRouter()
@@ -45,7 +46,7 @@ const reportSwitchButtons = computed(() => [
   },
 ])
 
-watch(
+useResetFirstOnFilterChange(
   () => [
     store.searchText,
     store.filterAreaName,
@@ -55,6 +56,11 @@ watch(
   ],
   () => store.setFirst(0),
 )
+
+const { onPage } = usePagination({
+  load: () => store.load(),
+  setFirst: (first) => store.setFirst(first),
+})
 
 onMounted(async () => {
   await store.load()
@@ -112,10 +118,6 @@ async function onExport() {
   } finally {
     exporting.value = false
   }
-}
-
-function onPage(e: DataTablePageEvent) {
-  store.setFirst(e.first)
 }
 </script>
 

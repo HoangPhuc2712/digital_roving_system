@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useToast } from 'primevue/usetoast'
 
 import Column from 'primevue/column'
@@ -14,6 +14,13 @@ import { useRoutesStore } from '@/modules/routes/routes.store'
 import type { RouteRow } from '@/modules/routes/routes.types'
 import { deleteRouteMock, fetchRouteById } from '@/modules/routes/routes.api'
 import { exportRoutesXlsx } from '@/services/export/routes.export'
+
+import {
+  useDebouncedSearchDraft,
+  useResetFirstOnFilterChange,
+  resetFiltersWithSearchDraft,
+} from '@/composables/useFilters'
+import { usePagination } from '@/composables/usePagination'
 
 import RouteForm, {
   type RouteFormMode,
@@ -51,20 +58,22 @@ const confirmDeleteMessage = ref('')
 const confirmDeleteLoading = ref(false)
 const pendingDeleteAction = ref<null | (() => Promise<void>)>(null)
 
-const searchDraft = ref(store.searchText)
-let searchTimer: number | undefined
-
-watch(searchDraft, (val) => {
-  window.clearTimeout(searchTimer)
-  searchTimer = window.setTimeout(() => {
-    store.searchText = val
-  }, 300)
+const { searchDraft } = useDebouncedSearchDraft({
+  source: () => store.searchText,
+  commit: (value) => {
+    store.searchText = value
+  },
 })
 
-watch(
+useResetFirstOnFilterChange(
   () => [store.searchText, store.filterAreaId, store.filterStatus],
   () => store.setFirst(0),
 )
+
+const { onPage } = usePagination({
+  load: () => store.load(),
+  setFirst: (first) => store.setFirst(first),
+})
 
 onMounted(async () => {
   await store.load()
@@ -233,9 +242,13 @@ function onColumnFilter(payload: { key: string; value: any }) {
 }
 
 function clearAll() {
-  store.clearFilters()
-  searchDraft.value = ''
-  selectedRoutes.value = null
+  resetFiltersWithSearchDraft({
+    clear: () => store.clearFilters(),
+    searchDraft,
+    afterClear: () => {
+      selectedRoutes.value = null
+    },
+  })
 }
 
 async function onExport() {
@@ -294,10 +307,12 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
       dataKey="route_id"
       v-model:selection="selectedRoutes"
       :rows="store.rowsPerPage"
+      :first="store.first"
       :modelSearch="searchDraft"
       @update:modelSearch="searchDraft = $event"
       @update:columnFilter="onColumnFilter"
       @clear="clearAll"
+      @page="onPage"
     >
       <template v-if="canManage" #toolbar-start>
         <div class="flex gap-2">

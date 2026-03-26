@@ -17,7 +17,7 @@ export async function exportCtpatReportXlsx(params: { rows: CtpatReportRow[]; fi
   const ws = wb.addWorksheet('C-TPAT Report')
 
   ws.columns = [
-    { header: 'Patrol Routes', key: 'route_name', width: 18 },
+    { header: 'Patrol Routes', key: 'route_name', width: 30 },
     { header: 'Check Points', key: 'check_point_name', width: 36 },
     { header: 'Start Time', key: 'start_at', width: 24 },
     { header: 'Finish Time', key: 'end_at', width: 24 },

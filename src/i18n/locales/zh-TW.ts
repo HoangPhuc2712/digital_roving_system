@@ -190,7 +190,7 @@ const zhTW = {
     noReport: '找不到報告',
     area: '區域',
     routeName: '路線名稱',
-    checkpointName: '檢查點名稱',
+    checkpointName: '檢查點',
     startTime: '開始時間',
     finishTime: '結束時間',
     patrolTime: '巡邏時間',

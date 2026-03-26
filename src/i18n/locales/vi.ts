@@ -190,7 +190,7 @@ const vi = {
     noReport: 'Không tìm thấy báo cáo',
     area: 'Khu vực',
     routeName: 'Tên lộ trình',
-    checkpointName: 'Tên điểm kiểm tra',
+    checkpointName: 'Điểm kiểm tra',
     startTime: 'Thời gian bắt đầu',
     finishTime: 'Thời gian kết thúc',
     patrolTime: 'Thời gian tuần tra',

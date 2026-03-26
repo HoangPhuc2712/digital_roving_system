@@ -5,7 +5,6 @@ import { useI18n } from 'vue-i18n'
 
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
-import { type DataTablePageEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
@@ -21,6 +20,8 @@ import ReportForm, {
 } from '@/modules/reports/components/ReportForm.vue'
 import { exportPatrolReportXlsx } from '@/services/export/patrolReport.export'
 import { changeReportStatus, fetchReportRowById } from '@/modules/reports/reports.api'
+import { useResetFirstOnFilterChange } from '@/composables/useFilters'
+import { usePagination } from '@/composables/usePagination'
 
 const toast = useToast()
 const auth = useAuthStore()
@@ -97,7 +98,7 @@ function scheduleReloadByDate() {
   }, 200)
 }
 
-watch(
+useResetFirstOnFilterChange(
   () => [
     store.searchText,
     store.filterAreaId,
@@ -108,6 +109,11 @@ watch(
   ],
   () => store.setFirst(0),
 )
+
+const { onPage } = usePagination({
+  load: () => store.load(),
+  setFirst: (first) => store.setFirst(first),
+})
 
 watch(
   () => [store.filterDateFrom?.getTime() ?? null, store.filterDateTo?.getTime() ?? null],
@@ -344,10 +350,6 @@ async function onExport() {
   } finally {
     exporting.value = false
   }
-}
-
-function onPage(e: DataTablePageEvent) {
-  store.setFirst(e.first)
 }
 </script>
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
@@ -10,7 +10,7 @@ import Tag from 'primevue/tag'
 import { useAreasStore } from '@/modules/areas/areas.store'
 import { useAuthStore } from '@/stores/auth.store'
 import type { AreaRow } from '@/modules/areas/areas.types'
-import { deleteAreaMock } from '@/modules/areas/areas.api'
+import { deleteAreaMock, fetchAreaById } from '@/modules/areas/areas.api'
 import { fetchCheckpointRows } from '@/modules/checkpoints/checkpoints.api'
 import type { CheckpointRow } from '@/modules/checkpoints/checkpoints.types'
 import {
@@ -29,6 +29,12 @@ import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import BaseConfirmDelete from '@/components/common/BaseConfirmDelete.vue'
 import AreaPrintOptionsDialog from '@/modules/areas/components/AreaPrintOptionsDialog.vue'
 import { exportAreasXlsx } from '@/services/export/areas.export'
+import {
+  useDebouncedSearchDraft,
+  useResetFirstOnFilterChange,
+  resetFiltersWithSearchDraft,
+} from '@/composables/useFilters'
+import { usePagination } from '@/composables/usePagination'
 
 const router = useRouter()
 const toast = useToast()
@@ -60,24 +66,25 @@ const confirmDeleteMessage = ref('')
 const confirmDeleteLoading = ref(false)
 const pendingDeleteAction = ref<null | (() => Promise<void>)>(null)
 
-const searchDraft = ref(store.searchText)
-let searchTimer: number | undefined
-
-watch(searchDraft, (val) => {
-  window.clearTimeout(searchTimer)
-  searchTimer = window.setTimeout(() => {
-    store.searchText = val
-  }, 300)
+const { searchDraft } = useDebouncedSearchDraft({
+  source: () => store.searchText,
+  commit: (value) => {
+    store.searchText = value
+  },
 })
 
-watch(
+useResetFirstOnFilterChange(
   () => [store.searchText, store.filterStatus],
   () => store.setFirst(0),
 )
 
+const { onPage } = usePagination({
+  load: () => store.load(),
+  setFirst: (first) => store.setFirst(first),
+})
+
 onMounted(async () => {
   await store.load()
-  console.log(store.filteredRows)
 })
 
 function statusLabel(s: number) {
@@ -93,8 +100,10 @@ function onColumnFilter(payload: { key: string; value: any }) {
 }
 
 function clearAll() {
-  store.clearFilters()
-  searchDraft.value = ''
+  resetFiltersWithSearchDraft({
+    clear: () => store.clearFilters(),
+    searchDraft,
+  })
 }
 
 async function onExport() {
@@ -149,15 +158,17 @@ function openNew() {
   formVisible.value = true
 }
 
-function openView(row: AreaRow) {
+async function openView(row: AreaRow) {
   formMode.value = 'view'
-  formModel.value = mapRowToFormModel(row)
+  const detail = (await fetchAreaById(row.area_id)) ?? row
+  formModel.value = mapRowToFormModel(detail as AreaRow)
   formVisible.value = true
 }
 
-function openEdit(row: AreaRow) {
+async function openEdit(row: AreaRow) {
   formMode.value = 'edit'
-  formModel.value = mapRowToFormModel(row)
+  const detail = (await fetchAreaById(row.area_id)) ?? row
+  formModel.value = mapRowToFormModel(detail as AreaRow)
   formVisible.value = true
 }
 
@@ -444,10 +455,12 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
       dataKey="area_id"
       v-model:selection="selectedAreas"
       :rows="store.rowsPerPage"
+      :first="store.first"
       :modelSearch="searchDraft"
       @update:modelSearch="searchDraft = $event"
       @update:columnFilter="onColumnFilter"
       @clear="clearAll"
+      @page="onPage"
     >
       <template v-if="canManage" #toolbar-start>
         <BaseIconButton

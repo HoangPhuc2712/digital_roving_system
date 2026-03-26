@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import Column from 'primevue/column'
@@ -12,7 +12,7 @@ import BaseConfirmDelete from '@/components/common/BaseConfirmDelete.vue'
 import { useUsersStore } from '@/modules/users/users.store'
 import { useAuthStore } from '@/stores/auth.store'
 import type { UserRow } from '@/modules/users/users.types'
-import { deleteUserMock } from '@/modules/users/users.api'
+import { deleteUserMock, fetchUserById } from '@/modules/users/users.api'
 
 import UserForm, {
   type UserFormModel,
@@ -21,6 +21,12 @@ import UserForm, {
 } from '../components/UserForm.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import { exportUsersXlsx } from '@/services/export/users.export'
+import {
+  useDebouncedSearchDraft,
+  useResetFirstOnFilterChange,
+  resetFiltersWithSearchDraft,
+} from '@/composables/useFilters'
+import { usePagination } from '@/composables/usePagination'
 
 const toast = useToast()
 
@@ -35,21 +41,22 @@ const confirmDeleteMessage = ref('')
 const confirmDeleteLoading = ref(false)
 const pendingDeleteAction = ref<null | (() => Promise<void>)>(null)
 
-const searchDraft = ref(store.searchText)
-
-let searchTimer: number | undefined
-
-watch(searchDraft, (val) => {
-  window.clearTimeout(searchTimer)
-  searchTimer = window.setTimeout(() => {
-    store.searchText = val
-  }, 300)
+const { searchDraft } = useDebouncedSearchDraft({
+  source: () => store.searchText,
+  commit: (value) => {
+    store.searchText = value
+  },
 })
 
-watch(
+useResetFirstOnFilterChange(
   () => [store.searchText, store.filterRoleId, store.filterAreaId],
   () => store.setFirst(0),
 )
+
+const { onPage } = usePagination({
+  load: () => store.load(),
+  setFirst: (first) => store.setFirst(first),
+})
 
 onMounted(async () => {
   await store.load()
@@ -92,15 +99,17 @@ function openNew() {
   formVisible.value = true
 }
 
-function openView(row: UserRow) {
+async function openView(row: UserRow) {
   formMode.value = 'view'
-  formModel.value = mapRowToFormModel(row)
+  const detail = (await fetchUserById(row.user_id)) ?? row
+  formModel.value = mapRowToFormModel(detail as UserRow)
   formVisible.value = true
 }
 
-function openEdit(row: UserRow) {
+async function openEdit(row: UserRow) {
   formMode.value = 'edit'
-  formModel.value = mapRowToFormModel(row)
+  const detail = (await fetchUserById(row.user_id)) ?? row
+  formModel.value = mapRowToFormModel(detail as UserRow)
   formVisible.value = true
 }
 
@@ -192,9 +201,13 @@ function onColumnFilter(payload: { key: string; value: any }) {
 }
 
 function clearAll() {
-  store.clearFilters()
-  searchDraft.value = ''
-  selectedUsers.value = null
+  resetFiltersWithSearchDraft({
+    clear: () => store.clearFilters(),
+    searchDraft,
+    afterClear: () => {
+      selectedUsers.value = null
+    },
+  })
 }
 
 async function onExport() {
@@ -255,10 +268,12 @@ function onViewPatrolPath(row: UserRow) {
       dataKey="user_id"
       v-model:selection="selectedUsers"
       :rows="store.rowsPerPage"
+      :first="store.first"
       :modelSearch="searchDraft"
       @update:modelSearch="searchDraft = $event"
       @update:columnFilter="onColumnFilter"
       @clear="clearAll"
+      @page="onPage"
     >
       <template v-if="canManage" #toolbar-start>
         <div class="flex gap-2">
