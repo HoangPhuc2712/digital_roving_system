@@ -21,6 +21,7 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
 
     searchText: '' as string,
     filterAreaName: null as string | null,
+    filterRouteName: null as string | null,
     filterDateFrom: startOfToday() as Date | null,
     filterDateTo: endOfToday() as Date | null,
 
@@ -46,6 +47,20 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
       return options.sort((a, b) => a.label.localeCompare(b.label))
     },
 
+    routeOptions(): { label: string; value: string }[] {
+      const seen = new Set<string>()
+      const options: { label: string; value: string }[] = []
+
+      for (const row of this.rows) {
+        const value = String(row.route_name ?? '').trim()
+        if (!value || seen.has(value)) continue
+        seen.add(value)
+        options.push({ label: value, value })
+      }
+
+      return options.sort((a, b) => a.label.localeCompare(b.label))
+    },
+
     filteredRows(): CtpatReportRow[] {
       const q = this.searchText.trim().toLowerCase()
       let fromTime = this.filterDateFrom ? this.filterDateFrom.getTime() : null
@@ -61,6 +76,7 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
         if (q && !row._q.includes(q)) return false
 
         if (this.filterAreaName != null && row.area_name !== this.filterAreaName) return false
+        if (this.filterRouteName != null && row.route_name !== this.filterRouteName) return false
 
         if (fromTime != null || toTime != null) {
           const t = new Date(row.scan_at || row.start_at || row.end_at).getTime()
@@ -93,6 +109,7 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
     clearFilters() {
       this.searchText = ''
       this.filterAreaName = null
+      this.filterRouteName = null
       this.filterDateFrom = startOfToday()
       this.filterDateTo = endOfToday()
       this.first = 0

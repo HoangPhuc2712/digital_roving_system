@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
-import { useConfirm } from 'primevue/useconfirm'
+import { useI18n } from 'vue-i18n'
 
 import Column from 'primevue/column'
 import Tag from 'primevue/tag'
@@ -20,22 +20,21 @@ import {
 
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
-import AreaFilters from '@/modules/areas/components/AreaFilters.vue'
 
 import AreaForm, {
   type AreaFormMode,
   type AreaFormModel,
 } from '@/modules/areas/components/AreaForm.vue'
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
+import BaseConfirmDelete from '@/components/common/BaseConfirmDelete.vue'
 import AreaPrintOptionsDialog from '@/modules/areas/components/AreaPrintOptionsDialog.vue'
 import { exportAreasXlsx } from '@/services/export/areas.export'
 
 const router = useRouter()
 const toast = useToast()
-const confirm = useConfirm()
-
 const store = useAreasStore()
 const auth = useAuthStore()
+const { t, locale } = useI18n()
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('areas.manage'))
 const areaPrintOptions = computed(() =>
@@ -50,6 +49,16 @@ const exporting = ref(false)
 const printOptionsVisible = ref(false)
 const printingAreaId = ref<number | null>(null)
 const DELETE_AREA_API_DRY_RUN = false
+
+const areaStatusOptions = [
+  { label: 'All', value: 'ALL' },
+  { label: 'Active', value: 'ACTIVE' },
+  { label: 'Inactive', value: 'INACTIVE' },
+]
+const confirmDeleteVisible = ref(false)
+const confirmDeleteMessage = ref('')
+const confirmDeleteLoading = ref(false)
+const pendingDeleteAction = ref<null | (() => Promise<void>)>(null)
 
 const searchDraft = ref(store.searchText)
 let searchTimer: number | undefined
@@ -77,6 +86,10 @@ function statusLabel(s: number) {
 
 function statusSeverity(s: number) {
   return s === 1 ? 'success' : 'secondary'
+}
+
+function onColumnFilter(payload: { key: string; value: any }) {
+  if (payload.key === 'status') store.filterStatus = payload.value ?? 'ALL'
 }
 
 function clearAll() {
@@ -168,6 +181,31 @@ async function doDeleteOne(row: AreaRow) {
   await deleteAreaMock({ area_id: row.area_id, actor_id: auth.user?.user_id ?? '' })
 }
 
+function openDeleteConfirm(message: string, action: () => Promise<void>) {
+  confirmDeleteMessage.value = message
+  pendingDeleteAction.value = action
+  confirmDeleteVisible.value = true
+}
+
+async function onConfirmDelete() {
+  if (!pendingDeleteAction.value || confirmDeleteLoading.value) return
+
+  confirmDeleteLoading.value = true
+  try {
+    await pendingDeleteAction.value()
+    confirmDeleteVisible.value = false
+    pendingDeleteAction.value = null
+  } finally {
+    confirmDeleteLoading.value = false
+  }
+}
+
+function closeDeleteConfirm() {
+  confirmDeleteVisible.value = false
+  confirmDeleteLoading.value = false
+  pendingDeleteAction.value = null
+}
+
 async function onDelete(row: AreaRow) {
   const checkpointCount = getAreaDeleteBlockedCount(row)
   if (checkpointCount > 0) {
@@ -180,12 +218,9 @@ async function onDelete(row: AreaRow) {
     return
   }
 
-  confirm.require({
-    header: 'Confirm Delete',
-    message: `Delete area ${row.area_code} - ${row.area_name}?`,
-    acceptLabel: 'Delete',
-    rejectLabel: 'Cancel',
-    accept: async () => {
+  openDeleteConfirm(
+    `Are you sure you want to delete area ${row.area_code} - ${row.area_name}?`,
+    async () => {
       try {
         await doDeleteOne(row)
 
@@ -225,9 +260,10 @@ async function onDelete(row: AreaRow) {
           detail: msg || 'Failed to delete area.',
           life: 3000,
         })
+        throw e
       }
     },
-  })
+  )
 }
 
 function onDeleteSelected() {
@@ -245,55 +281,50 @@ function onDeleteSelected() {
     return
   }
 
-  confirm.require({
-    header: 'Confirm Delete',
-    message: `Delete ${sel.length} selected areas?`,
-    acceptLabel: 'Delete',
-    rejectLabel: 'Cancel',
-    accept: async () => {
-      try {
-        for (const row of sel) {
-          await doDeleteOne(row)
-        }
+  openDeleteConfirm(`Are you sure you want to delete ${sel.length} selected areas?`, async () => {
+    try {
+      for (const row of sel) {
+        await doDeleteOne(row)
+      }
 
-        if (DELETE_AREA_API_DRY_RUN) {
-          toast.add({
-            severity: 'info',
-            summary: 'Delete API Disabled',
-            detail: 'Delete API is disabled for testing. Check console log.',
-            life: 3000,
-          })
-          return
-        }
-
-        await store.load()
-        selectedAreas.value = null
+      if (DELETE_AREA_API_DRY_RUN) {
         toast.add({
-          severity: 'success',
-          summary: 'Deleted',
-          detail: 'Selected areas have been deleted.',
-          life: 2000,
-        })
-      } catch (e: any) {
-        const msg = String(e?.message ?? '')
-        if (msg.startsWith('AREA_HAS_SCAN_POINTS:')) {
-          const n = Number(msg.split(':')[1] ?? 0)
-          toast.add({
-            severity: 'warn',
-            summary: 'Cannot Delete',
-            detail: `Can't delete because one selected Area has ${n} check points`,
-            life: 3500,
-          })
-          return
-        }
-        toast.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: msg || 'Failed to delete areas.',
+          severity: 'info',
+          summary: 'Delete API Disabled',
+          detail: 'Delete API is disabled for testing. Check console log.',
           life: 3000,
         })
+        return
       }
-    },
+
+      await store.load()
+      selectedAreas.value = null
+      toast.add({
+        severity: 'success',
+        summary: 'Deleted',
+        detail: 'Selected areas have been deleted.',
+        life: 2000,
+      })
+    } catch (e: any) {
+      const msg = String(e?.message ?? '')
+      if (msg.startsWith('AREA_HAS_SCAN_POINTS:')) {
+        const n = Number(msg.split(':')[1] ?? 0)
+        toast.add({
+          severity: 'warn',
+          summary: 'Cannot Delete',
+          detail: `Can't delete because one selected Area has ${n} check points`,
+          life: 3500,
+        })
+        return
+      }
+      toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: msg || 'Failed to delete areas.',
+        life: 3000,
+      })
+      throw e
+    }
   })
 }
 
@@ -405,21 +436,18 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
   <div class="space-y-3">
     <div class="text-[26px] font-semibold text-slate-800">Areas Management</div>
 
-    <AreaFilters
-      :modelStatus="store.filterStatus"
-      :modelSearch="searchDraft"
-      @update:modelStatus="store.filterStatus = $event"
-      @update:modelSearch="searchDraft = $event"
-      @clear="clearAll"
-    />
-
     <BaseDataTable
+      :key="`area-list-table-${locale}`"
       title="Areas"
       :value="store.filteredRows"
       :loading="store.loading"
       dataKey="area_id"
       v-model:selection="selectedAreas"
       :rows="store.rowsPerPage"
+      :modelSearch="searchDraft"
+      @update:modelSearch="searchDraft = $event"
+      @update:columnFilter="onColumnFilter"
+      @clear="clearAll"
     >
       <template v-if="canManage" #toolbar-start>
         <BaseIconButton
@@ -488,7 +516,18 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
         </template>
       </Column>
 
-      <Column header="Status" style="min-width: 10rem" sortField="area_status">
+      <Column
+        header="Status"
+        style="min-width: 10rem"
+        sortField="area_status"
+        :filterMenu="{
+          key: 'status',
+          type: 'select',
+          value: store.filterStatus,
+          options: areaStatusOptions,
+          showClear: false,
+        }"
+      >
         <template #body="{ data }">
           <Tag
             :value="statusLabel(data.area_status)"
@@ -542,6 +581,15 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
         </template>
       </Column>
     </BaseDataTable>
+
+    <BaseConfirmDelete
+      :visible="confirmDeleteVisible"
+      :message="confirmDeleteMessage"
+      :loading="confirmDeleteLoading"
+      @update:visible="confirmDeleteVisible = $event"
+      @cancel="closeDeleteConfirm"
+      @confirm="onConfirmDelete"
+    />
 
     <AreaForm
       v-model:visible="formVisible"

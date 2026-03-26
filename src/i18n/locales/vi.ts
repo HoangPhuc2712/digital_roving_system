@@ -120,6 +120,7 @@ const vi = {
   },
   reportForm: {
     issueStatusOptions: {
+      noIssue: 'Không có vấn đề',
       pending: 'Đang chờ xử lý',
       inProgress: 'Đang xử lý',
       completed: 'Đã xử lý',
@@ -179,6 +180,53 @@ const vi = {
     patrolTime: 'Thời gian tuần tra',
     guardName: 'Tên bảo vệ',
     routeOrder: 'Thứ tự lộ trình',
+  },
+  reportDataButtonSwitch: {
+    switchPatrolDetailReport: 'Báo cáo chi tiết tuần tra',
+    switchPatrolSummaryReport: 'Báo cáo tổng hợp tuần tra',
+  },
+  patrolDetailReport: {
+    title: 'Báo cáo chi tiết tuần tra',
+    noReport: 'Không tìm thấy báo cáo',
+    area: 'Khu vực',
+    routeName: 'Tên lộ trình',
+    checkpointName: 'Tên điểm kiểm tra',
+    startTime: 'Thời gian bắt đầu',
+    finishTime: 'Thời gian kết thúc',
+    patrolTime: 'Thời gian tuần tra',
+    guardName: 'Tên bảo vệ',
+  },
+  patrolSummaryReportList: {
+    title: 'Báo cáo tổng hợp tuần tra',
+    loadingData: 'Đang tải dữ liệu',
+    patrolDate: 'Ngày tuần tra',
+    patrolArea: 'Khu vực tuần tra',
+    requiredNumberOfPatrols: 'Số lượt tuần tra yêu cầu',
+    actualPatrolCount: 'Số lượt tuần tra thực tế',
+    missedPatrolCount: 'Số lượt tuần tra bị thiếu',
+    timeProblemCount: 'Số lỗi thời gian',
+    insufficientNumberOfPatrol: 'Thiếu số lượt tuần tra',
+    abnormalRate: 'Tỷ lệ bất thường',
+    noReportFound: 'Không tìm thấy báo cáo',
+  },
+  patrolSummaryMissedPatrolDialog: {
+    patrolDate: 'Ngày tuần tra',
+    routeName: 'Tên lộ trình',
+    patrolTime: 'Thời gian tuần tra',
+    patrolDetail: 'Chi tiết tuần tra',
+    noData: 'Không có dữ liệu',
+  },
+  areaList: {
+    areaStatusOptions: {
+      all: 'Tất cả',
+      active: 'Đang hoạt động',
+      inactive: 'Ngừng hoạt động',
+    },
+    title: 'Quản lý khu vực',
+    areaCode: 'Mã khu vực',
+    areaName: 'Tên khu vực',
+    areaCheckPoints: 'Điểm kiểm tra khu vực',
+    status: 'Trạng thái',
   },
 }
 

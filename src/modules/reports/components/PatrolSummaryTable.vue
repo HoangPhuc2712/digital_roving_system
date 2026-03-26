@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import ProgressSpinner from 'primevue/progressspinner'
 import type { PatrolSummaryReportRow } from '@/modules/reports/reports.types'
+import { useI18n } from 'vue-i18n'
 
+const { t, locale } = useI18n()
 const props = defineProps<{
   groupedRows: Array<{
     date_key: string
@@ -50,30 +52,36 @@ function openMissedDetails(row: PatrolSummaryReportRow) {
         animationDuration=".8s"
         class="summary-loading-spinner"
       />
-      <div class="text-sm text-slate-500">Loading data...</div>
+      <div class="text-sm text-slate-500">{{ t('patrolSummaryReportList.loadingData') }}...</div>
     </div>
 
     <table class="w-full min-w-[1100px] border-collapse text-[0.95rem] text-slate-700">
       <thead>
         <tr class="bg-slate-50 text-slate-800">
-          <th class="border border-slate-200 px-4 py-3 text-center font-semibold">Patrol Date</th>
-          <th class="border border-slate-200 px-4 py-3 text-center font-semibold">Patrol Area</th>
           <th class="border border-slate-200 px-4 py-3 text-center font-semibold">
-            Required Number of Patrols
+            {{ t('patrolSummaryReportList.patrolDate') }}
           </th>
           <th class="border border-slate-200 px-4 py-3 text-center font-semibold">
-            Actual Patrol Count
+            {{ t('patrolSummaryReportList.patrolArea') }}
           </th>
           <th class="border border-slate-200 px-4 py-3 text-center font-semibold">
-            Missed Patrols Count
+            {{ t('patrolSummaryReportList.requiredNumberOfPatrols') }}
           </th>
           <th class="border border-slate-200 px-4 py-3 text-center font-semibold">
-            Time Problem Count
+            {{ t('patrolSummaryReportList.actualPatrolCount') }}
           </th>
           <th class="border border-slate-200 px-4 py-3 text-center font-semibold">
-            Insufficient Number of Patrols
+            {{ t('patrolSummaryReportList.missedPatrolCount') }}
           </th>
-          <th class="border border-slate-200 px-4 py-3 text-center font-semibold">Abnormal Rate</th>
+          <th class="border border-slate-200 px-4 py-3 text-center font-semibold">
+            {{ t('patrolSummaryReportList.timeProblemCount') }}
+          </th>
+          <th class="border border-slate-200 px-4 py-3 text-center font-semibold">
+            {{ t('patrolSummaryReportList.insufficientNumberOfPatrol') }}
+          </th>
+          <th class="border border-slate-200 px-4 py-3 text-center font-semibold">
+            {{ t('patrolSummaryReportList.abnormalRate') }}
+          </th>
         </tr>
       </thead>
 
@@ -134,7 +142,7 @@ function openMissedDetails(row: PatrolSummaryReportRow) {
       <tbody v-else-if="!props.loading">
         <tr>
           <td colspan="8" class="border border-slate-200 px-4 py-8 text-center text-slate-500">
-            No reports found.
+            {{ t('patrolSummaryReportList.noReportFound') }}.
           </td>
         </tr>
       </tbody>

@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useToast } from 'primevue/usetoast'
-import { useConfirm } from 'primevue/useconfirm'
 
 import Column from 'primevue/column'
 import Tag from 'primevue/tag'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
+import BaseConfirmDelete from '@/components/common/BaseConfirmDelete.vue'
 
 import { useAuthStore } from '@/stores/auth.store'
 import { useRoutesStore } from '@/modules/routes/routes.store'
@@ -15,7 +15,6 @@ import type { RouteRow } from '@/modules/routes/routes.types'
 import { deleteRouteMock, fetchRouteById } from '@/modules/routes/routes.api'
 import { exportRoutesXlsx } from '@/services/export/routes.export'
 
-import RouteFilters from '../components/RouteFilters.vue'
 import RouteForm, {
   type RouteFormMode,
   type RouteFormModel,
@@ -23,8 +22,6 @@ import RouteForm, {
 } from '../components/RouteForm.vue'
 
 const toast = useToast()
-const confirm = useConfirm()
-
 const store = useRoutesStore()
 const auth = useAuthStore()
 
@@ -43,6 +40,16 @@ const routeFilterAreaOptions = computed(() => {
     .map(([value, label]) => ({ value, label }))
     .sort((a, b) => String(a.label).localeCompare(String(b.label)))
 })
+
+const routeStatusOptions = [
+  { label: 'All', value: 'ALL' },
+  { label: 'Active', value: 'ACTIVE' },
+  { label: 'Inactive', value: 'INACTIVE' },
+]
+const confirmDeleteVisible = ref(false)
+const confirmDeleteMessage = ref('')
+const confirmDeleteLoading = ref(false)
+const pendingDeleteAction = ref<null | (() => Promise<void>)>(null)
 
 const searchDraft = ref(store.searchText)
 let searchTimer: number | undefined
@@ -135,13 +142,35 @@ async function openEdit(row: RouteRow) {
   formVisible.value = true
 }
 
+function openDeleteConfirm(message: string, action: () => Promise<void>) {
+  confirmDeleteMessage.value = message
+  pendingDeleteAction.value = action
+  confirmDeleteVisible.value = true
+}
+
+async function onConfirmDelete() {
+  if (!pendingDeleteAction.value || confirmDeleteLoading.value) return
+
+  confirmDeleteLoading.value = true
+  try {
+    await pendingDeleteAction.value()
+    confirmDeleteVisible.value = false
+    pendingDeleteAction.value = null
+  } finally {
+    confirmDeleteLoading.value = false
+  }
+}
+
+function closeDeleteConfirm() {
+  confirmDeleteVisible.value = false
+  confirmDeleteLoading.value = false
+  pendingDeleteAction.value = null
+}
+
 async function onDelete(row: RouteRow) {
-  confirm.require({
-    header: 'Confirm Delete',
-    message: `Delete route ${row.route_code} - ${row.route_name}?`,
-    acceptLabel: 'Delete',
-    rejectLabel: 'Cancel',
-    accept: async () => {
+  openDeleteConfirm(
+    `Are you sure you want to delete route ${row.route_code} - ${row.route_name}?`,
+    async () => {
       try {
         await deleteRouteMock({ route_id: row.route_id, actor_id: auth.user?.user_id ?? '' })
         await store.load()
@@ -159,21 +188,19 @@ async function onDelete(row: RouteRow) {
           detail: e?.message ?? 'Failed to delete route.',
           life: 3000,
         })
+        throw e
       }
     },
-  })
+  )
 }
 
 function confirmDeleteSelected() {
   const items = selectedRoutes.value ?? []
   if (!items.length) return
 
-  confirm.require({
-    header: 'Confirm Delete',
-    message: `Delete ${items.length} selected route(s)?`,
-    acceptLabel: 'Delete',
-    rejectLabel: 'Cancel',
-    accept: async () => {
+  openDeleteConfirm(
+    `Are you sure you want to delete ${items.length} selected route(s)?`,
+    async () => {
       try {
         const actor = auth.user?.user_id ?? ''
         for (const r of items) {
@@ -194,9 +221,15 @@ function confirmDeleteSelected() {
           detail: e?.message ?? 'Failed to delete routes.',
           life: 3000,
         })
+        throw e
       }
     },
-  })
+  )
+}
+
+function onColumnFilter(payload: { key: string; value: any }) {
+  if (payload.key === 'areaId') store.filterAreaId = payload.value ?? null
+  if (payload.key === 'status') store.filterStatus = payload.value ?? 'ALL'
 }
 
 function clearAll() {
@@ -254,17 +287,6 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
   <div class="space-y-3">
     <div class="text-[26px] font-semibold text-slate-800">Patrol Routes</div>
 
-    <RouteFilters
-      :areaOptions="routeFilterAreaOptions"
-      :modelAreaId="store.filterAreaId"
-      :modelStatus="store.filterStatus"
-      :modelSearch="searchDraft"
-      @update:modelAreaId="store.filterAreaId = $event"
-      @update:modelStatus="store.filterStatus = $event"
-      @update:modelSearch="searchDraft = $event"
-      @clear="clearAll"
-    />
-
     <BaseDataTable
       title="Routes"
       :value="store.filteredRows"
@@ -272,6 +294,10 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
       dataKey="route_id"
       v-model:selection="selectedRoutes"
       :rows="store.rowsPerPage"
+      :modelSearch="searchDraft"
+      @update:modelSearch="searchDraft = $event"
+      @update:columnFilter="onColumnFilter"
+      @clear="clearAll"
     >
       <template v-if="canManage" #toolbar-start>
         <div class="flex gap-2">
@@ -319,7 +345,17 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
       <Column field="route_code" header="Route Code" style="min-width: 10rem" />
       <Column field="route_name" header="Route Name" style="min-width: 14rem" />
 
-      <Column header="Area" style="min-width: 10rem" sortField="area_name">
+      <Column
+        header="Area"
+        style="min-width: 10rem"
+        sortField="area_name"
+        :filterMenu="{
+          key: 'areaId',
+          type: 'select',
+          value: store.filterAreaId,
+          options: routeFilterAreaOptions,
+        }"
+      >
         <template #body="{ data }">
           <div class="text-slate-800">{{ data.area_name }}</div>
         </template>
@@ -345,7 +381,18 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
         </template>
       </Column>
 
-      <Column header="Status" style="min-width: 10rem" sortField="route_status">
+      <Column
+        header="Status"
+        style="min-width: 10rem"
+        sortField="route_status"
+        :filterMenu="{
+          key: 'status',
+          type: 'select',
+          value: store.filterStatus,
+          options: routeStatusOptions,
+          showClear: false,
+        }"
+      >
         <template #body="{ data }">
           <Tag
             :value="statusLabel(data.route_status)"
@@ -387,6 +434,15 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
         </template>
       </Column>
     </BaseDataTable>
+
+    <BaseConfirmDelete
+      :visible="confirmDeleteVisible"
+      :message="confirmDeleteMessage"
+      :loading="confirmDeleteLoading"
+      @update:visible="confirmDeleteVisible = $event"
+      @cancel="closeDeleteConfirm"
+      @confirm="onConfirmDelete"
+    />
 
     <RouteForm
       v-model:visible="formVisible"

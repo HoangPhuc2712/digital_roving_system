@@ -9,7 +9,6 @@ import { useI18n } from 'vue-i18n'
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import BaseButtonGroup from '@/components/common/buttons/BaseButtonGroup.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
-import CtpatReportFilters from '@/modules/reports/components/CtpatReportFilters.vue'
 import { useCtpatReportsStore } from '@/modules/reports/ctpatReports.store'
 import { exportCtpatReportXlsx } from '@/services/export/ctpatReport.export'
 
@@ -47,7 +46,7 @@ const reportSwitchButtons = computed(() => [
 ])
 
 watch(
-  () => [store.searchText, store.filterAreaName, store.filterDateFrom, store.filterDateTo],
+  () => [store.searchText, store.filterRouteName, store.filterDateFrom, store.filterDateTo],
   () => store.setFirst(0),
 )
 
@@ -72,6 +71,10 @@ function formatDateTime(iso: string) {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(
     d.getMinutes(),
   )}:${pad2(d.getSeconds())}`
+}
+
+function onColumnFilter(payload: { key: string; value: any }) {
+  if (payload.key === 'routeName') store.filterRouteName = payload.value ?? null
 }
 
 function clearAll() {
@@ -113,19 +116,6 @@ function onPage(e: DataTablePageEvent) {
       <BaseButtonGroup :buttons="reportSwitchButtons" />
     </div>
 
-    <CtpatReportFilters
-      :areaOptions="store.areaOptions"
-      :modelAreaName="store.filterAreaName"
-      :modelDateFrom="store.filterDateFrom"
-      :modelDateTo="store.filterDateTo"
-      :modelSearch="store.searchText"
-      @update:modelAreaName="store.filterAreaName = $event"
-      @update:modelDateFrom="store.filterDateFrom = $event"
-      @update:modelDateTo="store.filterDateTo = $event"
-      @update:modelSearch="store.searchText = $event"
-      @clear="clearAll"
-    />
-
     <BaseDataTable
       :key="`ctpat-report-list-table-${locale}`"
       title=""
@@ -134,6 +124,15 @@ function onPage(e: DataTablePageEvent) {
       dataKey="pr_id"
       :rows="store.rowsPerPage"
       :first="store.first"
+      :modelSearch="store.searchText"
+      :modelDateFrom="store.filterDateFrom"
+      :modelDateTo="store.filterDateTo"
+      :showDateSelection="true"
+      @update:modelSearch="store.searchText = $event"
+      @update:modelDateFrom="store.filterDateFrom = $event"
+      @update:modelDateTo="store.filterDateTo = $event"
+      @update:columnFilter="onColumnFilter"
+      @clear="clearAll"
       @page="onPage"
     >
       <template #toolbar-end>
@@ -162,6 +161,13 @@ function onPage(e: DataTablePageEvent) {
         :header="t('ctpatReportList.routeName')"
         style="min-width: 12rem"
         sortField="route_name"
+        :filterMenu="{
+          key: 'routeName',
+          type: 'select',
+          value: store.filterRouteName,
+          options: store.routeOptions,
+          filter: true,
+        }"
       />
 
       <Column

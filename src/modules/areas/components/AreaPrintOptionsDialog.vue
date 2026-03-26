@@ -215,6 +215,7 @@ async function onPrint() {
               v-model="selectedAreaIds"
               :options="areaOptions"
               optionLabel="label"
+              size="small"
               optionValue="value"
               filter
               display="chip"
@@ -231,6 +232,7 @@ async function onPrint() {
               v-model="selectedRoleId"
               :options="roleFilterOptions"
               optionLabel="label"
+              size="small"
               optionValue="value"
               placeholder="Select Role"
               showClear
@@ -242,6 +244,7 @@ async function onPrint() {
           <div class="flex md:justify-end">
             <BaseButton
               label="Clear Filter"
+              size="small"
               severity="secondary"
               outlined
               :disabled="loading"
@@ -311,10 +314,17 @@ async function onPrint() {
 
     <template #footer>
       <div class="flex justify-end gap-2">
-        <BaseButton label="Cancel" severity="secondary" outlined @click="closeDialog" />
+        <BaseButton
+          label="Cancel"
+          size="small"
+          severity="secondary"
+          outlined
+          @click="closeDialog"
+        />
         <BaseIconButton
           icon="pi pi-file-pdf"
           label="Export PDF"
+          size="small"
           severity="secondary"
           :disabled="!previewRows.length"
           :loading="printing"

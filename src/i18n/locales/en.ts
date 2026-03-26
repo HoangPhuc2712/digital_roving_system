@@ -3,11 +3,14 @@ const en = {
     searchPlaceholder: 'Search...',
     clearFilters: 'Clear Filters',
     all: 'All',
+    new: 'New',
+    delete: 'Delete',
     export: 'Export',
     save: 'Saved',
     error: 'Error',
     view: 'View',
     edit: 'Edit',
+    action: 'Action',
     close: 'Close',
     submit: 'Submit',
     cancel: 'Cancel',
@@ -120,6 +123,7 @@ const en = {
   },
   reportForm: {
     issueStatusOptions: {
+      noIssue: 'No Issue',
       pending: 'Pending',
       inProgress: 'In Progress',
       completed: 'Completed',
@@ -187,6 +191,7 @@ const en = {
   patrolDetailReport: {
     title: 'Patrol Detail Report',
     noReport: 'No reports found',
+    area: 'Area',
     routeName: 'Route Name',
     checkpointName: 'Check Point Name',
     startTime: 'Start Time',
@@ -199,6 +204,37 @@ const en = {
     loadingData: 'Đang tải dữ liệu',
     patrolDate: 'Patrol Date',
     patrolArea: 'Patrol Area',
+    requiredNumberOfPatrols: 'Required Number of Patrols',
+    actualPatrolCount: 'Actual Patrols Count',
+    missedPatrolCount: 'Missed Patrols Count',
+    timeProblemCount: 'Time Problem Count',
+    insufficientNumberOfPatrol: 'Insufficient Number of Patrols',
+    abnormalRate: 'Abnormal Rate',
+    noReportFound: 'No Reports Found',
+  },
+  patrolSummaryMissedPatrolDialog: {
+    patrolDate: 'Patrol Date',
+    routeName: 'Route Name',
+    patrolTime: 'Patrol Time',
+    patrolDetail: 'Patrol Detail',
+    noData: 'No Data',
+  },
+  areaList: {
+    areaStatusOptions: {
+      all: 'All',
+      active: 'Active',
+      inactive: 'Inactive',
+    },
+    title: 'Areas Management',
+    areaCode: 'Area Code',
+    areaName: 'Area Name',
+    areaCheckPoints: 'Area Check Points',
+    status: 'Status',
+  },
+  areaForm: {
+    newArea: 'New Area',
+    editArea: 'Edit Area',
+    areaDetail: 'Area Detail',
   },
 }
 

@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import Toolbar from 'primevue/toolbar'
+import { useI18n } from 'vue-i18n'
 
 import BaseButtonGroup from '@/components/common/buttons/BaseButtonGroup.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
@@ -21,6 +22,7 @@ type PatrolSummaryChartExpose = {
 const toast = useToast()
 const router = useRouter()
 const store = usePatrolSummaryReportsStore()
+const { t, locale } = useI18n()
 const exporting = ref(false)
 const autoLoadEnabled = ref(false)
 const chartCardRef = ref<PatrolSummaryChartExpose | null>(null)
@@ -32,7 +34,7 @@ let filterLoadTimer: ReturnType<typeof setTimeout> | null = null
 const groupedRows = computed(() => store.groupedRows)
 const reportSwitchButtons = computed(() => [
   {
-    label: 'Patrol Detail Report',
+    label: t('reportDataButtonSwitch.switchPatrolDetailReport'),
     icon: 'pi pi-file',
     size: 'small',
     severity: 'secondary' as const,
@@ -40,7 +42,7 @@ const reportSwitchButtons = computed(() => [
     onClick: () => router.push({ name: 'patrol-detail-reports' }),
   },
   {
-    label: 'Patrol Summary Report',
+    label: t('reportDataButtonSwitch.switchPatrolSummaryReport'),
     icon: 'pi pi-chart-line',
     size: 'small',
     severity: 'info' as const,
@@ -140,34 +142,36 @@ async function onExport() {
 <template>
   <div class="page-reports space-y-3">
     <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-      <div class="text-[26px] font-semibold text-slate-800">Patrol Summary Report</div>
+      <div class="text-[26px] font-semibold text-slate-800">
+        {{ t('patrolSummaryReportList.title') }}
+      </div>
       <BaseButtonGroup :buttons="reportSwitchButtons" />
     </div>
 
-    <PatrolSummaryReportFilters
-      :modelDateFrom="store.filterDateFrom"
-      :modelDateTo="store.filterDateTo"
-      :loading="store.loading"
-      @update:modelDateFrom="store.filterDateFrom = $event"
-      @update:modelDateTo="store.filterDateTo = $event"
-      @clear="onClear"
-    />
+    <Toolbar class="mb-4">
+      <template #end>
+        <BaseIconButton
+          icon="pi pi-file-excel"
+          :label="t('common.export')"
+          size="small"
+          severity="secondary"
+          outlined
+          :loading="exporting"
+          :disabled="store.loading || exporting"
+          @click="onExport"
+        />
+      </template>
+    </Toolbar>
 
     <div class="card space-y-4">
-      <Toolbar class="mb-4">
-        <template #end>
-          <BaseIconButton
-            icon="pi pi-file-excel"
-            label="Export"
-            size="small"
-            severity="secondary"
-            outlined
-            :loading="exporting"
-            :disabled="store.loading || exporting"
-            @click="onExport"
-          />
-        </template>
-      </Toolbar>
+      <PatrolSummaryReportFilters
+        :modelDateFrom="store.filterDateFrom"
+        :modelDateTo="store.filterDateTo"
+        :loading="store.loading"
+        @update:modelDateFrom="store.filterDateFrom = $event"
+        @update:modelDateTo="store.filterDateTo = $event"
+        @clear="onClear"
+      />
 
       <PatrolSummaryTable
         :groupedRows="groupedRows"
