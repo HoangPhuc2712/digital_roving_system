@@ -120,6 +120,7 @@ const vi = {
   },
   reportForm: {
     issueStatusOptions: {
+      noIssue: 'Không có vấn đề',
       pending: 'Đang chờ xử lý',
       inProgress: 'Đang xử lý',
       completed: 'Đã xử lý',

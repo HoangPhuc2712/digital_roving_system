@@ -414,7 +414,7 @@ function onPage(e: DataTablePageEvent) {
 
       <Column
         :header="t('reportList.table.checkPoint')"
-        style="min-width: 16rem"
+        style="min-width: 12rem"
         sortField="cp_code"
       >
         <template #body="{ data }">

@@ -120,6 +120,7 @@ const zhTW = {
   },
   reportForm: {
     issueStatusOptions: {
+      noIssue: '無異常',
       pending: '待處理',
       inProgress: '進行中',
       completed: '已完成',

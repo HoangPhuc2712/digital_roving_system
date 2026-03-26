@@ -448,7 +448,7 @@ function buildColumnChildren(node: VNode, sortable: boolean, filterMenu?: Column
             {
               type: 'button',
               class: [
-                'inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-700',
+                'inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 hover:cursor-pointer',
                 isFilterActive(filterMenu.value) ? 'bg-slate-100 text-slate-700' : '',
               ],
               'aria-label': 'Filter column',
