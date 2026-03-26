@@ -46,7 +46,13 @@ const reportSwitchButtons = computed(() => [
 ])
 
 watch(
-  () => [store.searchText, store.filterRouteName, store.filterDateFrom, store.filterDateTo],
+  () => [
+    store.searchText,
+    store.filterAreaName,
+    store.filterRouteName,
+    store.filterDateFrom,
+    store.filterDateTo,
+  ],
   () => store.setFirst(0),
 )
 
@@ -74,7 +80,11 @@ function formatDateTime(iso: string) {
 }
 
 function onColumnFilter(payload: { key: string; value: any }) {
-  if (payload.key === 'routeName') store.filterRouteName = payload.value ?? null
+  if (payload.key === 'routeName') {
+    const value = payload.value && typeof payload.value === 'object' ? payload.value : {}
+    store.filterAreaName = value.primaryValue ?? null
+    store.filterRouteName = value.secondaryValue ?? null
+  }
 }
 
 function clearAll() {
@@ -163,10 +173,22 @@ function onPage(e: DataTablePageEvent) {
         sortField="route_name"
         :filterMenu="{
           key: 'routeName',
-          type: 'select',
-          value: store.filterRouteName,
-          options: store.routeOptions,
+          type: 'dual-select',
+          value: {
+            primaryValue: store.filterAreaName,
+            secondaryValue: store.filterRouteName,
+          },
+          options: store.routeAreaOptions,
+          optionLabel: 'label',
+          optionValue: 'value',
+          placeholder: t('reportList.filters.area'),
           filter: true,
+          secondaryOptions: store.routeOptions,
+          secondaryOptionLabel: 'label',
+          secondaryOptionValue: 'value',
+          secondaryPlaceholder: t('ctpatReportList.routeName'),
+          secondaryFilter: true,
+          secondaryFilterField: 'areaName',
         }"
       />
 

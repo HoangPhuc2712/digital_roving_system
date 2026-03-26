@@ -42,7 +42,7 @@ const en = {
     patrolsData: 'Patrols Data',
     patrolReports: 'Patrol Reports',
     ctpatReport: 'C-TPAT Reports',
-    incorrectScanReports: 'Incorrect Scan Point Reports',
+    incorrectScanReports: 'Incorrect Scan Point Log',
     reportsData: 'Reports Data',
     patrolDetailReport: 'Patrol Detail Report',
     patrolSummaryReport: 'Patrol Summary Report',
@@ -62,7 +62,7 @@ const en = {
   },
   patrolDataButtonSwitch: {
     switchPatrolReports: 'Patrol Reports',
-    switchIncorrectScanReports: 'Incorrect Scan Reports',
+    switchIncorrectScanReports: 'Incorrect Scan Log',
     switchCtpatReport: 'C-TPAT Reports',
   },
   reportList: {
@@ -163,8 +163,8 @@ const en = {
     noImages: 'No images',
   },
   incorrectScanReportList: {
-    title: 'Incorrect Scan Point Reports',
-    noIncorrectScan: 'No incorrect scan reports found',
+    title: 'Incorrect Scan Point Log',
+    noIncorrectScan: 'No Incorrect Scan Point Log found',
     routeName: 'Route Name',
     startTime: 'Start Time',
     finishTime: 'Finish Time',
@@ -201,7 +201,7 @@ const en = {
   },
   patrolSummaryReportList: {
     title: 'Patrol Summary Report',
-    loadingData: 'Đang tải dữ liệu',
+    loadingData: 'Loading data',
     patrolDate: 'Patrol Date',
     patrolArea: 'Patrol Area',
     requiredNumberOfPatrols: 'Required Number of Patrols',

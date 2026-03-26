@@ -211,6 +211,15 @@ type ApiUserViewOption = {
   userRoleIsAdmin?: boolean
 }
 
+type ApiRouteFilterView = {
+  routeId?: number
+  routeCode?: string
+  routeName?: string
+  areaId?: number
+  areaCode?: string
+  areaName?: string
+}
+
 function ensureSuccess<T>(payload: any): ApiEnvelope<T> {
   const e = payload as ApiEnvelope<T>
   if (!e || typeof e !== 'object' || !('success' in e)) throw new Error('API_ERROR')
@@ -657,6 +666,96 @@ export async function fetchCtpatAreaOptions(): Promise<{ label: string; value: s
       return true
     })
     .sort((a, b) => a.label.localeCompare(b.label))
+}
+
+export async function fetchReportRouteFilterOptions(): Promise<{
+  areaOptions: { label: string; value: number }[]
+  routeOptions: { label: string; value: string; areaId: number }[]
+}> {
+  const res = await http.post(endpoints.routeView.getList, {})
+  const list = ensureSuccess<ApiRouteFilterView[] | ApiRouteFilterView>(res.data).data
+  const items = asArray(list)
+
+  const areaSeen = new Set<number>()
+  const routeSeen = new Set<string>()
+  const areaOptions: { label: string; value: number }[] = []
+  const routeOptions: { label: string; value: string; areaId: number }[] = []
+
+  for (const route of items) {
+    const areaId = Number(route?.areaId ?? 0)
+    const areaCode = String(route?.areaCode ?? '').trim()
+    const areaName = String(route?.areaName ?? '').trim()
+    const routeName = String(route?.routeName ?? '').trim()
+
+    if (areaId > 0 && !areaSeen.has(areaId)) {
+      areaSeen.add(areaId)
+      areaOptions.push({
+        label: areaName || areaCode || String(areaId),
+        value: areaId,
+      })
+    }
+
+    if (!routeName) continue
+
+    const routeKey = `${areaId}::${routeName}`
+    if (routeSeen.has(routeKey)) continue
+    routeSeen.add(routeKey)
+
+    routeOptions.push({
+      label: routeName,
+      value: routeName,
+      areaId,
+    })
+  }
+
+  return {
+    areaOptions: areaOptions.sort((a, b) => a.label.localeCompare(b.label)),
+    routeOptions: routeOptions.sort((a, b) => a.label.localeCompare(b.label)),
+  }
+}
+
+export async function fetchCtpatRouteFilterOptions(): Promise<{
+  areaOptions: { label: string; value: string }[]
+  routeOptions: { label: string; value: string; areaName: string }[]
+}> {
+  const res = await http.post(endpoints.routeView.getList, {})
+  const list = ensureSuccess<ApiRouteFilterView[] | ApiRouteFilterView>(res.data).data
+  const items = asArray(list)
+
+  const areaSeen = new Set<string>()
+  const routeSeen = new Set<string>()
+  const areaOptions: { label: string; value: string }[] = []
+  const routeOptions: { label: string; value: string; areaName: string }[] = []
+
+  for (const route of items) {
+    const areaName = String(route?.areaName ?? '').trim()
+    const routeName = String(route?.routeName ?? '').trim()
+
+    if (areaName && !areaSeen.has(areaName)) {
+      areaSeen.add(areaName)
+      areaOptions.push({
+        label: areaName,
+        value: areaName,
+      })
+    }
+
+    if (!routeName) continue
+
+    const routeKey = `${areaName}::${routeName}`
+    if (routeSeen.has(routeKey)) continue
+    routeSeen.add(routeKey)
+
+    routeOptions.push({
+      label: routeName,
+      value: routeName,
+      areaName,
+    })
+  }
+
+  return {
+    areaOptions: areaOptions.sort((a, b) => a.label.localeCompare(b.label)),
+    routeOptions: routeOptions.sort((a, b) => a.label.localeCompare(b.label)),
+  }
 }
 
 export async function fetchReportGuardOptions(): Promise<{ label: string; value: string }[]> {

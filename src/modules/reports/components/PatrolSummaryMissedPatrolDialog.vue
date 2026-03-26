@@ -59,7 +59,7 @@ const tableRows = computed(() =>
 
       <Column
         field="route_name"
-        :header="'patrolSummaryMissedPatrolDialog.routeName'"
+        :header="t('patrolSummaryMissedPatrolDialog.routeName')"
         style="min-width: 15rem"
       >
         <template #body="{ data }">
@@ -69,7 +69,7 @@ const tableRows = computed(() =>
 
       <Column
         field="patrol_time"
-        :header="'patrolSummaryMissedPatrolDialog.patrolTime'"
+        :header="t('patrolSummaryMissedPatrolDialog.patrolTime')"
         style="min-width: 14rem"
       >
         <template #body="{ data }">

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import type { CtpatReportRow } from './reports.types'
-import { fetchCtpatAreaOptions, fetchCtpatReportRows } from './reports.api'
+import { fetchCtpatReportRows, fetchCtpatRouteFilterOptions } from './reports.api'
 
 function startOfToday() {
   const d = new Date()
@@ -28,6 +28,7 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
     first: 0,
     rowsPerPage: 10,
     areaFilterOptions: [] as { label: string; value: string }[],
+    routeFilterOptions: [] as { label: string; value: string; areaName: string }[],
   }),
 
   getters: {
@@ -47,15 +48,26 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
       return options.sort((a, b) => a.label.localeCompare(b.label))
     },
 
-    routeOptions(): { label: string; value: string }[] {
+    routeAreaOptions(): { label: string; value: string }[] {
+      return this.areaOptions
+    },
+
+    routeOptions(state): { label: string; value: string; areaName: string }[] {
+      if (state.routeFilterOptions.length) {
+        return state.routeFilterOptions.slice().sort((a, b) => a.label.localeCompare(b.label))
+      }
+
       const seen = new Set<string>()
-      const options: { label: string; value: string }[] = []
+      const options: { label: string; value: string; areaName: string }[] = []
 
       for (const row of this.rows) {
         const value = String(row.route_name ?? '').trim()
-        if (!value || seen.has(value)) continue
-        seen.add(value)
-        options.push({ label: value, value })
+        const areaName = String(row.area_name ?? '').trim()
+        if (!value) continue
+        const key = `${areaName}::${value}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        options.push({ label: value, value, areaName })
       }
 
       return options.sort((a, b) => a.label.localeCompare(b.label))
@@ -92,8 +104,15 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
 
   actions: {
     async ensureFilterOptionsLoaded() {
-      if (this.areaFilterOptions.length) return
-      this.areaFilterOptions = await fetchCtpatAreaOptions().catch(() => [])
+      if (this.areaFilterOptions.length && this.routeFilterOptions.length) return
+
+      const routeFilters = await fetchCtpatRouteFilterOptions().catch(() => ({
+        areaOptions: [] as { label: string; value: string }[],
+        routeOptions: [] as { label: string; value: string; areaName: string }[],
+      }))
+
+      if (!this.areaFilterOptions.length) this.areaFilterOptions = routeFilters.areaOptions
+      if (!this.routeFilterOptions.length) this.routeFilterOptions = routeFilters.routeOptions
     },
 
     async load() {

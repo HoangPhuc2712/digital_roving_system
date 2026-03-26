@@ -100,6 +100,7 @@ function scheduleReloadByDate() {
 watch(
   () => [
     store.searchText,
+    store.filterAreaId,
     store.filterRouteName,
     store.filterIssueStatus,
     store.filterResult,
@@ -256,7 +257,11 @@ function inspectionSeverity(hasProblem: boolean) {
 }
 
 function onColumnFilter(payload: { key: string; value: any }) {
-  if (payload.key === 'routeName') store.filterRouteName = payload.value ?? null
+  if (payload.key === 'routeName') {
+    const value = payload.value && typeof payload.value === 'object' ? payload.value : {}
+    store.filterAreaId = value.primaryValue ?? null
+    store.filterRouteName = value.secondaryValue ?? null
+  }
   if (payload.key === 'issueStatus') store.filterIssueStatus = payload.value ?? null
   if (payload.key === 'result') store.filterResult = payload.value ?? 'ALL'
   if (payload.key === 'guardId') store.filterGuardId = payload.value ?? ''
@@ -399,10 +404,22 @@ function onPage(e: DataTablePageEvent) {
         sortField="route_name"
         :filterMenu="{
           key: 'routeName',
-          type: 'select',
-          value: store.filterRouteName,
-          options: store.routeOptions,
+          type: 'dual-select',
+          value: {
+            primaryValue: store.filterAreaId,
+            secondaryValue: store.filterRouteName,
+          },
+          options: store.routeAreaOptions,
+          optionLabel: 'label',
+          optionValue: 'value',
+          placeholder: t('reportList.filters.area'),
           filter: true,
+          secondaryOptions: store.routeOptions,
+          secondaryOptionLabel: 'label',
+          secondaryOptionValue: 'value',
+          secondaryPlaceholder: t('reportList.table.routeName'),
+          secondaryFilter: true,
+          secondaryFilterField: 'areaId',
         }"
       >
         <template #body="{ data }">
