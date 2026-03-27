@@ -5,6 +5,7 @@ import MultiSelect from 'primevue/multiselect'
 import Select from 'primevue/select'
 import Column from 'primevue/column'
 import { useToast } from 'primevue/usetoast'
+import { useI18n } from 'vue-i18n'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
@@ -34,6 +35,7 @@ type PreviewRow = {
   role_label: string
 }
 
+const { t, locale } = useI18n()
 const props = defineProps<{
   visible: boolean
   areaOptions: AreaOption[]
@@ -137,7 +139,7 @@ async function ensureLoaded() {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: String(e?.message ?? 'Failed to load print options.'),
+      detail: String(e?.message ?? t('areaPrintOptionsDialog.error.printLoadFailed')),
       life: 3000,
     })
   } finally {
@@ -182,10 +184,10 @@ async function onPrint() {
       summary: 'QR PDF Error',
       detail:
         msg === 'QR_IMAGE_NOT_FOUND'
-          ? 'No QR image available to export.'
+          ? t('areaPrintOptionsDialog.error.noQrAvailablie')
           : msg === 'QR_IMAGE_FORMAT_NOT_SUPPORTED'
-            ? 'QR image format is not supported.'
-            : msg || 'Failed to export QR PDF.',
+            ? t('areaPrintOptionsDialog.error.qrFormatNotSupport')
+            : msg || t('areaPrintOptionsDialog.error.exportPdfFailed'),
       life: 3500,
     })
   } finally {
@@ -198,7 +200,7 @@ async function onPrint() {
   <Dialog
     v-model:visible="visibleProxy"
     modal
-    header="Print Options"
+    :header="t('areaPrintOptionsDialog.title')"
     :style="{ width: '1100px', maxWidth: '96vw' }"
   >
     <div class="flex max-h-[78vh] flex-col gap-4 overflow-hidden">
@@ -207,7 +209,9 @@ async function onPrint() {
           class="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end"
         >
           <div class="space-y-2">
-            <label class="block text-sm font-medium text-slate-700">Area</label>
+            <label class="block text-sm font-medium text-slate-700">{{
+              t('areaPrintOptionsDialog.areaFilter')
+            }}</label>
             <MultiSelect
               v-model="selectedAreaIds"
               :options="areaOptions"
@@ -216,7 +220,7 @@ async function onPrint() {
               optionValue="value"
               filter
               display="chip"
-              placeholder="Select Area"
+              :placeholder="t('areaPrintOptionsDialog.selectArea')"
               class="w-full"
               :disabled="loading"
               :maxSelectedLabels="2"
@@ -224,14 +228,16 @@ async function onPrint() {
           </div>
 
           <div class="space-y-2">
-            <label class="block text-sm font-medium text-slate-700">Role</label>
+            <label class="block text-sm font-medium text-slate-700">{{
+              t('areaPrintOptionsDialog.roleFilter')
+            }}</label>
             <Select
               v-model="selectedRoleId"
               :options="roleFilterOptions"
               optionLabel="label"
               size="small"
               optionValue="value"
-              placeholder="Select Role"
+              :placeholder="t('areaPrintOptionsDialog.selectRole')"
               showClear
               class="w-full"
               :disabled="loading"
@@ -240,7 +246,7 @@ async function onPrint() {
 
           <div class="flex md:justify-end">
             <BaseButton
-              label="Clear Filter"
+              :label="t('common.clearFilters')"
               size="small"
               severity="secondary"
               outlined
@@ -263,19 +269,27 @@ async function onPrint() {
             <div class="py-10 text-center text-slate-500">
               {{
                 hasAppliedFilter
-                  ? 'No check points found.'
-                  : 'No Check Point to export, please Select Area/Role.'
+                  ? t('areaPrintOptionsDialog.noCheckpointFound')
+                  : t('areaPrintOptionsDialog.noCheckpointExport')
               }}
             </div>
           </template>
 
-          <Column header="CP Priority" style="min-width: 8rem" sortField="cp_priority">
+          <Column
+            :header="t('areaPrintOptionsDialog.checkpointPriority')"
+            style="min-width: 8rem"
+            sortField="cp_priority"
+          >
             <template #body="{ data }">
               <div class="text-left">{{ data.cp_priority }}</div>
             </template>
           </Column>
 
-          <Column header="Check Point Name" style="min-width: 16rem" sortField="cp_name">
+          <Column
+            :header="t('areaPrintOptionsDialog.checkpointName')"
+            style="min-width: 16rem"
+            sortField="cp_name"
+          >
             <template #body="{ data }">
               <div class="flex flex-col">
                 <div class="text-slate-800 font-medium">{{ data.cp_name || '-' }}</div>
@@ -284,13 +298,17 @@ async function onPrint() {
             </template>
           </Column>
 
-          <Column header="Area" style="min-width: 10rem" sortField="area_label">
+          <Column
+            :header="t('areaPrintOptionsDialog.area')"
+            style="min-width: 10rem"
+            sortField="area_label"
+          >
             <template #body="{ data }">
               <div class="text-slate-800">{{ data.area_label || '-' }}</div>
             </template>
           </Column>
 
-          <Column header="Qr Image" style="min-width: 10rem" sortDisabled>
+          <Column :header="t('areaPrintOptionsDialog.qrImg')" style="min-width: 10rem" sortDisabled>
             <template #body="{ data }">
               <div class="flex justify-start">
                 <QrPreview
@@ -312,7 +330,7 @@ async function onPrint() {
     <template #footer>
       <div class="flex justify-end gap-2">
         <BaseButton
-          label="Cancel"
+          :label="t('common.cancel')"
           size="small"
           severity="secondary"
           outlined

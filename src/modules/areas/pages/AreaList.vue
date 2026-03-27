@@ -57,9 +57,12 @@ const printingAreaId = ref<number | null>(null)
 const DELETE_AREA_API_DRY_RUN = false
 
 const areaStatusOptions = [
-  { label: 'All', value: 'ALL' },
-  { label: 'Active', value: 'ACTIVE' },
-  { label: 'Inactive', value: 'INACTIVE' },
+  { label: t('areaList.areaStatusOptions.all'), value: t('areaList.areaStatusOptions.all') },
+  { label: t('areaList.areaStatusOptions.active'), value: t('areaList.areaStatusOptions.active') },
+  {
+    label: t('areaList.areaStatusOptions.inactive'),
+    value: t('areaList.areaStatusOptions.inactive'),
+  },
 ]
 const confirmDeleteVisible = ref(false)
 const confirmDeleteMessage = ref('')
@@ -88,7 +91,7 @@ onMounted(async () => {
 })
 
 function statusLabel(s: number) {
-  return s === 1 ? 'Active' : 'Inactive'
+  return s === 1 ? t('areaList.areaStatusOptions.active') : t('areaList.areaStatusOptions.inactive')
 }
 
 function statusSeverity(s: number) {
@@ -117,7 +120,7 @@ async function onExport() {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: String(e?.message ?? 'Failed to export areas.'),
+      detail: String(e?.message ?? t('areaList.errors.exportFailed')),
       life: 3000,
     })
   } finally {
@@ -222,15 +225,15 @@ async function onDelete(row: AreaRow) {
   if (checkpointCount > 0) {
     toast.add({
       severity: 'warn',
-      summary: 'Cannot Delete',
-      detail: `Can't delete Area ${row.area_code} because it has ${checkpointCount} check point(s).`,
+      summary: t('common.cannotDelete'),
+      detail: `${t('areaList.errors.cannotDeleteSingleArea')} ${t('areaList.errors.becauseItHas')} ${checkpointCount} ${t('areaList.errors.checkpoints')}.`,
       life: 3500,
     })
     return
   }
 
   openDeleteConfirm(
-    `Are you sure you want to delete area ${row.area_code} - ${row.area_name}?`,
+    `${t('areaList.errors.areYouSure')} ${row.area_code} - ${row.area_name}?`,
     async () => {
       try {
         await doDeleteOne(row)
@@ -249,8 +252,8 @@ async function onDelete(row: AreaRow) {
         selectedAreas.value = null
         toast.add({
           severity: 'success',
-          summary: 'Deleted',
-          detail: 'Area has been deleted.',
+          summary: t('common.deleted'),
+          detail: t('areaList.success.deleteDetail'),
           life: 2000,
         })
       } catch (e: any) {
@@ -259,16 +262,16 @@ async function onDelete(row: AreaRow) {
           const n = Number(msg.split(':')[1] ?? 0)
           toast.add({
             severity: 'warn',
-            summary: 'Cannot Delete',
-            detail: `Can't delete Area ${row.area_code} because it has ${n} check points`,
+            summary: t('common.cannotDelete'),
+            detail: `${t('areaList.errors.cannotDeleteSingleArea')} ${row.area_code} ${t('areaList.errors.becauseItHas')} ${n} ${t('areaList.errors.checkpoints')}`,
             life: 3500,
           })
           return
         }
         toast.add({
           severity: 'error',
-          summary: 'Error',
-          detail: msg || 'Failed to delete area.',
+          summary: t('common.error'),
+          detail: msg || t('areaList.errors.deleteFailed'),
           life: 3000,
         })
         throw e
@@ -285,58 +288,61 @@ function onDeleteSelected() {
   if (blocked.length) {
     toast.add({
       severity: 'warn',
-      summary: 'Cannot Delete',
-      detail: `Can't delete ${blocked.length} selected area(s) because they still contain check point(s).`,
+      summary: t('common.cannotDelete'),
+      detail: `${t('areaList.errors.cannotDeleteMultipleAreas')} ${blocked.length} ${t('areaList.errors.becauseItContains')}.`,
       life: 3500,
     })
     return
   }
 
-  openDeleteConfirm(`Are you sure you want to delete ${sel.length} selected areas?`, async () => {
-    try {
-      for (const row of sel) {
-        await doDeleteOne(row)
-      }
+  openDeleteConfirm(
+    `${t('areaList.errors.areYouSureMultiple')} ${sel.length} ${t('areaList.errors.selectedAreas')}?`,
+    async () => {
+      try {
+        for (const row of sel) {
+          await doDeleteOne(row)
+        }
 
-      if (DELETE_AREA_API_DRY_RUN) {
+        if (DELETE_AREA_API_DRY_RUN) {
+          toast.add({
+            severity: 'info',
+            summary: 'Delete API Disabled',
+            detail: 'Delete API is disabled for testing. Check console log.',
+            life: 3000,
+          })
+          return
+        }
+
+        await store.load()
+        selectedAreas.value = null
         toast.add({
-          severity: 'info',
-          summary: 'Delete API Disabled',
-          detail: 'Delete API is disabled for testing. Check console log.',
+          severity: 'success',
+          summary: t('common.deleted'),
+          detail: t('areaList.success.DeleteMultipleDetail'),
+          life: 2000,
+        })
+      } catch (e: any) {
+        const msg = String(e?.message ?? '')
+        if (msg.startsWith('AREA_HAS_SCAN_POINTS:')) {
+          const n = Number(msg.split(':')[1] ?? 0)
+          toast.add({
+            severity: 'warn',
+            summary: t('common.cannotDelete'),
+            detail: `${t('areaList.errors.areaDeleteRestricted')} ${n} ${t('areaList.errors.checkpoints')}`,
+            life: 3500,
+          })
+          return
+        }
+        toast.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: msg || t('areaList.errors.deleteFailed'),
           life: 3000,
         })
-        return
+        throw e
       }
-
-      await store.load()
-      selectedAreas.value = null
-      toast.add({
-        severity: 'success',
-        summary: 'Deleted',
-        detail: 'Selected areas have been deleted.',
-        life: 2000,
-      })
-    } catch (e: any) {
-      const msg = String(e?.message ?? '')
-      if (msg.startsWith('AREA_HAS_SCAN_POINTS:')) {
-        const n = Number(msg.split(':')[1] ?? 0)
-        toast.add({
-          severity: 'warn',
-          summary: 'Cannot Delete',
-          detail: `Can't delete because one selected Area has ${n} check points`,
-          life: 3500,
-        })
-        return
-      }
-      toast.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: msg || 'Failed to delete areas.',
-        life: 3000,
-      })
-      throw e
-    }
-  })
+    },
+  )
 }
 
 function buildAreaPrintItems(row: AreaRow, checkpoints: CheckpointRow[]): CheckpointPrintItem[] {
@@ -365,8 +371,8 @@ async function onPrintAreaQr(row: AreaRow) {
     if (!items.length) {
       toast.add({
         severity: 'warn',
-        summary: 'No QR',
-        detail: `No check point QR found for ${row.area_code}.`,
+        summary: t('areaList.errors.noQr'),
+        detail: `${t('areaList.errors.noQrDetail')} ${row.area_code}.`,
         life: 3000,
       })
       return
@@ -377,13 +383,13 @@ async function onPrintAreaQr(row: AreaRow) {
     const msg = String(e?.message ?? '')
     toast.add({
       severity: 'error',
-      summary: 'QR PDF Error',
+      summary: t('areaList.errors.qrPdfError'),
       detail:
         msg === 'QR_IMAGE_NOT_FOUND'
-          ? 'No QR image available to export.'
+          ? t('areaList.errors.noQrAvailable')
           : msg === 'QR_IMAGE_FORMAT_NOT_SUPPORTED'
-            ? 'QR image format is not supported.'
-            : msg || 'Failed to export QR PDF.',
+            ? t('areaList.errors.qrUnsupport')
+            : msg || t('areaList.errors.qrExportFailed'),
       life: 3500,
     })
   } finally {
@@ -405,8 +411,8 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
 
     toast.add({
       severity: 'success',
-      summary: 'Saved',
-      detail: 'Area has been saved.',
+      summary: t('common.save'),
+      detail: t('areaList.success.savedDetail'),
       life: 2000,
     })
   } catch (e: any) {
@@ -426,8 +432,8 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
     if (msg === 'AREA_CODE_EXISTS') {
       toast.add({
         severity: 'warn',
-        summary: 'Duplicate',
-        detail: 'Area Code already exists.',
+        summary: t('areaList.errors.duplicate'),
+        detail: t('areaList.errors.areaCodeExist'),
         life: 3000,
       })
       return
@@ -435,8 +441,8 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
 
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: msg || 'Failed to save area.',
+      summary: t('common.error'),
+      detail: msg || t('areaList.errors.saveAreaFailed'),
       life: 3500,
     })
   }
@@ -445,7 +451,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
 
 <template>
   <div class="space-y-3">
-    <div class="text-[26px] font-semibold text-slate-800">Areas Management</div>
+    <div class="text-[26px] font-semibold text-slate-800">{{ t('areaList.title') }}</div>
 
     <BaseDataTable
       :key="`area-list-table-${locale}`"
@@ -465,7 +471,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
       <template v-if="canManage" #toolbar-start>
         <BaseIconButton
           icon="pi pi-plus"
-          label="New"
+          :label="t('common.new')"
           size="small"
           severity="success"
           :disabled="!canManage"
@@ -473,7 +479,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
         />
         <BaseIconButton
           icon="pi pi-trash"
-          label="Delete"
+          :label="t('common.delete')"
           size="small"
           severity="danger"
           outlined
@@ -488,7 +494,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
           <BaseIconButton
             v-if="canManage"
             icon="pi pi-file-pdf"
-            label="CP Export PDF All"
+            :label="t('areaList.checkpointExportPdf')"
             size="small"
             severity="secondary"
             outlined
@@ -496,7 +502,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
           />
           <BaseIconButton
             icon="pi pi-file-excel"
-            label="Export Excel"
+            :label="t('common.export')"
             size="small"
             severity="secondary"
             outlined
@@ -515,13 +521,13 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
         sortDisabled
       />
 
-      <Column field="area_code" header="Area Code" style="min-width: 10rem" />
-      <Column field="area_name" header="Area Name" style="min-width: 14rem" />
+      <Column field="area_code" :header="t('areaList.areaCode')" style="min-width: 10rem" />
+      <Column field="area_name" :header="t('areaList.areaName')" style="min-width: 14rem" />
 
-      <Column header="Area Check Points" style="min-width: 12rem">
+      <Column :header="t('areaList.areaCheckPoints')" style="min-width: 12rem">
         <template #body="{ data }">
           <BaseButton
-            :label="`View (${data.checkpoint_count})`"
+            :label="`${t('common.view')} (${data.checkpoint_count})`"
             severity="secondary"
             outlined
             @click="goToAreaCheckPoints(data)"
@@ -530,7 +536,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
       </Column>
 
       <Column
-        header="Status"
+        :header="t('areaList.status')"
         style="min-width: 10rem"
         sortField="area_status"
         :filterMenu="{
@@ -549,7 +555,12 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
         </template>
       </Column>
 
-      <Column header="Action" :exportable="false" style="min-width: 18rem" sortDisabled>
+      <Column
+        :header="t('common.action')"
+        :exportable="false"
+        style="min-width: 18rem"
+        sortDisabled
+      >
         <template #body="{ data }">
           <div class="flex gap-2 justify-start">
             <BaseIconButton
