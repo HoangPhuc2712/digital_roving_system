@@ -1,19 +1,13 @@
 import ExcelJS from 'exceljs'
 import type { CheckpointRow } from '@/modules/checkpoints/checkpoints.types'
+import { imageSourceToDataUrl, normalizeImageSource, parseDataImageUrl } from '@/utils/base64'
 
 function normalizeQr(src: string) {
-  const s = String(src ?? '').trim()
-  if (!s) return ''
-  if (s.startsWith('data:image/')) return s
-  if (s.startsWith('http://') || s.startsWith('https://')) return s
-  return `data:image/png;base64,${s}`
+  return normalizeImageSource(src, { fallbackExt: 'png' })
 }
 
 function stripDataUrl(s: string) {
-  const v = String(s ?? '').trim()
-  const m = v.match(/^data:image\/(\w+);base64,(.*)$/i)
-  if (m) return { ext: (m[1] || 'png').toLowerCase(), b64: m[2] || '' }
-  return { ext: 'png', b64: v }
+  return parseDataImageUrl(s, 'png')
 }
 
 function colWidthToPx(w: number) {
@@ -43,13 +37,13 @@ async function addImageToCell(
   const normalized = normalizeQr(rawQr)
   if (!normalized) return
 
-  const { ext, b64 } = stripDataUrl(normalized)
+  const dataUrl = await imageSourceToDataUrl(normalized, { fallbackExt: 'png' })
+  if (!dataUrl) return
+
+  const { ext, b64 } = stripDataUrl(dataUrl)
   if (!b64) return
 
   const safeExt = ext === 'jpg' ? 'jpeg' : ext || 'png'
-  const dataUrl = normalized.startsWith('data:image/')
-    ? normalized
-    : `data:image/${safeExt};base64,${b64}`
 
   const imageId = wb.addImage({
     extension: safeExt as 'png' | 'jpeg' | 'gif',

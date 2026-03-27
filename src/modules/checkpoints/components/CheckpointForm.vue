@@ -9,6 +9,7 @@ import BaseInput from '@/components/common/inputs/BaseInput.vue'
 import BaseMessage from '@/components/common/messages/BaseMessage.vue'
 
 import QrPreview from '@/modules/checkpoints/components/QrPreview.vue'
+import { normalizeImageSource } from '@/utils/base64'
 import { createCheckpointMock, updateCheckpointMock } from '@/modules/checkpoints/checkpoints.api'
 
 export type CheckpointFormMode = 'new' | 'view' | 'edit'
@@ -126,11 +127,7 @@ function close() {
 }
 
 function normalizeQr(src: string) {
-  const s = (src ?? '').trim()
-  if (!s) return ''
-  if (s.startsWith('data:image/')) return s
-  if (s.startsWith('http://') || s.startsWith('https://')) return s
-  return `data:image/png;base64,${s}`
+  return normalizeImageSource(src, { fallbackExt: 'png' })
 }
 
 function submit() {

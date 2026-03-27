@@ -1,6 +1,7 @@
 import type { AxiosError } from 'axios'
 import { http } from '@/services/http/axios'
 import { endpoints } from '@/services/http/endpoints'
+import { normalizeImageSource } from '@/utils/base64'
 
 import type {
   CtpatReportRow,
@@ -239,16 +240,12 @@ function asArray<T>(value: T | T[] | null | undefined): T[] {
 }
 
 function normalizeImageSrc(rawValue: string, extValue?: string) {
-  const raw = String(rawValue ?? '').trim()
-  if (!raw) return ''
-
-  const ext =
-    String(extValue ?? 'jpeg')
-      .trim()
-      .toLowerCase() || 'jpeg'
-
-  if (raw.startsWith('data:image/')) return raw
-  return `data:image/${ext};base64,${raw}`
+  return normalizeImageSource(rawValue, {
+    fallbackExt:
+      String(extValue ?? 'jpeg')
+        .trim()
+        .toLowerCase() || 'jpeg',
+  })
 }
 
 function normalizeFlatImage(img: ApiReportImage, fallbackIndex = 0): ReportImage {

@@ -12,6 +12,7 @@ import BaseInput from '@/components/common/inputs/BaseInput.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import BaseMessage from '@/components/common/messages/BaseMessage.vue'
 import QrPreview from '@/modules/checkpoints/components/QrPreview.vue'
+import { normalizeImageSource } from '@/utils/base64'
 
 import type { RouteDetailModel } from '@/modules/routes/routes.types'
 import {
@@ -153,11 +154,7 @@ function getDisplayOrder(detail: RouteDetailModel) {
 }
 
 function getQrValue(detail: RouteDetailModel) {
-  const s = String(detail.cp_qr ?? '').trim()
-  if (!s) return ''
-  if (s.startsWith('data:image/')) return s
-  if (s.startsWith('http://') || s.startsWith('https://')) return s
-  return `data:image/png;base64,${s}`
+  return normalizeImageSource(String(detail.cp_qr ?? ''), { fallbackExt: 'png' })
 }
 
 function applyDetailMetadata() {

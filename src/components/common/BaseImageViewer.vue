@@ -3,6 +3,8 @@ import { computed, ref, watch } from 'vue'
 import Dialog from 'primevue/dialog'
 import Galleria from 'primevue/galleria'
 
+import { normalizeImageSource } from '@/utils/base64'
+
 type BaseImageItem = {
   id: string | number
   src: string
@@ -39,11 +41,7 @@ function close() {
 }
 
 function normalizeSrc(src: string) {
-  const s = (src ?? '').trim()
-  if (!s) return ''
-  if (s.startsWith('data:image/')) return s
-  if (s.startsWith('http://') || s.startsWith('https://')) return s
-  return `data:image/jpeg;base64,${s}`
+  return normalizeImageSource(src, { fallbackExt: 'jpeg' })
 }
 
 const galleryItems = computed(() =>

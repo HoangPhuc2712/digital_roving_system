@@ -1,11 +1,9 @@
 import ExcelJS from 'exceljs'
 import type { ReportImage, ReportNoteGroup, ReportRow } from '@/modules/reports/reports.types'
+import { imageSourceToDataUrl, parseDataImageUrl } from '@/utils/base64'
 
 function stripDataUrl(s: string) {
-  const v = (s ?? '').trim()
-  const m = v.match(/^data:image\/(\w+);base64,(.*)$/i)
-  if (m) return { ext: (m[1] || 'jpeg').toLowerCase(), b64: m[2] || '' }
-  return { ext: 'jpeg', b64: v }
+  return parseDataImageUrl(s, 'jpeg')
 }
 
 function colWidthToPx(w: number) {
@@ -51,21 +49,23 @@ async function buildHorizontalImageStrip(params: {
   const innerSlotW = Math.max(12, slotW - SLOT_INSET_X * 2)
   const innerSlotH = Math.max(12, maxHeight - SLOT_INSET_Y * 2)
 
+  const EXPORT_SCALE = 2
+
   const canvas = document.createElement('canvas')
-  canvas.width = Math.max(1, maxWidth)
-  canvas.height = Math.max(1, maxHeight)
+  canvas.width = Math.max(1, Math.floor(maxWidth * EXPORT_SCALE))
+  canvas.height = Math.max(1, Math.floor(maxHeight * EXPORT_SCALE))
 
   const ctx = canvas.getContext('2d')
   if (!ctx) return null
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  ctx.scale(EXPORT_SCALE, EXPORT_SCALE)
+  ctx.clearRect(0, 0, maxWidth, maxHeight)
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
 
   for (const [index, raw] of images.entries()) {
-    const { ext, b64 } = stripDataUrl(raw)
-    if (!b64) continue
-
-    const safeExt = ext === 'jpg' ? 'jpeg' : ext
-    const dataUrl = raw.startsWith('data:image/') ? raw : `data:image/${safeExt};base64,${b64}`
+    const dataUrl = await imageSourceToDataUrl(raw, { fallbackExt: 'jpeg' })
+    if (!dataUrl) continue
 
     const img = await loadImageElement(dataUrl)
 
@@ -82,8 +82,8 @@ async function buildHorizontalImageStrip(params: {
 
   return {
     dataUrl: canvas.toDataURL('image/png'),
-    width: canvas.width,
-    height: canvas.height,
+    width: maxWidth,
+    height: maxHeight,
   }
 }
 
@@ -225,7 +225,7 @@ export async function exportPatrolReportXlsx(params: { rows: ReportRow[]; fileNa
       buildNoteBlocks(row).map((block) => Math.min(block.images.length, 10)),
     ),
   )
-  const photoColumnWidth = Math.max(28, Math.min(90, 16 + maxImagesPerBlock * 7))
+  const photoColumnWidth = Math.max(36, Math.min(110, 22 + maxImagesPerBlock * 9))
 
   ws.columns = [
     { key: 'area', width: 16 },
@@ -239,7 +239,7 @@ export async function exportPatrolReportXlsx(params: { rows: ReportRow[]; fileNa
 
   ws.mergeCells(1, 1, 1, 7)
   ws.getCell(1, 1).value = 'Patrol Abnormal Cases Report'
-  ws.getCell(1, 1).font = { bold: true, size: 14, color: { argb: 'FF0F172A' } }
+  ws.getCell(1, 1).font = { bold: true, size: 16, color: { argb: 'FF0F172A' } }
   ws.getCell(1, 1).alignment = { vertical: 'middle', horizontal: 'center' }
   ws.getRow(1).height = 24
 
@@ -273,7 +273,7 @@ export async function exportPatrolReportXlsx(params: { rows: ReportRow[]; fileNa
     const endRow = rowCursor + blocks.length - 1
 
     for (let rr = startRow; rr <= endRow; rr++) {
-      ws.getRow(rr).height = 72
+      ws.getRow(rr).height = 96
     }
 
     const areaText = String(row.area_name ?? '').trim() || '—'

@@ -1,4 +1,5 @@
 import { PDFDocument, rgb } from 'pdf-lib'
+import { dataUrlToBytes, imageSourceToDataUrl, normalizeImageSource } from '@/utils/base64'
 
 export type CheckpointPrintItem = {
   areaLabel: string
@@ -38,7 +39,6 @@ const PRIORITY_COLOR = '#111827'
 const AREA_FONT_SIZE = 13
 const TITLE_FONT_SIZE = 16
 const NAME_FONT_SIZE = 14
-const CODE_FONT_SIZE = 8
 const PRIORITY_FONT_SIZE = 11
 const PRIORITY_DIAMETER = 20
 const HEADER_MIN_HEIGHT = 58
@@ -47,11 +47,7 @@ const QR_SIDE = 164
 const CARD_SCALE = 2
 
 function normalizeQr(src: string) {
-  const s = String(src ?? '').trim()
-  if (!s) return ''
-  if (s.startsWith('data:image/')) return s
-  if (s.startsWith('http://') || s.startsWith('https://')) return s
-  return `data:image/png;base64,${s}`
+  return normalizeImageSource(src, { fallbackExt: 'png' })
 }
 
 function sanitizeFileName(value: string) {
@@ -71,16 +67,6 @@ function chunkItems<T>(items: T[], size: number) {
   return chunks
 }
 
-function decodeBase64(base64: string) {
-  const clean = base64.replace(/\s+/g, '')
-  const binary = atob(clean)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i += 1) {
-    bytes[i] = binary.charCodeAt(i)
-  }
-  return bytes
-}
-
 function bytesToDataUrl(bytes: Uint8Array, mimeType: string) {
   let binary = ''
   for (let i = 0; i < bytes.length; i += 1) {
@@ -93,31 +79,20 @@ async function loadQrImage(src: string): Promise<LoadedQrImage> {
   const normalized = normalizeQr(src)
   if (!normalized) throw new Error('QR_IMAGE_NOT_FOUND')
 
-  if (normalized.startsWith('data:image/')) {
-    const match = normalized.match(/^data:image\/(png|jpeg|jpg);base64,(.+)$/i)
-    if (!match) throw new Error('QR_IMAGE_FORMAT_NOT_SUPPORTED')
+  const dataUrl = await imageSourceToDataUrl(normalized, { fallbackExt: 'png' })
+  if (!dataUrl) throw new Error('QR_IMAGE_NOT_FOUND')
 
-    const ext = match[1] ?? ''
-    const data = match[2] ?? ''
-    const kind = ext.toLowerCase() === 'png' ? 'png' : 'jpg'
-    const mimeType = kind === 'png' ? 'image/png' : 'image/jpeg'
-    return {
-      bytes: decodeBase64(data),
-      kind,
-      mimeType,
-    }
-  }
+  const match = dataUrl.match(/^data:image\/(png|jpeg|jpg);base64,(.+)$/i)
+  if (!match) throw new Error('QR_IMAGE_FORMAT_NOT_SUPPORTED')
 
-  const response = await fetch(normalized)
-  if (!response.ok) throw new Error('QR_IMAGE_NOT_FOUND')
+  const ext = match[1] ?? ''
+  const kind = ext.toLowerCase() === 'png' ? 'png' : 'jpg'
+  const mimeType = kind === 'png' ? 'image/png' : 'image/jpeg'
 
-  const contentType = String(response.headers.get('content-type') ?? '').toLowerCase()
-  const arrayBuffer = await response.arrayBuffer()
-  const kind = contentType.includes('png') ? 'png' : 'jpg'
   return {
-    bytes: new Uint8Array(arrayBuffer),
+    bytes: dataUrlToBytes(dataUrl),
     kind,
-    mimeType: kind === 'png' ? 'image/png' : 'image/jpeg',
+    mimeType,
   }
 }
 

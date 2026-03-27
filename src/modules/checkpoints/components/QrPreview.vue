@@ -9,6 +9,7 @@ import {
   type CheckpointPrintItem,
 } from '@/services/print/checkpoints.print'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
+import { normalizeImageSource } from '@/utils/base64'
 
 const props = defineProps<{
   value: string // base64 hoặc text
@@ -22,11 +23,7 @@ const visible = ref(false)
 const printing = ref(false)
 
 function normalizeSrc(v: string) {
-  const s = (v ?? '').trim()
-  if (!s) return ''
-  if (s.startsWith('data:image/')) return s
-  if (s.startsWith('http://') || s.startsWith('https://')) return s
-  return `data:image/png;base64,${s}`
+  return normalizeImageSource(v, { fallbackExt: 'png' })
 }
 
 const src = computed(() => normalizeSrc(props.value))

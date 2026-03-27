@@ -4,6 +4,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { exportCheckpointsXlsx } from '@/services/export/checkpoints.export'
 import { printSingleCheckpointQr } from '@/services/print/checkpoints.print'
+import { normalizeImageSource } from '@/utils/base64'
 
 import Column from 'primevue/column'
 import Tag from 'primevue/tag'
@@ -461,11 +462,7 @@ async function handleCheckpointFormSubmit(payload: {
 }
 
 function normalizeQr(src: string) {
-  const s = (src ?? '').trim()
-  if (!s) return ''
-  if (s.startsWith('data:image/')) return s
-  if (s.startsWith('http://') || s.startsWith('https://')) return s
-  return `data:image/png;base64,${s}`
+  return normalizeImageSource(src, { fallbackExt: 'png' })
 }
 
 async function onPrintCheckpointQr(row: CheckpointRow) {

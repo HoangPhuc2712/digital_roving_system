@@ -16,6 +16,7 @@ import {
 } from '@/services/print/checkpoints.print'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import QrPreview from '@/modules/checkpoints/components/QrPreview.vue'
+import { normalizeImageSource } from '@/utils/base64'
 
 type AreaOption = {
   label: string
@@ -120,11 +121,7 @@ watch(
 )
 
 function normalizeQr(src: string) {
-  const s = String(src ?? '').trim()
-  if (!s) return ''
-  if (s.startsWith('data:image/')) return s
-  if (s.startsWith('http://') || s.startsWith('https://')) return s
-  return `data:image/png;base64,${s}`
+  return normalizeImageSource(src, { fallbackExt: 'png' })
 }
 
 async function ensureLoaded() {
