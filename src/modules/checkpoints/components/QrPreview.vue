@@ -3,7 +3,6 @@ import { computed, ref } from 'vue'
 import Dialog from 'primevue/dialog'
 import { useToast } from 'primevue/usetoast'
 
-import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import { useAuthStore } from '@/stores/auth.store'
 import {
   printSingleCheckpointQr,

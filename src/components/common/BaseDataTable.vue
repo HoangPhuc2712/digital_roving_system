@@ -119,7 +119,7 @@ type SortIconSlotProps = {
   sortOrder?: number
 }
 
-type ColumnFilterType = 'select' | 'multiselect' | 'text'
+type ColumnFilterType = 'select' | 'multiselect' | 'text' | 'dual-select'
 
 type FilterOption = {
   label?: string
@@ -139,6 +139,12 @@ type ColumnFilterMenuConfig = {
   filter?: boolean
   disabled?: boolean
   filterField?: string
+  secondaryOptions?: FilterOption[]
+  secondaryOptionLabel?: string
+  secondaryOptionValue?: string
+  secondaryPlaceholder?: string
+  secondaryFilter?: boolean
+  secondaryFilterField?: string
 }
 
 const props = withDefaults(
@@ -285,6 +291,61 @@ const FilterMenuControl = defineComponent({
 
     return () => {
       const type = filterProps.config.type ?? 'select'
+
+      if (type === 'dual-select') {
+        const currentValue =
+          localValue.value && typeof localValue.value === 'object'
+            ? localValue.value
+            : { primaryValue: null, secondaryValue: null }
+
+        const primaryValue = currentValue.primaryValue ?? null
+        const secondaryValue = currentValue.secondaryValue ?? null
+        const secondaryFilterField = filterProps.config.secondaryFilterField ?? 'parentValue'
+        const allSecondaryOptions = Array.isArray(filterProps.config.secondaryOptions)
+          ? filterProps.config.secondaryOptions
+          : []
+        const secondaryOptions =
+          primaryValue == null || primaryValue === ''
+            ? allSecondaryOptions
+            : allSecondaryOptions.filter((option) => {
+                if (!option || typeof option !== 'object') return false
+                return option[secondaryFilterField] === primaryValue
+              })
+
+        return h('div', { class: 'flex w-[260px] flex-col gap-3' }, [
+          h(Select, {
+            key: `${controlKey.value}::primary`,
+            modelValue: primaryValue,
+            'onUpdate:modelValue': (value: any) =>
+              void updateValue({ primaryValue: value ?? null, secondaryValue: null }),
+            options: filterProps.config.options ?? [],
+            optionLabel: filterProps.config.optionLabel ?? 'label',
+            optionValue: filterProps.config.optionValue ?? 'value',
+            placeholder: filterProps.config.placeholder ?? '',
+            showClear: filterProps.config.showClear ?? true,
+            filter: filterProps.config.filter ?? false,
+            class: 'w-full',
+            size: 'small',
+            appendTo: 'self',
+          }),
+          h(Select, {
+            key: `${controlKey.value}::secondary`,
+            modelValue: secondaryValue,
+            'onUpdate:modelValue': (value: any) =>
+              void updateValue({ primaryValue, secondaryValue: value ?? null }, true),
+            options: secondaryOptions,
+            optionLabel: filterProps.config.secondaryOptionLabel ?? 'label',
+            optionValue: filterProps.config.secondaryOptionValue ?? 'value',
+            placeholder: filterProps.config.secondaryPlaceholder ?? '',
+            showClear: filterProps.config.showClear ?? true,
+            filter: filterProps.config.secondaryFilter ?? filterProps.config.filter ?? false,
+            class: 'w-full',
+            size: 'small',
+            appendTo: 'self',
+            disabled: !allSecondaryOptions.length,
+          }),
+        ])
+      }
 
       if (type === 'multiselect') {
         return h(MultiSelect, {
@@ -448,7 +509,7 @@ function buildColumnChildren(node: VNode, sortable: boolean, filterMenu?: Column
             {
               type: 'button',
               class: [
-                'inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 hover:cursor-pointer',
+                'inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-700',
                 isFilterActive(filterMenu.value) ? 'bg-slate-100 text-slate-700' : '',
               ],
               'aria-label': 'Filter column',
@@ -560,49 +621,87 @@ function onPopoverHide(key: string) {
   }
 }
 
-function isFilterActive(value: any) {
+function isFilterActive(value: any): boolean {
   if (Array.isArray(value)) return value.length > 0
+  if (value && typeof value === 'object') {
+    return Object.values(value).some((item) => isFilterActive(item))
+  }
   return value !== null && value !== undefined && value !== ''
 }
 
 function cloneFilterValue(value: any) {
-  return Array.isArray(value) ? [...value] : value
+  if (Array.isArray(value)) return [...value]
+  if (value && typeof value === 'object') return { ...value }
+  return value
+}
+
+function buildOptionsSignature(
+  options: FilterOption[] | undefined,
+  optionValue?: string,
+  optionLabel?: string,
+  extraField?: string,
+) {
+  return (Array.isArray(options) ? options : [])
+    .map((option) => {
+      if (option && typeof option === 'object') {
+        const valuePart = String(
+          option[optionValue ?? 'value'] ?? option.value ?? option.label ?? '',
+        )
+        const labelPart = String(option[optionLabel ?? 'label'] ?? option.label ?? '')
+        const extraPart = extraField ? String(option[extraField] ?? '') : ''
+        return `${valuePart}::${labelPart}::${extraPart}`
+      }
+      return String(option ?? '')
+    })
+    .join('|')
+}
+
+function serializeFilterValue(value: any): string {
+  if (Array.isArray(value)) {
+    return value.map((item) => serializeFilterValue(item)).join('|')
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.keys(value)
+      .sort()
+      .map((key) => `${key}:${serializeFilterValue(value[key])}`)
+      .join('|')
+  }
+
+  return String(value ?? '')
 }
 
 function buildFilterMenuRenderKey(config: ColumnFilterMenuConfig) {
-  const options = Array.isArray(config.options) ? config.options : []
-  const optionSignature = options
-    .map((option) => {
-      if (option && typeof option === 'object') {
-        return `${String(option[config.optionValue ?? 'value'] ?? option.value ?? option.label ?? '')}`
-      }
-      return String(option ?? '')
-    })
-    .join('|')
+  const optionSignature = buildOptionsSignature(
+    config.options,
+    config.optionValue,
+    config.optionLabel,
+  )
+  const secondaryOptionSignature = buildOptionsSignature(
+    config.secondaryOptions,
+    config.secondaryOptionValue,
+    config.secondaryOptionLabel,
+    config.secondaryFilterField,
+  )
+  const valueSignature = serializeFilterValue(config.value)
 
-  const valueSignature = Array.isArray(config.value)
-    ? config.value.map((item) => String(item ?? '')).join('|')
-    : String(config.value ?? '')
-
-  return `${config.key}::${config.type ?? 'select'}::${valueSignature}::${optionSignature}`
+  return `${config.key}::${config.type ?? 'select'}::${valueSignature}::${optionSignature}::${secondaryOptionSignature}`
 }
 
 function buildFilterControlKey(config: ColumnFilterMenuConfig, localValue: any) {
-  const options = Array.isArray(config.options) ? config.options : []
+  const optionSignature = buildOptionsSignature(
+    config.options,
+    config.optionValue,
+    config.optionLabel,
+  )
+  const secondaryOptionSignature = buildOptionsSignature(
+    config.secondaryOptions,
+    config.secondaryOptionValue,
+    config.secondaryOptionLabel,
+    config.secondaryFilterField,
+  )
+  const valueSignature = serializeFilterValue(localValue)
 
-  const optionSignature = options
-    .map((option) => {
-      if (option && typeof option === 'object') {
-        return `${String(option[config.optionValue ?? 'value'] ?? option.value ?? option.label ?? '')}`
-      }
-      return String(option ?? '')
-    })
-    .join('|')
-
-  const valueSignature = Array.isArray(localValue)
-    ? localValue.map((item) => String(item ?? '')).join('|')
-    : String(localValue ?? '')
-
-  return `${config.key}::${config.type ?? 'select'}::${valueSignature}::${optionSignature}`
+  return `${config.key}::${config.type ?? 'select'}::${valueSignature}::${optionSignature}::${secondaryOptionSignature}`
 }
 </script>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+
 import { useRoute } from 'vue-router'
 import { exportCheckpointsXlsx } from '@/services/export/checkpoints.export'
 import { printSingleCheckpointQr } from '@/services/print/checkpoints.print'
@@ -25,6 +26,12 @@ import CheckpointForm, {
 } from '@/modules/checkpoints/components/CheckpointForm.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import BaseConfirmDelete from '@/components/common/BaseConfirmDelete.vue'
+import {
+  useDebouncedSearchDraft,
+  useResetFirstOnFilterChange,
+  resetFiltersWithSearchDraft,
+} from '@/composables/useFilters'
+import { usePagination } from '@/composables/usePagination'
 
 const route = useRoute()
 const toast = useToast()
@@ -92,20 +99,26 @@ function applyLockedAreaFilter() {
   store.filterAreaId = lockedAreaId.value
 }
 
-const searchDraft = ref(store.searchText)
-let searchTimer: number | undefined
-
-watch(searchDraft, (val) => {
-  window.clearTimeout(searchTimer)
-  searchTimer = window.setTimeout(() => {
-    store.searchText = val
-  }, 300)
+const { searchDraft } = useDebouncedSearchDraft({
+  source: () => store.searchText,
+  commit: (value) => {
+    store.searchText = value
+  },
 })
 
-watch(
+useResetFirstOnFilterChange(
   () => [store.searchText, store.filterStatus, lockedAreaId.value],
   () => store.setFirst(0),
 )
+
+const { onPage } = usePagination({
+  load: async () => {
+    applyLockedAreaFilter()
+    await store.load()
+    applyLockedAreaFilter()
+  },
+  setFirst: (first) => store.setFirst(first),
+})
 
 watch(
   lockedAreaId,
@@ -119,7 +132,6 @@ onMounted(async () => {
   applyLockedAreaFilter()
   await store.load()
   applyLockedAreaFilter()
-  console.log(store.filteredRows)
 })
 
 function onColumnFilter(payload: { key: string; value: any }) {
@@ -130,12 +142,16 @@ function onColumnFilter(payload: { key: string; value: any }) {
 }
 
 function clearAll() {
-  store.searchText = ''
-  searchDraft.value = ''
-  store.filterStatus = 'ALL'
-  store.filterRoleIds = []
-  applyLockedAreaFilter()
-  store.setFirst(0)
+  resetFiltersWithSearchDraft({
+    clear: () => {
+      store.searchText = ''
+      store.filterStatus = 'ALL'
+      store.filterRoleIds = []
+      applyLockedAreaFilter()
+      store.setFirst(0)
+    },
+    searchDraft,
+  })
 }
 
 function statusLabel(s: number) {
@@ -518,7 +534,7 @@ async function onExport() {
       @update:modelSearch="searchDraft = $event"
       @update:columnFilter="onColumnFilter"
       @clear="clearAll"
-      @page="(e) => store.setFirst(e.first)"
+      @page="onPage"
     >
       <template v-if="canManage" #toolbar-start>
         <BaseIconButton

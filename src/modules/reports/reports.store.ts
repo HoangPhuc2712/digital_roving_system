@@ -1,5 +1,10 @@
 import { defineStore } from 'pinia'
-import { fetchReportAreaOptions, fetchReportGuardOptions, fetchReportRows } from './reports.api'
+import {
+  fetchReportAreaOptions,
+  fetchReportGuardOptions,
+  fetchReportRouteFilterOptions,
+  fetchReportRows,
+} from './reports.api'
 import type { ReportRow, ResultFilter } from './reports.types'
 
 function startOfToday() {
@@ -33,6 +38,7 @@ export const useReportsStore = defineStore('reports', {
     rowsPerPage: 10,
 
     areaFilterOptions: [] as { label: string; value: number }[],
+    routeFilterOptions: [] as { label: string; value: string; areaId: number }[],
     guardFilterOptions: [] as { label: string; value: string }[],
   }),
 
@@ -57,15 +63,26 @@ export const useReportsStore = defineStore('reports', {
         .sort((a, b) => a.label.localeCompare(b.label))
     },
 
-    routeOptions(): { label: string; value: string }[] {
+    routeAreaOptions(): { label: string; value: number }[] {
+      return this.areaOptions
+    },
+
+    routeOptions(state): { label: string; value: string; areaId: number }[] {
+      if (state.routeFilterOptions.length) {
+        return state.routeFilterOptions.slice().sort((a, b) => a.label.localeCompare(b.label))
+      }
+
       const seen = new Set<string>()
-      const options: { label: string; value: string }[] = []
+      const options: { label: string; value: string; areaId: number }[] = []
 
       for (const r of this.visibleRows) {
         const value = String(r.route_name ?? '').trim()
-        if (!value || seen.has(value)) continue
-        seen.add(value)
-        options.push({ label: value, value })
+        const areaId = Number(r.area_id ?? 0)
+        if (!value) continue
+        const key = `${areaId}::${value}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        options.push({ label: value, value, areaId })
       }
 
       return options.sort((a, b) => a.label.localeCompare(b.label))
@@ -146,18 +163,30 @@ export const useReportsStore = defineStore('reports', {
 
   actions: {
     async ensureFilterOptionsLoaded() {
-      if (this.areaFilterOptions.length && this.guardFilterOptions.length) return
+      if (
+        this.areaFilterOptions.length &&
+        this.routeFilterOptions.length &&
+        this.guardFilterOptions.length
+      )
+        return
 
-      const [areas, guards] = await Promise.all([
-        this.areaFilterOptions.length
-          ? Promise.resolve(this.areaFilterOptions)
-          : fetchReportAreaOptions().catch(() => []),
+      const [routeFilters, guards] = await Promise.all([
+        this.areaFilterOptions.length && this.routeFilterOptions.length
+          ? Promise.resolve({
+              areaOptions: this.areaFilterOptions,
+              routeOptions: this.routeFilterOptions,
+            })
+          : fetchReportRouteFilterOptions().catch(async () => ({
+              areaOptions: await fetchReportAreaOptions().catch(() => []),
+              routeOptions: [] as { label: string; value: string; areaId: number }[],
+            })),
         this.guardFilterOptions.length
           ? Promise.resolve(this.guardFilterOptions)
           : fetchReportGuardOptions().catch(() => []),
       ])
 
-      if (!this.areaFilterOptions.length) this.areaFilterOptions = areas
+      if (!this.areaFilterOptions.length) this.areaFilterOptions = routeFilters.areaOptions
+      if (!this.routeFilterOptions.length) this.routeFilterOptions = routeFilters.routeOptions
       if (!this.guardFilterOptions.length) this.guardFilterOptions = guards
     },
 

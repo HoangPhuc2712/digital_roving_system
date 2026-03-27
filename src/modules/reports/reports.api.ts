@@ -8,6 +8,7 @@ import type {
   PatrolDetailReportRow,
   PatrolSummaryMissedPatrolDetailRow,
   PatrolSummaryReportRow,
+  PatrolSummaryTimeProblemDetailRow,
   ReportImage,
   ReportNoteGroup,
   ReportRow,
@@ -209,6 +210,15 @@ type ApiUserViewOption = {
   userName?: string
   userCode?: string
   userRoleIsAdmin?: boolean
+}
+
+type ApiRouteFilterView = {
+  routeId?: number
+  routeCode?: string
+  routeName?: string
+  areaId?: number
+  areaCode?: string
+  areaName?: string
 }
 
 function ensureSuccess<T>(payload: any): ApiEnvelope<T> {
@@ -659,6 +669,96 @@ export async function fetchCtpatAreaOptions(): Promise<{ label: string; value: s
     .sort((a, b) => a.label.localeCompare(b.label))
 }
 
+export async function fetchReportRouteFilterOptions(): Promise<{
+  areaOptions: { label: string; value: number }[]
+  routeOptions: { label: string; value: string; areaId: number }[]
+}> {
+  const res = await http.post(endpoints.routeView.getList, {})
+  const list = ensureSuccess<ApiRouteFilterView[] | ApiRouteFilterView>(res.data).data
+  const items = asArray(list)
+
+  const areaSeen = new Set<number>()
+  const routeSeen = new Set<string>()
+  const areaOptions: { label: string; value: number }[] = []
+  const routeOptions: { label: string; value: string; areaId: number }[] = []
+
+  for (const route of items) {
+    const areaId = Number(route?.areaId ?? 0)
+    const areaCode = String(route?.areaCode ?? '').trim()
+    const areaName = String(route?.areaName ?? '').trim()
+    const routeName = String(route?.routeName ?? '').trim()
+
+    if (areaId > 0 && !areaSeen.has(areaId)) {
+      areaSeen.add(areaId)
+      areaOptions.push({
+        label: areaName || areaCode || String(areaId),
+        value: areaId,
+      })
+    }
+
+    if (!routeName) continue
+
+    const routeKey = `${areaId}::${routeName}`
+    if (routeSeen.has(routeKey)) continue
+    routeSeen.add(routeKey)
+
+    routeOptions.push({
+      label: routeName,
+      value: routeName,
+      areaId,
+    })
+  }
+
+  return {
+    areaOptions: areaOptions.sort((a, b) => a.label.localeCompare(b.label)),
+    routeOptions: routeOptions.sort((a, b) => a.label.localeCompare(b.label)),
+  }
+}
+
+export async function fetchCtpatRouteFilterOptions(): Promise<{
+  areaOptions: { label: string; value: string }[]
+  routeOptions: { label: string; value: string; areaName: string }[]
+}> {
+  const res = await http.post(endpoints.routeView.getList, {})
+  const list = ensureSuccess<ApiRouteFilterView[] | ApiRouteFilterView>(res.data).data
+  const items = asArray(list)
+
+  const areaSeen = new Set<string>()
+  const routeSeen = new Set<string>()
+  const areaOptions: { label: string; value: string }[] = []
+  const routeOptions: { label: string; value: string; areaName: string }[] = []
+
+  for (const route of items) {
+    const areaName = String(route?.areaName ?? '').trim()
+    const routeName = String(route?.routeName ?? '').trim()
+
+    if (areaName && !areaSeen.has(areaName)) {
+      areaSeen.add(areaName)
+      areaOptions.push({
+        label: areaName,
+        value: areaName,
+      })
+    }
+
+    if (!routeName) continue
+
+    const routeKey = `${areaName}::${routeName}`
+    if (routeSeen.has(routeKey)) continue
+    routeSeen.add(routeKey)
+
+    routeOptions.push({
+      label: routeName,
+      value: routeName,
+      areaName,
+    })
+  }
+
+  return {
+    areaOptions: areaOptions.sort((a, b) => a.label.localeCompare(b.label)),
+    routeOptions: routeOptions.sort((a, b) => a.label.localeCompare(b.label)),
+  }
+}
+
 export async function fetchReportGuardOptions(): Promise<{ label: string; value: string }[]> {
   const res = await http.post(endpoints.userView.getList, {})
   const list = ensureSuccess<ApiUserViewOption[] | ApiUserViewOption>(res.data).data
@@ -1080,10 +1180,20 @@ async function fetchPlannedPatrolShiftByDate(date: Date) {
 function hasActualPatrolData(view: ApiPlannedPatrolShiftView) {
   const startAt = String(view.psStartAt ?? '').trim()
   const endAt = String(view.psEndAt ?? '').trim()
-  const realityPoint = Number(view.realityPoint ?? 0)
-  const realitySecond = Number(view.realitySecond ?? 0)
 
-  return !!startAt || !!endAt || realityPoint > 0 || realitySecond > 0
+  return !!startAt || !!endAt
+}
+
+function formatSummaryDuration(hours: number, minutes: number, seconds: number) {
+  const h = Number.isFinite(hours) ? Math.max(0, Math.trunc(hours)) : 0
+  const m = Number.isFinite(minutes) ? Math.max(0, Math.trunc(minutes)) : 0
+  const s = Number.isFinite(seconds) ? Math.max(0, Math.trunc(seconds)) : 0
+
+  if (h > 0) {
+    return `${h}:${pad2(m)}:${pad2(s)}`
+  }
+
+  return `${pad2(m)}:${pad2(s)}`
 }
 
 function buildMissedPatrolDetails(
@@ -1093,6 +1203,26 @@ function buildMissedPatrolDetails(
     row_id: `${Number(item.psId ?? 0)}-${Number(item.routeId ?? 0)}-${index}`,
     route_name: String(item.routeName ?? '').trim() || '-',
     patrol_time: extractShiftTimeRange(item) || '-',
+  }))
+}
+
+function buildTimeProblemDetails(
+  views: ApiPlannedPatrolShiftView[],
+): PatrolSummaryTimeProblemDetailRow[] {
+  return views.map((item, index) => ({
+    row_id: `${Number(item.psId ?? 0)}-${Number(item.routeId ?? 0)}-time-${index}`,
+    patrol_time:
+      [formatShiftDatePrefix(item), extractShiftTimeRange(item)].filter(Boolean).join(' ') || '-',
+    actual_patrol_time: formatSummaryDuration(
+      Number(item.realityHours ?? 0),
+      Number(item.realityMinutes ?? 0),
+      Number(item.realitySeconds ?? 0),
+    ),
+    standard_patrol_time: formatSummaryDuration(
+      Number(item.planHours ?? 0),
+      Number(item.planMinutes ?? 0),
+      Number(item.planSeconds ?? 0),
+    ),
   }))
 }
 
@@ -1146,11 +1276,13 @@ export async function fetchPatrolSummaryRows(
 
       const actualRows = plannedRows.filter(hasActualPatrolData)
       const missedRows = plannedRows.filter((item) => !hasActualPatrolData(item))
+      const timeProblemRows = actualRows.filter((item) => Boolean(item.timeProblem))
 
       const actualCount = actualRows.length
-      const missedCount = Math.max(requiredCount - actualCount, 0)
+      const missedCount = missedRows.length
       const missedPatrolDetails = buildMissedPatrolDetails(missedRows)
-      const timeProblemCount = actualRows.filter((item) => Boolean(item.timeProblem)).length
+      const timeProblemDetails = buildTimeProblemDetails(timeProblemRows)
+      const timeProblemCount = timeProblemRows.length
       const insufficientCount = actualRows.filter((item) => Boolean(item.pointProblem)).length
       const abnormalTotal = missedCount + timeProblemCount + insufficientCount
       const abnormalRate = requiredCount > 0 ? (abnormalTotal / requiredCount) * 100 : 0
@@ -1167,6 +1299,7 @@ export async function fetchPatrolSummaryRows(
         insufficient_count: insufficientCount,
         abnormal_rate: Number(abnormalRate.toFixed(2)),
         missed_patrol_details: missedPatrolDetails,
+        time_problem_details: timeProblemDetails,
       })
     }
   }

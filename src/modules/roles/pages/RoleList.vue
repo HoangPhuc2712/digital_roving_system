@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import Column from 'primevue/column'
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
@@ -11,9 +11,16 @@ import BaseConfirmDelete from '@/components/common/BaseConfirmDelete.vue'
 import { useRolesStore } from '@/modules/roles/roles.store'
 import { useAuthStore } from '@/stores/auth.store'
 import type { RoleRow } from '@/modules/roles/roles.types'
-import { deleteRole } from '@/modules/roles/roles.api'
+import { deleteRole, fetchRoleById } from '@/modules/roles/roles.api'
 import { fetchUserRows } from '@/modules/users/users.api'
 import { exportRolesXlsx } from '@/services/export/roles.export'
+
+import {
+  useDebouncedSearchDraft,
+  useResetFirstOnFilterChange,
+  resetFiltersWithSearchDraft,
+} from '@/composables/useFilters'
+import { usePagination } from '@/composables/usePagination'
 
 import RoleForm, {
   type RoleFormModel,
@@ -38,20 +45,22 @@ const confirmDeleteMessage = ref('')
 const confirmDeleteLoading = ref(false)
 const pendingDeleteAction = ref<null | (() => Promise<void>)>(null)
 
-const searchDraft = ref(store.searchText)
-let searchTimer: number | undefined
-
-watch(searchDraft, (val) => {
-  window.clearTimeout(searchTimer)
-  searchTimer = window.setTimeout(() => {
-    store.searchText = val
-  }, 300)
+const { searchDraft } = useDebouncedSearchDraft({
+  source: () => store.searchText,
+  commit: (value) => {
+    store.searchText = value
+  },
 })
 
-watch(
+useResetFirstOnFilterChange(
   () => [store.searchText, store.filterStatus, store.filterMenuId],
   () => store.setFirst(0),
 )
+
+const { onPage } = usePagination({
+  load: () => store.load(),
+  setFirst: (first) => store.setFirst(first),
+})
 
 onMounted(async () => {
   await store.load()
@@ -93,15 +102,17 @@ function openNew() {
   formVisible.value = true
 }
 
-function openView(row: RoleRow) {
+async function openView(row: RoleRow) {
   formMode.value = 'view'
-  formModel.value = mapRowToFormModel(row)
+  const detail = (await fetchRoleById(row.role_id)) ?? row
+  formModel.value = mapRowToFormModel(detail as RoleRow)
   formVisible.value = true
 }
 
-function openEdit(row: RoleRow) {
+async function openEdit(row: RoleRow) {
   formMode.value = 'edit'
-  formModel.value = mapRowToFormModel(row)
+  const detail = (await fetchRoleById(row.role_id)) ?? row
+  formModel.value = mapRowToFormModel(detail as RoleRow)
   formVisible.value = true
 }
 
@@ -259,9 +270,13 @@ function onColumnFilter(payload: { key: string; value: any }) {
 }
 
 function clearAll() {
-  store.clearFilters()
-  searchDraft.value = ''
-  selectedRoles.value = null
+  resetFiltersWithSearchDraft({
+    clear: () => store.clearFilters(),
+    searchDraft,
+    afterClear: () => {
+      selectedRoles.value = null
+    },
+  })
 }
 
 async function onExport() {
@@ -319,10 +334,12 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
       dataKey="role_id"
       v-model:selection="selectedRoles"
       :rows="store.rowsPerPage"
+      :first="store.first"
       :modelSearch="searchDraft"
       @update:modelSearch="searchDraft = $event"
       @update:columnFilter="onColumnFilter"
       @clear="clearAll"
+      @page="onPage"
     >
       <template v-if="canManage" #toolbar-start>
         <div class="flex gap-2">

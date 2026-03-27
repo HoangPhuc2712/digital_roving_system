@@ -447,7 +447,7 @@ function submit() {
         <div>
           <label class="block text-sm text-slate-600 mb-1">Total Minute</label>
           <div v-if="isView" class="text-slate-800 font-semibold">
-            {{ form.route_total_minute }}
+            {{ form.route_total_minute }}:00
           </div>
           <InputNumber
             v-else

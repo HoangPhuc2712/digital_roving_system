@@ -11,6 +11,7 @@ import PatrolSummaryReportFilters from '@/modules/reports/components/PatrolSumma
 import PatrolSummaryTable from '@/modules/reports/components/PatrolSummaryTable.vue'
 import PatrolSummaryChartCard from '@/modules/reports/components/PatrolSummaryChartCard.vue'
 import PatrolSummaryMissedPatrolDialog from '@/modules/reports/components/PatrolSummaryMissedPatrolDialog.vue'
+import PatrolSummaryTimeProblemDialog from '@/modules/reports/components/PatrolSummaryTimeProblemDialog.vue'
 import { usePatrolSummaryReportsStore } from '@/modules/reports/patrolSummaryReports.store'
 import type { PatrolSummaryReportRow } from '@/modules/reports/reports.types'
 import { exportPatrolSummaryReportXlsx } from '@/services/export/patrolSummaryReport.export'
@@ -27,7 +28,9 @@ const exporting = ref(false)
 const autoLoadEnabled = ref(false)
 const chartCardRef = ref<PatrolSummaryChartExpose | null>(null)
 const missedDialogVisible = ref(false)
+const timeProblemDialogVisible = ref(false)
 const selectedMissedRow = ref<PatrolSummaryReportRow | null>(null)
+const selectedTimeProblemRow = ref<PatrolSummaryReportRow | null>(null)
 
 let filterLoadTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -88,7 +91,9 @@ function resetPageState() {
   autoLoadEnabled.value = false
   clearFilterLoadTimer()
   missedDialogVisible.value = false
+  timeProblemDialogVisible.value = false
   selectedMissedRow.value = null
+  selectedTimeProblemRow.value = null
   store.clearFilters()
 }
 
@@ -96,16 +101,32 @@ const selectedMissedPatrolDate = computed(() => selectedMissedRow.value?.date_la
 const selectedMissedPatrolRows = computed(
   () => selectedMissedRow.value?.missed_patrol_details ?? [],
 )
+const selectedTimeProblemDate = computed(() => selectedTimeProblemRow.value?.date_label ?? '')
+const selectedTimeProblemRows = computed(
+  () => selectedTimeProblemRow.value?.time_problem_details ?? [],
+)
 
 function openMissedDetails(row: PatrolSummaryReportRow) {
   selectedMissedRow.value = row
   missedDialogVisible.value = true
 }
 
+function openTimeProblemDetails(row: PatrolSummaryReportRow) {
+  selectedTimeProblemRow.value = row
+  timeProblemDialogVisible.value = true
+}
+
 function onMissedDialogVisibleChange(value: boolean) {
   missedDialogVisible.value = value
   if (!value) {
     selectedMissedRow.value = null
+  }
+}
+
+function onTimeProblemDialogVisibleChange(value: boolean) {
+  timeProblemDialogVisible.value = value
+  if (!value) {
+    selectedTimeProblemRow.value = null
   }
 }
 
@@ -177,6 +198,7 @@ async function onExport() {
         :groupedRows="groupedRows"
         :loading="store.loading"
         @open-missed-details="openMissedDetails"
+        @open-time-problem-details="openTimeProblemDetails"
       />
     </div>
 
@@ -185,6 +207,13 @@ async function onExport() {
       :patrolDate="selectedMissedPatrolDate"
       :rows="selectedMissedPatrolRows"
       @update:visible="onMissedDialogVisibleChange"
+    />
+
+    <PatrolSummaryTimeProblemDialog
+      :visible="timeProblemDialogVisible"
+      :patrolDate="selectedTimeProblemDate"
+      :rows="selectedTimeProblemRows"
+      @update:visible="onTimeProblemDialogVisibleChange"
     />
 
     <PatrolSummaryChartCard

@@ -38,7 +38,7 @@ const zhTW = {
     root: '內部巡檢報表',
     patrolsData: '巡檢資料',
     patrolReports: '巡檢報表',
-    incorrectScanReports: '扫描点报告错误',
+    incorrectScanReports: '扫描点日志错误',
     ctpatReport: 'C-TPAT 報表',
     reportsData: '報表資料',
     patrolDetailReport: '巡檢明細報表',
@@ -59,7 +59,7 @@ const zhTW = {
   },
   patrolDataButtonSwitch: {
     switchPatrolReports: '巡檢報表',
-    switchIncorrectScanReports: '扫描报告错误',
+    switchIncorrectScanReports: '扫描日志错误',
     switchCtpatReport: 'C-TPAT 報表',
   },
   reportList: {
@@ -160,8 +160,8 @@ const zhTW = {
     noImages: '無圖片',
   },
   incorrectScanReportList: {
-    title: '錯誤掃描檢查點報告',
-    noIncorrectScan: '找不到錯誤掃描報告',
+    title: '扫描点日志错误',
+    noIncorrectScan: '未找到错误的扫描点日志',
     routeName: '路線名稱',
     startTime: '開始時間',
     finishTime: '結束時間',
@@ -190,7 +190,7 @@ const zhTW = {
     noReport: '找不到報告',
     area: '區域',
     routeName: '路線名稱',
-    checkpointName: '檢查點名稱',
+    checkpointName: '檢查點',
     startTime: '開始時間',
     finishTime: '結束時間',
     patrolTime: '巡邏時間',

@@ -38,7 +38,7 @@ const vi = {
     root: 'Báo cáo tuần tra nội bộ',
     patrolsData: 'Dữ liệu tuần tra',
     patrolReports: 'Báo cáo tuần tra',
-    incorrectScanReports: 'Báo cáo điểm quét sai',
+    incorrectScanReports: 'Nhật ký điểm quét không chính xác',
     ctpatReport: 'Báo cáo C-TPAT',
     reportsData: 'Dữ liệu báo cáo',
     patrolDetailReport: 'Báo cáo chi tiết tuần tra',
@@ -59,7 +59,7 @@ const vi = {
   },
   patrolDataButtonSwitch: {
     switchPatrolReports: 'Báo cáo tuần tra',
-    switchIncorrectScanReports: 'Báo cáo điểm quét sai',
+    switchIncorrectScanReports: 'Nhật ký điểm quét sai',
     switchCtpatReport: 'Báo cáo C-TPAT',
   },
   reportList: {
@@ -160,7 +160,7 @@ const vi = {
     noImages: 'Không có dữ liệu ảnh',
   },
   incorrectScanReportList: {
-    title: 'Báo cáo quét sai điểm kiểm tra',
+    title: 'Nhật ký quét sai điểm kiểm tra',
     noIncorrectScan: 'Không tìm thấy báo cáo quét sai',
     routeName: 'Tên lộ trình',
     startTime: 'Thời gian bắt đầu',
@@ -190,7 +190,7 @@ const vi = {
     noReport: 'Không tìm thấy báo cáo',
     area: 'Khu vực',
     routeName: 'Tên lộ trình',
-    checkpointName: 'Tên điểm kiểm tra',
+    checkpointName: 'Điểm kiểm tra',
     startTime: 'Thời gian bắt đầu',
     finishTime: 'Thời gian kết thúc',
     patrolTime: 'Thời gian tuần tra',

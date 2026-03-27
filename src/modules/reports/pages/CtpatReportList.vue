@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, watch, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
-import { type DataTablePageEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
@@ -11,6 +10,8 @@ import BaseButtonGroup from '@/components/common/buttons/BaseButtonGroup.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import { useCtpatReportsStore } from '@/modules/reports/ctpatReports.store'
 import { exportCtpatReportXlsx } from '@/services/export/ctpatReport.export'
+import { useResetFirstOnFilterChange } from '@/composables/useFilters'
+import { usePagination } from '@/composables/usePagination'
 
 const toast = useToast()
 const router = useRouter()
@@ -45,10 +46,21 @@ const reportSwitchButtons = computed(() => [
   },
 ])
 
-watch(
-  () => [store.searchText, store.filterRouteName, store.filterDateFrom, store.filterDateTo],
+useResetFirstOnFilterChange(
+  () => [
+    store.searchText,
+    store.filterAreaName,
+    store.filterRouteName,
+    store.filterDateFrom,
+    store.filterDateTo,
+  ],
   () => store.setFirst(0),
 )
+
+const { onPage } = usePagination({
+  load: () => store.load(),
+  setFirst: (first) => store.setFirst(first),
+})
 
 onMounted(async () => {
   await store.load()
@@ -74,7 +86,11 @@ function formatDateTime(iso: string) {
 }
 
 function onColumnFilter(payload: { key: string; value: any }) {
-  if (payload.key === 'routeName') store.filterRouteName = payload.value ?? null
+  if (payload.key === 'routeName') {
+    const value = payload.value && typeof payload.value === 'object' ? payload.value : {}
+    store.filterAreaName = value.primaryValue ?? null
+    store.filterRouteName = value.secondaryValue ?? null
+  }
 }
 
 function clearAll() {
@@ -102,10 +118,6 @@ async function onExport() {
   } finally {
     exporting.value = false
   }
-}
-
-function onPage(e: DataTablePageEvent) {
-  store.setFirst(e.first)
 }
 </script>
 
@@ -163,10 +175,22 @@ function onPage(e: DataTablePageEvent) {
         sortField="route_name"
         :filterMenu="{
           key: 'routeName',
-          type: 'select',
-          value: store.filterRouteName,
-          options: store.routeOptions,
+          type: 'dual-select',
+          value: {
+            primaryValue: store.filterAreaName,
+            secondaryValue: store.filterRouteName,
+          },
+          options: store.routeAreaOptions,
+          optionLabel: 'label',
+          optionValue: 'value',
+          placeholder: t('reportList.filters.area'),
           filter: true,
+          secondaryOptions: store.routeOptions,
+          secondaryOptionLabel: 'label',
+          secondaryOptionValue: 'value',
+          secondaryPlaceholder: t('ctpatReportList.routeName'),
+          secondaryFilter: true,
+          secondaryFilterField: 'areaName',
         }"
       />
 

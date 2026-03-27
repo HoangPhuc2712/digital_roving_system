@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
-import { type DataTablePageEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
@@ -11,6 +10,8 @@ import BaseButtonGroup from '@/components/common/buttons/BaseButtonGroup.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import { usePatrolDetailReportsStore } from '@/modules/reports/patrolDetailReports.store'
 import { exportPatrolDetailReportXlsx } from '@/services/export/patrolDetailReport.export'
+import { useResetFirstOnFilterChange } from '@/composables/useFilters'
+import { usePagination } from '@/composables/usePagination'
 
 const toast = useToast()
 const router = useRouter()
@@ -37,7 +38,7 @@ const reportSwitchButtons = computed(() => [
   },
 ])
 
-watch(
+useResetFirstOnFilterChange(
   () => [
     store.searchText,
     store.filterAreaId,
@@ -48,6 +49,11 @@ watch(
   ],
   () => store.setFirst(0),
 )
+
+const { onPage } = usePagination({
+  load: () => store.load(),
+  setFirst: (first) => store.setFirst(first),
+})
 
 onMounted(async () => {
   await store.load()
@@ -117,10 +123,6 @@ function onColumnFilter(payload: { key: string; value: any }) {
   if (payload.key === 'checkPointName') store.filterCheckPointName = payload.value ?? null
   if (payload.key === 'guardName') store.filterGuardName = payload.value ?? null
 }
-
-function onPage(e: DataTablePageEvent) {
-  store.setFirst(e.first)
-}
 </script>
 
 <template>
@@ -172,10 +174,10 @@ function onPage(e: DataTablePageEvent) {
         </div>
       </template>
 
-      <Column
+      <!-- <Column
         :header="t('patrolDetailReport.area')"
         sortField="area_id"
-        style="min-width: 12rem"
+        style="min-width: 10rem"
         :filterMenu="{
           key: 'areaId',
           type: 'select',
@@ -186,19 +188,25 @@ function onPage(e: DataTablePageEvent) {
         <template #body="{ data }">
           {{ areaLabel(data.area_id) }}
         </template>
-      </Column>
+      </Column> -->
 
       <Column
         field="route_name"
         :header="t('patrolDetailReport.routeName')"
         style="min-width: 14rem"
         sortField="route_name"
+        :filterMenu="{
+          key: 'areaId',
+          type: 'select',
+          value: store.filterAreaId,
+          options: store.areaOptions,
+        }"
       />
 
       <Column
         field="check_point_name"
         :header="t('patrolDetailReport.checkpointName')"
-        style="min-width: 12rem"
+        style="min-width: 10rem"
         sortField="check_point_name"
         :filterMenu="{
           key: 'checkPointName',
@@ -235,7 +243,7 @@ function onPage(e: DataTablePageEvent) {
 
       <Column
         :header="t('patrolDetailReport.patrolTime')"
-        style="min-width: 14rem"
+        style="min-width: 12rem"
         sortField="patrol_time"
       >
         <template #body="{ data }">
@@ -246,7 +254,7 @@ function onPage(e: DataTablePageEvent) {
       <Column
         field="report_name"
         :header="t('patrolDetailReport.guardName')"
-        style="min-width: 16rem"
+        style="min-width: 10rem"
         sortField="report_name"
         :filterMenu="{
           key: 'guardName',
@@ -257,10 +265,10 @@ function onPage(e: DataTablePageEvent) {
         }"
       />
 
-      <!-- <Column
+      <Column
         field="event_zh"
         header="Event Information Zh"
-        style="min-width: 14rem"
+        style="min-width: 10rem"
         sortField="event_zh"
       >
         <template #body="{ data }">
@@ -271,13 +279,13 @@ function onPage(e: DataTablePageEvent) {
       <Column
         field="event_vi"
         header="Event Information Vi"
-        style="min-width: 14rem"
+        style="min-width: 10rem"
         sortField="event_vi"
       >
         <template #body="{ data }">
           {{ data.event_vi || '' }}
         </template>
-      </Column> -->
+      </Column>
     </BaseDataTable>
   </div>
 </template>
