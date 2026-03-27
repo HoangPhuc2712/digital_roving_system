@@ -23,8 +23,8 @@ const ITEMS_PER_PAGE = 6
 const PAGE_WIDTH = 595.28
 const PAGE_HEIGHT = 841.89
 const PAGE_MARGIN = 24
-const COLUMN_GAP = 14
-const ROW_GAP = 14
+const COLUMN_GAP = 24
+const ROW_GAP = 28
 const SLOT_WIDTH = (PAGE_WIDTH - PAGE_MARGIN * 2 - COLUMN_GAP) / 2
 const SLOT_HEIGHT = (PAGE_HEIGHT - PAGE_MARGIN * 2 - ROW_GAP * 2) / 3
 const CARD_WIDTH = SLOT_WIDTH - 18
@@ -36,7 +36,8 @@ const CARD_BORDER_COLOR = '#D1D5DB'
 const CARD_TEXT_COLOR = '#1F2937'
 const PRIORITY_COLOR = '#111827'
 const AREA_FONT_SIZE = 13
-const NAME_FONT_SIZE = 16
+const TITLE_FONT_SIZE = 16
+const NAME_FONT_SIZE = 14
 const CODE_FONT_SIZE = 8
 const PRIORITY_FONT_SIZE = 11
 const PRIORITY_DIAMETER = 20
@@ -304,8 +305,17 @@ async function renderCheckpointCard(item: CheckpointPrintItem) {
     innerWidth,
     1,
   )
-  const nameLines = wrapText(item.cpName, context, NAME_FONT_SIZE, '700', innerWidth, 2)
-  const codeLines = wrapText(item.cpCode, context, CODE_FONT_SIZE, '400', innerWidth, 1)
+
+  const titleLines = wrapText(
+    `Điểm tuần tra số ${String(item.cpPriority ?? '')}`,
+    context,
+    TITLE_FONT_SIZE,
+    '700',
+    innerWidth,
+    2,
+  )
+
+  const nameLines = wrapText(item.cpName, context, NAME_FONT_SIZE, '700', innerWidth, 1)
 
   let cursorY = headerTop
   for (const line of areaLines) {
@@ -324,6 +334,22 @@ async function renderCheckpointCard(item: CheckpointPrintItem) {
 
   cursorY += 11
 
+  for (const line of titleLines) {
+    drawCenteredText({
+      context,
+      text: line.text,
+      x: innerX,
+      y: cursorY,
+      width: innerWidth,
+      fontSize: TITLE_FONT_SIZE,
+      weight: '700',
+      color: CARD_TEXT_COLOR,
+    })
+    cursorY += TITLE_FONT_SIZE * 1.08
+  }
+
+  cursorY += 2
+
   for (const line of nameLines) {
     drawCenteredText({
       context,
@@ -336,22 +362,6 @@ async function renderCheckpointCard(item: CheckpointPrintItem) {
       color: CARD_TEXT_COLOR,
     })
     cursorY += NAME_FONT_SIZE * 1.08
-  }
-
-  cursorY += 2
-
-  for (const line of codeLines) {
-    drawCenteredText({
-      context,
-      text: line.text,
-      x: innerX,
-      y: cursorY,
-      width: innerWidth,
-      fontSize: CODE_FONT_SIZE,
-      weight: '400',
-      color: CARD_TEXT_COLOR,
-    })
-    cursorY += CODE_FONT_SIZE * 1.04
   }
 
   const usedHeaderHeight = Math.min(

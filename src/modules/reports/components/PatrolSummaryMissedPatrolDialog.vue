@@ -44,6 +44,7 @@ const tableRows = computed(() =>
     :contentStyle="{ padding: '1rem 1rem 1.25rem' }"
   >
     <BaseDataTable
+      :showSearch="false"
       :key="`missed-patrol-report-list-table-${locale}`"
       title=""
       :value="tableRows"
@@ -51,9 +52,9 @@ const tableRows = computed(() =>
       :paginator="false"
       :rows="tableRows.length || 10"
     >
-      <Column field="sequence_no" header="#" style="width: 5rem; min-width: 5rem">
+      <Column header="#" style="width: 5rem; min-width: 5rem">
         <template #body="{ data }">
-          <div class="text-center">{{ data.sequence_no }}</div>
+          <div class="text-left">{{ data.sequence_no }}</div>
         </template>
       </Column>
 
