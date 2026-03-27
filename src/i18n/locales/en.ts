@@ -15,6 +15,8 @@ const en = {
     close: 'Close',
     submit: 'Submit',
     cancel: 'Cancel',
+    noData: 'No data',
+    loading: 'Loading data',
   },
   languageSwitcher: {
     languages: {
@@ -220,6 +222,12 @@ const en = {
     patrolDetail: 'Patrol Detail',
     noData: 'No Data',
   },
+  PatrolSummaryTimeProblemDialog: {
+    title: 'Patrol Date',
+    patrolTime: 'Patrol Time',
+    actualTime: 'Actual Patrol Time',
+    standardTime: 'Standard Patrol Time',
+  },
   areaList: {
     areaStatusOptions: {
       all: 'All',
@@ -231,6 +239,32 @@ const en = {
     areaName: 'Area Name',
     areaCheckPoints: 'Area Check Points',
     status: 'Status',
+    errors: {
+      exportFailed: 'Failed to export areas',
+      cannotDelete: 'Cannot Delete',
+      cannotDeleteSingleArea: `Can't delete Area`,
+      becauseItHas: 'because it has',
+      checkpoints: 'check point(s)',
+      cannotDeleteMultipleAreas: `Can't delete`,
+      becauseItContains: 'selected area(s) because they still contain check point(s)',
+      areYouSure: 'Are you sure you want to delete area',
+      areYouSureMultiple: 'Are you sure you want to delete',
+      selectedAreas: 'selected areas?',
+      deleteFailed: 'Failed to delete area',
+      noQr: 'No Qr',
+      noQrDetail: 'No check point QR found for',
+      qrPdfError: 'QR PDF Error',
+      noQrAvailable: 'No QR image available to export',
+      qrUnsupport: 'QR image format is not supported',
+      qrExportFailed: 'Failed to export QR PDF',
+    },
+    success: {
+      deleteSummary: 'Deleted',
+      deleteDetail: 'Area has been deleted',
+      DeleteMultipleDetail: 'Selected areas have been deleted',
+      savedSummary: 'Saved',
+      savedDetail: 'Area has been saved',
+    },
   },
   areaForm: {
     newArea: 'New Area',
@@ -373,6 +407,24 @@ const en = {
   userForm: {
     noData: 'No data',
     userName: 'User Name',
+    enterName: 'Enter Name',
+    userCode: 'User Code',
+    enterCode: 'Enter Code',
+    password: 'Password',
+    enterPassword: 'Enter Password',
+    role: 'Role',
+    selectRole: 'Select Role',
+    area: 'Area',
+    selectArea: 'Select Area',
+  },
+  changePasswordForm: {
+    title: 'Change Password',
+    currentPassword: 'Your Current Password',
+    entercurrent: 'Enter your current password',
+    newPassword: 'Your New Password',
+    enterNew: 'Enter your new password',
+    confirmPassword: 'Confirm Your Password',
+    enterConfirm: 'Confirm your new password',
   },
 }
 

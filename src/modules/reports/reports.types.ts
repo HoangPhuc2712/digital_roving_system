@@ -141,7 +141,7 @@ export type PatrolSummaryReportRow = {
   time_problem_details: PatrolSummaryTimeProblemDetailRow[]
 }
 
-export type IncorrectScanReportRow = {
+export type IncorrectScanLogRow = {
   scql_id: number
   ps_id: number
   route_id: number

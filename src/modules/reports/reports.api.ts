@@ -4,7 +4,7 @@ import { endpoints } from '@/services/http/endpoints'
 
 import type {
   CtpatReportRow,
-  IncorrectScanReportRow,
+  IncorrectScanLogRow,
   PatrolDetailReportRow,
   PatrolSummaryMissedPatrolDetailRow,
   PatrolSummaryReportRow,
@@ -102,7 +102,7 @@ type ApiCtpatReportView = {
   routeName?: string
 }
 
-type ApiIncorrectScanReportView = {
+type ApiIncorrectScanLogView = {
   scqlId?: number
   psId?: number
   psStartAt?: string
@@ -973,7 +973,7 @@ export async function fetchPatrolDetailReportRows(): Promise<PatrolDetailReportR
   return normalizePatrolDetailRows(views)
 }
 
-function normalizeIncorrectScanReportRow(view: ApiIncorrectScanReportView): IncorrectScanReportRow {
+function normalizeIncorrectScanLogRow(view: ApiIncorrectScanLogView): IncorrectScanLogRow {
   const routeCode = String(view.routeCode ?? '').trim()
   const routeName = String(view.routeName ?? '').trim()
   const wrongCpCode = String(view.wrongCpCode ?? '').trim()
@@ -1014,14 +1014,14 @@ function normalizeIncorrectScanReportRow(view: ApiIncorrectScanReportView): Inco
   }
 }
 
-type FetchIncorrectScanReportRowsParams = {
+type FetchIncorrectScanLogRowsParams = {
   createdAtFrom?: Date | null
   createdAtTo?: Date | null
 }
 
-export async function fetchIncorrectScanReportRows(
-  params: FetchIncorrectScanReportRowsParams = {},
-): Promise<IncorrectScanReportRow[]> {
+export async function fetchIncorrectScanLogRows(
+  params: FetchIncorrectScanLogRowsParams = {},
+): Promise<IncorrectScanLogRow[]> {
   const body: Record<string, any> = {}
 
   if (params.createdAtFrom instanceof Date && Number.isFinite(params.createdAtFrom.getTime())) {
@@ -1033,13 +1033,11 @@ export async function fetchIncorrectScanReportRows(
   }
 
   const res = await http.post(endpoints.report.scanCpQrLog, body)
-  const payload = ensureSuccess<ApiIncorrectScanReportView[] | ApiIncorrectScanReportView>(
-    res.data,
-  ).data
+  const payload = ensureSuccess<ApiIncorrectScanLogView[] | ApiIncorrectScanLogView>(res.data).data
   const views = asArray(payload)
 
   return views
-    .map(normalizeIncorrectScanReportRow)
+    .map(normalizeIncorrectScanLogRow)
     .sort((a, b) => String(b.created_at ?? '').localeCompare(String(a.created_at ?? '')))
 }
 

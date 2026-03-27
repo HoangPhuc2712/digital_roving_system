@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
-import { fetchIncorrectScanReportRows } from './reports.api'
-import type { IncorrectScanReportRow } from './reports.types'
+import { fetchIncorrectScanLogRows } from './reports.api'
+import type { IncorrectScanLogRow } from './reports.types'
 
 function startOfToday() {
   const d = new Date()
@@ -14,9 +14,9 @@ function endOfToday() {
   return d
 }
 
-export const useIncorrectScanReportsStore = defineStore('incorrectScanReports', {
+export const useIncorrectScanLogStore = defineStore('incorrectScanLog', {
   state: () => ({
-    rows: [] as IncorrectScanReportRow[],
+    rows: [] as IncorrectScanLogRow[],
     loading: false,
 
     searchText: '' as string,
@@ -28,7 +28,7 @@ export const useIncorrectScanReportsStore = defineStore('incorrectScanReports', 
   }),
 
   getters: {
-    filteredRows(): IncorrectScanReportRow[] {
+    filteredRows(): IncorrectScanLogRow[] {
       const q = this.searchText.trim().toLowerCase()
       let fromTime = this.filterDateFrom ? this.filterDateFrom.getTime() : null
       let toTime = this.filterDateTo ? this.filterDateTo.getTime() : null
@@ -67,7 +67,7 @@ export const useIncorrectScanReportsStore = defineStore('incorrectScanReports', 
           to = tmp
         }
 
-        const rows = await fetchIncorrectScanReportRows({
+        const rows = await fetchIncorrectScanLogRows({
           createdAtFrom: from,
           createdAtTo: to,
         })

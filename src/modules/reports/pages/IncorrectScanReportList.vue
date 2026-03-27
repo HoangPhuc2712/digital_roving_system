@@ -8,14 +8,14 @@ import { useI18n } from 'vue-i18n'
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import BaseButtonGroup from '@/components/common/buttons/BaseButtonGroup.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
-import { useIncorrectScanReportsStore } from '@/modules/reports/incorrectScanReports.store'
-import { exportIncorrectScanReportXlsx } from '@/services/export/incorrectScanReport.export'
+import { useIncorrectScanLogStore } from '@/modules/reports/incorrectScanLog.store'
+import { exportIncorrectScanLogXlsx } from '@/services/export/incorrectScanLog.export'
 import { useResetFirstOnFilterChange } from '@/composables/useFilters'
 import { usePagination } from '@/composables/usePagination'
 
 const toast = useToast()
 const router = useRouter()
-const store = useIncorrectScanReportsStore()
+const store = useIncorrectScanLogStore()
 const dateReloadTimer = ref<number | null>(null)
 const exporting = ref(false)
 const { t, locale } = useI18n()
@@ -114,9 +114,9 @@ function formatDateTime(iso: string) {
 async function onExport() {
   exporting.value = true
   try {
-    await exportIncorrectScanReportXlsx({
+    await exportIncorrectScanLogXlsx({
       rows: store.filteredRows,
-      fileName: `incorrect_scan_reports_${new Date().toISOString().slice(0, 10)}.xlsx`,
+      fileName: `incorrect_scan_log_${new Date().toISOString().slice(0, 10)}.xlsx`,
     })
   } catch (e: any) {
     toast.add({

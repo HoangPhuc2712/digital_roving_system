@@ -42,6 +42,7 @@ useResetFirstOnFilterChange(
   () => [
     store.searchText,
     store.filterAreaId,
+    store.filterRouteName,
     store.filterCheckPointName,
     store.filterGuardName,
     store.filterDateFrom,
@@ -119,7 +120,11 @@ async function onExport() {
 }
 
 function onColumnFilter(payload: { key: string; value: any }) {
-  if (payload.key === 'areaId') store.filterAreaId = payload.value ?? null
+  if (payload.key === 'routeName') {
+    const value = payload.value && typeof payload.value === 'object' ? payload.value : {}
+    store.filterAreaId = value.primaryValue ?? null
+    store.filterRouteName = value.secondaryValue ?? null
+  }
   if (payload.key === 'checkPointName') store.filterCheckPointName = payload.value ?? null
   if (payload.key === 'guardName') store.filterGuardName = payload.value ?? null
 }
@@ -142,11 +147,10 @@ function onColumnFilter(payload: { key: string; value: any }) {
       dataKey="row_id"
       :rows="store.rowsPerPage"
       :first="store.first"
-      :modelSearch="store.searchText"
       :modelDateFrom="store.filterDateFrom"
       :modelDateTo="store.filterDateTo"
       :showDateSelection="true"
-      @update:modelSearch="store.searchText = $event"
+      :showSearch="false"
       @update:modelDateFrom="store.filterDateFrom = $event"
       @update:modelDateTo="store.filterDateTo = $event"
       @update:columnFilter="onColumnFilter"
@@ -196,10 +200,23 @@ function onColumnFilter(payload: { key: string; value: any }) {
         style="min-width: 14rem"
         sortField="route_name"
         :filterMenu="{
-          key: 'areaId',
-          type: 'select',
-          value: store.filterAreaId,
-          options: store.areaOptions,
+          key: 'routeName',
+          type: 'dual-select',
+          value: {
+            primaryValue: store.filterAreaId,
+            secondaryValue: store.filterRouteName,
+          },
+          options: store.routeAreaOptions,
+          optionLabel: 'label',
+          optionValue: 'value',
+          placeholder: t('reportList.filters.area'),
+          filter: true,
+          secondaryOptions: store.routeOptions,
+          secondaryOptionLabel: 'label',
+          secondaryOptionValue: 'value',
+          secondaryPlaceholder: t('patrolDetailReport.routeName'),
+          secondaryFilter: true,
+          secondaryFilterField: 'areaId',
         }"
       />
 
