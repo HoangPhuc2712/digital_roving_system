@@ -145,7 +145,7 @@ function submit() {
             :message="
               passwordMismatchError
                 ? t('changePasswordForm.error.passwordMismatch')
-                : t('changePasswordForm.confirmPasswordRequired')
+                : t('changePasswordForm.error.confirmPasswordRequired')
             "
           />
         </div>
