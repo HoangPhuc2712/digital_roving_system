@@ -257,7 +257,7 @@ function submit() {
               severity="error"
               size="small"
               variant="simple"
-              :message="t('userForm.areaRequired')"
+              :message="t('userForm.error.areaRequired')"
             />
           </template>
         </div>
@@ -273,7 +273,7 @@ function submit() {
         />
         <BaseButton
           v-if="!isView"
-          :label="t('commin.submit')"
+          :label="t('common.submit')"
           size="small"
           severity="success"
           @click="submit"
