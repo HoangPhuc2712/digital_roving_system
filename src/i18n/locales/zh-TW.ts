@@ -25,6 +25,7 @@ const zhTW = {
       en: 'English',
       vi: 'Tiếng Việt',
       'zh-TW': '繁體中文',
+      'zh-CN': '简体中文',
     },
   },
   login: {

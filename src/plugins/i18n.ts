@@ -1,9 +1,10 @@
 import { createI18n } from 'vue-i18n'
 import en from '@/i18n/locales/en'
 import vi from '@/i18n/locales/vi'
+import zhCN from '@/i18n/locales/zh-CN'
 import zhTW from '@/i18n/locales/zh-TW'
 
-export const SUPPORTED_LOCALES = ['en', 'vi', 'zh-TW'] as const
+export const SUPPORTED_LOCALES = ['en', 'vi', 'zh-CN', 'zh-TW'] as const
 export type AppLocale = (typeof SUPPORTED_LOCALES)[number]
 
 const LOCALE_STORAGE_KEY = 'app:locale'
@@ -30,6 +31,7 @@ export const i18n = createI18n({
   messages: {
     en,
     vi,
+    'zh-CN': zhCN,
     'zh-TW': zhTW,
   },
 })

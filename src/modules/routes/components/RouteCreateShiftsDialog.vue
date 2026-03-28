@@ -29,7 +29,7 @@ const visibleProxy = computed({
   set: (value: boolean) => emit('update:visible', value),
 })
 
-const monthOptions = [
+const monthOptions = computed(() => [
   { label: t('createShifts.monthValue.jan'), value: 1 },
   { label: t('createShifts.monthValue.feb'), value: 2 },
   { label: t('createShifts.monthValue.mar'), value: 3 },
@@ -42,7 +42,7 @@ const monthOptions = [
   { label: t('createShifts.monthValue.oct'), value: 10 },
   { label: t('createShifts.monthValue.nov'), value: 11 },
   { label: t('createShifts.monthValue.dec'), value: 12 },
-]
+])
 
 const yearOptions = Array.from({ length: 11 }, (_, index) => currentYear - 5 + index).map(
   (value) => ({ label: String(value), value }),

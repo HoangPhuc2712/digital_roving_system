@@ -402,7 +402,8 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
             :disabled="!canManage || !selectedRoutes || selectedRoutes.length === 0"
             @click="confirmDeleteSelected"
           />
-          <BaseButton
+          <BaseIconButton
+            icon="pi pi-sparkles"
             :label="t('createShifts.button')"
             size="small"
             severity="info"
