@@ -93,7 +93,7 @@ function onNavigate(item: BreadcrumbItem, isLast: boolean) {
         <button
           v-if="item.to && index < items.length - 1"
           type="button"
-          class="truncate rounded text-left transition hover:text-slate-900"
+          class="truncate rounded text-left transition hover:text-slate-900 hover:cursor-pointer"
           @click="onNavigate(item, index === items.length - 1)"
         >
           {{ item.label }}

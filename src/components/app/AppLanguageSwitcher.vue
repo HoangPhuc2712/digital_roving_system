@@ -50,7 +50,7 @@ onBeforeUnmount(() => {
   <div ref="rootRef" class="relative">
     <button
       type="button"
-      class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm transition hover:bg-slate-50"
+      class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm transition hover:bg-slate-50 hover:cursor-pointer"
       @click="toggleOpen"
     >
       <span class="text-base leading-none">{{ currentLanguage.flag }}</span>
