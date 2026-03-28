@@ -7,12 +7,17 @@ import Tag from 'primevue/tag'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
+import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import BaseConfirmDelete from '@/components/common/BaseConfirmDelete.vue'
 
 import { useAuthStore } from '@/stores/auth.store'
 import { useRoutesStore } from '@/modules/routes/routes.store'
 import type { RouteRow } from '@/modules/routes/routes.types'
-import { deleteRouteMock, fetchRouteById } from '@/modules/routes/routes.api'
+import {
+  createPatrolShiftsByTime,
+  deleteRouteMock,
+  fetchRouteById,
+} from '@/modules/routes/routes.api'
 import { exportRoutesXlsx } from '@/services/export/routes.export'
 
 import {
@@ -21,6 +26,8 @@ import {
   resetFiltersWithSearchDraft,
 } from '@/composables/useFilters'
 import { usePagination } from '@/composables/usePagination'
+
+import RouteCreateShiftsDialog from '../components/RouteCreateShiftsDialog.vue'
 
 import RouteForm, {
   type RouteFormMode,
@@ -54,6 +61,8 @@ const routeStatusOptions = [
   { label: 'Inactive', value: 'INACTIVE' },
 ]
 const confirmDeleteVisible = ref(false)
+const createShiftsVisible = ref(false)
+const createShiftsLoading = ref(false)
 const confirmDeleteMessage = ref('')
 const confirmDeleteLoading = ref(false)
 const pendingDeleteAction = ref<null | (() => Promise<void>)>(null)
@@ -113,6 +122,54 @@ function mapRowToFormModel(row: RouteRow): RouteFormModel {
     route_priority: row.route_priority,
     route_total_minute: row.route_total_minute,
     details: row.details.map((d) => ({ ...d })),
+  }
+}
+
+function openCreateShifts() {
+  createShiftsVisible.value = true
+}
+
+async function submitCreateShifts(payload: { month: number; year: number }) {
+  const createdBy = auth.user?.user_id ?? ''
+  if (!createdBy) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Unable to determine the current user.',
+      life: 3000,
+    })
+    return
+  }
+
+  createShiftsLoading.value = true
+  try {
+    const ok = await createPatrolShiftsByTime({
+      month: payload.month,
+      year: payload.year,
+      createdBy,
+    })
+
+    toast.add({
+      severity: ok ? 'success' : 'warn',
+      summary: ok ? 'Success' : 'Notice',
+      detail: ok
+        ? 'Shifts have been created successfully.'
+        : 'Create shifts request did not succeed.',
+      life: 3000,
+    })
+
+    if (ok) {
+      createShiftsVisible.value = false
+    }
+  } catch (e: any) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: String(e?.message ?? 'Failed to create shifts.'),
+      life: 3000,
+    })
+  } finally {
+    createShiftsLoading.value = false
   }
 }
 
@@ -333,6 +390,14 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
             :disabled="!canManage || !selectedRoutes || selectedRoutes.length === 0"
             @click="confirmDeleteSelected"
           />
+          <BaseButton
+            label="Create Shifts"
+            size="small"
+            severity="info"
+            outlined
+            :disabled="!canManage"
+            @click="openCreateShifts"
+          />
         </div>
       </template>
 
@@ -457,6 +522,12 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
       @update:visible="confirmDeleteVisible = $event"
       @cancel="closeDeleteConfirm"
       @confirm="onConfirmDelete"
+    />
+
+    <RouteCreateShiftsDialog
+      v-model:visible="createShiftsVisible"
+      :loading="createShiftsLoading"
+      @submit="submitCreateShifts"
     />
 
     <RouteForm

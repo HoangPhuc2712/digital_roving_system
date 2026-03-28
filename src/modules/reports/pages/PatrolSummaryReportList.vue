@@ -12,6 +12,7 @@ import PatrolSummaryTable from '@/modules/reports/components/PatrolSummaryTable.
 import PatrolSummaryChartCard from '@/modules/reports/components/PatrolSummaryChartCard.vue'
 import PatrolSummaryMissedPatrolDialog from '@/modules/reports/components/PatrolSummaryMissedPatrolDialog.vue'
 import PatrolSummaryTimeProblemDialog from '@/modules/reports/components/PatrolSummaryTimeProblemDialog.vue'
+import PatrolSummaryInsufficientPatrolDialog from '@/modules/reports/components/PatrolSummaryInsufficientPatrolDialog.vue'
 import { usePatrolSummaryReportsStore } from '@/modules/reports/patrolSummaryReports.store'
 import type { PatrolSummaryReportRow } from '@/modules/reports/reports.types'
 import { exportPatrolSummaryReportXlsx } from '@/services/export/patrolSummaryReport.export'
@@ -29,8 +30,10 @@ const autoLoadEnabled = ref(false)
 const chartCardRef = ref<PatrolSummaryChartExpose | null>(null)
 const missedDialogVisible = ref(false)
 const timeProblemDialogVisible = ref(false)
+const insufficientDialogVisible = ref(false)
 const selectedMissedRow = ref<PatrolSummaryReportRow | null>(null)
 const selectedTimeProblemRow = ref<PatrolSummaryReportRow | null>(null)
+const selectedInsufficientRow = ref<PatrolSummaryReportRow | null>(null)
 
 let filterLoadTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -92,8 +95,10 @@ function resetPageState() {
   clearFilterLoadTimer()
   missedDialogVisible.value = false
   timeProblemDialogVisible.value = false
+  insufficientDialogVisible.value = false
   selectedMissedRow.value = null
   selectedTimeProblemRow.value = null
+  selectedInsufficientRow.value = null
   store.clearFilters()
 }
 
@@ -106,6 +111,11 @@ const selectedTimeProblemRows = computed(
   () => selectedTimeProblemRow.value?.time_problem_details ?? [],
 )
 
+const selectedInsufficientDate = computed(() => selectedInsufficientRow.value?.date_label ?? '')
+const selectedInsufficientRows = computed(
+  () => selectedInsufficientRow.value?.insufficient_patrol_details ?? [],
+)
+
 function openMissedDetails(row: PatrolSummaryReportRow) {
   selectedMissedRow.value = row
   missedDialogVisible.value = true
@@ -114,6 +124,11 @@ function openMissedDetails(row: PatrolSummaryReportRow) {
 function openTimeProblemDetails(row: PatrolSummaryReportRow) {
   selectedTimeProblemRow.value = row
   timeProblemDialogVisible.value = true
+}
+
+function openInsufficientDetails(row: PatrolSummaryReportRow) {
+  selectedInsufficientRow.value = row
+  insufficientDialogVisible.value = true
 }
 
 function onMissedDialogVisibleChange(value: boolean) {
@@ -127,6 +142,13 @@ function onTimeProblemDialogVisibleChange(value: boolean) {
   timeProblemDialogVisible.value = value
   if (!value) {
     selectedTimeProblemRow.value = null
+  }
+}
+
+function onInsufficientDialogVisibleChange(value: boolean) {
+  insufficientDialogVisible.value = value
+  if (!value) {
+    selectedInsufficientRow.value = null
   }
 }
 
@@ -199,6 +221,7 @@ async function onExport() {
         :loading="store.loading"
         @open-missed-details="openMissedDetails"
         @open-time-problem-details="openTimeProblemDetails"
+        @open-insufficient-details="openInsufficientDetails"
       />
     </div>
 
@@ -214,6 +237,13 @@ async function onExport() {
       :patrolDate="selectedTimeProblemDate"
       :rows="selectedTimeProblemRows"
       @update:visible="onTimeProblemDialogVisibleChange"
+    />
+
+    <PatrolSummaryInsufficientPatrolDialog
+      :visible="insufficientDialogVisible"
+      :shiftDate="selectedInsufficientDate"
+      :rows="selectedInsufficientRows"
+      @update:visible="onInsufficientDialogVisibleChange"
     />
 
     <PatrolSummaryChartCard

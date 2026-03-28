@@ -67,6 +67,9 @@ export const endpoints = {
   patrolShiftView: {
     getList: '/patrolshiftview/getlist',
   },
+  patrolShift: {
+    createByTime: '/patrolshift/createbytime',
+  },
   report: {
     totalAppData: '/report/totalappdata',
     totalUserByRole: '/report/totaluserbyrole',

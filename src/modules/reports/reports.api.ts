@@ -7,6 +7,7 @@ import type {
   CtpatReportRow,
   IncorrectScanLogRow,
   PatrolDetailReportRow,
+  PatrolSummaryInsufficientPatrolDetailRow,
   PatrolSummaryMissedPatrolDetailRow,
   PatrolSummaryReportRow,
   PatrolSummaryTimeProblemDetailRow,
@@ -1151,6 +1152,14 @@ function isWithinWindow(value: Date | null, windowStart: Date, windowEnd: Date) 
 //   return asArray(payload)
 // }
 
+async function fetchPatrolShiftReportViews() {
+  const res = await http.post(endpoints.report.patrolDetailReport, {})
+  const payload = ensureSuccess<ApiPatrolShiftReportView[] | ApiPatrolShiftReportView>(
+    res.data,
+  ).data
+  return asArray(payload)
+}
+
 async function fetchPlannedPatrolShiftByDate(date: Date) {
   const body = {
     psDay: date.getDate(),
@@ -1221,6 +1230,63 @@ function buildTimeProblemDetails(
   }))
 }
 
+function buildPatrolShiftViewDateKey(view: ApiPatrolShiftReportView) {
+  const raw = String(view.reportTimeFrom ?? '').trim()
+  if (!raw) return ''
+
+  const d = new Date(raw)
+  if (!Number.isFinite(d.getTime())) return ''
+  return normalizeDateOnly(d)
+}
+
+function buildInsufficientPatrolDetails(
+  areaName: string,
+  views: ApiPlannedPatrolShiftView[],
+  actualViewMap: Map<number, ApiPatrolShiftReportView>,
+): PatrolSummaryInsufficientPatrolDetailRow[] {
+  const rows: PatrolSummaryInsufficientPatrolDetailRow[] = []
+
+  for (const item of views) {
+    const psId = Number(item.psId ?? 0)
+    const actualView = actualViewMap.get(psId)
+    const actualPoints = Array.isArray(actualView?.pointReports) ? actualView.pointReports : []
+    const actualPointNameSet = new Set(
+      actualPoints
+        .map((point) =>
+          String(point?.cpName ?? '')
+            .trim()
+            .toLowerCase(),
+        )
+        .filter(Boolean),
+    )
+
+    const plannedRouteDetails = Array.isArray(item.routeDetails) ? item.routeDetails : []
+    const missingDetails = plannedRouteDetails.filter((detail) => {
+      const cpNameKey = String(detail?.cpName ?? '')
+        .trim()
+        .toLowerCase()
+      if (!cpNameKey) return false
+      return !actualPointNameSet.has(cpNameKey)
+    })
+
+    for (const [detailIndex, detail] of missingDetails.entries()) {
+      rows.push({
+        row_id: `${psId}-${Number(detail?.cpId ?? 0)}-${detailIndex}`,
+        area_name: areaName || `Area ${Number(item.areaId ?? 0)}`,
+        cp_name: String(detail?.cpName ?? '').trim() || '-',
+        patrol_time:
+          [formatShiftDatePrefix(item), extractShiftTimeRange(item)].filter(Boolean).join(' ') ||
+          '-',
+        actual_time: 'No Data',
+        guard_name: String(actualView?.reportName ?? item.reportName ?? '').trim() || '-',
+        event_information: '',
+      })
+    }
+  }
+
+  return rows
+}
+
 export async function fetchPatrolSummaryRows(
   dateFrom: Date,
   dateTo: Date,
@@ -1237,6 +1303,7 @@ export async function fetchPatrolSummaryRows(
   const days = eachDateInclusive(from, to)
   const now = new Date()
   const rows: PatrolSummaryReportRow[] = []
+  const actualShiftViews = await fetchPatrolShiftReportViews()
 
   for (const day of days) {
     let windowStart = maxDate(startOfLocalDay(day), from)
@@ -1256,13 +1323,19 @@ export async function fetchPatrolSummaryRows(
       isWithinWindow(buildPlannedShiftStart(item), windowStart, windowEnd),
     )
 
+    const dateLabel = normalizeDateOnly(day)
+    const actualViewsForDay = actualShiftViews.filter(
+      (item) => buildPatrolShiftViewDateKey(item) === dateLabel,
+    )
+    const actualViewMap = new Map<number, ApiPatrolShiftReportView>(
+      actualViewsForDay.map((item) => [Number(item.psId ?? 0), item]),
+    )
+
     const areaIds = new Set<number>()
     for (const item of filteredPlannedViews) {
       const areaId = Number(item.areaId ?? 0)
       if (areaId > 0) areaIds.add(areaId)
     }
-
-    const dateLabel = normalizeDateOnly(day)
 
     for (const areaId of [...areaIds].sort((a, b) => a - b)) {
       const plannedRows = filteredPlannedViews.filter((item) => Number(item.areaId ?? 0) === areaId)
@@ -1278,7 +1351,13 @@ export async function fetchPatrolSummaryRows(
       const missedPatrolDetails = buildMissedPatrolDetails(missedRows)
       const timeProblemDetails = buildTimeProblemDetails(timeProblemRows)
       const timeProblemCount = timeProblemRows.length
-      const insufficientCount = actualRows.filter((item) => Boolean(item.pointProblem)).length
+      const insufficientRows = actualRows.filter((item) => Boolean(item.pointProblem))
+      const insufficientCount = insufficientRows.length
+      const insufficientPatrolDetails = buildInsufficientPatrolDetails(
+        `Area ${areaId}`,
+        insufficientRows,
+        actualViewMap,
+      )
       const abnormalTotal = missedCount + timeProblemCount + insufficientCount
       const abnormalRate = requiredCount > 0 ? (abnormalTotal / requiredCount) * 100 : 0
 
@@ -1295,6 +1374,7 @@ export async function fetchPatrolSummaryRows(
         abnormal_rate: Number(abnormalRate.toFixed(2)),
         missed_patrol_details: missedPatrolDetails,
         time_problem_details: timeProblemDetails,
+        insufficient_patrol_details: insufficientPatrolDetails,
       })
     }
   }

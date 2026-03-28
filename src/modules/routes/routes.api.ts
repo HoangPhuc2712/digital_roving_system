@@ -385,3 +385,13 @@ export async function deleteRouteMock(payload: { route_id: number; actor_id: str
     throw e
   }
 }
+
+export async function createPatrolShiftsByTime(payload: {
+  month: number
+  year: number
+  createdBy: string
+}): Promise<boolean> {
+  const res = await http.post(endpoints.patrolShift.createByTime, payload)
+  const env = ensureSuccess<boolean>(res.data)
+  return Boolean(env.data)
+}

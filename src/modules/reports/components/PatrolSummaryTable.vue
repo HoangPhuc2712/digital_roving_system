@@ -16,6 +16,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'open-missed-details', row: PatrolSummaryReportRow): void
   (e: 'open-time-problem-details', row: PatrolSummaryReportRow): void
+  (e: 'open-insufficient-details', row: PatrolSummaryReportRow): void
 }>()
 
 function formatRate(rate: number) {
@@ -47,6 +48,15 @@ function canOpenTimeProblemDetails(row: PatrolSummaryReportRow) {
 function openTimeProblemDetails(row: PatrolSummaryReportRow) {
   if (!canOpenTimeProblemDetails(row)) return
   emit('open-time-problem-details', row)
+}
+
+function canOpenInsufficientDetails(row: PatrolSummaryReportRow) {
+  return Number(row.insufficient_count ?? 0) > 0
+}
+
+function openInsufficientDetails(row: PatrolSummaryReportRow) {
+  if (!canOpenInsufficientDetails(row)) return
+  emit('open-insufficient-details', row)
 }
 </script>
 
@@ -148,7 +158,15 @@ function openTimeProblemDetails(row: PatrolSummaryReportRow) {
               class="border border-slate-200 px-4 py-3 text-center"
               :class="abnormalCountClass(row.insufficient_count)"
             >
-              {{ row.insufficient_count }}
+              <button
+                v-if="canOpenInsufficientDetails(row)"
+                type="button"
+                class="font-medium text-red-500 hover:text-red-800 hover:cursor-pointer"
+                @click="openInsufficientDetails(row)"
+              >
+                {{ row.insufficient_count }}
+              </button>
+              <span v-else>{{ row.insufficient_count }}</span>
             </td>
             <td class="border border-slate-200 px-4 py-3 text-center">
               {{ formatRate(row.abnormal_rate) }}
