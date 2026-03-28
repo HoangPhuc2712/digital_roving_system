@@ -317,6 +317,7 @@ const zhCN = {
     checkpointName: '检查点名称',
     qrImg: 'QR 图片',
     area: '区域',
+    description: '描述',
     role: '角色',
     priority: '优先顺序',
     status: '状态',
@@ -345,6 +346,9 @@ const zhCN = {
     },
   },
   qrPreview: {
+    qrImg: 'QR 图片',
+    exportQrPdf: '导出 QR PDF',
+    noQrImg: '没有 QR 图片',
     error: {
       noQrAvailablie: '没有可导出的 QR 图片',
       qrFormatNotSupport: '不支持 QR 图片格式',
@@ -568,6 +572,35 @@ const zhCN = {
       newPasswordRequired: '新密码为必填项',
       passwordMismatch: '确认的新密码不匹配',
       confirmPasswordRequired: '确认新密码为必填项',
+    },
+  },
+  createShifts: {
+    button: '创建班次',
+    title: '创建班次',
+    month: '月份',
+    selectMonth: '选择月份',
+    year: '年份',
+    selectYear: '选择年份',
+    monthValue: {
+      jan: '一月',
+      feb: '二月',
+      mar: '三月',
+      apr: '四月',
+      may: '五月',
+      jun: '六月',
+      jul: '七月',
+      aug: '八月',
+      sep: '九月',
+      oct: '十月',
+      nov: '十一月',
+      dec: '十二月',
+    },
+    success: {
+      shiftCreated: '班次已成功创建。',
+    },
+    error: {
+      shiftError: '创建班次请求未成功。',
+      shiftFailed: '创建班次失败。',
     },
   },
 }

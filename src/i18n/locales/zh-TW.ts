@@ -317,6 +317,7 @@ const zhTW = {
     checkpointName: '檢查點名稱',
     qrImg: 'QR 圖片',
     area: '區域',
+    description: '描述',
     role: '角色',
     priority: '優先順序',
     status: '狀態',
@@ -345,6 +346,9 @@ const zhTW = {
     },
   },
   qrPreview: {
+    qrImg: 'QR 圖片',
+    exportQrPdf: '匯出 QR PDF',
+    noQrImg: '沒有 QR 圖片',
     error: {
       noQrAvailablie: '沒有可匯出的 QR 圖片',
       qrFormatNotSupport: '不支援 QR 圖片格式',
@@ -568,6 +572,35 @@ const zhTW = {
       newPasswordRequired: '新密碼為必填項',
       passwordMismatch: '確認的新密碼不一致',
       confirmPasswordRequired: '確認新密碼為必填項',
+    },
+  },
+  createShifts: {
+    button: '建立班次',
+    title: '建立班次',
+    month: '月份',
+    selectMonth: '選擇月份',
+    year: '年份',
+    selectYear: '選擇年份',
+    monthValue: {
+      jan: '一月',
+      feb: '二月',
+      mar: '三月',
+      apr: '四月',
+      may: '五月',
+      jun: '六月',
+      jul: '七月',
+      aug: '八月',
+      sep: '九月',
+      oct: '十月',
+      nov: '十一月',
+      dec: '十二月',
+    },
+    success: {
+      shiftCreated: '班次已成功建立。',
+    },
+    error: {
+      shiftError: '建立班次請求未成功。',
+      shiftFailed: '建立班次失敗。',
     },
   },
 }

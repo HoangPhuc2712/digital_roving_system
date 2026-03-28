@@ -26,6 +26,7 @@ type ApiGroupedReportImage = {
   priId?: number
   prId?: number
   priImage?: string
+  priUrl?: string
   priImageType?: string
 }
 
@@ -35,6 +36,7 @@ type ApiReportImage = {
   priGroup?: number
   priImageNote?: string
   priImage?: string
+  priUrl?: string
   priImageType?: string
 }
 
@@ -249,8 +251,12 @@ function normalizeImageSrc(rawValue: string, extValue?: string) {
   })
 }
 
+function getApiReportImageSource(img: { priImage?: string; priUrl?: string }) {
+  return String(img?.priUrl ?? img?.priImage ?? '')
+}
+
 function normalizeFlatImage(img: ApiReportImage, fallbackIndex = 0): ReportImage {
-  const src = normalizeImageSrc(String(img?.priImage ?? ''), img?.priImageType)
+  const src = normalizeImageSrc(getApiReportImageSource(img), img?.priImageType)
 
   return {
     pri_id: Number(img?.priId ?? fallbackIndex + 1),
@@ -277,7 +283,7 @@ function normalizeNoteGroups(view: ApiPointReportView): ReportNoteGroup[] {
         pr_id: Number(img?.prId ?? prId),
         pri_group: Number(group?.prGroup ?? groupIndex + 1),
         pri_image_note: String(group?.priImageNote ?? ''),
-        pri_image: normalizeImageSrc(String(img?.priImage ?? ''), img?.priImageType),
+        pri_image: normalizeImageSrc(getApiReportImageSource(img), img?.priImageType),
         pri_image_type:
           String(img?.priImageType ?? 'jpeg')
             .trim()

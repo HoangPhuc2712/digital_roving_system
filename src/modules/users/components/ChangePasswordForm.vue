@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Dialog from 'primevue/dialog'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
@@ -10,6 +11,7 @@ export type ChangePasswordSubmitPayload = {
   newPassword: string
 }
 
+const { t, locale } = useI18n()
 const props = defineProps<{
   visible: boolean
   loading?: boolean
@@ -90,7 +92,7 @@ function submit() {
   <Dialog
     :visible="visible"
     modal
-    header="Change Password"
+    :header="t('changePasswordForm.title')"
     :style="{ width: '720px', maxWidth: '95vw' }"
     :contentStyle="{ maxHeight: '70vh', overflow: 'auto' }"
     @update:visible="emit('update:visible', $event)"
@@ -99,53 +101,71 @@ function submit() {
     <div class="space-y-4">
       <div class="grid grid-cols-1 gap-4">
         <div>
-          <label class="block text-sm text-slate-600 mb-1">Your Current Password</label>
+          <label class="block text-sm text-slate-600 mb-1">{{
+            t('changePasswordForm.currentPassword')
+          }}</label>
           <BasePasswordInput
             v-model="form.currentPassword"
             label=""
             size="small"
-            placeholder="Enter your current password"
+            :placeholder="t('changePasswordForm.entercurrent')"
             :hasError="currentPasswordError"
-            message="Current Password is required"
+            :message="t('changePasswordForm.error.currPasswordRequired')"
           />
         </div>
 
         <div>
-          <label class="block text-sm text-slate-600 mb-1">Your New Password</label>
+          <label class="block text-sm text-slate-600 mb-1">{{
+            t('changePasswordForm.newPassword')
+          }}</label>
           <BasePasswordInput
             v-model="form.newPassword"
             label=""
             size="small"
-            placeholder="Enter your new password"
+            :placeholder="t('changePasswordForm.enterNew')"
             :hasError="newPasswordError || samePasswordError"
             :message="
               samePasswordError
-                ? 'New Password must be different from Current Password'
-                : 'New Password is required'
+                ? t('changePasswordForm.error.passwordRepeatable')
+                : t('changePasswordForm.error.newPasswordRequired')
             "
           />
         </div>
 
         <div>
-          <label class="block text-sm text-slate-600 mb-1">Confirm New Password</label>
+          <label class="block text-sm text-slate-600 mb-1">{{
+            t('changePasswordForm.confirmPassword')
+          }}</label>
           <BasePasswordInput
             v-model="form.confirmNewPassword"
             label=""
             size="small"
-            placeholder="Confirm your new password"
+            :placeholder="t('changePasswordForm.enterConfirm')"
             :hasError="confirmPasswordError || passwordMismatchError"
             :message="
               passwordMismatchError
-                ? 'Confirm New Password does not match'
-                : 'Confirm New Password is required'
+                ? t('changePasswordForm.error.passwordMismatch')
+                : t('changePasswordForm.confirmPasswordRequired')
             "
           />
         </div>
       </div>
 
       <div class="flex justify-end gap-2 pt-3 border-t border-slate-200">
-        <BaseButton label="Cancel" severity="danger" outlined @click="close" />
-        <BaseButton label="Confirm" severity="success" :loading="loading" @click="submit" />
+        <BaseButton
+          :label="t('common.cancel')"
+          size="small"
+          severity="danger"
+          outlined
+          @click="close"
+        />
+        <BaseButton
+          :label="t('common.submit')"
+          size="small"
+          severity="success"
+          :loading="loading"
+          @click="submit"
+        />
       </div>
     </div>
   </Dialog>

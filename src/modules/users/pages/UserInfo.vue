@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useToast } from 'primevue/usetoast'
+import { useI18n } from 'vue-i18n'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import ChangePasswordForm from '@/modules/users/components/ChangePasswordForm.vue'
@@ -9,6 +10,7 @@ import { useAuthStore } from '@/stores/auth.store'
 
 const auth = useAuthStore()
 const toast = useToast()
+const { t, locale } = useI18n()
 
 const loading = ref(false)
 const changingPassword = ref(false)
@@ -71,16 +73,16 @@ async function onSubmitChangePassword(payload: { currentPassword: string; newPas
     changePasswordVisible.value = false
     toast.add({
       severity: 'success',
-      summary: 'Saved',
-      detail: String(result?.message ?? 'Password has been changed successfully.'),
+      summary: t('common.save'),
+      detail: String(result?.message ?? t('userInfo.success.password')),
       life: 2500,
     })
   } catch (e: any) {
     const msg = String(e?.message ?? '')
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: msg || 'Failed to change password.',
+      summary: t('common.error'),
+      detail: msg || t('userInfo.error.password'),
       life: 3500,
     })
   } finally {
@@ -95,37 +97,37 @@ onMounted(async () => {
 
 <template>
   <div class="space-y-4">
-    <div class="text-[26px] font-semibold text-slate-800">User Information</div>
+    <div class="text-[26px] font-semibold text-slate-800">{{ t('userInfo.title') }}</div>
 
     <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div v-if="loading" class="text-slate-500">Loading...</div>
+      <div v-if="loading" class="text-slate-500">{{ t('common.loading') }}...</div>
 
       <div v-else class="space-y-5">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
-            <div class="text-sm text-slate-500 mb-1">User Name</div>
+            <div class="text-sm text-slate-500 mb-1">{{ t('userInfo.userName') }}</div>
             <div class="text-lg text-slate-800 font-semibold">{{ userInfo?.user_name || '-' }}</div>
           </div>
 
           <div>
-            <div class="text-sm text-slate-500 mb-1">User Code</div>
+            <div class="text-sm text-slate-500 mb-1">{{ t('userInfo.userCode') }}</div>
             <div class="text-lg text-slate-800 font-semibold">{{ userInfo?.user_code || '-' }}</div>
           </div>
 
           <div>
-            <div class="text-sm text-slate-500 mb-1">Area</div>
+            <div class="text-sm text-slate-500 mb-1">{{ t('userInfo.area') }}</div>
             <div class="text-lg text-slate-800 font-semibold">{{ userInfo?.area_name || '-' }}</div>
           </div>
 
           <div>
-            <div class="text-sm text-slate-500 mb-1">Role</div>
+            <div class="text-sm text-slate-500 mb-1">{{ t('userInfo.role') }}</div>
             <div class="text-lg text-slate-800 font-semibold">{{ userInfo?.role_name || '-' }}</div>
           </div>
         </div>
 
         <div class="pt-4 border-t border-slate-200">
           <BaseButton
-            label="Change Password"
+            :label="t('userInfo.changePassword')"
             severity="secondary"
             @click="changePasswordVisible = true"
           />

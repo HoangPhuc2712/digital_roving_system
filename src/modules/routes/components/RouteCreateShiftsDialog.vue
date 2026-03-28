@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Dialog from 'primevue/dialog'
 import Select from 'primevue/select'
 
@@ -10,6 +11,7 @@ const props = defineProps<{
   loading?: boolean
 }>()
 
+const { t, locale } = useI18n()
 const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void
   (e: 'submit', payload: { month: number; year: number }): void
@@ -28,18 +30,18 @@ const visibleProxy = computed({
 })
 
 const monthOptions = [
-  { label: 'January', value: 1 },
-  { label: 'February', value: 2 },
-  { label: 'March', value: 3 },
-  { label: 'April', value: 4 },
-  { label: 'May', value: 5 },
-  { label: 'June', value: 6 },
-  { label: 'July', value: 7 },
-  { label: 'August', value: 8 },
-  { label: 'September', value: 9 },
-  { label: 'October', value: 10 },
-  { label: 'November', value: 11 },
-  { label: 'December', value: 12 },
+  { label: t('createShifts.monthValue.jan'), value: 1 },
+  { label: t('createShifts.monthValue.feb'), value: 2 },
+  { label: t('createShifts.monthValue.mar'), value: 3 },
+  { label: t('createShifts.monthValue.apr'), value: 4 },
+  { label: t('createShifts.monthValue.may'), value: 5 },
+  { label: t('createShifts.monthValue.jun'), value: 6 },
+  { label: t('createShifts.monthValue.jul'), value: 7 },
+  { label: t('createShifts.monthValue.aug'), value: 8 },
+  { label: t('createShifts.monthValue.sep'), value: 9 },
+  { label: t('createShifts.monthValue.oct'), value: 10 },
+  { label: t('createShifts.monthValue.nov'), value: 11 },
+  { label: t('createShifts.monthValue.dec'), value: 12 },
 ]
 
 const yearOptions = Array.from({ length: 11 }, (_, index) => currentYear - 5 + index).map(
@@ -71,20 +73,20 @@ function submit() {
   <Dialog
     v-model:visible="visibleProxy"
     modal
-    header="Create Shifts"
+    :header="t('createShifts.title')"
     :style="{ width: '32rem' }"
     :closable="!loading"
     :dismissableMask="!loading"
   >
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div class="space-y-2">
-        <label class="text-sm font-medium text-slate-700">Month</label>
+        <label class="text-sm font-medium text-slate-700">{{ t('createShifts.month') }}</label>
         <Select
           v-model="month"
           :options="monthOptions"
           optionLabel="label"
           optionValue="value"
-          placeholder="Select Month"
+          :placeholder="t('createShifts.selectMonth')"
           class="w-full"
           size="small"
           :disabled="loading"
@@ -92,13 +94,13 @@ function submit() {
       </div>
 
       <div class="space-y-2">
-        <label class="text-sm font-medium text-slate-700">Year</label>
+        <label class="text-sm font-medium text-slate-700">{{ t('createShifts.year') }}</label>
         <Select
           v-model="year"
           :options="yearOptions"
           optionLabel="label"
           optionValue="value"
-          placeholder="Select Year"
+          :placeholder="t('createShifts.selectYear')"
           class="w-full"
           size="small"
           :disabled="loading"
@@ -109,7 +111,7 @@ function submit() {
     <template #footer>
       <div class="flex justify-end gap-2">
         <BaseButton
-          label="Cancel"
+          :label="t('common.cancel')"
           severity="danger"
           outlined
           size="small"
@@ -117,7 +119,7 @@ function submit() {
           @click="closeDialog"
         />
         <BaseButton
-          label="Submit"
+          :label="t('common.submit')"
           severity="success"
           size="small"
           :loading="loading"

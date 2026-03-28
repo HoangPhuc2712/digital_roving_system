@@ -78,7 +78,7 @@ const lockedAreaCode = computed(() => {
 
 const pageTitle = computed(() =>
   lockedAreaCode.value
-    ? `${lockedAreaCode.value} Check Points Management`
+    ? `${lockedAreaCode.value} ${t('checkpointList.title')}`
     : 'Check Points Management',
 )
 
@@ -366,7 +366,7 @@ async function onDeleteSelected() {
       toast.add({
         severity: 'warn',
         summary: 'Cannot Delete',
-        detail: `Can't delete ${blocked.length} selected check point(s) because they already exist in route(s).`,
+        detail: `${t('checkpointList.error.cannotDeleteMultiple')} ${blocked.length} ${t('checkpointList.error.becauseItContains')}.`,
         life: 3500,
       })
       return
@@ -374,15 +374,15 @@ async function onDeleteSelected() {
   } catch (e: any) {
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: String(e?.message ?? 'Failed to validate check point delete.'),
+      summary: t('common.error'),
+      detail: String(e?.message ?? t('checkpointList.error.validate')),
       life: 3000,
     })
     return
   }
 
   openDeleteConfirm(
-    `Are you sure you want to delete ${sel.length} selected check points?`,
+    `${t('checkpointList.error.areYouSureMultiple')} ${sel.length} ${t('checkpointList.error.selectedCheckpoint')}?`,
     async () => {
       try {
         for (const row of sel) {
@@ -405,15 +405,15 @@ async function onDeleteSelected() {
         selectedRows.value = null
         toast.add({
           severity: 'success',
-          summary: 'Deleted',
-          detail: 'Selected check points have been deleted.',
+          summary: t('common.deleted'),
+          detail: t('checkpointList.success.deleteDetailMultiple'),
           life: 2000,
         })
       } catch (e: any) {
         toast.add({
           severity: 'error',
-          summary: 'Error',
-          detail: e?.message ?? 'Failed to delete check points.',
+          summary: t('common.error'),
+          detail: e?.message ?? t('checkpointList.error.deleteFailed'),
           life: 3000,
         })
         throw e
@@ -437,8 +437,8 @@ async function handleCheckpointFormSubmit(payload: {
 
     toast.add({
       severity: 'success',
-      summary: 'Saved',
-      detail: 'Check Point has been saved.',
+      summary: t('common.save'),
+      detail: t('checkpointList.success.saveDetail'),
       life: 2000,
     })
   } catch (e: any) {
@@ -495,10 +495,10 @@ async function onPrintCheckpointQr(row: CheckpointRow) {
       summary: 'QR PDF Error',
       detail:
         msg === 'QR_IMAGE_NOT_FOUND'
-          ? 'No QR image available to export.'
+          ? t('checkpointList.error.noQrAvailablie')
           : msg === 'QR_IMAGE_FORMAT_NOT_SUPPORTED'
-            ? 'QR image format is not supported.'
-            : msg || 'Failed to export QR PDF.',
+            ? t('checkpointList.error.qrFormatNotSupport')
+            : msg || t('checkpointList.error.exportPdfFailed'),
       life: 3500,
     })
   } finally {
@@ -519,7 +519,7 @@ async function onExport() {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: String(e?.message ?? 'Failed to export checkpoints.'),
+      detail: String(e?.message ?? t('checkpointList.error.exportPdfFailed')),
       life: 3000,
     })
   } finally {
@@ -533,7 +533,7 @@ async function onExport() {
     <div class="text-[26px] font-semibold text-slate-800">{{ pageTitle }}</div>
 
     <BaseDataTable
-      :key="`area-list-table-${locale}`"
+      :key="`cp-list-table-${locale}`"
       :title="pageTitle"
       :value="store.filteredRows"
       :loading="store.loading"
@@ -550,7 +550,7 @@ async function onExport() {
       <template v-if="canManage" #toolbar-start>
         <BaseIconButton
           icon="pi pi-plus"
-          label="New"
+          :label="t('common.new')"
           size="small"
           severity="success"
           :disabled="!canManage"
@@ -558,7 +558,7 @@ async function onExport() {
         />
         <BaseIconButton
           icon="pi pi-trash"
-          label="Delete"
+          :label="t('common.delete')"
           size="small"
           severity="danger"
           outlined
@@ -572,7 +572,7 @@ async function onExport() {
         <div class="flex justify-end gap-2">
           <BaseIconButton
             icon="pi pi-file-excel"
-            label="Export"
+            :label="t('common.export')"
             size="small"
             severity="secondary"
             outlined
@@ -591,10 +591,18 @@ async function onExport() {
         sortDisabled
       />
 
-      <Column field="cp_code" header="Check Point Code" style="min-width: 12rem" />
-      <Column field="cp_name" header="Check Point Name" style="min-width: 14rem" />
+      <Column
+        field="cp_code"
+        :header="t('checkpointList.checkpointCode')"
+        style="min-width: 12rem"
+      />
+      <Column
+        field="cp_name"
+        :header="t('checkpointList.checkpointName')"
+        style="min-width: 14rem"
+      />
 
-      <Column header="QR Image" style="min-width: 10rem" sortDisabled>
+      <Column :header="t('checkpointList.qrImg')" style="min-width: 8rem" sortDisabled>
         <template #body="{ data }">
           <div class="flex justify-start">
             <QrPreview
@@ -611,8 +619,8 @@ async function onExport() {
       </Column>
 
       <Column
-        header="Area"
-        style="min-width: 14rem"
+        :header="t('checkpointList.area')"
+        style="min-width: 8rem"
         sortField="area_code"
         :filterMenu="{
           key: 'areaId',
@@ -630,11 +638,15 @@ async function onExport() {
         </template>
       </Column>
 
-      <Column field="cp_description" header="Description" style="min-width: 18rem" />
+      <Column
+        field="cp_description"
+        :header="t('checkpointList.description')"
+        style="min-width: 18rem"
+      />
 
       <Column
-        header="Role"
-        style="min-width: 14rem"
+        :header="t('checkpointList.role')"
+        style="min-width: 8rem"
         :filterMenu="{
           key: 'roleIds',
           type: 'multiselect',
@@ -649,10 +661,10 @@ async function onExport() {
           </div>
         </template>
       </Column>
-      <Column field="cp_priority" header="Priority" style="min-width: 8rem" />
+      <Column field="cp_priority" :header="t('checkpointList.priority')" style="min-width: 8rem" />
 
       <Column
-        header="Status"
+        :header="t('checkpointList.status')"
         style="min-width: 10rem"
         sortField="cp_status"
         :filterMenu="{
@@ -668,7 +680,12 @@ async function onExport() {
         </template>
       </Column>
 
-      <Column header="Action" :exportable="false" style="min-width: 18rem" sortDisabled>
+      <Column
+        :header="t('common.action')"
+        :exportable="false"
+        style="min-width: 18rem"
+        sortDisabled
+      >
         <template #body="{ data }">
           <div class="flex gap-2 justify-start">
             <BaseIconButton

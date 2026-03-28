@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Dialog from 'primevue/dialog'
 import Select from 'primevue/select'
 import MultiSelect from 'primevue/multiselect'
@@ -55,15 +56,16 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
+const { t, locale } = useI18n()
 const isView = computed(() => props.mode === 'view')
 const isNew = computed(() => props.mode === 'new')
 
 const title = computed(() =>
   props.mode === 'new'
-    ? 'New Check Point'
+    ? t('checkpointForm.newCp')
     : props.mode === 'edit'
-      ? 'Edit Check Point'
-      : 'Check Point Detail',
+      ? t('checkpointForm.editCp')
+      : t('checkpointForm.cpDetail'),
 )
 
 const submitted = ref(false)
@@ -182,31 +184,31 @@ function submit() {
     @update:visible="emit('update:visible', $event)"
     @hide="close"
   >
-    <div v-if="!model" class="text-slate-500">No data.</div>
+    <div v-if="!model" class="text-slate-500">{{ t('common.noData') }}.</div>
 
     <div v-else class="space-y-4">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div v-if="isView">
-          <label class="block text-sm text-slate-600 mb-1">Check Point Code</label>
+          <label class="block text-sm text-slate-600 mb-1">{{ t('checkpointForm.cpCode') }}</label>
           <div class="text-slate-800 font-semibold">{{ form.cp_code }}</div>
         </div>
 
         <div>
-          <label class="block text-sm text-slate-600 mb-1">Check Point Name</label>
+          <label class="block text-sm text-slate-600 mb-1">{{ t('checkpointForm.cpName') }}</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ form.cp_name }}</div>
           <BaseInput
             v-else
             v-model="form.cp_name"
             label=""
             size="small"
-            placeholder="Enter name"
+            :placeholder="t('checkpointForm.enterName')"
             :hasError="cpNameError"
-            message="Check Point Name is required"
+            :message="t('checkpointForm.error.cpNameRequired')"
           />
         </div>
 
         <div>
-          <label class="block text-sm text-slate-600 mb-1">Role</label>
+          <label class="block text-sm text-slate-600 mb-1">{{ t('checkpointForm.role') }}</label>
           <div v-if="isView" class="text-slate-800 font-semibold">
             {{ roleLabels.length ? roleLabels.join(', ') : '—' }}
           </div>
@@ -219,7 +221,7 @@ function submit() {
               optionLabel="label"
               optionValue="value"
               size="small"
-              placeholder="Select role"
+              :placeholder="t('checkpointForm.selectRole')"
               filter
             />
             <BaseMessage
@@ -228,13 +230,15 @@ function submit() {
               severity="error"
               size="small"
               variant="simple"
-              message="Role is required"
+              :message="t('checkpointForm.error.roleRequired')"
             />
           </template>
         </div>
 
         <div class="md:col-span-2">
-          <label class="block text-sm text-slate-600 mb-1">Description</label>
+          <label class="block text-sm text-slate-600 mb-1">{{
+            t('checkpointForm.description')
+          }}</label>
           <div v-if="isView" class="text-slate-800 font-semibold">
             {{ form.cp_description || '—' }}
           </div>
@@ -243,12 +247,12 @@ function submit() {
             v-model="form.cp_description"
             label=""
             size="small"
-            placeholder="Enter description"
+            :placeholder="t('checkpointForm.enterDescription')"
           />
         </div>
 
         <div>
-          <label class="block text-sm text-slate-600 mb-1">Area</label>
+          <label class="block text-sm text-slate-600 mb-1">{{ t('checkpointForm.area') }}</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ areaLabel }}</div>
           <template v-else>
             <Select
@@ -259,7 +263,7 @@ function submit() {
               optionLabel="label"
               optionValue="value"
               size="small"
-              placeholder="Select area"
+              :placeholder="t('checkpointForm.selectArea')"
               disabled
             />
             <BaseMessage
@@ -268,13 +272,15 @@ function submit() {
               severity="error"
               size="small"
               variant="simple"
-              message="Area is required"
+              :message="t('checkpointForm.error.areaRequired')"
             />
           </template>
         </div>
 
         <div>
-          <label class="block text-sm text-slate-600 mb-1">Priority</label>
+          <label class="block text-sm text-slate-600 mb-1">{{
+            t('checkpointForm.priority')
+          }}</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ form.cp_priority }}</div>
           <template v-else>
             <InputNumber
@@ -295,14 +301,14 @@ function submit() {
               severity="error"
               size="small"
               variant="simple"
-              message="Priority must be greater than or equal to 1"
+              :message="t('checkpointForm.error.priority')"
             />
           </template>
         </div>
       </div>
 
       <div>
-        <label class="block text-sm text-slate-600 mb-2">QR Image</label>
+        <label class="block text-sm text-slate-600 mb-2">{{ t('checkpointForm.qrImg') }}</label>
 
         <div class="mb-3">
           <QrPreview
@@ -317,14 +323,26 @@ function submit() {
             }"
           />
           <div v-else class="text-sm text-slate-500">
-            {{ isNew ? 'QR will be generated after saving.' : 'No QR available.' }}
+            {{ isNew ? t('checkpointForm.qrGenerate') : t('checkpointForm.noQr') }}
           </div>
         </div>
       </div>
 
       <div class="flex justify-end gap-2 pt-3 border-t border-slate-200">
-        <BaseButton label="Cancel" size="small" severity="danger" outlined @click="close" />
-        <BaseButton v-if="!isView" label="Submit" size="small" severity="success" @click="submit" />
+        <BaseButton
+          :label="t('common.cancel')"
+          size="small"
+          severity="danger"
+          outlined
+          @click="close"
+        />
+        <BaseButton
+          v-if="!isView"
+          :label="t('common.submit')"
+          size="small"
+          severity="success"
+          @click="submit"
+        />
       </div>
     </div>
   </Dialog>

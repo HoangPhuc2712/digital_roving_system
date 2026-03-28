@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import Dialog from 'primevue/dialog'
 import { useToast } from 'primevue/usetoast'
+import { useI18n } from 'vue-i18n'
 
 import { useAuthStore } from '@/stores/auth.store'
 import {
@@ -21,6 +22,7 @@ const auth = useAuthStore()
 const toast = useToast()
 const visible = ref(false)
 const printing = ref(false)
+const { t, locale } = useI18n()
 
 function normalizeSrc(v: string) {
   return normalizeImageSource(v, { fallbackExt: 'png' })
@@ -51,10 +53,10 @@ async function onPrint() {
       summary: 'QR PDF Error',
       detail:
         msg === 'QR_IMAGE_NOT_FOUND'
-          ? 'No QR image available to export.'
+          ? t('qrPreview.error.noQrAvailablie')
           : msg === 'QR_IMAGE_FORMAT_NOT_SUPPORTED'
-            ? 'QR image format is not supported.'
-            : msg || 'Failed to export QR PDF.',
+            ? t('qrPreview.error.qrFormatNotSupport')
+            : msg || t('qrPreview.error.exportPdfFailed'),
       life: 3500,
     })
   } finally {
@@ -79,12 +81,12 @@ async function onPrint() {
     <Dialog
       v-model:visible="visible"
       modal
-      header="QR Image"
+      :header="t('qrPreview.qrImg')"
       :style="{ width: '520px', maxWidth: '95vw' }"
     >
       <div class="flex justify-center bg-white">
         <img v-if="src" :src="src" alt="QR" class="max-w-full max-h-[70vh] object-contain block" />
-        <div v-else class="text-slate-600">No QR image.</div>
+        <div v-else class="text-slate-600">{{ t('qrPreview.noQrImg') }}.</div>
       </div>
 
       <template v-if="canPrint" #footer>
@@ -92,7 +94,7 @@ async function onPrint() {
           <BaseIconButton
             icon="pi pi-file-pdf"
             size="small"
-            label="Export Qr PDF"
+            :label="t('qrPreview.exportQrPdf')"
             severity="secondary"
             outlined
             :loading="printing"

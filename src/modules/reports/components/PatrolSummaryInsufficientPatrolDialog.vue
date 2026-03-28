@@ -22,6 +22,18 @@ const visibleProxy = computed({
 })
 
 const dialogTitle = computed(() => `Shift: ${props.shiftDate || '-'}`)
+
+function getPatrolTimeClass(value: string) {
+  if (value.includes('17:00 - 17:59')) {
+    return 'bg-amber-100 text-amber-700'
+  }
+
+  if (value.includes('20:00 - 20:59')) {
+    return 'bg-sky-100 text-sky-700'
+  }
+
+  return 'bg-slate-100 text-slate-700'
+}
 </script>
 
 <template>
@@ -52,9 +64,14 @@ const dialogTitle = computed(() => `Shift: ${props.shiftDate || '-'}`)
         </template>
       </Column>
 
-      <Column field="patrol_time" header="Patrol Time" style="min-width: 18rem">
+      <Column field="patrol_time" header="Patrol Time" sortable>
         <template #body="{ data }">
-          <div class="text-left">{{ data.patrol_time || '-' }}</div>
+          <span
+            class="inline-flex items-center rounded-md px-2 py-1 text-sm font-medium"
+            :class="getPatrolTimeClass(data.patrol_time)"
+          >
+            {{ data.patrol_time }}
+          </span>
         </template>
       </Column>
 
