@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Dialog from 'primevue/dialog'
 import Select from 'primevue/select'
 
@@ -29,6 +30,7 @@ export type UserFormSubmitPayload = {
   submit: (actor_id: string) => Promise<void>
 }
 
+const { t, locale } = useI18n()
 const props = defineProps<{
   visible: boolean
   mode: UserFormMode
@@ -46,7 +48,11 @@ const emit = defineEmits<{
 const isView = computed(() => props.mode === 'view')
 const isNew = computed(() => props.mode === 'new')
 const title = computed(() =>
-  props.mode === 'new' ? 'Create New User' : props.mode === 'edit' ? 'Edit User' : 'User Detail',
+  props.mode === 'new'
+    ? t('userForm.newUser')
+    : props.mode === 'edit'
+      ? t('userForm.editUser')
+      : t('userForm.userDetail'),
 )
 
 const submitted = ref(false)
@@ -158,52 +164,52 @@ function submit() {
     @update:visible="emit('update:visible', $event)"
     @hide="close"
   >
-    <div v-if="!model" class="text-slate-500">No data.</div>
+    <div v-if="!model" class="text-slate-500">{{ t('common.noData') }}.</div>
 
     <div v-else class="space-y-4">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="block text-sm text-slate-600 mb-1">User Name</label>
+          <label class="block text-sm text-slate-600 mb-1">{{ t('userForm.userName') }}</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ form.user_name }}</div>
           <BaseInput
             v-else
             v-model="form.user_name"
             label=""
             size="small"
-            placeholder="Enter Name"
+            :placeholder="t('userForm.enterName')"
             :hasError="userNameError"
-            message="User Name is required"
+            :message="t('userForm.error.userNameRequired')"
           />
         </div>
 
         <div>
-          <label class="block text-sm text-slate-600 mb-1">User Code</label>
+          <label class="block text-sm text-slate-600 mb-1">{{ t('userForm.userCode') }}</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ form.user_code }}</div>
           <BaseInput
             v-else
             v-model="form.user_code"
             label=""
             size="small"
-            placeholder="Enter code"
+            :placeholder="t('userForm.enterCode')"
             :hasError="userCodeError"
-            message="User Code is required"
+            :message="t('userForm.error.userCodeRequired')"
           />
         </div>
 
         <div v-if="!isView" class="md:col-span-2">
-          <label class="block text-sm text-slate-600 mb-1">Password</label>
+          <label class="block text-sm text-slate-600 mb-1">{{ t('userForm.pasword') }}</label>
           <BasePasswordInput
             v-model="form.user_password"
             label=""
             size="small"
-            placeholder="Enter password"
+            :placeholder="t('userForm.enterPassword')"
             :hasError="passwordError"
-            :message="isNew ? 'Password is required' : ''"
+            :message="isNew ? t('userForm.error.passwordRequired') : ''"
           />
         </div>
 
         <div>
-          <label class="block text-sm text-slate-600 mb-1">Role</label>
+          <label class="block text-sm text-slate-600 mb-1">{{ t('userForm.role') }}</label>
           <div v-if="isView" class="text-slate-800 font-semibold">
             {{ roleLabel }}
           </div>
@@ -216,7 +222,7 @@ function submit() {
               optionLabel="label"
               size="small"
               optionValue="value"
-              placeholder="Select role"
+              :placeholder="t('userForm.selectRole')"
             />
             <BaseMessage
               style="margin: 8px 0px"
@@ -224,13 +230,13 @@ function submit() {
               severity="error"
               size="small"
               variant="simple"
-              message="Role is required"
+              :message="t('userForm.error.roleRequired')"
             />
           </template>
         </div>
 
         <div>
-          <label class="block text-sm text-slate-600 mb-1">Area</label>
+          <label class="block text-sm text-slate-600 mb-1">{{ t('userForm.area') }}</label>
           <div v-if="isView" class="text-slate-800 font-semibold">
             {{ areaLabel }}
           </div>
@@ -243,7 +249,7 @@ function submit() {
               optionLabel="label"
               size="small"
               optionValue="value"
-              placeholder="Select area"
+              :placeholder="t('userForm.selectArea')"
             />
             <BaseMessage
               style="margin: 8px 0px"
@@ -251,15 +257,27 @@ function submit() {
               severity="error"
               size="small"
               variant="simple"
-              message="Area is required"
+              :message="t('userForm.areaRequired')"
             />
           </template>
         </div>
       </div>
 
       <div class="flex justify-end gap-2 pt-3 border-t border-slate-200">
-        <BaseButton label="Cancel" severity="danger" outlined @click="close" />
-        <BaseButton v-if="!isView" label="Submit" severity="success" @click="submit" />
+        <BaseButton
+          :label="t('common.cancel')"
+          size="small"
+          severity="danger"
+          outlined
+          @click="close"
+        />
+        <BaseButton
+          v-if="!isView"
+          :label="t('commin.submit')"
+          size="small"
+          severity="success"
+          @click="submit"
+        />
       </div>
     </div>
   </Dialog>

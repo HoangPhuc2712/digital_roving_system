@@ -12,6 +12,7 @@ import BaseInput from '@/components/common/inputs/BaseInput.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import BaseMessage from '@/components/common/messages/BaseMessage.vue'
 import QrPreview from '@/modules/checkpoints/components/QrPreview.vue'
+import { normalizeImageSource } from '@/utils/base64'
 
 import type { RouteDetailModel } from '@/modules/routes/routes.types'
 import {
@@ -19,6 +20,7 @@ import {
   updateRouteMock,
   fetchScanPointsByArea,
 } from '@/modules/routes/routes.api'
+import { useI18n } from 'vue-i18n'
 
 export type RouteFormMode = 'new' | 'view' | 'edit'
 
@@ -75,9 +77,15 @@ const initializing = ref(false)
 const submitted = ref(false)
 const addScanPointSubmitted = ref(false)
 
+const { t, locale } = useI18n()
+
 const isView = computed(() => props.mode === 'view')
 const title = computed(() =>
-  props.mode === 'new' ? 'Create New Route' : props.mode === 'edit' ? 'Edit Route' : 'Route Detail',
+  props.mode === 'new'
+    ? t('routeForm.newRoute')
+    : props.mode === 'edit'
+      ? t('routeForm.editRoute')
+      : t('routeForm.routeDetail'),
 )
 
 const areaLabel = computed(() => {
@@ -153,11 +161,7 @@ function getDisplayOrder(detail: RouteDetailModel) {
 }
 
 function getQrValue(detail: RouteDetailModel) {
-  const s = String(detail.cp_qr ?? '').trim()
-  if (!s) return ''
-  if (s.startsWith('data:image/')) return s
-  if (s.startsWith('http://') || s.startsWith('https://')) return s
-  return `data:image/png;base64,${s}`
+  return normalizeImageSource(String(detail.cp_qr ?? ''), { fallbackExt: 'png' })
 }
 
 function applyDetailMetadata() {
@@ -354,31 +358,31 @@ function submit() {
     @update:visible="emit('update:visible', $event)"
     @hide="close"
   >
-    <div v-if="!model" class="text-slate-500">No data.</div>
+    <div v-if="!model" class="text-slate-500">{{ t('common.noData') }}.</div>
 
     <div v-else class="space-y-4">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div v-if="isView">
-          <label class="block text-sm text-slate-600 mb-1">Route Code</label>
+          <label class="block text-sm text-slate-600 mb-1">{{ t('routeForm.routeCode') }}</label>
           <div class="text-slate-800 font-semibold">{{ form.route_code || '—' }}</div>
         </div>
 
         <div>
-          <label class="block text-sm text-slate-600 mb-1">Route Name</label>
+          <label class="block text-sm text-slate-600 mb-1">{{ t('routeForm.routeName') }}</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ form.route_name }}</div>
           <BaseInput
             v-else
             v-model="form.route_name"
             label=""
             size="small"
-            placeholder="Enter name"
+            :placeholder="t('routeForm.enterName')"
             :hasError="routeNameError"
-            message="Route Name is required"
+            :message="t('routeForm.error.routeNameRequired')"
           />
         </div>
 
         <div>
-          <label class="block text-sm text-slate-600 mb-1">Area</label>
+          <label class="block text-sm text-slate-600 mb-1">{{ t('routeForm.area') }}</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ areaLabel }}</div>
           <template v-else>
             <Select
@@ -389,7 +393,7 @@ function submit() {
               optionLabel="label"
               size="small"
               optionValue="value"
-              placeholder="Select area"
+              :placeholder="t('routeForm.selectArea')"
             />
             <BaseMessage
               style="margin: 8px 0px"
@@ -397,13 +401,13 @@ function submit() {
               severity="error"
               size="small"
               variant="simple"
-              message="Area is required"
+              :message="t('routeForm.error.areaRequired')"
             />
           </template>
         </div>
 
         <div>
-          <label class="block text-sm text-slate-600 mb-1">Role</label>
+          <label class="block text-sm text-slate-600 mb-1">{{ t('routeForm.role') }}</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ roleLabel }}</div>
           <template v-else>
             <Select
@@ -414,7 +418,7 @@ function submit() {
               optionLabel="label"
               size="small"
               optionValue="value"
-              placeholder="Select role"
+              :placeholder="t('routeForm.selectRole')"
             />
             <BaseMessage
               style="margin: 8px 0px"
@@ -422,13 +426,15 @@ function submit() {
               severity="error"
               size="small"
               variant="simple"
-              message="Role is required"
+              :message="t('routeForm.error.roleRequired')"
             />
           </template>
         </div>
 
         <div>
-          <label class="block text-sm text-slate-600 mb-1">Route Priority</label>
+          <label class="block text-sm text-slate-600 mb-1">{{
+            t('routeForm.routePriority')
+          }}</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ form.route_priority }}</div>
           <InputNumber
             v-else
@@ -445,7 +451,7 @@ function submit() {
         </div>
 
         <div>
-          <label class="block text-sm text-slate-600 mb-1">Total Minute</label>
+          <label class="block text-sm text-slate-600 mb-1">{{ t('routeForm.totalMinutes') }}</label>
           <div v-if="isView" class="text-slate-800 font-semibold">
             {{ form.route_total_minute }}:00
           </div>
@@ -464,7 +470,7 @@ function submit() {
       <div class="border-t border-slate-200 pt-3 space-y-3">
         <div v-if="!isView" class="flex items-end gap-3">
           <div class="flex-1">
-            <label class="block text-sm text-slate-600 mb-1">Add Check Point</label>
+            <label class="block text-sm text-slate-600 mb-1">{{ t('routeForm.addCp') }}</label>
             <MultiSelect
               v-model="form.selected_cp_ids"
               class="w-full"
@@ -475,7 +481,7 @@ function submit() {
               optionGroupChildren="items"
               size="small"
               optionValue="value"
-              placeholder="Select Check point"
+              :placeholder="t('routeForm.selectCheckpoint')"
               :loading="scanLoading"
               :disabled="isView || !form.role_id"
               display="chip"
@@ -488,14 +494,14 @@ function submit() {
               severity="error"
               size="small"
               variant="simple"
-              message="Please select at least one Check Point"
+              :message="t('routeForm.error.cpRequired')"
             />
           </div>
 
           <div>
             <BaseIconButton
               icon="pi pi-plus"
-              label="Add"
+              :label="t('common.add')"
               size="small"
               severity="success"
               :disabled="isView || !form.role_id || !form.selected_cp_ids.length"
@@ -505,7 +511,7 @@ function submit() {
         </div>
 
         <div v-if="!form.role_id" class="text-sm text-slate-500">
-          Please select Role to load Check Points.
+          {{ t('routeForm.roleCheckpointLoad') }}.
         </div>
 
         <BaseMessage
@@ -514,11 +520,12 @@ function submit() {
           severity="error"
           size="small"
           variant="simple"
-          message="Please add at least one Check Point"
+          :message="t('routeForm.error.addCpRequired')"
         />
 
         <div v-if="form.role_id || isView">
           <DataTable
+            :key="`route-form-list-table-${locale}`"
             :value="sortedDetails"
             dataKey="cp_id"
             class="w-full"
@@ -527,19 +534,19 @@ function submit() {
           >
             <Column v-if="!isView" rowReorder headerStyle="width: 3rem" />
 
-            <Column header="CP Priority" style="width: 8rem">
+            <Column :header="t('routeForm.checkpointPriority')" style="width: 8rem">
               <template #body="{ data }">
                 <div class="text-slate-800">{{ getDisplayOrder(data) }}</div>
               </template>
             </Column>
 
-            <Column header="Check Point" style="min-width: 18rem">
+            <Column :header="t('routeForm.checkpointName')" style="min-width: 18rem">
               <template #body="{ data }">
                 <div class="text-slate-800">{{ data.cp_code }} - {{ data.cp_name }}</div>
               </template>
             </Column>
 
-            <Column header="QR Image" style="width: 8rem">
+            <Column :header="t('routeForm.qrImg')" style="width: 8rem">
               <template #body="{ data }">
                 <QrPreview
                   :value="getQrValue(data)"
@@ -554,7 +561,7 @@ function submit() {
               </template>
             </Column>
 
-            <Column header="Minutes" style="width: 10rem">
+            <Column :header="t('routeForm.minutes')" style="width: 10rem">
               <template #body="{ data }">
                 <div v-if="isView" class="text-slate-800">{{ data.rd_minute }}</div>
                 <InputNumber
@@ -573,7 +580,7 @@ function submit() {
               </template>
             </Column>
 
-            <Column v-if="!isView" header="Action" style="width: 9rem">
+            <Column v-if="!isView" :header="t('common.action')" style="width: 9rem">
               <template #body="{ data }">
                 <div class="flex justify-start">
                   <BaseIconButton
@@ -593,8 +600,20 @@ function submit() {
       </div>
 
       <div class="flex justify-end gap-2 pt-3 border-t border-slate-200">
-        <BaseButton label="Cancel" severity="danger" outlined @click="close" />
-        <BaseButton v-if="!isView" label="Submit" severity="success" @click="submit" />
+        <BaseButton
+          :label="t('common.cancel')"
+          size="small"
+          severity="danger"
+          outlined
+          @click="close"
+        />
+        <BaseButton
+          v-if="!isView"
+          :label="t('common.submit')"
+          size="small"
+          severity="success"
+          @click="submit"
+        />
       </div>
     </div>
   </Dialog>

@@ -14,6 +14,7 @@ const fallbackLanguage: LanguageOption = { code: 'en', flag: '🇺🇸' }
 const languages: LanguageOption[] = [
   { code: 'en', flag: '🇺🇸' },
   { code: 'vi', flag: '🇻🇳' },
+  { code: 'zh-CN', flag: '🇨🇳' },
   { code: 'zh-TW', flag: '🇹🇼' },
 ]
 

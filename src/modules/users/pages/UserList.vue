@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import Column from 'primevue/column'
 import Tag from 'primevue/tag'
@@ -33,6 +34,7 @@ const toast = useToast()
 const store = useUsersStore()
 const auth = useAuthStore()
 const router = useRouter()
+const { t, locale } = useI18n()
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('users.manage'))
 const exporting = ref(false)
@@ -63,7 +65,7 @@ onMounted(async () => {
 })
 
 function statusLabel(s: number) {
-  return s === 1 ? 'Active' : 'Inactive'
+  return s === 1 ? t('userList.userStatusOptions.active') : t('userList.userStatusOptions.inactive')
 }
 
 function statusSeverity(s: number) {
@@ -139,22 +141,22 @@ function closeDeleteConfirm() {
 }
 
 async function onDelete(row: UserRow) {
-  openDeleteConfirm(`Are you sure you want to delete user ${row.user_name}?`, async () => {
+  openDeleteConfirm(`${t('userList.error.areYouSure')} ${row.user_name}?`, async () => {
     try {
       await deleteUserMock({ user_id: row.user_id, actor_id: auth.user?.user_id ?? '' })
       await store.load()
       selectedUsers.value = null
       toast.add({
         severity: 'success',
-        summary: 'Deleted',
-        detail: 'User has been deleted.',
+        summary: t('common.deleted'),
+        detail: t('userList.success.deleteDetail'),
         life: 2000,
       })
     } catch (e: any) {
       toast.add({
         severity: 'error',
-        summary: 'Error',
-        detail: e?.message ?? 'Failed to delete user.',
+        summary: t('common.error'),
+        detail: e?.message ?? t('userList.error.deleteFailed'),
         life: 3000,
       })
       throw e
@@ -167,7 +169,7 @@ function confirmDeleteSelected() {
   if (!items.length) return
 
   openDeleteConfirm(
-    `Are you sure you want to delete ${items.length} selected user(s)?`,
+    `${t('userList.error.areYouSureMultiple')} ${items.length} ${t('userList.error.selectedUsers')}?`,
     async () => {
       try {
         const actor = auth.user?.user_id ?? ''
@@ -178,15 +180,15 @@ function confirmDeleteSelected() {
         selectedUsers.value = null
         toast.add({
           severity: 'success',
-          summary: 'Deleted',
-          detail: 'Selected users have been deleted.',
+          summary: t('common.deleted'),
+          detail: t('userList.success.deleteDetailMultiple'),
           life: 2000,
         })
       } catch (e: any) {
         toast.add({
           severity: 'error',
-          summary: 'Error',
-          detail: e?.message ?? 'Failed to delete users.',
+          summary: t('common.error'),
+          detail: e?.message ?? t('userList.error.deleteFailedMultiple'),
           life: 3000,
         })
         throw e
@@ -220,8 +222,8 @@ async function onExport() {
   } catch (e: any) {
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: String(e?.message ?? 'Failed to export users.'),
+      summary: t('common.error'),
+      detail: String(e?.message ?? t('userList.error.exportFailed')),
       life: 3000,
     })
   } finally {
@@ -240,15 +242,18 @@ async function handleSubmit(payload: UserFormSubmitPayload) {
     toast.add({
       severity: 'success',
       summary: 'Saved',
-      detail: formMode.value === 'new' ? 'User has been created.' : 'User has been updated.',
+      detail:
+        formMode.value === 'new'
+          ? t('userList.success.userCreated')
+          : t('userList.success.userUpdated'),
       life: 2000,
     })
   } catch (e: any) {
     const msg =
       e?.message === 'USER_CODE_EXISTS'
-        ? 'User code already exists.'
-        : (e?.message ?? 'Failed to save user.')
-    toast.add({ severity: 'error', summary: 'Error', detail: msg, life: 3000 })
+        ? t('userList.error.codeExists')
+        : (e?.message ?? t('userList.error.saveFailed'))
+    toast.add({ severity: 'error', summary: t('common.error'), detail: msg, life: 3000 })
   }
 }
 
@@ -259,7 +264,7 @@ function onViewPatrolPath(row: UserRow) {
 
 <template>
   <div class="space-y-3">
-    <div class="text-[26px] font-semibold text-slate-800">Users Management</div>
+    <div class="text-[26px] font-semibold text-slate-800">{{ t('userList.title') }}</div>
 
     <BaseDataTable
       title="Users"
@@ -279,7 +284,7 @@ function onViewPatrolPath(row: UserRow) {
         <div class="flex gap-2">
           <BaseIconButton
             icon="pi pi-plus"
-            label="New"
+            :label="t('common.new')"
             size="small"
             severity="success"
             :disabled="!canManage"
@@ -287,7 +292,7 @@ function onViewPatrolPath(row: UserRow) {
           />
           <BaseIconButton
             icon="pi pi-trash"
-            label="Delete"
+            :label="t('common.delete')"
             size="small"
             severity="danger"
             outlined
@@ -300,7 +305,7 @@ function onViewPatrolPath(row: UserRow) {
       <template #toolbar-end>
         <BaseIconButton
           icon="pi pi-file-excel"
-          label="Export"
+          :label="t('common.export')"
           size="small"
           severity="secondary"
           outlined
@@ -318,10 +323,10 @@ function onViewPatrolPath(row: UserRow) {
         sortDisabled
       />
 
-      <Column field="user_name" header="Name" style="min-width: 14rem" />
-      <Column field="user_code" header="User Code" style="min-width: 10rem" />
+      <Column field="user_name" :header="t('userList.userName')" style="min-width: 14rem" />
+      <Column field="user_code" :header="t('userList.userCode')" style="min-width: 10rem" />
       <Column
-        header="Area"
+        :header="t('userList.area')"
         style="min-width: 14rem"
         sortField="area_name"
         :filterMenu="{
@@ -337,7 +342,7 @@ function onViewPatrolPath(row: UserRow) {
       </Column>
 
       <Column
-        header="Role"
+        :header="t('userList.role')"
         style="min-width: 12rem"
         sortField="role_name"
         :filterMenu="{
@@ -352,7 +357,7 @@ function onViewPatrolPath(row: UserRow) {
         </template>
       </Column>
 
-      <Column header="Status" style="min-width: 10rem" sortField="user_status">
+      <Column :header="t('userList.status')" style="min-width: 10rem" sortField="user_status">
         <template #body="{ data }">
           <Tag
             :value="statusLabel(data.user_status)"
@@ -361,7 +366,7 @@ function onViewPatrolPath(row: UserRow) {
         </template>
       </Column>
 
-      <Column header="Action" style="width: 260px" sortDisabled>
+      <Column :header="t('common.action')" style="width: 260px" sortDisabled>
         <template #body="{ data }">
           <div class="flex gap-2 justify-start">
             <BaseIconButton

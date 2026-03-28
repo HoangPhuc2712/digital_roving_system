@@ -97,10 +97,19 @@ export const usePatrolSummaryReportsStore = defineStore('patrolSummaryReports', 
           ]),
         )
 
-        this.rows = rows.map((row) => ({
-          ...row,
-          area_name: this.areaLabelMap[row.area_id] || row.area_name || `Area ${row.area_id}`,
-        }))
+        this.rows = rows.map((row) => {
+          const resolvedAreaName =
+            this.areaLabelMap[row.area_id] || row.area_name || `Area ${row.area_id}`
+
+          return {
+            ...row,
+            area_name: resolvedAreaName,
+            insufficient_patrol_details: (row.insufficient_patrol_details ?? []).map((detail) => ({
+              ...detail,
+              area_name: resolvedAreaName,
+            })),
+          }
+        })
       } finally {
         this.loading = false
       }

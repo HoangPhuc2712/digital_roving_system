@@ -43,18 +43,6 @@
                 @update:modelDateTo="emit('update:modelDateTo', $event)"
               />
             </div>
-
-            <div v-if="props.showSearch" :class="props.searchWidthClass" class="min-w-0">
-              <BaseInput
-                :modelValue="props.modelSearch ?? ''"
-                label=""
-                inputIcon="pi pi-search"
-                size="small"
-                class="w-full"
-                :placeholder="props.searchPlaceholder || t('common.searchPlaceholder')"
-                @update:modelValue="emit('update:modelSearch', $event)"
-              />
-            </div>
           </div>
 
           <div class="flex shrink-0 justify-end">
@@ -110,7 +98,6 @@ import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
 
 import BaseDateSelection from '@/components/common/filters/BaseDateSelection.vue'
-import BaseInput from '@/components/common/inputs/BaseInput.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 
 type AnyRow = Record<string, any>
@@ -244,9 +231,7 @@ const hasToolbar = computed(() => {
   return hasRenderableNodes(startNodes) || hasRenderableNodes(endNodes)
 })
 
-const showTopFilters = computed(() => {
-  return props.showSearch || props.showDateSelection
-})
+const showTopFilters = computed(() => true)
 
 const FilterMenuControl = defineComponent({
   name: 'BaseDataTableFilterMenuControl',
@@ -323,8 +308,8 @@ const FilterMenuControl = defineComponent({
             optionValue: filterProps.config.optionValue ?? 'value',
             placeholder: filterProps.config.placeholder ?? '',
             showClear: filterProps.config.showClear ?? true,
-            filter: filterProps.config.filter ?? false,
-            class: 'w-full',
+            filter: filterProps.config.filter ?? true,
+            class: 'app-filter-select w-full',
             size: 'small',
             appendTo: 'self',
           }),
@@ -338,8 +323,8 @@ const FilterMenuControl = defineComponent({
             optionValue: filterProps.config.secondaryOptionValue ?? 'value',
             placeholder: filterProps.config.secondaryPlaceholder ?? '',
             showClear: filterProps.config.showClear ?? true,
-            filter: filterProps.config.secondaryFilter ?? filterProps.config.filter ?? false,
-            class: 'w-full',
+            filter: filterProps.config.secondaryFilter ?? filterProps.config.filter ?? true,
+            class: 'app-filter-select w-full',
             size: 'small',
             appendTo: 'self',
             disabled: !allSecondaryOptions.length,
@@ -359,7 +344,7 @@ const FilterMenuControl = defineComponent({
           placeholder: filterProps.config.placeholder ?? 'Select',
           filter: filterProps.config.filter ?? true,
           showClear: filterProps.config.showClear ?? true,
-          class: 'w-[240px]',
+          class: 'app-filter-multiselect w-[240px]',
           size: 'small',
           appendTo: 'self',
           maxSelectedLabels: 2,
@@ -391,8 +376,8 @@ const FilterMenuControl = defineComponent({
         optionValue: filterProps.config.optionValue ?? 'value',
         placeholder: filterProps.config.placeholder ?? '',
         showClear: filterProps.config.showClear ?? true,
-        filter: filterProps.config.filter ?? false,
-        class: 'w-[240px]',
+        filter: filterProps.config.filter ?? true,
+        class: 'app-filter-select w-[240px]',
         size: 'small',
         appendTo: 'self',
       })
@@ -705,3 +690,18 @@ function buildFilterControlKey(config: ColumnFilterMenuConfig, localValue: any) 
   return `${config.key}::${config.type ?? 'select'}::${valueSignature}::${optionSignature}::${secondaryOptionSignature}`
 }
 </script>
+
+<style scoped>
+:deep(.app-filter-select .p-select-filter),
+:deep(.app-filter-multiselect .p-multiselect-filter) {
+  font-size: 0.875rem;
+  min-height: 2rem;
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+}
+
+:deep(.app-filter-select .p-select-filter-container),
+:deep(.app-filter-multiselect .p-multiselect-filter-container) {
+  margin-bottom: 0.5rem;
+}
+</style>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Dialog from 'primevue/dialog'
 import Checkbox from 'primevue/checkbox'
 import MultiSelect from 'primevue/multiselect'
@@ -25,6 +26,7 @@ export type RoleFormSubmitPayload = {
   submit: (actor_id: string) => Promise<void>
 }
 
+const { t, locale } = useI18n()
 const props = defineProps<{
   visible: boolean
   mode: RoleFormMode
@@ -40,7 +42,11 @@ const emit = defineEmits<{
 
 const isView = computed(() => props.mode === 'view')
 const title = computed(() =>
-  props.mode === 'new' ? 'Create New Role' : props.mode === 'edit' ? 'Edit Role' : 'Role Detail',
+  props.mode === 'new'
+    ? t('roleForm.newRole')
+    : props.mode === 'edit'
+      ? t('roleForm.roleEdit')
+      : t('roleForm.roleDetail'),
 )
 
 const submitted = ref(false)
@@ -130,29 +136,31 @@ function submit() {
     @update:visible="emit('update:visible', $event)"
     @hide="close"
   >
-    <div v-if="!model" class="text-slate-500">No data.</div>
+    <div v-if="!model" class="text-slate-500">{{ t('common.noData') }}.</div>
 
     <div v-else class="space-y-4">
       <div v-if="isView" class="grid grid-cols-1 gap-4 md:grid-cols-3">
         <div>
-          <label class="block text-sm text-slate-600 mb-1">Role Code</label>
+          <label class="block text-sm text-slate-600 mb-1">{{ t('roleForm.roleCode') }}</label>
           <div class="text-slate-800 font-semibold">{{ form.role_code || '—' }}</div>
         </div>
 
         <div>
-          <label class="block text-sm text-slate-600 mb-1">Role Name</label>
+          <label class="block text-sm text-slate-600 mb-1">{{ t('roleForm.roleName') }}</label>
           <div class="text-slate-800 font-semibold">{{ form.role_name }}</div>
         </div>
 
         <div>
-          <label class="block text-sm text-slate-600 mb-1">Administration Permission</label>
+          <label class="block text-sm text-slate-600 mb-1">{{
+            t('roleForm.administrationPermission')
+          }}</label>
           <div class="text-slate-800 font-semibold">
             {{ form.role_is_admin ? 'Yes' : 'No' }}
           </div>
         </div>
 
         <div class="md:col-span-3">
-          <label class="block text-sm text-slate-600 mb-1">Permissions</label>
+          <label class="block text-sm text-slate-600 mb-1">{{ t('roleForm.permission') }}</label>
           <div class="text-slate-800 font-semibold">
             <span v-if="permissionLabels.length">{{ permissionLabels.join(', ') }}</span>
             <span v-else class="text-slate-500 font-normal">—</span>
@@ -162,19 +170,21 @@ function submit() {
 
       <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <label class="block text-sm text-slate-600 mb-1">Role Name</label>
+          <label class="block text-sm text-slate-600 mb-1">{{ t('roleForm.roleName') }}</label>
           <BaseInput
             v-model="form.role_name"
             label=""
             size="small"
-            placeholder="Enter name"
+            :placeholder="t('roleForm.enterName')"
             :hasError="roleNameError"
-            message="Role Name is required"
+            :message="t('roleForm.error.roleNameRequired')"
           />
         </div>
 
         <div>
-          <label class="block text-sm text-slate-600 mb-1">Access Permissions</label>
+          <label class="block text-sm text-slate-600 mb-1">{{
+            t('roleList.accessPermission')
+          }}</label>
           <MultiSelect
             v-model="form.mc_ids"
             class="w-full"
@@ -183,7 +193,7 @@ function submit() {
             optionLabel="label"
             size="small"
             optionValue="value"
-            placeholder="Select access permissions"
+            :placeholder="t('roleForm.selectPermission')"
             display="chip"
           />
           <BaseMessage
@@ -192,7 +202,7 @@ function submit() {
             severity="error"
             size="small"
             variant="simple"
-            message="Please select at least one access permission"
+            :message="t('roleForm.error.permissionRequired')"
           />
         </div>
 
@@ -200,22 +210,22 @@ function submit() {
           <div class="flex items-center gap-2 bg-transparent">
             <Checkbox v-model="form.role_hour_report" inputId="role-hour-report" binary />
             <label for="role-hour-report" class="text-sm text-slate-700">
-              Hour Report Permission
+              {{ t('roleForm.hourReportPermission') }}
             </label>
           </div>
 
           <div class="flex items-center gap-2 bg-transparent">
             <Checkbox v-model="form.role_is_admin" inputId="role-is-admin" binary />
             <label for="role-is-admin" class="text-sm text-slate-700">
-              Administration Permission
+              {{ t('roleForm.administrationPermission') }}
             </label>
           </div>
         </div>
       </div>
 
       <div class="flex justify-end gap-2 pt-3 border-t border-slate-200">
-        <BaseButton label="Cancel" severity="danger" outlined @click="close" />
-        <BaseButton v-if="!isView" label="Submit" severity="success" @click="submit" />
+        <BaseButton :label="t('common.cancel')" severity="danger" outlined @click="close" />
+        <BaseButton v-if="!isView" :label="t('common.submit')" severity="success" @click="submit" />
       </div>
     </div>
   </Dialog>

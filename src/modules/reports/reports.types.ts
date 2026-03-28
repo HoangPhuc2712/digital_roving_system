@@ -126,6 +126,16 @@ export type PatrolSummaryTimeProblemDetailRow = {
   standard_patrol_time: string
 }
 
+export type PatrolSummaryInsufficientPatrolDetailRow = {
+  row_id: string
+  area_name: string
+  cp_name: string
+  patrol_time: string
+  actual_time: string
+  guard_name: string
+  event_information: string
+}
+
 export type PatrolSummaryReportRow = {
   date_key: string
   date_label: string
@@ -139,9 +149,10 @@ export type PatrolSummaryReportRow = {
   abnormal_rate: number
   missed_patrol_details: PatrolSummaryMissedPatrolDetailRow[]
   time_problem_details: PatrolSummaryTimeProblemDetailRow[]
+  insufficient_patrol_details: PatrolSummaryInsufficientPatrolDetailRow[]
 }
 
-export type IncorrectScanReportRow = {
+export type IncorrectScanLogRow = {
   scql_id: number
   ps_id: number
   route_id: number

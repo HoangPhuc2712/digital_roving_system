@@ -511,6 +511,7 @@ async function onExport() {
           type: 'select',
           value: store.filterGuardId,
           options: store.guardOptions,
+          placeholder: t('reportList.filters.guardName'),
           filter: true,
         }"
       />

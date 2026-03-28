@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import Dialog from 'primevue/dialog'
+import { useI18n } from 'vue-i18n'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import BaseInput from '@/components/common/inputs/BaseInput.vue'
@@ -25,6 +26,7 @@ export type AreaFormSubmitPayload = {
   submit: (actor_id: string) => Promise<void>
 }
 
+const { t, locale } = useI18n()
 const props = defineProps<{
   visible: boolean
   mode: AreaFormMode
@@ -39,7 +41,11 @@ const emit = defineEmits<{
 
 const isView = computed(() => props.mode === 'view')
 const title = computed(() =>
-  props.mode === 'new' ? 'New Area' : props.mode === 'edit' ? 'Edit Area' : 'Area Detail',
+  props.mode === 'new'
+    ? t('areaForm.newArea')
+    : props.mode === 'edit'
+      ? t('areaForm.editArea')
+      : t('areaForm.areaDetail'),
 )
 
 const submitted = ref(false)
@@ -113,42 +119,54 @@ function submit() {
     @update:visible="emit('update:visible', $event)"
     @hide="close"
   >
-    <div v-if="!model" class="text-slate-500">No data.</div>
+    <div v-if="!model" class="text-slate-500">{{ t('areaForm.noData') }}.</div>
 
     <div v-else class="space-y-4">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="block text-sm text-slate-600 mb-1">Area Code</label>
+          <label class="block text-sm text-slate-600 mb-1">{{ t('areaForm.areaCode') }}</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ form.area_code }}</div>
           <BaseInput
             v-else
             v-model="form.area_code"
             label=""
             size="small"
-            placeholder="Enter code"
+            :placeholder="t('areaForm.enterCode')"
             :hasError="areaCodeError"
-            message="Area Code is required"
+            :message="t('areaForm.error.areaCodeRequired')"
           />
         </div>
 
         <div>
-          <label class="block text-sm text-slate-600 mb-1">Area Name</label>
+          <label class="block text-sm text-slate-600 mb-1">{{ t('areaForm.areaName') }}</label>
           <div v-if="isView" class="text-slate-800 font-semibold">{{ form.area_name }}</div>
           <BaseInput
             v-else
             v-model="form.area_name"
             label=""
             size="small"
-            placeholder="Enter name"
+            :placeholder="t('areaForm.enterName')"
             :hasError="areaNameError"
-            message="Area Name is required"
+            :message="t('areaForm.error.areaNameRequired')"
           />
         </div>
       </div>
 
       <div class="flex justify-end gap-2 pt-3 border-t border-slate-200">
-        <BaseButton label="Cancel" severity="danger" outlined @click="close" />
-        <BaseButton v-if="!isView" label="Submit" severity="success" @click="submit" />
+        <BaseButton
+          :label="t('common.cancel')"
+          size="small"
+          severity="danger"
+          outlined
+          @click="close"
+        />
+        <BaseButton
+          v-if="!isView"
+          :label="t('common.submit')"
+          size="small"
+          severity="success"
+          @click="submit"
+        />
       </div>
     </div>
   </Dialog>

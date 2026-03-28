@@ -1,18 +1,24 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useToast } from 'primevue/usetoast'
+import { useI18n } from 'vue-i18n'
 
 import Column from 'primevue/column'
 import Tag from 'primevue/tag'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
+import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import BaseConfirmDelete from '@/components/common/BaseConfirmDelete.vue'
 
 import { useAuthStore } from '@/stores/auth.store'
 import { useRoutesStore } from '@/modules/routes/routes.store'
 import type { RouteRow } from '@/modules/routes/routes.types'
-import { deleteRouteMock, fetchRouteById } from '@/modules/routes/routes.api'
+import {
+  createPatrolShiftsByTime,
+  deleteRouteMock,
+  fetchRouteById,
+} from '@/modules/routes/routes.api'
 import { exportRoutesXlsx } from '@/services/export/routes.export'
 
 import {
@@ -21,6 +27,8 @@ import {
   resetFiltersWithSearchDraft,
 } from '@/composables/useFilters'
 import { usePagination } from '@/composables/usePagination'
+
+import RouteCreateShiftsDialog from '../components/RouteCreateShiftsDialog.vue'
 
 import RouteForm, {
   type RouteFormMode,
@@ -31,6 +39,7 @@ import RouteForm, {
 const toast = useToast()
 const store = useRoutesStore()
 const auth = useAuthStore()
+const { t, locale } = useI18n()
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('routes.manage'))
 const exporting = ref(false)
@@ -49,11 +58,19 @@ const routeFilterAreaOptions = computed(() => {
 })
 
 const routeStatusOptions = [
-  { label: 'All', value: 'ALL' },
-  { label: 'Active', value: 'ACTIVE' },
-  { label: 'Inactive', value: 'INACTIVE' },
+  { label: t('routeList.routeStatusOptions.all'), value: t('routeList.routeStatusOptions.all') },
+  {
+    label: t('routeList.routeStatusOptions.active'),
+    value: t('routeList.routeStatusOptions.active'),
+  },
+  {
+    label: t('routeList.routeStatusOptions.inactive'),
+    value: t('routeList.routeStatusOptions.inactive'),
+  },
 ]
 const confirmDeleteVisible = ref(false)
+const createShiftsVisible = ref(false)
+const createShiftsLoading = ref(false)
 const confirmDeleteMessage = ref('')
 const confirmDeleteLoading = ref(false)
 const pendingDeleteAction = ref<null | (() => Promise<void>)>(null)
@@ -90,7 +107,9 @@ function formatSeconds(sec: number) {
 }
 
 function statusLabel(s: number) {
-  return s === 1 ? 'Active' : 'Inactive'
+  return s === 1
+    ? t('routeList.routeStatusOptions.active')
+    : t('routeList.routeStatusOptions.inactive')
 }
 function statusSeverity(s: number) {
   return s === 1 ? 'success' : 'secondary'
@@ -113,6 +132,52 @@ function mapRowToFormModel(row: RouteRow): RouteFormModel {
     route_priority: row.route_priority,
     route_total_minute: row.route_total_minute,
     details: row.details.map((d) => ({ ...d })),
+  }
+}
+
+function openCreateShifts() {
+  createShiftsVisible.value = true
+}
+
+async function submitCreateShifts(payload: { month: number; year: number }) {
+  const createdBy = auth.user?.user_id ?? ''
+  if (!createdBy) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Unable to determine the current user.',
+      life: 3000,
+    })
+    return
+  }
+
+  createShiftsLoading.value = true
+  try {
+    const ok = await createPatrolShiftsByTime({
+      month: payload.month,
+      year: payload.year,
+      createdBy,
+    })
+
+    toast.add({
+      severity: ok ? 'success' : 'warn',
+      summary: ok ? 'Success' : 'Notice',
+      detail: ok ? t('createShifts.success.shiftCreated') : t('createShifts.error.shiftError'),
+      life: 3000,
+    })
+
+    if (ok) {
+      createShiftsVisible.value = false
+    }
+  } catch (e: any) {
+    toast.add({
+      severity: 'error',
+      summary: t('common.error'),
+      detail: String(e?.message ?? t('createShifts.error.shiftFailed')),
+      life: 3000,
+    })
+  } finally {
+    createShiftsLoading.value = false
   }
 }
 
@@ -178,7 +243,7 @@ function closeDeleteConfirm() {
 
 async function onDelete(row: RouteRow) {
   openDeleteConfirm(
-    `Are you sure you want to delete route ${row.route_code} - ${row.route_name}?`,
+    `${t('routeList.error.deleteDetail')} ${row.route_code} - ${row.route_name}?`,
     async () => {
       try {
         await deleteRouteMock({ route_id: row.route_id, actor_id: auth.user?.user_id ?? '' })
@@ -186,15 +251,15 @@ async function onDelete(row: RouteRow) {
         selectedRoutes.value = null
         toast.add({
           severity: 'success',
-          summary: 'Deleted',
-          detail: 'Route has been deleted.',
+          summary: t('common.deleted'),
+          detail: t('routeList.success.deleteDetail'),
           life: 2000,
         })
       } catch (e: any) {
         toast.add({
           severity: 'error',
-          summary: 'Error',
-          detail: e?.message ?? 'Failed to delete route.',
+          summary: t('common.error'),
+          detail: e?.message ?? t('routeList.error.deleteDetail'),
           life: 3000,
         })
         throw e
@@ -208,7 +273,7 @@ function confirmDeleteSelected() {
   if (!items.length) return
 
   openDeleteConfirm(
-    `Are you sure you want to delete ${items.length} selected route(s)?`,
+    `${t('routeList.error.areYouSureMultiple')} ${items.length} ${t('routeList.error.selectedRoute')}?`,
     async () => {
       try {
         const actor = auth.user?.user_id ?? ''
@@ -219,15 +284,15 @@ function confirmDeleteSelected() {
         selectedRoutes.value = null
         toast.add({
           severity: 'success',
-          summary: 'Deleted',
-          detail: 'Selected routes have been deleted.',
+          summary: t('common.deleted'),
+          detail: t('routeList.success.deleteDetailMultiple'),
           life: 2000,
         })
       } catch (e: any) {
         toast.add({
           severity: 'error',
-          summary: 'Error',
-          detail: e?.message ?? 'Failed to delete routes.',
+          summary: t('common.error'),
+          detail: e?.message ?? t('routeList.error.deleteDetailMultiple'),
           life: 3000,
         })
         throw e
@@ -261,8 +326,8 @@ async function onExport() {
   } catch (e: any) {
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: String(e?.message ?? 'Failed to export routes.'),
+      summary: t('common.error'),
+      detail: String(e?.message ?? t('routeList.error.exportFailed')),
       life: 3000,
     })
   } finally {
@@ -281,15 +346,18 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
 
     toast.add({
       severity: 'success',
-      summary: 'Saved',
-      detail: formMode.value === 'new' ? 'Route has been created.' : 'Route has been updated.',
+      summary: t('common.save'),
+      detail:
+        formMode.value === 'new'
+          ? t('routeList.success.routeCreated')
+          : t('routeList.success.routeUpdated'),
       life: 2000,
     })
   } catch (e: any) {
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: e?.message ?? 'Failed to save route.',
+      summary: t('common.error'),
+      detail: e?.message ?? t('routeList.error.saveFailed'),
       life: 3000,
     })
   }
@@ -298,9 +366,10 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
 
 <template>
   <div class="space-y-3">
-    <div class="text-[26px] font-semibold text-slate-800">Patrol Routes</div>
+    <div class="text-[26px] font-semibold text-slate-800">{{ t('routeList.title') }}</div>
 
     <BaseDataTable
+      :key="`route-list-table-${locale}`"
       title="Routes"
       :value="store.filteredRows"
       :loading="store.loading"
@@ -318,7 +387,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
         <div class="flex gap-2">
           <BaseIconButton
             icon="pi pi-plus"
-            label="New"
+            :label="t('common.new')"
             size="small"
             severity="success"
             :disabled="!canManage"
@@ -326,12 +395,21 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
           />
           <BaseIconButton
             icon="pi pi-trash"
-            label="Delete"
+            :label="t('common.delete')"
             size="small"
             severity="danger"
             outlined
             :disabled="!canManage || !selectedRoutes || selectedRoutes.length === 0"
             @click="confirmDeleteSelected"
+          />
+          <BaseIconButton
+            icon="pi pi-sparkles"
+            :label="t('createShifts.button')"
+            size="small"
+            severity="info"
+            outlined
+            :disabled="!canManage"
+            @click="openCreateShifts"
           />
         </div>
       </template>
@@ -339,7 +417,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
       <template #toolbar-end>
         <BaseIconButton
           icon="pi pi-file-excel"
-          label="Export"
+          :label="t('common.export')"
           size="small"
           severity="secondary"
           outlined
@@ -357,11 +435,11 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
         sortDisabled
       />
 
-      <Column field="route_code" header="Route Code" style="min-width: 10rem" />
-      <Column field="route_name" header="Route Name" style="min-width: 14rem" />
+      <Column field="route_code" :header="t('routeList.routeCode')" style="min-width: 10rem" />
+      <Column field="route_name" :header="t('routeList.routeName')" style="min-width: 14rem" />
 
       <Column
-        header="Area"
+        :header="t('routeList.area')"
         style="min-width: 10rem"
         sortField="area_name"
         :filterMenu="{
@@ -376,28 +454,36 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
         </template>
       </Column>
 
-      <Column header="Role" style="min-width: 8rem" sortField="role_name">
+      <Column :header="t('routeList.role')" style="min-width: 8rem" sortField="role_name">
         <template #body="{ data }">
           <div class="text-slate-800">{{ data.role_name || data.role_code || '—' }}</div>
         </template>
       </Column>
 
-      <Column field="route_priority" header="Priority" style="min-width: 8rem" />
+      <Column field="route_priority" :header="t('routeList.priority')" style="min-width: 8rem" />
 
-      <Column header="Total Time" style="min-width: 10rem" sortField="route_total_second">
+      <Column
+        :header="t('routeList.totalTime')"
+        style="min-width: 10rem"
+        sortField="route_total_second"
+      >
         <template #body="{ data }">
           <div class="text-slate-800">{{ formatSeconds(data.route_total_second) }}</div>
         </template>
       </Column>
 
-      <Column header="Total Points" style="min-width: 8rem" sortField="details_count">
+      <Column
+        :header="t('routeList.totalPoints')"
+        style="min-width: 8rem"
+        sortField="details_count"
+      >
         <template #body="{ data }">
           <div class="text-slate-800">{{ data.details_count }}</div>
         </template>
       </Column>
 
       <Column
-        header="Status"
+        :header="t('routeList.status')"
         style="min-width: 10rem"
         sortField="route_status"
         :filterMenu="{
@@ -416,7 +502,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
         </template>
       </Column>
 
-      <Column header="Action" style="width: 260px" sortDisabled>
+      <Column :header="t('common.action')" style="width: 260px" sortDisabled>
         <template #body="{ data }">
           <div class="flex gap-2 justify-start">
             <BaseIconButton
@@ -457,6 +543,12 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
       @update:visible="confirmDeleteVisible = $event"
       @cancel="closeDeleteConfirm"
       @confirm="onConfirmDelete"
+    />
+
+    <RouteCreateShiftsDialog
+      v-model:visible="createShiftsVisible"
+      :loading="createShiftsLoading"
+      @submit="submitCreateShifts"
     />
 
     <RouteForm

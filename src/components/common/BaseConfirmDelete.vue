@@ -11,7 +11,7 @@
   >
     <div class="flex items-start gap-3 py-1">
       <i class="pi pi-exclamation-triangle text-3xl mt-0.5" />
-      <div class="text-md leading-6 text-slate-700">
+      <div class="text-md font-semibold leading-6 text-slate-700">
         {{ props.message }}
       </div>
     </div>

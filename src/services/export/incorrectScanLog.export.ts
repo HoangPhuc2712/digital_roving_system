@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs'
-import type { IncorrectScanReportRow } from '@/modules/reports/reports.types'
+import type { IncorrectScanLogRow } from '@/modules/reports/reports.types'
 
 function formatDateTime(iso: string) {
   const s = (iso ?? '').trim()
@@ -21,12 +21,12 @@ function applyBorder(cell: ExcelJS.Cell) {
   }
 }
 
-export async function exportIncorrectScanReportXlsx(params: {
-  rows: IncorrectScanReportRow[]
+export async function exportIncorrectScanLogXlsx(params: {
+  rows: IncorrectScanLogRow[]
   fileName: string
 }) {
   const wb = new ExcelJS.Workbook()
-  const ws = wb.addWorksheet('Incorrect Scan Reports')
+  const ws = wb.addWorksheet('Incorrect Scan Log')
 
   ws.columns = [
     { header: 'Route Name', key: 'route_name', width: 28 },

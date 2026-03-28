@@ -1,11 +1,13 @@
 import type { AxiosError } from 'axios'
 import { http } from '@/services/http/axios'
 import { endpoints } from '@/services/http/endpoints'
+import { normalizeImageSource } from '@/utils/base64'
 
 import type {
   CtpatReportRow,
-  IncorrectScanReportRow,
+  IncorrectScanLogRow,
   PatrolDetailReportRow,
+  PatrolSummaryInsufficientPatrolDetailRow,
   PatrolSummaryMissedPatrolDetailRow,
   PatrolSummaryReportRow,
   PatrolSummaryTimeProblemDetailRow,
@@ -24,6 +26,7 @@ type ApiGroupedReportImage = {
   priId?: number
   prId?: number
   priImage?: string
+  priUrl?: string
   priImageType?: string
 }
 
@@ -33,6 +36,7 @@ type ApiReportImage = {
   priGroup?: number
   priImageNote?: string
   priImage?: string
+  priUrl?: string
   priImageType?: string
 }
 
@@ -102,7 +106,7 @@ type ApiCtpatReportView = {
   routeName?: string
 }
 
-type ApiIncorrectScanReportView = {
+type ApiIncorrectScanLogView = {
   scqlId?: number
   psId?: number
   psStartAt?: string
@@ -239,20 +243,20 @@ function asArray<T>(value: T | T[] | null | undefined): T[] {
 }
 
 function normalizeImageSrc(rawValue: string, extValue?: string) {
-  const raw = String(rawValue ?? '').trim()
-  if (!raw) return ''
+  return normalizeImageSource(rawValue, {
+    fallbackExt:
+      String(extValue ?? 'jpeg')
+        .trim()
+        .toLowerCase() || 'jpeg',
+  })
+}
 
-  const ext =
-    String(extValue ?? 'jpeg')
-      .trim()
-      .toLowerCase() || 'jpeg'
-
-  if (raw.startsWith('data:image/')) return raw
-  return `data:image/${ext};base64,${raw}`
+function getApiReportImageSource(img: { priImage?: string; priUrl?: string }) {
+  return String(img?.priUrl ?? img?.priImage ?? '')
 }
 
 function normalizeFlatImage(img: ApiReportImage, fallbackIndex = 0): ReportImage {
-  const src = normalizeImageSrc(String(img?.priImage ?? ''), img?.priImageType)
+  const src = normalizeImageSrc(getApiReportImageSource(img), img?.priImageType)
 
   return {
     pri_id: Number(img?.priId ?? fallbackIndex + 1),
@@ -279,7 +283,7 @@ function normalizeNoteGroups(view: ApiPointReportView): ReportNoteGroup[] {
         pr_id: Number(img?.prId ?? prId),
         pri_group: Number(group?.prGroup ?? groupIndex + 1),
         pri_image_note: String(group?.priImageNote ?? ''),
-        pri_image: normalizeImageSrc(String(img?.priImage ?? ''), img?.priImageType),
+        pri_image: normalizeImageSrc(getApiReportImageSource(img), img?.priImageType),
         pri_image_type:
           String(img?.priImageType ?? 'jpeg')
             .trim()
@@ -973,7 +977,7 @@ export async function fetchPatrolDetailReportRows(): Promise<PatrolDetailReportR
   return normalizePatrolDetailRows(views)
 }
 
-function normalizeIncorrectScanReportRow(view: ApiIncorrectScanReportView): IncorrectScanReportRow {
+function normalizeIncorrectScanLogRow(view: ApiIncorrectScanLogView): IncorrectScanLogRow {
   const routeCode = String(view.routeCode ?? '').trim()
   const routeName = String(view.routeName ?? '').trim()
   const wrongCpCode = String(view.wrongCpCode ?? '').trim()
@@ -1014,14 +1018,14 @@ function normalizeIncorrectScanReportRow(view: ApiIncorrectScanReportView): Inco
   }
 }
 
-type FetchIncorrectScanReportRowsParams = {
+type FetchIncorrectScanLogRowsParams = {
   createdAtFrom?: Date | null
   createdAtTo?: Date | null
 }
 
-export async function fetchIncorrectScanReportRows(
-  params: FetchIncorrectScanReportRowsParams = {},
-): Promise<IncorrectScanReportRow[]> {
+export async function fetchIncorrectScanLogRows(
+  params: FetchIncorrectScanLogRowsParams = {},
+): Promise<IncorrectScanLogRow[]> {
   const body: Record<string, any> = {}
 
   if (params.createdAtFrom instanceof Date && Number.isFinite(params.createdAtFrom.getTime())) {
@@ -1033,13 +1037,11 @@ export async function fetchIncorrectScanReportRows(
   }
 
   const res = await http.post(endpoints.report.scanCpQrLog, body)
-  const payload = ensureSuccess<ApiIncorrectScanReportView[] | ApiIncorrectScanReportView>(
-    res.data,
-  ).data
+  const payload = ensureSuccess<ApiIncorrectScanLogView[] | ApiIncorrectScanLogView>(res.data).data
   const views = asArray(payload)
 
   return views
-    .map(normalizeIncorrectScanReportRow)
+    .map(normalizeIncorrectScanLogRow)
     .sort((a, b) => String(b.created_at ?? '').localeCompare(String(a.created_at ?? '')))
 }
 
@@ -1156,6 +1158,14 @@ function isWithinWindow(value: Date | null, windowStart: Date, windowEnd: Date) 
 //   return asArray(payload)
 // }
 
+async function fetchPatrolShiftReportViews() {
+  const res = await http.post(endpoints.report.patrolDetailReport, {})
+  const payload = ensureSuccess<ApiPatrolShiftReportView[] | ApiPatrolShiftReportView>(
+    res.data,
+  ).data
+  return asArray(payload)
+}
+
 async function fetchPlannedPatrolShiftByDate(date: Date) {
   const body = {
     psDay: date.getDate(),
@@ -1226,6 +1236,63 @@ function buildTimeProblemDetails(
   }))
 }
 
+function buildPatrolShiftViewDateKey(view: ApiPatrolShiftReportView) {
+  const raw = String(view.reportTimeFrom ?? '').trim()
+  if (!raw) return ''
+
+  const d = new Date(raw)
+  if (!Number.isFinite(d.getTime())) return ''
+  return normalizeDateOnly(d)
+}
+
+function buildInsufficientPatrolDetails(
+  areaName: string,
+  views: ApiPlannedPatrolShiftView[],
+  actualViewMap: Map<number, ApiPatrolShiftReportView>,
+): PatrolSummaryInsufficientPatrolDetailRow[] {
+  const rows: PatrolSummaryInsufficientPatrolDetailRow[] = []
+
+  for (const item of views) {
+    const psId = Number(item.psId ?? 0)
+    const actualView = actualViewMap.get(psId)
+    const actualPoints = Array.isArray(actualView?.pointReports) ? actualView.pointReports : []
+    const actualPointNameSet = new Set(
+      actualPoints
+        .map((point) =>
+          String(point?.cpName ?? '')
+            .trim()
+            .toLowerCase(),
+        )
+        .filter(Boolean),
+    )
+
+    const plannedRouteDetails = Array.isArray(item.routeDetails) ? item.routeDetails : []
+    const missingDetails = plannedRouteDetails.filter((detail) => {
+      const cpNameKey = String(detail?.cpName ?? '')
+        .trim()
+        .toLowerCase()
+      if (!cpNameKey) return false
+      return !actualPointNameSet.has(cpNameKey)
+    })
+
+    for (const [detailIndex, detail] of missingDetails.entries()) {
+      rows.push({
+        row_id: `${psId}-${Number(detail?.cpId ?? 0)}-${detailIndex}`,
+        area_name: areaName || `Area ${Number(item.areaId ?? 0)}`,
+        cp_name: String(detail?.cpName ?? '').trim() || '-',
+        patrol_time:
+          [formatShiftDatePrefix(item), extractShiftTimeRange(item)].filter(Boolean).join(' ') ||
+          '-',
+        actual_time: 'No Data',
+        guard_name: String(actualView?.reportName ?? item.reportName ?? '').trim() || '-',
+        event_information: '',
+      })
+    }
+  }
+
+  return rows
+}
+
 export async function fetchPatrolSummaryRows(
   dateFrom: Date,
   dateTo: Date,
@@ -1242,6 +1309,7 @@ export async function fetchPatrolSummaryRows(
   const days = eachDateInclusive(from, to)
   const now = new Date()
   const rows: PatrolSummaryReportRow[] = []
+  const actualShiftViews = await fetchPatrolShiftReportViews()
 
   for (const day of days) {
     let windowStart = maxDate(startOfLocalDay(day), from)
@@ -1261,13 +1329,19 @@ export async function fetchPatrolSummaryRows(
       isWithinWindow(buildPlannedShiftStart(item), windowStart, windowEnd),
     )
 
+    const dateLabel = normalizeDateOnly(day)
+    const actualViewsForDay = actualShiftViews.filter(
+      (item) => buildPatrolShiftViewDateKey(item) === dateLabel,
+    )
+    const actualViewMap = new Map<number, ApiPatrolShiftReportView>(
+      actualViewsForDay.map((item) => [Number(item.psId ?? 0), item]),
+    )
+
     const areaIds = new Set<number>()
     for (const item of filteredPlannedViews) {
       const areaId = Number(item.areaId ?? 0)
       if (areaId > 0) areaIds.add(areaId)
     }
-
-    const dateLabel = normalizeDateOnly(day)
 
     for (const areaId of [...areaIds].sort((a, b) => a - b)) {
       const plannedRows = filteredPlannedViews.filter((item) => Number(item.areaId ?? 0) === areaId)
@@ -1283,7 +1357,13 @@ export async function fetchPatrolSummaryRows(
       const missedPatrolDetails = buildMissedPatrolDetails(missedRows)
       const timeProblemDetails = buildTimeProblemDetails(timeProblemRows)
       const timeProblemCount = timeProblemRows.length
-      const insufficientCount = actualRows.filter((item) => Boolean(item.pointProblem)).length
+      const insufficientRows = actualRows.filter((item) => Boolean(item.pointProblem))
+      const insufficientCount = insufficientRows.length
+      const insufficientPatrolDetails = buildInsufficientPatrolDetails(
+        `Area ${areaId}`,
+        insufficientRows,
+        actualViewMap,
+      )
       const abnormalTotal = missedCount + timeProblemCount + insufficientCount
       const abnormalRate = requiredCount > 0 ? (abnormalTotal / requiredCount) * 100 : 0
 
@@ -1300,6 +1380,7 @@ export async function fetchPatrolSummaryRows(
         abnormal_rate: Number(abnormalRate.toFixed(2)),
         missed_patrol_details: missedPatrolDetails,
         time_problem_details: timeProblemDetails,
+        insufficient_patrol_details: insufficientPatrolDetails,
       })
     }
   }

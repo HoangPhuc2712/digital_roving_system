@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import Column from 'primevue/column'
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
+import { useI18n } from 'vue-i18n'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
@@ -31,14 +32,18 @@ import RoleForm, {
 const toast = useToast()
 const store = useRolesStore()
 const auth = useAuthStore()
+const { t, locale } = useI18n()
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('roles.manage'))
 const exporting = ref(false)
 
 const roleStatusOptions = [
-  { label: 'All', value: 'ALL' },
-  { label: 'Active', value: 'ACTIVE' },
-  { label: 'Inactive', value: 'INACTIVE' },
+  { label: t('roleList.roleStatusOptions.all'), value: t('roleList.roleStatusOptions.all') },
+  { label: t('roleList.roleStatusOptions.active'), value: t('roleList.roleStatusOptions.active') },
+  {
+    label: t('roleList.roleStatusOptions.inactive'),
+    value: t('roleList.roleStatusOptions.inactive'),
+  },
 ]
 const confirmDeleteVisible = ref(false)
 const confirmDeleteMessage = ref('')
@@ -67,7 +72,7 @@ onMounted(async () => {
 })
 
 function statusLabel(s: number) {
-  return s === 1 ? 'Active' : 'Inactive'
+  return s === 1 ? t('roleList.roleStatusOptions.active') : t('roleList.roleStatusOptions.inactive')
 }
 function statusSeverity(s: number) {
   return s === 1 ? 'success' : 'secondary'
@@ -162,29 +167,29 @@ async function onDelete(row: RoleRow) {
     if (assignedCount > 0) {
       toast.add({
         severity: 'warn',
-        summary: 'Delete Restricted',
-        detail: `Cannot delete because this role is assigned to ${assignedCount} user(s).`,
+        summary: t('roleList.error.deleteRestricted'),
+        detail: `${t('roleList.error.deleteDetail')} ${assignedCount} ${t('roleList.error.user')}.`,
         life: 3500,
       })
       return
     }
 
-    openDeleteConfirm(`Are you sure you want to delete role ${row.role_name}?`, async () => {
+    openDeleteConfirm(`${t('roleList.error.areYouSure')} ${row.role_name}?`, async () => {
       try {
         await deleteRole({ role_id: row.role_id, actor_id: auth.user?.user_id ?? '' })
         await store.load()
         selectedRoles.value = null
         toast.add({
           severity: 'success',
-          summary: 'Deleted',
-          detail: 'Role has been deleted.',
+          summary: t('common.deleted'),
+          detail: t('roleList.success.deleteDetail'),
           life: 2000,
         })
       } catch (e: any) {
         toast.add({
           severity: 'error',
-          summary: 'Error',
-          detail: e?.message ?? 'Failed to delete role.',
+          summary: t('common.error'),
+          detail: e?.message ?? t('roleList.error.deleteFailed'),
           life: 3000,
         })
         throw e
@@ -193,8 +198,8 @@ async function onDelete(row: RoleRow) {
   } catch (e: any) {
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: e?.message ?? 'Failed to validate role delete restriction.',
+      summary: t('common.error'),
+      detail: e?.message ?? t('roleList.error.validate'),
       life: 3000,
     })
   }
@@ -215,18 +220,18 @@ async function confirmDeleteSelected() {
 
       toast.add({
         severity: 'warn',
-        summary: 'Delete Restricted',
+        summary: t('roleList.error.deleteRestricted'),
         detail:
           blocked.length === 1 && firstBlocked
-            ? `Cannot delete because role "${firstBlocked.role_name}" is assigned to ${counts.get(firstBlocked.role_id) ?? 0} user(s).`
-            : `Cannot delete because ${blocked.length} selected role(s) are still assigned to ${totalAssigned} user(s).`,
+            ? `${t('roleList.error.DeleteDetailMultipleFirst')} "${firstBlocked.role_name}" ${t('roleList.error.assignedFirst')} ${counts.get(firstBlocked.role_id) ?? 0} ${t('roleList.error.user')}.`
+            : `${t('roleList.error.DeleteDetailMultipleSecond')} ${blocked.length} ${t('roleList.error.assignedSecond')} ${totalAssigned} ${t('roleList.error.user')}).`,
         life: 4000,
       })
       return
     }
 
     openDeleteConfirm(
-      `Are you sure you want to delete ${items.length} selected role(s)?`,
+      `${t('roleList.error.areYouSureMultiple')} ${items.length} ${t('roleList.error.multipleRoles')}?`,
       async () => {
         try {
           const actor = auth.user?.user_id ?? ''
@@ -239,15 +244,15 @@ async function confirmDeleteSelected() {
           selectedRoles.value = null
           toast.add({
             severity: 'success',
-            summary: 'Deleted',
-            detail: 'Selected roles have been deleted.',
+            summary: t('common.deleted'),
+            detail: t('roleList.success.deleteDetailMultiple'),
             life: 2000,
           })
         } catch (e: any) {
           toast.add({
             severity: 'error',
-            summary: 'Error',
-            detail: e?.message ?? 'Failed to delete roles.',
+            summary: t('common.error'),
+            detail: e?.message ?? t('roleList.error.deleteFailedMultiple'),
             life: 3000,
           })
           throw e
@@ -257,8 +262,8 @@ async function confirmDeleteSelected() {
   } catch (e: any) {
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: e?.message ?? 'Failed to validate role delete restriction.',
+      summary: t('common.error'),
+      detail: e?.message ?? t('roleList.error.validate'),
       life: 3000,
     })
   }
@@ -289,7 +294,7 @@ async function onExport() {
   } catch (e: any) {
     toast.add({
       severity: 'error',
-      summary: 'Error',
+      summary: t('common.error'),
       detail: String(e?.message ?? 'Failed to export roles.'),
       life: 3000,
     })
@@ -308,15 +313,18 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
 
     toast.add({
       severity: 'success',
-      summary: 'Saved',
-      detail: formMode.value === 'new' ? 'Role has been created.' : 'Role has been updated.',
+      summary: t('common.save'),
+      detail:
+        formMode.value === 'new'
+          ? t('roleList.success.roleCreated')
+          : t('roleList.success.roleEdited'),
       life: 2000,
     })
   } catch (e: any) {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: e?.message ?? 'Failed to save role.',
+      detail: e?.message ?? t('roleList.error.saveFailed'),
       life: 3000,
     })
   }
@@ -325,9 +333,10 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
 
 <template>
   <div class="space-y-3">
-    <div class="text-[26px] font-semibold text-slate-800">Roles Management</div>
+    <div class="text-[26px] font-semibold text-slate-800">{{ t('roleList.title') }}</div>
 
     <BaseDataTable
+      :key="`role-list-table-${locale}`"
       title="Roles"
       :value="store.filteredRows"
       :loading="store.loading"
@@ -345,7 +354,7 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
         <div class="flex gap-2">
           <BaseIconButton
             icon="pi pi-plus"
-            label="New"
+            :label="t('common.new')"
             size="small"
             severity="success"
             :disabled="!canManage"
@@ -353,7 +362,7 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
           />
           <BaseIconButton
             icon="pi pi-trash"
-            label="Delete"
+            :label="t('common.delete')"
             size="small"
             severity="danger"
             outlined
@@ -366,7 +375,7 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
       <template #toolbar-end>
         <BaseIconButton
           icon="pi pi-file-excel"
-          label="Export"
+          :label="t('common.export')"
           size="small"
           severity="secondary"
           outlined
@@ -384,11 +393,11 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
         sortDisabled
       />
 
-      <Column field="role_code" header="Role Code" style="min-width: 10rem" />
-      <Column field="role_name" header="Role Name" style="min-width: 14rem" />
+      <Column field="role_code" :header="t('roleList.roleCode')" style="min-width: 10rem" />
+      <Column field="role_name" :header="t('roleList.roleName')" style="min-width: 14rem" />
 
       <Column
-        header="Access Permissions"
+        :header="t('roleList.accessPermission')"
         style="min-width: 16rem"
         sortField="menu_count"
         :filterMenu="{
@@ -399,12 +408,14 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
         }"
       >
         <template #body="{ data }">
-          <div class="text-slate-800">{{ data.menu_count }} access permission(s)</div>
+          <div class="text-slate-800">
+            {{ data.menu_count }} {{ t('roleList.accessPermissionNumber') }}
+          </div>
         </template>
       </Column>
 
       <Column
-        header="Status"
+        :header="t('roleList.status')"
         style="min-width: 10rem"
         sortField="role_status"
         :filterMenu="{
@@ -423,7 +434,7 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
         </template>
       </Column>
 
-      <Column header="Action" style="width: 260px" sortDisabled>
+      <Column :header="t('common.action')" style="width: 260px" sortDisabled>
         <template #body="{ data }">
           <div class="flex gap-2 justify-start">
             <BaseIconButton
