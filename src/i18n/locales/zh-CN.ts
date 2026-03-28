@@ -298,6 +298,7 @@ const zhCN = {
     checkpointName: '检查点',
     area: '区域',
     qrImg: 'QR 图片',
+    exportPdf: '导出 PDF',
     error: {
       printLoadFailed: '加载打印选项失败',
       noQrAvailablie: '没有可导出的 QR 图片',

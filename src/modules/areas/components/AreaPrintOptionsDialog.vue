@@ -338,7 +338,7 @@ async function onPrint() {
         />
         <BaseIconButton
           icon="pi pi-file-pdf"
-          label="Export PDF"
+          :label="t('areaPrintOptionsDialog.exportPdf')"
           size="small"
           severity="secondary"
           :disabled="!previewRows.length"

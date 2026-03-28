@@ -298,6 +298,7 @@ const vi = {
     checkpointName: 'Điểm kiểm tra',
     area: 'Khu vực',
     qrImg: 'Hình QR',
+    exportPdf: 'Xuất PDF',
     error: {
       printLoadFailed: 'Tải tùy chọn in thất bại',
       noQrAvailablie: 'Không có hình ảnh QR để xuất',

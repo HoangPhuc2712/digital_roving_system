@@ -298,6 +298,7 @@ const zhTW = {
     checkpointName: '檢查點',
     area: '區域',
     qrImg: 'QR 圖片',
+    exportPdf: '匯出 PDF',
     error: {
       printLoadFailed: '載入列印選項失敗',
       noQrAvailablie: '沒有可匯出的 QR 圖片',

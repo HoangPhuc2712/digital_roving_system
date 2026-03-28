@@ -298,6 +298,7 @@ const en = {
     checkpointName: 'Check Point',
     area: 'Area',
     qrImg: 'Qr Image',
+    exportPdf: 'Export PDF',
     error: {
       printLoadFailed: 'Failed to load print options',
       noQrAvailablie: 'No QR image available to export',

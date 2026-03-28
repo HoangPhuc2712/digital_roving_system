@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 import { exportCheckpointsXlsx } from '@/services/export/checkpoints.export'
 import { printSingleCheckpointQr } from '@/services/print/checkpoints.print'
 import { normalizeImageSource } from '@/utils/base64'
+import { useI18n } from 'vue-i18n'
 
 import Column from 'primevue/column'
 import Tag from 'primevue/tag'
@@ -41,11 +42,21 @@ const auth = useAuthStore()
 const exporting = ref(false)
 const printingCheckpointId = ref<number | null>(null)
 const DELETE_CHECKPOINT_API_DRY_RUN = false
+const { t, locale } = useI18n()
 
 const checkpointStatusOptions = [
-  { label: 'All', value: 'ALL' },
-  { label: 'Active', value: 'ACTIVE' },
-  { label: 'Inactive', value: 'INACTIVE' },
+  {
+    label: t('checkpointList.checkpointStatusOptions.all'),
+    value: t('checkpointList.checkpointStatusOptions.all'),
+  },
+  {
+    label: t('checkpointList.checkpointStatusOptions.active'),
+    value: t('checkpointList.checkpointStatusOptions.active'),
+  },
+  {
+    label: t('checkpointList.checkpointStatusOptions.inactive'),
+    value: t('checkpointList.checkpointStatusOptions.inactive'),
+  },
 ]
 const confirmDeleteVisible = ref(false)
 const confirmDeleteMessage = ref('')
@@ -156,7 +167,9 @@ function clearAll() {
 }
 
 function statusLabel(s: number) {
-  return s === 1 ? 'Active' : 'Inactive'
+  return s === 1
+    ? t('checkpointList.checkpointStatusOptions.active')
+    : t('checkpointList.checkpointStatusOptions.inactive')
 }
 
 function statusSeverity(s: number) {
@@ -280,8 +293,8 @@ async function onDelete(row: CheckpointRow) {
     if (usedInRoutes.length > 0) {
       toast.add({
         severity: 'warn',
-        summary: 'Cannot Delete',
-        detail: `Can't delete Check Point ${row.cp_code} because it exists in ${usedInRoutes.length} route(s).`,
+        summary: t('common.cannotDelete'),
+        detail: `${t('checkpointList.error.CannotDeleteSingleCP')} ${row.cp_code} ${t('checkpointList.error.becauseitExists')} ${usedInRoutes.length} ${t('checkpointList.error.route')}.`,
         life: 3500,
       })
       return
@@ -289,15 +302,15 @@ async function onDelete(row: CheckpointRow) {
   } catch (e: any) {
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: String(e?.message ?? 'Failed to validate check point delete.'),
+      summary: t('common.error'),
+      detail: String(e?.message ?? t('checkpointList.error.validate')),
       life: 3000,
     })
     return
   }
 
   openDeleteConfirm(
-    `Are you sure you want to delete check point ${row.cp_code} - ${row.cp_name}?`,
+    `${t('checkpointList.error.areYouSure')} ${row.cp_code} - ${row.cp_name}?`,
     async () => {
       try {
         await deleteOne(row)
@@ -318,15 +331,15 @@ async function onDelete(row: CheckpointRow) {
         selectedRows.value = null
         toast.add({
           severity: 'success',
-          summary: 'Deleted',
-          detail: 'Check point has been deleted.',
+          summary: t('common.deleted'),
+          detail: t('checkpointList.success.deleteDetail'),
           life: 2000,
         })
       } catch (e: any) {
         toast.add({
           severity: 'error',
-          summary: 'Error',
-          detail: e?.message ?? 'Failed to delete check point.',
+          summary: t('common.error'),
+          detail: e?.message ?? t('checkpointList.error.deleteFailed'),
           life: 3000,
         })
         throw e
@@ -520,6 +533,7 @@ async function onExport() {
     <div class="text-[26px] font-semibold text-slate-800">{{ pageTitle }}</div>
 
     <BaseDataTable
+      :key="`area-list-table-${locale}`"
       :title="pageTitle"
       :value="store.filteredRows"
       :loading="store.loading"
