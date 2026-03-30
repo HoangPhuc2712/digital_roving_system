@@ -373,10 +373,17 @@ watch(
       </div>
 
       <div class="flex justify-end gap-2 pt-3 border-t border-slate-200">
-        <BaseButton :label="t('common.close')" severity="secondary" outlined @click="close" />
+        <BaseButton
+          :label="t('common.close')"
+          size="small"
+          severity="secondary"
+          outlined
+          @click="close"
+        />
         <BaseButton
           v-if="isEditStatus && model.pr_has_problem"
           :label="t('common.submit')"
+          size="small"
           severity="success"
           @click="submitStatus"
         />

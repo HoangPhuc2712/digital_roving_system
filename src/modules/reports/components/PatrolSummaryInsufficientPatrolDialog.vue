@@ -49,19 +49,19 @@ function shiftCellStyle(hex: string) {
       :paginator="false"
       :rows="props.rows.length || 10"
     >
-      <Column field="area_name" header="Area" style="min-width: 10rem">
+      <Column field="area_name" header="Area" style="min-width: 5rem">
         <template #body="{ data }">
           <div class="text-left">{{ data.area_name || '-' }}</div>
         </template>
       </Column>
 
-      <Column field="cp_name" header="Check Point" style="min-width: 16rem">
+      <Column field="cp_name" header="Check Point" style="min-width: 12rem">
         <template #body="{ data }">
-          <div class="text-left text-slate-800 font-medium">{{ data.cp_name || '-' }}</div>
+          <div class="text-left text-slate-800">{{ data.cp_name || '-' }}</div>
         </template>
       </Column>
 
-      <Column field="patrol_time" header="Patrol Time" sortable>
+      <Column field="patrol_time" header="Patrol Time" style="min-width: 10rem" sortable>
         <template #body="{ data }">
           <div :style="shiftCellStyle(data.shift_color)">
             {{ data.patrol_time || '-' }}

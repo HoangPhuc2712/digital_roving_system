@@ -31,7 +31,7 @@ const dialogTitle = computed(
 function rowCellClass(row: PatrolSummaryShiftProblemDetailRow) {
   return [
     '-mx-4 -my-3 px-4 py-3 min-h-[calc(100%+1.5rem)] flex items-center',
-    row.is_out_of_shift ? 'bg-red-50 text-red-500 font-medium' : 'text-slate-700',
+    row.is_out_of_shift ? 'text-red-500' : 'text-slate-700',
   ]
 }
 
@@ -89,7 +89,7 @@ function shiftCellStyle(hex: string) {
         <template #body="{ data }">
           <div
             :style="shiftCellStyle(data.shift_color)"
-            :class="data.is_out_of_shift ? 'text-red-500 font-medium' : 'text-slate-700'"
+            :class="data.is_out_of_shift ? 'text-red-500' : 'text-slate-700'"
           >
             {{ data.patrol_time || '-' }}
           </div>

@@ -1365,7 +1365,9 @@ function buildShiftProblemDetails(
   views: ApiPlannedPatrolShiftView[],
   actualViewMap: Map<number, ApiPatrolShiftReportView>,
 ): PatrolSummaryShiftProblemDetailRow[] {
-  const rows: PatrolSummaryShiftProblemDetailRow[] = []
+  const rows: Array<
+    PatrolSummaryShiftProblemDetailRow & { _sort_time: number; _sort_index: number }
+  > = []
   const shiftColorMap = buildSummaryShiftColorMap(views)
 
   for (const item of views) {
@@ -1380,6 +1382,10 @@ function buildShiftProblemDetails(
     for (const [pointIndex, point] of pointReports.entries()) {
       const actualTimeRaw = String(point?.reportAt ?? '').trim()
       const actualTime = actualTimeRaw ? new Date(actualTimeRaw) : null
+      const sortTime =
+        actualTime && Number.isFinite(actualTime.getTime())
+          ? actualTime.getTime()
+          : Number.MAX_SAFE_INTEGER
 
       rows.push({
         row_id: `${psId}-${Number(point?.prId ?? 0)}-${pointIndex}`,
@@ -1392,11 +1398,18 @@ function buildShiftProblemDetails(
           '-',
         is_out_of_shift: isOutsideShiftWindow(actualTime, shiftStart, shiftEnd),
         shift_color: shiftColorMap.get(psId) ?? '#ffeeba',
+        _sort_time: sortTime,
+        _sort_index: pointIndex,
       })
     }
   }
 
   return rows
+    .sort((a, b) => {
+      if (a._sort_time !== b._sort_time) return a._sort_time - b._sort_time
+      return a._sort_index - b._sort_index
+    })
+    .map(({ _sort_time: _ignoredSortTime, _sort_index: _ignoredSortIndex, ...row }) => row)
 }
 
 export async function fetchPatrolSummaryRows(
