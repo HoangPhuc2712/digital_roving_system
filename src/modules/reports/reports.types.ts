@@ -136,6 +136,16 @@ export type PatrolSummaryInsufficientPatrolDetailRow = {
   event_information: string
 }
 
+export type PatrolSummaryShiftProblemDetailRow = {
+  row_id: string
+  route_name: string
+  cp_name: string
+  patrol_time: string
+  actual_time: string
+  guard_name: string
+  is_out_of_shift: boolean
+}
+
 export type PatrolSummaryReportRow = {
   date_key: string
   date_label: string
@@ -146,10 +156,12 @@ export type PatrolSummaryReportRow = {
   missed_count: number
   time_problem_count: number
   insufficient_count: number
+  shift_problem_count: number
   abnormal_rate: number
   missed_patrol_details: PatrolSummaryMissedPatrolDetailRow[]
   time_problem_details: PatrolSummaryTimeProblemDetailRow[]
   insufficient_patrol_details: PatrolSummaryInsufficientPatrolDetailRow[]
+  shift_problem_details: PatrolSummaryShiftProblemDetailRow[]
 }
 
 export type IncorrectScanLogRow = {

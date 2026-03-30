@@ -217,6 +217,7 @@ const zhTW = {
     missedPatrolCount: '缺少巡邏次數',
     timeProblemCount: '時間異常次數',
     insufficientNumberOfPatrol: '巡邏次數不足',
+    shiftProblemCount: '跨班異常次數',
     abnormalRate: '異常率',
     noReportFound: '找不到報告',
   },
@@ -232,6 +233,14 @@ const zhTW = {
     patrolTime: '巡邏時間',
     actualTime: '實際巡邏時間',
     standardTime: '標準巡邏時間',
+  },
+  patrolSummaryShiftProblemDialog: {
+    title: '巡邏日期',
+    routeName: '路線名稱',
+    checkPoint: '檢查點',
+    patrolTime: '巡邏時間',
+    actualTime: '實際時間',
+    guardName: '警衛姓名',
   },
   areaList: {
     areaStatusOptions: {

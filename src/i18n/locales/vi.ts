@@ -217,6 +217,7 @@ const vi = {
     missedPatrolCount: 'Số lượt tuần tra bị thiếu',
     timeProblemCount: 'Số lỗi thời gian',
     insufficientNumberOfPatrol: 'Thiếu số lượt tuần tra',
+    shiftProblemCount: 'Số lỗi lệch ca',
     abnormalRate: 'Tỷ lệ bất thường',
     noReportFound: 'Không tìm thấy báo cáo',
   },
@@ -232,6 +233,14 @@ const vi = {
     patrolTime: 'Thời gian tuần tra',
     actualTime: 'Thời gian tuần tra thực tế',
     standardTime: 'Thời gian tuần tra tiêu chuẩn',
+  },
+  patrolSummaryShiftProblemDialog: {
+    title: 'Ngày tuần tra',
+    routeName: 'Tên lộ trình',
+    checkPoint: 'Điểm kiểm tra',
+    patrolTime: 'Thời gian tuần tra',
+    actualTime: 'Thời gian thực tế',
+    guardName: 'Tên bảo vệ',
   },
   areaList: {
     areaStatusOptions: {

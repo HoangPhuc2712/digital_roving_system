@@ -217,6 +217,7 @@ const en = {
     missedPatrolCount: 'Missed Patrols Count',
     timeProblemCount: 'Time Problem Count',
     insufficientNumberOfPatrol: 'Insufficient Number of Patrols',
+    shiftProblemCount: 'Shift Problem Count',
     abnormalRate: 'Abnormal Rate',
     noReportFound: 'No Reports Found',
   },
@@ -232,6 +233,14 @@ const en = {
     patrolTime: 'Patrol Time',
     actualTime: 'Actual Patrol Time',
     standardTime: 'Standard Patrol Time',
+  },
+  patrolSummaryShiftProblemDialog: {
+    title: 'Patrol Date',
+    routeName: 'Route Name',
+    checkPoint: 'Check Point',
+    patrolTime: 'Patrol Time',
+    actualTime: 'Actual Time',
+    guardName: 'Guard Name',
   },
   areaList: {
     areaStatusOptions: {
