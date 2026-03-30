@@ -30,6 +30,11 @@ const zhCN = {
       'zh-CN': '简体中文',
     },
   },
+  pagination: {
+    show: '显示',
+    to: '到',
+    of: '共',
+  },
   login: {
     title: '内部巡逻系统',
     userCode: '用户编号',
@@ -206,6 +211,8 @@ const zhCN = {
     finishTime: '结束时间',
     patrolTime: '巡逻时间',
     guardName: '警卫姓名',
+    eventInfoZh: '事件信息 Zh',
+    eventInfoVi: '事件信息 Vi',
   },
   patrolSummaryReportList: {
     title: '巡逻总结报告',

@@ -30,6 +30,11 @@ const vi = {
       'zh-CN': '简体中文',
     },
   },
+  pagination: {
+    show: 'Hiển thị',
+    to: 'đến',
+    of: 'trên',
+  },
   login: {
     title: 'Hệ thống tuần tra nội bộ',
     userCode: 'Mã người dùng',
@@ -206,6 +211,8 @@ const vi = {
     finishTime: 'Thời gian kết thúc',
     patrolTime: 'Thời gian tuần tra',
     guardName: 'Tên bảo vệ',
+    eventInfoZh: 'Thông tin sự kiện Zh',
+    eventInfoVi: 'Thông tin sự kiện Vi',
   },
   patrolSummaryReportList: {
     title: 'Báo cáo tổng hợp tuần tra',

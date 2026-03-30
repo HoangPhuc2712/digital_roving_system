@@ -30,6 +30,11 @@ const en = {
       'zh-CN': '简体中文',
     },
   },
+  pagination: {
+    show: 'Showing',
+    to: 'to',
+    of: 'of',
+  },
   login: {
     title: 'Internal Patrol System',
     userCode: 'User Code',
@@ -206,6 +211,8 @@ const en = {
     finishTime: 'Finish Time',
     patrolTime: 'Patrol Time',
     guardName: 'Guard Name',
+    eventInfoZh: 'Event Information Zh',
+    eventInfoVi: 'Event Information Vi',
   },
   patrolSummaryReportList: {
     title: 'Patrol Summary Report',

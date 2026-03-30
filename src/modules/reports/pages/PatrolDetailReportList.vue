@@ -300,7 +300,7 @@ function onColumnFilter(payload: { key: string; value: any }) {
 
       <Column
         field="event_zh"
-        header="Event Information Zh"
+        :header="t('patrolDetailReport.eventInfoZh')"
         style="min-width: 10rem"
         sortField="event_zh"
       >
@@ -311,7 +311,7 @@ function onColumnFilter(payload: { key: string; value: any }) {
 
       <Column
         field="event_vi"
-        header="Event Information Vi"
+        :header="t('patrolDetailReport.eventInfoVi')"
         style="min-width: 10rem"
         sortField="event_vi"
       >

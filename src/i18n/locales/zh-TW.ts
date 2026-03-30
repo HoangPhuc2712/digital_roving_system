@@ -30,6 +30,11 @@ const zhTW = {
       'zh-CN': '简体中文',
     },
   },
+  pagination: {
+    show: '顯示',
+    to: '到',
+    of: '共',
+  },
   login: {
     title: '內部巡邏系統',
     userCode: '使用者代碼',
@@ -206,6 +211,8 @@ const zhTW = {
     finishTime: '結束時間',
     patrolTime: '巡邏時間',
     guardName: '警衛姓名',
+    eventInfoZh: '事件資訊 Zh',
+    eventInfoVi: '事件資訊 Vi',
   },
   patrolSummaryReportList: {
     title: '巡邏總結報告',

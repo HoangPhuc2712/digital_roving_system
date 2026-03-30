@@ -195,6 +195,10 @@ const filterContentRefs = ref<Record<string, HTMLElement | null>>({})
 const filterMenuRevision = ref<Record<string, number>>({})
 const sortFieldState = ref<string>('')
 const sortOrderState = ref<number>(0)
+const currentPageReportTemplate = computed(
+  () =>
+    `${t('pagination.show')} {first} ${t('pagination.to')} {last} ${t('pagination.of')} {totalRecords}`,
+)
 
 const VNodeRenderer = defineComponent({
   name: 'BaseDataTableVNodeRenderer',
