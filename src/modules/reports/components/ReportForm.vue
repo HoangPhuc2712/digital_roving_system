@@ -45,7 +45,7 @@ const viewerItems = ref<BaseImageItem[]>([])
 const viewerStartIndex = ref(0)
 const statusDraft = ref(0)
 const inlineStatusEdit = ref(false)
-const { t, locale } = useI18n()
+const { t } = useI18n()
 
 const formMode = computed<ReportFormMode>(() => props.mode ?? 'view')
 const canEditStatus = computed(() => Boolean(props.canEditStatus))
@@ -56,12 +56,12 @@ const isEditStatus = computed(
 const inspectionOk = computed(() => (props.model ? props.model.pr_has_problem === false : true))
 const shiftText = computed(() => String(props.model?.shift_text ?? '').trim())
 
-const issueStatusOptions = [
+const issueStatusOptions = computed(() => [
   { label: t('reportForm.issueStatusOptions.pending'), value: 0 },
   { label: t('reportForm.issueStatusOptions.inProgress'), value: 1 },
   { label: t('reportForm.issueStatusOptions.completed'), value: 2 },
   { label: t('reportForm.issueStatusOptions.incompleted'), value: 3 },
-]
+])
 
 function close() {
   emit('update:visible', false)
