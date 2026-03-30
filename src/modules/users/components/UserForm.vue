@@ -197,7 +197,7 @@ function submit() {
         </div>
 
         <div v-if="!isView" class="md:col-span-2">
-          <label class="block text-sm text-slate-600 mb-1">{{ t('userForm.pasword') }}</label>
+          <label class="block text-sm text-slate-600 mb-1">{{ t('userForm.password') }}</label>
           <BasePasswordInput
             v-model="form.user_password"
             label=""
