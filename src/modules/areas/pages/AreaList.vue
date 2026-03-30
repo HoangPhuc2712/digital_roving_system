@@ -57,11 +57,11 @@ const printingAreaId = ref<number | null>(null)
 const DELETE_AREA_API_DRY_RUN = false
 
 const areaStatusOptions = [
-  { label: t('areaList.areaStatusOptions.all'), value: t('areaList.areaStatusOptions.all') },
-  { label: t('areaList.areaStatusOptions.active'), value: t('areaList.areaStatusOptions.active') },
+  { label: t('areaList.areaStatusOptions.all'), value: 'ALL' },
+  { label: t('areaList.areaStatusOptions.active'), value: 'ACTIVE' },
   {
     label: t('areaList.areaStatusOptions.inactive'),
-    value: t('areaList.areaStatusOptions.inactive'),
+    value: 'INACTIVE',
   },
 ]
 const confirmDeleteVisible = ref(false)
