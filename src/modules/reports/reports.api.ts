@@ -389,6 +389,41 @@ function extractShiftText(view: ApiPlannedPatrolShiftView): string {
   return timeLabel
 }
 
+const SUMMARY_SHIFT_COLORS = ['#ffeeba', '#bee5eb']
+
+function buildSummaryShiftColorMap(views: ApiPlannedPatrolShiftView[]) {
+  const sortedViews = [...views].sort((a, b) => {
+    const aStart = String(a.psFrom ?? a.psHourFrom ?? '')
+    const bStart = String(b.psFrom ?? b.psHourFrom ?? '')
+    const aEnd = String(a.psTo ?? a.psHourTo ?? '')
+    const bEnd = String(b.psTo ?? b.psHourTo ?? '')
+    const slotA = `${aStart}|${aEnd}`
+    const slotB = `${bStart}|${bEnd}`
+    if (slotA === slotB) return Number(a.psId ?? 0) - Number(b.psId ?? 0)
+    return slotA.localeCompare(slotB)
+  })
+
+  const shiftColorMap = new Map<number, string>()
+  const slotColorMap = new Map<string, string>()
+  let nextColorIndex = 0
+
+  for (const view of sortedViews) {
+    const psId = Number(view.psId ?? 0)
+    const slotKey = `${extractShiftTimeRange(view)}|${formatShiftDatePrefix(view)}`
+    if (!slotColorMap.has(slotKey)) {
+      slotColorMap.set(
+        slotKey,
+        SUMMARY_SHIFT_COLORS[nextColorIndex % SUMMARY_SHIFT_COLORS.length] ?? '#ffeeba',
+      )
+      nextColorIndex += 1
+    }
+
+    shiftColorMap.set(psId, slotColorMap.get(slotKey) ?? '#ffeeba')
+  }
+
+  return shiftColorMap
+}
+
 async function enrichReportRowShift(row: ReportRow): Promise<ReportRow> {
   if (!row.ps_id) return row
 
@@ -1282,6 +1317,7 @@ function buildInsufficientPatrolDetails(
   actualViewMap: Map<number, ApiPatrolShiftReportView>,
 ): PatrolSummaryInsufficientPatrolDetailRow[] {
   const rows: PatrolSummaryInsufficientPatrolDetailRow[] = []
+  const shiftColorMap = buildSummaryShiftColorMap(views)
 
   for (const item of views) {
     const psId = Number(item.psId ?? 0)
@@ -1317,6 +1353,7 @@ function buildInsufficientPatrolDetails(
         actual_time: 'No Data',
         guard_name: String(actualView?.reportName ?? item.reportName ?? '').trim() || '-',
         event_information: '',
+        shift_color: shiftColorMap.get(psId) ?? '#ffeeba',
       })
     }
   }
@@ -1329,6 +1366,7 @@ function buildShiftProblemDetails(
   actualViewMap: Map<number, ApiPatrolShiftReportView>,
 ): PatrolSummaryShiftProblemDetailRow[] {
   const rows: PatrolSummaryShiftProblemDetailRow[] = []
+  const shiftColorMap = buildSummaryShiftColorMap(views)
 
   for (const item of views) {
     const psId = Number(item.psId ?? 0)
@@ -1353,6 +1391,7 @@ function buildShiftProblemDetails(
           String(point?.reportName ?? actualView?.reportName ?? item.reportName ?? '').trim() ||
           '-',
         is_out_of_shift: isOutsideShiftWindow(actualTime, shiftStart, shiftEnd),
+        shift_color: shiftColorMap.get(psId) ?? '#ffeeba',
       })
     }
   }

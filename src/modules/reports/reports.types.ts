@@ -134,6 +134,7 @@ export type PatrolSummaryInsufficientPatrolDetailRow = {
   actual_time: string
   guard_name: string
   event_information: string
+  shift_color: string
 }
 
 export type PatrolSummaryShiftProblemDetailRow = {
@@ -144,6 +145,7 @@ export type PatrolSummaryShiftProblemDetailRow = {
   actual_time: string
   guard_name: string
   is_out_of_shift: boolean
+  shift_color: string
 }
 
 export type PatrolSummaryReportRow = {

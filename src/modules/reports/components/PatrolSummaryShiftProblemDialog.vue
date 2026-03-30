@@ -34,6 +34,15 @@ function rowCellClass(row: PatrolSummaryShiftProblemDetailRow) {
     row.is_out_of_shift ? 'bg-red-50 text-red-500 font-medium' : 'text-slate-700',
   ]
 }
+
+function shiftCellStyle(hex: string) {
+  return {
+    backgroundColor: hex || '#F1F5F9',
+    margin: '-0.5rem -1rem',
+    padding: '0.5rem 1rem',
+    minHeight: 'calc(100% + 1rem)',
+  }
+}
 </script>
 
 <template>
@@ -78,7 +87,12 @@ function rowCellClass(row: PatrolSummaryShiftProblemDetailRow) {
         style="min-width: 12rem"
       >
         <template #body="{ data }">
-          <div :class="rowCellClass(data)">{{ data.patrol_time || '-' }}</div>
+          <div
+            :style="shiftCellStyle(data.shift_color)"
+            :class="data.is_out_of_shift ? 'text-red-500 font-medium' : 'text-slate-700'"
+          >
+            {{ data.patrol_time || '-' }}
+          </div>
         </template>
       </Column>
 
