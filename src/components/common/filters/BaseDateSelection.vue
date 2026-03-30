@@ -52,10 +52,15 @@ function getPickerRef(kind: 'from' | 'to') {
   return kind === 'from' ? fromDatePickerRef.value : toDatePickerRef.value
 }
 
-function getPickerOverlayElement(container: HTMLElement | null) {
-  return container?.querySelector(
-    '.p-datepicker-panel, .p-datepicker-overlay, .p-connected-overlay',
-  ) as HTMLElement | null
+function getPickerOverlayElement(kind: 'from' | 'to') {
+  const picker = getPickerRef(kind)
+  const overlay =
+    picker?.overlay ??
+    picker?.overlayRef ??
+    picker?.panel ??
+    picker?.$el?.querySelector?.('.p-datepicker-panel, .p-datepicker-overlay, .p-connected-overlay')
+
+  return (overlay as HTMLElement | null) ?? null
 }
 
 function isPickerTriggerTarget(target: HTMLElement | null, container: HTMLElement | null) {
@@ -71,7 +76,7 @@ function isPickerTriggerTarget(target: HTMLElement | null, container: HTMLElemen
 function isOverlayVisible(kind: 'from' | 'to') {
   const picker = getPickerRef(kind)
   const container = getPickerContainer(kind)
-  const overlay = getPickerOverlayElement(container)
+  const overlay = getPickerOverlayElement(kind)
 
   return Boolean(picker?.overlayVisible ?? picker?.d_overlayVisible ?? overlay)
 }
@@ -96,27 +101,6 @@ function hidePickerOverlay(kind: 'from' | 'to') {
   }
 }
 
-function onDatePickerTriggerClick(kind: 'from' | 'to', event: MouseEvent) {
-  const target = event.target as HTMLElement | null
-  const container = getPickerContainer(kind)
-
-  if (!container || !target) return
-
-  const overlay = getPickerOverlayElement(container)
-  if (overlay?.contains(target)) return
-
-  if (!isPickerTriggerTarget(target, container)) return
-
-  if (!isOverlayVisible(kind)) return
-
-  event.preventDefault()
-  event.stopPropagation()
-
-  queueMicrotask(() => {
-    hidePickerOverlay(kind)
-  })
-}
-
 function handleDocumentPointerDown(event: PointerEvent) {
   const target = event.target as HTMLElement | null
 
@@ -125,7 +109,7 @@ function handleDocumentPointerDown(event: PointerEvent) {
     if (!isOverlayVisible(kind)) return
 
     const container = getPickerContainer(kind)
-    const overlay = getPickerOverlayElement(container)
+    const overlay = getPickerOverlayElement(kind)
 
     if (overlay?.contains(target)) return
     if (isPickerTriggerTarget(target, container)) return
@@ -159,7 +143,7 @@ onBeforeUnmount(() => {
   <div :class="props.wrapperClass">
     <div :class="props.inputWidthClass">
       <label class="block text-sm text-slate-600 mb-1">{{ t('dateFilter.from') }}</label>
-      <div ref="fromPickerContainerRef" @click.capture="onDatePickerTriggerClick('from', $event)">
+      <div ref="fromPickerContainerRef">
         <DatePicker
           :modelValue="props.modelDateFrom"
           class="w-full base-date-selection"
@@ -182,7 +166,7 @@ onBeforeUnmount(() => {
 
     <div :class="props.inputWidthClass">
       <label class="block text-sm text-slate-600 mb-1">{{ t('dateFilter.to') }}</label>
-      <div ref="toPickerContainerRef" @click.capture="onDatePickerTriggerClick('to', $event)">
+      <div ref="toPickerContainerRef">
         <DatePicker
           :modelValue="props.modelDateTo"
           class="w-full base-date-selection"
