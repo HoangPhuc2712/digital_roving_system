@@ -18,6 +18,10 @@ const router = useRouter()
 const store = useCtpatReportsStore()
 const exporting = ref(false)
 const { t, locale } = useI18n()
+const hasInvalidDateFilter = computed(
+  () => (store.filterDateFrom == null) !== (store.filterDateTo == null),
+)
+const tableRows = computed(() => (hasInvalidDateFilter.value ? [] : store.filteredRows))
 
 const reportSwitchButtons = computed(() => [
   {
@@ -58,7 +62,7 @@ useResetFirstOnFilterChange(
 )
 
 const { onPage } = usePagination({
-  load: () => store.load(),
+  load: () => (hasInvalidDateFilter.value ? Promise.resolve() : store.load()),
   setFirst: (first) => store.setFirst(first),
 })
 
@@ -91,6 +95,11 @@ function onColumnFilter(payload: { key: string; value: any }) {
     store.filterAreaName = value.primaryValue ?? null
     store.filterRouteName = value.secondaryValue ?? null
   }
+  if (payload.key === 'patrolTime') {
+    const value = payload.value && typeof payload.value === 'object' ? payload.value : {}
+    store.filterDateFrom = value.from ?? null
+    store.filterDateTo = value.to ?? null
+  }
 }
 
 function clearAll() {
@@ -105,7 +114,7 @@ async function onExport() {
   exporting.value = true
   try {
     await exportCtpatReportXlsx({
-      rows: store.filteredRows,
+      rows: tableRows.value,
       fileName: `ctpat_reports_${new Date().toISOString().slice(0, 10)}.xlsx`,
     })
   } catch (e: any) {
@@ -131,18 +140,13 @@ async function onExport() {
     <BaseDataTable
       :key="`ctpat-report-list-table-${locale}`"
       title=""
-      :value="store.filteredRows"
+      :value="tableRows"
       :loading="store.loading"
       dataKey="pr_id"
       :rows="store.rowsPerPage"
       :first="store.first"
       :modelSearch="store.searchText"
-      :modelDateFrom="store.filterDateFrom"
-      :modelDateTo="store.filterDateTo"
-      :showDateSelection="true"
       @update:modelSearch="store.searchText = $event"
-      @update:modelDateFrom="store.filterDateFrom = $event"
-      @update:modelDateTo="store.filterDateTo = $event"
       @update:columnFilter="onColumnFilter"
       @clear="clearAll"
       @page="onPage"
@@ -164,7 +168,11 @@ async function onExport() {
 
       <template #empty>
         <div class="p-4 text-slate-600 flex justify-center">
-          {{ t('ctpatReportList.noReports') }}.
+          {{
+            hasInvalidDateFilter
+              ? t('common.invalidDateFilter')
+              : `${t('ctpatReportList.noReports')}.`
+          }}
         </div>
       </template>
 
@@ -221,6 +229,14 @@ async function onExport() {
         :header="t('ctpatReportList.patrolTime')"
         style="min-width: 12rem"
         sortField="scan_at"
+        :filterMenu="{
+          key: 'patrolTime',
+          type: 'date-range',
+          value: {
+            from: store.filterDateFrom,
+            to: store.filterDateTo,
+          },
+        }"
       >
         <template #body="{ data }">
           {{ formatDateTime(data.scan_at) }}

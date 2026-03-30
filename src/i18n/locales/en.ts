@@ -19,6 +19,7 @@ const en = {
     deleted: 'Deleted',
     noData: 'No data',
     loading: 'Loading data',
+    invalidDateFilter: 'Invalid Date Filter, please Select the correct date From -To',
   },
   languageSwitcher: {
     languages: {

@@ -483,7 +483,6 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
           size="small"
           severity="danger"
           outlined
-          class="ml-2"
           :disabled="!canManage || !(selectedAreas && selectedAreas.length)"
           @click="onDeleteSelected"
         />

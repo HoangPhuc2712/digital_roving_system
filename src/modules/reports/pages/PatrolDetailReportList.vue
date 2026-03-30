@@ -18,6 +18,10 @@ const router = useRouter()
 const store = usePatrolDetailReportsStore()
 const exporting = ref(false)
 const { t, locale } = useI18n()
+const hasInvalidDateFilter = computed(
+  () => (store.filterDateFrom == null) !== (store.filterDateTo == null),
+)
+const tableRows = computed(() => (hasInvalidDateFilter.value ? [] : store.filteredRows))
 
 const reportSwitchButtons = computed(() => [
   {
@@ -52,7 +56,7 @@ useResetFirstOnFilterChange(
 )
 
 const { onPage } = usePagination({
-  load: () => store.load(),
+  load: () => (hasInvalidDateFilter.value ? Promise.resolve() : store.load()),
   setFirst: (first) => store.setFirst(first),
 })
 
@@ -104,7 +108,7 @@ async function onExport() {
   exporting.value = true
   try {
     await exportPatrolDetailReportXlsx({
-      rows: store.filteredRows,
+      rows: tableRows.value,
       fileName: `patrol_detail_reports_${new Date().toISOString().slice(0, 10)}.xlsx`,
     })
   } catch (e: any) {
@@ -127,6 +131,11 @@ function onColumnFilter(payload: { key: string; value: any }) {
   }
   if (payload.key === 'checkPointName') store.filterCheckPointName = payload.value ?? null
   if (payload.key === 'guardName') store.filterGuardName = payload.value ?? null
+  if (payload.key === 'patrolTime') {
+    const value = payload.value && typeof payload.value === 'object' ? payload.value : {}
+    store.filterDateFrom = value.from ?? null
+    store.filterDateTo = value.to ?? null
+  }
 }
 </script>
 
@@ -142,17 +151,12 @@ function onColumnFilter(payload: { key: string; value: any }) {
     <BaseDataTable
       :key="`patrol-detail-report-list-table-${locale}`"
       title=""
-      :value="store.filteredRows"
+      :value="tableRows"
       :loading="store.loading"
       dataKey="row_id"
       :rows="store.rowsPerPage"
       :first="store.first"
-      :modelDateFrom="store.filterDateFrom"
-      :modelDateTo="store.filterDateTo"
-      :showDateSelection="true"
       :showSearch="false"
-      @update:modelDateFrom="store.filterDateFrom = $event"
-      @update:modelDateTo="store.filterDateTo = $event"
       @update:columnFilter="onColumnFilter"
       @clear="clearAll"
       @page="onPage"
@@ -174,7 +178,11 @@ function onColumnFilter(payload: { key: string; value: any }) {
 
       <template #empty>
         <div class="p-4 text-slate-600 flex justify-center">
-          {{ t('patrolDetailReport.noReport') }}.
+          {{
+            hasInvalidDateFilter
+              ? t('common.invalidDateFilter')
+              : `${t('patrolDetailReport.noReport')}.`
+          }}
         </div>
       </template>
 
@@ -262,6 +270,14 @@ function onColumnFilter(payload: { key: string; value: any }) {
         :header="t('patrolDetailReport.patrolTime')"
         style="min-width: 12rem"
         sortField="patrol_time"
+        :filterMenu="{
+          key: 'patrolTime',
+          type: 'date-range',
+          value: {
+            from: store.filterDateFrom,
+            to: store.filterDateTo,
+          },
+        }"
       >
         <template #body="{ data }">
           {{ formatDateTime(data.patrol_time) }}

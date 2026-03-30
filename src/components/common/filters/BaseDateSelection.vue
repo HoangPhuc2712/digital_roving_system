@@ -21,12 +21,14 @@ const props = withDefaults(
     inputWidthClass?: string
     showTime?: boolean
     disabled?: boolean
+    appendTo?: string
   }>(),
   {
     wrapperClass: 'flex flex-wrap gap-3 items-end',
     inputWidthClass: 'w-full md:w-[280px]',
     showTime: true,
     disabled: false,
+    appendTo: undefined,
   },
 )
 
@@ -64,6 +66,7 @@ function onUpdateDateTo(value: DatePickerValue) {
         :manualInput="false"
         showButtonBar
         showIcon
+        :appendTo="props.appendTo"
         :disabled="props.disabled"
         :maxDate="maxSelectableDate"
         :placeholder="t('dateFilter.selectStartDate')"
@@ -83,6 +86,7 @@ function onUpdateDateTo(value: DatePickerValue) {
         :manualInput="false"
         showButtonBar
         showIcon
+        :appendTo="props.appendTo"
         :disabled="props.disabled"
         :maxDate="maxSelectableDate"
         :placeholder="t('dateFilter.selectEndDate')"

@@ -562,7 +562,6 @@ async function onExport() {
           size="small"
           severity="danger"
           outlined
-          class="ml-2"
           :disabled="!canManage || !(selectedRows && selectedRows.length)"
           @click="onDeleteSelected"
         />

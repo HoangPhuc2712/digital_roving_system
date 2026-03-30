@@ -1,13 +1,29 @@
 <template>
   <div class="card">
-    <Toolbar v-if="hasToolbar" class="mb-4">
-      <template #start>
+    <div
+      v-if="hasActionRow"
+      class="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between"
+    >
+      <div v-if="hasToolbarStart" class="flex flex-wrap items-center gap-2">
         <slot name="toolbar-start" />
-      </template>
-      <template #end>
+      </div>
+      <div
+        class="flex flex-1 flex-wrap items-center justify-end gap-2"
+        :class="{ 'xl:ml-auto': !hasToolbarStart }"
+      >
         <slot name="toolbar-end" />
-      </template>
-    </Toolbar>
+        <BaseIconButton
+          v-if="showClearAction"
+          icon="pi pi-filter-slash"
+          :label="t('common.clearFilters')"
+          size="small"
+          severity="secondary"
+          outlined
+          :disabled="props.clearDisabled"
+          @click="emit('clear')"
+        />
+      </div>
+    </div>
 
     <DataTable
       ref="dt"
@@ -30,35 +46,6 @@
       @page="onPage"
       @sort="onSort"
     >
-      <template v-if="showTopFilters" #header>
-        <div class="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-          <div class="flex min-w-0 flex-1 flex-col gap-3 xl:flex-row xl:flex-wrap xl:items-end">
-            <div v-if="props.showDateSelection" class="min-w-0">
-              <BaseDateSelection
-                :modelDateFrom="props.modelDateFrom ?? null"
-                :modelDateTo="props.modelDateTo ?? null"
-                wrapperClass="grid grid-cols-1 gap-3 items-end sm:grid-cols-2 xl:flex xl:flex-wrap xl:items-end"
-                :inputWidthClass="props.dateInputWidthClass"
-                @update:modelDateFrom="emit('update:modelDateFrom', $event)"
-                @update:modelDateTo="emit('update:modelDateTo', $event)"
-              />
-            </div>
-          </div>
-
-          <div class="flex shrink-0 justify-end">
-            <BaseIconButton
-              icon="pi pi-filter-slash"
-              :label="t('common.clearFilters')"
-              size="small"
-              severity="secondary"
-              outlined
-              :disabled="props.clearDisabled"
-              @click="emit('clear')"
-            />
-          </div>
-        </div>
-      </template>
-
       <VNodeRenderer
         v-for="(node, index) in getNormalizedDefaultNodes()"
         :key="node.key ?? `column-${index}`"
@@ -85,13 +72,13 @@ import {
   h,
   isVNode,
   ref,
+  getCurrentInstance,
   useSlots,
   watch,
   type VNode,
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 import DataTable, { type DataTablePageEvent, type DataTableSortEvent } from 'primevue/datatable'
-import Toolbar from 'primevue/toolbar'
 import MultiSelect from 'primevue/multiselect'
 import Popover from 'primevue/popover'
 import Select from 'primevue/select'
@@ -106,7 +93,7 @@ type SortIconSlotProps = {
   sortOrder?: number
 }
 
-type ColumnFilterType = 'select' | 'multiselect' | 'text' | 'dual-select'
+type ColumnFilterType = 'select' | 'multiselect' | 'text' | 'dual-select' | 'date-range'
 
 type FilterOption = {
   label?: string
@@ -132,6 +119,7 @@ type ColumnFilterMenuConfig = {
   secondaryPlaceholder?: string
   secondaryFilter?: boolean
   secondaryFilterField?: string
+  showTime?: boolean
 }
 
 const props = withDefaults(
@@ -196,6 +184,7 @@ const emit = defineEmits<{
 }>()
 
 const slots = useSlots()
+const instance = getCurrentInstance()
 const { t } = useI18n()
 const activeFilterKey = ref<string | null>(null)
 const popoverRefs = ref<Record<string, any>>({})
@@ -225,13 +214,21 @@ function getNormalizedDefaultNodes() {
   return nodes.map(transformNode).filter((node): node is VNode => isVNode(node))
 }
 
-const hasToolbar = computed(() => {
+const hasToolbarStart = computed(() => {
   const startNodes = slots['toolbar-start']?.() ?? []
-  const endNodes = slots['toolbar-end']?.() ?? []
-  return hasRenderableNodes(startNodes) || hasRenderableNodes(endNodes)
+  return hasRenderableNodes(startNodes)
 })
 
-const showTopFilters = computed(() => true)
+const hasToolbarEnd = computed(() => {
+  const endNodes = slots['toolbar-end']?.() ?? []
+  return hasRenderableNodes(endNodes)
+})
+
+const showClearAction = computed(() => Boolean(instance?.vnode.props?.onClear))
+
+const hasActionRow = computed(() => {
+  return hasToolbarStart.value || hasToolbarEnd.value || showClearAction.value
+})
 
 const FilterMenuControl = defineComponent({
   name: 'BaseDataTableFilterMenuControl',
@@ -328,6 +325,33 @@ const FilterMenuControl = defineComponent({
             size: 'small',
             appendTo: 'self',
             disabled: !allSecondaryOptions.length,
+          }),
+        ])
+      }
+
+      if (type === 'date-range') {
+        const currentValue =
+          localValue.value && typeof localValue.value === 'object'
+            ? localValue.value
+            : { from: null, to: null }
+
+        const fromValue =
+          currentValue.from instanceof Date ? currentValue.from : (currentValue.from ?? null)
+        const toValue =
+          currentValue.to instanceof Date ? currentValue.to : (currentValue.to ?? null)
+
+        return h('div', { class: 'w-[280px] max-w-full' }, [
+          h(BaseDateSelection, {
+            modelDateFrom: fromValue,
+            modelDateTo: toValue,
+            wrapperClass: 'flex w-full flex-col gap-3',
+            inputWidthClass: 'w-full',
+            showTime: filterProps.config.showTime ?? true,
+            appendTo: 'self',
+            'onUpdate:modelDateFrom': (value: Date | null) =>
+              void updateValue({ from: value ?? null, to: toValue }),
+            'onUpdate:modelDateTo': (value: Date | null) =>
+              void updateValue({ from: fromValue, to: value ?? null }),
           }),
         ])
       }
@@ -607,6 +631,7 @@ function onPopoverHide(key: string) {
 }
 
 function isFilterActive(value: any): boolean {
+  if (value instanceof Date) return Number.isFinite(value.getTime())
   if (Array.isArray(value)) return value.length > 0
   if (value && typeof value === 'object') {
     return Object.values(value).some((item) => isFilterActive(item))
@@ -615,6 +640,7 @@ function isFilterActive(value: any): boolean {
 }
 
 function cloneFilterValue(value: any) {
+  if (value instanceof Date) return new Date(value)
   if (Array.isArray(value)) return [...value]
   if (value && typeof value === 'object') return { ...value }
   return value
@@ -642,6 +668,10 @@ function buildOptionsSignature(
 }
 
 function serializeFilterValue(value: any): string {
+  if (value instanceof Date) {
+    return Number.isFinite(value.getTime()) ? value.toISOString() : ''
+  }
+
   if (Array.isArray(value)) {
     return value.map((item) => serializeFilterValue(item)).join('|')
   }

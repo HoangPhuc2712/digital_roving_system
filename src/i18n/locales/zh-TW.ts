@@ -19,6 +19,7 @@ const zhTW = {
     deleted: '已刪除',
     noData: '無資料',
     loading: '資料載入中',
+    invalidDateFilter: '日期篩選無效，請選擇正確的 From - To 日期',
   },
   languageSwitcher: {
     languages: {

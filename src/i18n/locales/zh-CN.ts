@@ -19,6 +19,7 @@ const zhCN = {
     deleted: '已删除',
     noData: '无数据',
     loading: '正在加载数据',
+    invalidDateFilter: '日期筛选无效，请选择正确的 From - To 日期',
   },
   languageSwitcher: {
     languages: {
