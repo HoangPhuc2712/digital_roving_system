@@ -1,13 +1,28 @@
 <template>
-  <div class="card">
-    <Toolbar v-if="hasToolbar" class="mb-4">
-      <template #start>
-        <slot name="toolbar-start" />
-      </template>
-      <template #end>
-        <slot name="toolbar-end" />
-      </template>
-    </Toolbar>
+  <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div v-if="hasActionRow" class="border-b border-slate-200 bg-white px-3 py-3">
+      <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div v-if="hasToolbarStart" class="flex flex-wrap items-center gap-2">
+          <slot name="toolbar-start" />
+        </div>
+        <div
+          class="flex flex-1 flex-wrap items-center justify-end gap-2"
+          :class="{ 'xl:ml-auto': !hasToolbarStart }"
+        >
+          <slot name="toolbar-end" />
+          <BaseIconButton
+            v-if="showClearAction"
+            icon="pi pi-filter-slash"
+            :label="t('common.clearFilters')"
+            size="small"
+            severity="secondary"
+            outlined
+            :disabled="props.clearDisabled"
+            @click="emit('clear')"
+          />
+        </div>
+      </div>
+    </div>
 
     <DataTable
       ref="dt"
@@ -30,35 +45,6 @@
       @page="onPage"
       @sort="onSort"
     >
-      <template v-if="showTopFilters" #header>
-        <div class="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-          <div class="flex min-w-0 flex-1 flex-col gap-3 xl:flex-row xl:flex-wrap xl:items-end">
-            <div v-if="props.showDateSelection" class="min-w-0">
-              <BaseDateSelection
-                :modelDateFrom="props.modelDateFrom ?? null"
-                :modelDateTo="props.modelDateTo ?? null"
-                wrapperClass="grid grid-cols-1 gap-3 items-end sm:grid-cols-2 xl:flex xl:flex-wrap xl:items-end"
-                :inputWidthClass="props.dateInputWidthClass"
-                @update:modelDateFrom="emit('update:modelDateFrom', $event)"
-                @update:modelDateTo="emit('update:modelDateTo', $event)"
-              />
-            </div>
-          </div>
-
-          <div class="flex shrink-0 justify-end">
-            <BaseIconButton
-              icon="pi pi-filter-slash"
-              :label="t('common.clearFilters')"
-              size="small"
-              severity="secondary"
-              outlined
-              :disabled="props.clearDisabled"
-              @click="emit('clear')"
-            />
-          </div>
-        </div>
-      </template>
-
       <VNodeRenderer
         v-for="(node, index) in getNormalizedDefaultNodes()"
         :key="node.key ?? `column-${index}`"
@@ -85,13 +71,16 @@ import {
   h,
   isVNode,
   ref,
+  getCurrentInstance,
+  onBeforeUnmount,
+  onMounted,
   useSlots,
   watch,
   type VNode,
 } from 'vue'
 import { useI18n } from 'vue-i18n'
+import Button from 'primevue/button'
 import DataTable, { type DataTablePageEvent, type DataTableSortEvent } from 'primevue/datatable'
-import Toolbar from 'primevue/toolbar'
 import MultiSelect from 'primevue/multiselect'
 import Popover from 'primevue/popover'
 import Select from 'primevue/select'
@@ -106,7 +95,7 @@ type SortIconSlotProps = {
   sortOrder?: number
 }
 
-type ColumnFilterType = 'select' | 'multiselect' | 'text' | 'dual-select'
+type ColumnFilterType = 'select' | 'multiselect' | 'text' | 'dual-select' | 'date-range'
 
 type FilterOption = {
   label?: string
@@ -132,6 +121,7 @@ type ColumnFilterMenuConfig = {
   secondaryPlaceholder?: string
   secondaryFilter?: boolean
   secondaryFilterField?: string
+  showTime?: boolean
 }
 
 const props = withDefaults(
@@ -196,11 +186,19 @@ const emit = defineEmits<{
 }>()
 
 const slots = useSlots()
+const instance = getCurrentInstance()
 const { t } = useI18n()
 const activeFilterKey = ref<string | null>(null)
 const popoverRefs = ref<Record<string, any>>({})
+const filterButtonRefs = ref<Record<string, HTMLElement | null>>({})
+const filterContentRefs = ref<Record<string, HTMLElement | null>>({})
+const filterMenuRevision = ref<Record<string, number>>({})
 const sortFieldState = ref<string>('')
 const sortOrderState = ref<number>(0)
+const currentPageReportTemplate = computed(
+  () =>
+    `${t('pagination.show')} {first} ${t('pagination.to')} {last} ${t('pagination.of')} {totalRecords}`,
+)
 
 const VNodeRenderer = defineComponent({
   name: 'BaseDataTableVNodeRenderer',
@@ -225,13 +223,21 @@ function getNormalizedDefaultNodes() {
   return nodes.map(transformNode).filter((node): node is VNode => isVNode(node))
 }
 
-const hasToolbar = computed(() => {
+const hasToolbarStart = computed(() => {
   const startNodes = slots['toolbar-start']?.() ?? []
-  const endNodes = slots['toolbar-end']?.() ?? []
-  return hasRenderableNodes(startNodes) || hasRenderableNodes(endNodes)
+  return hasRenderableNodes(startNodes)
 })
 
-const showTopFilters = computed(() => true)
+const hasToolbarEnd = computed(() => {
+  const endNodes = slots['toolbar-end']?.() ?? []
+  return hasRenderableNodes(endNodes)
+})
+
+const showClearAction = computed(() => Boolean(instance?.vnode.props?.onClear))
+
+const hasActionRow = computed(() => {
+  return hasToolbarStart.value || hasToolbarEnd.value || showClearAction.value
+})
 
 const FilterMenuControl = defineComponent({
   name: 'BaseDataTableFilterMenuControl',
@@ -240,39 +246,72 @@ const FilterMenuControl = defineComponent({
       type: Object as () => ColumnFilterMenuConfig,
       required: true,
     },
+    revision: {
+      type: Number,
+      default: 0,
+    },
   },
   emits: ['update:modelValue', 'close'],
   setup(filterProps, { emit: filterEmit }) {
     const localValue = ref(cloneFilterValue(filterProps.config.value))
-    const isCommitting = ref(false)
 
     watch(
-      () => buildFilterMenuRenderKey(filterProps.config),
+      [() => serializeFilterValue(filterProps.config.value), () => filterProps.revision],
       () => {
-        if (isCommitting.value) return
         localValue.value = cloneFilterValue(filterProps.config.value)
       },
       { immediate: true },
     )
 
-    async function updateValue(value: any, shouldClose = false) {
-      isCommitting.value = true
+    function updateDraft(value: any) {
       localValue.value = cloneFilterValue(value)
-      filterEmit('update:modelValue', value)
-
-      await nextTick()
-      await nextTick()
-
-      isCommitting.value = false
-
-      if (shouldClose) {
-        requestAnimationFrame(() => {
-          filterEmit('close')
-        })
-      }
     }
 
-    const controlKey = computed(() => buildFilterControlKey(filterProps.config, localValue.value))
+    function applyChanges() {
+      filterEmit('update:modelValue', cloneFilterValue(localValue.value))
+      nextTick(() => {
+        filterEmit('close')
+      })
+    }
+
+    function cancelChanges() {
+      localValue.value = cloneFilterValue(filterProps.config.value)
+      filterEmit('close')
+    }
+
+    const controlKey = computed(
+      () => `${buildFilterControlKey(filterProps.config)}::${filterProps.revision}`,
+    )
+
+    const renderFooter = () =>
+      h(
+        'div',
+        { class: 'mt-3 flex items-center justify-end gap-2 border-t border-slate-200 pt-3' },
+        [
+          h(Button, {
+            type: 'button',
+            label: t('common.cancel'),
+            severity: 'secondary',
+            outlined: true,
+            size: 'small',
+            onClick: (event: MouseEvent) => {
+              event.preventDefault()
+              event.stopPropagation()
+              cancelChanges()
+            },
+          }),
+          h(Button, {
+            type: 'button',
+            label: t('common.apply'),
+            size: 'small',
+            onClick: (event: MouseEvent) => {
+              event.preventDefault()
+              event.stopPropagation()
+              applyChanges()
+            },
+          }),
+        ],
+      )
 
     return () => {
       const type = filterProps.config.type ?? 'select'
@@ -302,7 +341,7 @@ const FilterMenuControl = defineComponent({
             key: `${controlKey.value}::primary`,
             modelValue: primaryValue,
             'onUpdate:modelValue': (value: any) =>
-              void updateValue({ primaryValue: value ?? null, secondaryValue: null }),
+              updateDraft({ primaryValue: value ?? null, secondaryValue: null }),
             options: filterProps.config.options ?? [],
             optionLabel: filterProps.config.optionLabel ?? 'label',
             optionValue: filterProps.config.optionValue ?? 'value',
@@ -317,7 +356,7 @@ const FilterMenuControl = defineComponent({
             key: `${controlKey.value}::secondary`,
             modelValue: secondaryValue,
             'onUpdate:modelValue': (value: any) =>
-              void updateValue({ primaryValue, secondaryValue: value ?? null }, true),
+              updateDraft({ primaryValue, secondaryValue: value ?? null }),
             options: secondaryOptions,
             optionLabel: filterProps.config.secondaryOptionLabel ?? 'label',
             optionValue: filterProps.config.secondaryOptionValue ?? 'value',
@@ -329,58 +368,95 @@ const FilterMenuControl = defineComponent({
             appendTo: 'self',
             disabled: !allSecondaryOptions.length,
           }),
+          renderFooter(),
+        ])
+      }
+
+      if (type === 'date-range') {
+        const currentValue =
+          localValue.value && typeof localValue.value === 'object'
+            ? localValue.value
+            : { from: null, to: null }
+
+        const fromValue =
+          currentValue.from instanceof Date ? currentValue.from : (currentValue.from ?? null)
+        const toValue =
+          currentValue.to instanceof Date ? currentValue.to : (currentValue.to ?? null)
+
+        return h('div', { class: 'w-[280px] max-w-full' }, [
+          h(BaseDateSelection, {
+            modelDateFrom: fromValue,
+            modelDateTo: toValue,
+            wrapperClass: 'flex w-full flex-col gap-3',
+            inputWidthClass: 'w-full',
+            showTime: filterProps.config.showTime ?? true,
+            appendTo: 'self',
+            'onUpdate:modelDateFrom': (value: Date | null) =>
+              updateDraft({ from: value ?? null, to: toValue }),
+            'onUpdate:modelDateTo': (value: Date | null) =>
+              updateDraft({ from: fromValue, to: value ?? null }),
+          }),
+          renderFooter(),
         ])
       }
 
       if (type === 'multiselect') {
-        return h(MultiSelect, {
-          key: controlKey.value,
-          modelValue: Array.isArray(localValue.value) ? localValue.value : [],
-          'onUpdate:modelValue': (value: any) =>
-            void updateValue(Array.isArray(value) ? value : []),
-          options: filterProps.config.options ?? [],
-          optionLabel: filterProps.config.optionLabel ?? 'label',
-          optionValue: filterProps.config.optionValue ?? 'value',
-          placeholder: filterProps.config.placeholder ?? 'Select',
-          filter: filterProps.config.filter ?? true,
-          showClear: filterProps.config.showClear ?? true,
-          class: 'app-filter-multiselect w-[240px]',
-          size: 'small',
-          appendTo: 'self',
-          maxSelectedLabels: 2,
-        })
+        return h('div', { class: 'w-[240px] max-w-full' }, [
+          h(MultiSelect, {
+            key: controlKey.value,
+            modelValue: Array.isArray(localValue.value) ? localValue.value : [],
+            'onUpdate:modelValue': (value: any) => updateDraft(Array.isArray(value) ? value : []),
+            options: filterProps.config.options ?? [],
+            optionLabel: filterProps.config.optionLabel ?? 'label',
+            optionValue: filterProps.config.optionValue ?? 'value',
+            placeholder: filterProps.config.placeholder ?? 'Select',
+            filter: filterProps.config.filter ?? true,
+            showClear: filterProps.config.showClear ?? true,
+            class: 'app-filter-multiselect w-full',
+            size: 'small',
+            appendTo: 'self',
+            maxSelectedLabels: 2,
+          }),
+          renderFooter(),
+        ])
       }
 
       if (type === 'text') {
-        return h(InputText, {
-          key: controlKey.value,
-          modelValue: String(localValue.value ?? ''),
-          'onUpdate:modelValue': (value: string) => void updateValue(value),
-          placeholder: filterProps.config.placeholder ?? 'Search',
-          class: 'w-[240px]',
-          size: 'small',
-          onKeydown: (event: KeyboardEvent) => {
-            if (event.key === 'Enter') {
-              filterEmit('close')
-            }
-          },
-        })
+        return h('div', { class: 'w-[240px] max-w-full' }, [
+          h(InputText, {
+            key: controlKey.value,
+            modelValue: String(localValue.value ?? ''),
+            'onUpdate:modelValue': (value: string) => updateDraft(value),
+            placeholder: filterProps.config.placeholder ?? 'Search',
+            class: 'w-full',
+            size: 'small',
+            onKeydown: (event: KeyboardEvent) => {
+              if (event.key === 'Enter') {
+                applyChanges()
+              }
+            },
+          }),
+          renderFooter(),
+        ])
       }
 
-      return h(Select, {
-        key: controlKey.value,
-        modelValue: localValue.value,
-        'onUpdate:modelValue': (value: any) => void updateValue(value, true),
-        options: filterProps.config.options ?? [],
-        optionLabel: filterProps.config.optionLabel ?? 'label',
-        optionValue: filterProps.config.optionValue ?? 'value',
-        placeholder: filterProps.config.placeholder ?? '',
-        showClear: filterProps.config.showClear ?? true,
-        filter: filterProps.config.filter ?? true,
-        class: 'app-filter-select w-[240px]',
-        size: 'small',
-        appendTo: 'self',
-      })
+      return h('div', { class: 'w-[240px] max-w-full' }, [
+        h(Select, {
+          key: controlKey.value,
+          modelValue: localValue.value,
+          'onUpdate:modelValue': (value: any) => updateDraft(value),
+          options: filterProps.config.options ?? [],
+          optionLabel: filterProps.config.optionLabel ?? 'label',
+          optionValue: filterProps.config.optionValue ?? 'value',
+          placeholder: filterProps.config.placeholder ?? '',
+          showClear: filterProps.config.showClear ?? true,
+          filter: filterProps.config.filter ?? true,
+          class: 'app-filter-select w-full',
+          size: 'small',
+          appendTo: 'self',
+        }),
+        renderFooter(),
+      ])
     }
   },
 })
@@ -450,7 +526,7 @@ function transformNode(node: VNode): VNode {
   )
 
   if (filterMenu && !filterMenu.disabled) {
-    vnodeProps.key = `${baseColumnKey}::${buildFilterMenuRenderKey(filterMenu)}`
+    vnodeProps.key = `${baseColumnKey}::${buildFilterMenuColumnKey(filterMenu)}`
   } else if (node.key != null) {
     vnodeProps.key = node.key
   } else {
@@ -461,6 +537,7 @@ function transformNode(node: VNode): VNode {
 }
 
 function buildColumnChildren(node: VNode, sortable: boolean, filterMenu?: ColumnFilterMenuConfig) {
+  const resolvedFilterMenu = filterMenu
   const children = node.children
 
   const currentSlots =
@@ -471,7 +548,7 @@ function buildColumnChildren(node: VNode, sortable: boolean, filterMenu?: Column
   const nextSlots: Record<string, (...args: any[]) => any> = { ...currentSlots }
   const sortField = String((node.props as any)?.sortField ?? (node.props as any)?.field ?? '')
 
-  if (filterMenu && !filterMenu.disabled) {
+  if (resolvedFilterMenu && !resolvedFilterMenu.disabled) {
     nextSlots.header = (slotProps: any) =>
       h('div', { class: 'flex w-full items-center justify-between gap-2' }, [
         h('div', { class: 'min-w-0 inline-flex items-center gap-2' }, [
@@ -492,42 +569,54 @@ function buildColumnChildren(node: VNode, sortable: boolean, filterMenu?: Column
           h(
             'button',
             {
+              ref: (el: any) =>
+                setFilterButtonRef(resolvedFilterMenu.key, el as HTMLElement | null),
               type: 'button',
               class: [
                 'inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-700',
-                isFilterActive(filterMenu.value) ? 'bg-slate-100 text-slate-700' : '',
+                isFilterActive(resolvedFilterMenu.value) ? 'bg-slate-100 text-slate-700' : '',
               ],
               'aria-label': 'Filter column',
-              onClick: (event: MouseEvent) => toggleFilterPopover(filterMenu.key, event),
+              onClick: (event: MouseEvent) => toggleFilterPopover(resolvedFilterMenu.key, event),
             },
             [h('i', { class: 'pi pi-filter text-sm' })],
           ),
           h(
             Popover,
             {
-              ref: (el: any) => setPopoverRef(filterMenu.key, el),
-              dismissable: true,
-              onHide: () => onPopoverHide(filterMenu.key),
+              ref: (el: any) => setPopoverRef(resolvedFilterMenu.key, el),
+              dismissable: false,
+              onHide: () => onPopoverHide(resolvedFilterMenu.key),
             },
             {
               default: () =>
-                h('div', { class: 'py-1' }, [
-                  h(FilterMenuControl, {
-                    key: buildFilterMenuRenderKey(filterMenu),
-                    config: filterMenu,
-                    'onUpdate:modelValue': (value: any) => {
-                      emit('update:columnFilter', { key: filterMenu.key, value })
-                    },
-                    onClose: () => hideFilterPopover(filterMenu.key),
-                  }),
-                ]),
+                h(
+                  'div',
+                  {
+                    ref: (el: any) =>
+                      setFilterContentRef(resolvedFilterMenu.key, el as HTMLElement | null),
+                    class: 'py-1',
+                    onMousedown: (event: MouseEvent) => event.stopPropagation(),
+                  },
+                  [
+                    h(FilterMenuControl, {
+                      key: `${resolvedFilterMenu.key}::${getFilterMenuRevision(resolvedFilterMenu.key)}`,
+                      config: resolvedFilterMenu,
+                      revision: getFilterMenuRevision(resolvedFilterMenu.key),
+                      'onUpdate:modelValue': (value: any) => {
+                        emit('update:columnFilter', { key: resolvedFilterMenu.key, value })
+                      },
+                      onClose: () => hideFilterPopover(resolvedFilterMenu.key),
+                    }),
+                  ],
+                ),
             },
           ),
         ]),
       ])
   }
 
-  if (filterMenu && sortable) {
+  if (resolvedFilterMenu && sortable) {
     nextSlots.sorticon = () => null
     return nextSlots
   }
@@ -576,6 +665,35 @@ function setPopoverRef(key: string, el: any) {
   delete popoverRefs.value[key]
 }
 
+function setFilterButtonRef(key: string, el: HTMLElement | null) {
+  if (el) {
+    filterButtonRefs.value[key] = el
+    return
+  }
+
+  delete filterButtonRefs.value[key]
+}
+
+function setFilterContentRef(key: string, el: HTMLElement | null) {
+  if (el) {
+    filterContentRefs.value[key] = el
+    return
+  }
+
+  delete filterContentRefs.value[key]
+}
+
+function getFilterMenuRevision(key: string) {
+  return filterMenuRevision.value[key] ?? 0
+}
+
+function bumpFilterMenuRevision(key: string) {
+  filterMenuRevision.value = {
+    ...filterMenuRevision.value,
+    [key]: (filterMenuRevision.value[key] ?? 0) + 1,
+  }
+}
+
 function toggleFilterPopover(key: string, event: MouseEvent) {
   event.preventDefault()
   event.stopPropagation()
@@ -583,13 +701,18 @@ function toggleFilterPopover(key: string, event: MouseEvent) {
   const current = popoverRefs.value[key]
   if (!current) return
 
+  if (activeFilterKey.value === key) {
+    hideFilterPopover(key)
+    return
+  }
+
   if (activeFilterKey.value && activeFilterKey.value !== key) {
     const previous = popoverRefs.value[activeFilterKey.value]
     previous?.hide?.()
   }
 
-  activeFilterKey.value = activeFilterKey.value === key ? null : key
-  current.toggle?.(event)
+  activeFilterKey.value = key
+  current.show?.(event)
 }
 
 function hideFilterPopover(key: string) {
@@ -604,9 +727,28 @@ function onPopoverHide(key: string) {
   if (activeFilterKey.value === key) {
     activeFilterKey.value = null
   }
+  bumpFilterMenuRevision(key)
+}
+
+function handleDocumentPointerDown(event: PointerEvent) {
+  const key = activeFilterKey.value
+  if (!key) return
+
+  const target = event.target as Node | null
+  if (!target) return
+
+  const content = filterContentRefs.value[key]
+  const trigger = filterButtonRefs.value[key]
+
+  if (content?.contains(target) || trigger?.contains(target)) {
+    return
+  }
+
+  hideFilterPopover(key)
 }
 
 function isFilterActive(value: any): boolean {
+  if (value instanceof Date) return Number.isFinite(value.getTime())
   if (Array.isArray(value)) return value.length > 0
   if (value && typeof value === 'object') {
     return Object.values(value).some((item) => isFilterActive(item))
@@ -614,9 +756,14 @@ function isFilterActive(value: any): boolean {
   return value !== null && value !== undefined && value !== ''
 }
 
-function cloneFilterValue(value: any) {
-  if (Array.isArray(value)) return [...value]
-  if (value && typeof value === 'object') return { ...value }
+function cloneFilterValue(value: any): any {
+  if (value instanceof Date) return new Date(value)
+  if (Array.isArray(value)) return value.map((item) => cloneFilterValue(item))
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entryValue]) => [key, cloneFilterValue(entryValue)]),
+    )
+  }
   return value
 }
 
@@ -642,6 +789,10 @@ function buildOptionsSignature(
 }
 
 function serializeFilterValue(value: any): string {
+  if (value instanceof Date) {
+    return Number.isFinite(value.getTime()) ? value.toISOString() : ''
+  }
+
   if (Array.isArray(value)) {
     return value.map((item) => serializeFilterValue(item)).join('|')
   }
@@ -656,7 +807,7 @@ function serializeFilterValue(value: any): string {
   return String(value ?? '')
 }
 
-function buildFilterMenuRenderKey(config: ColumnFilterMenuConfig) {
+function buildFilterMenuColumnKey(config: ColumnFilterMenuConfig) {
   const optionSignature = buildOptionsSignature(
     config.options,
     config.optionValue,
@@ -673,7 +824,7 @@ function buildFilterMenuRenderKey(config: ColumnFilterMenuConfig) {
   return `${config.key}::${config.type ?? 'select'}::${valueSignature}::${optionSignature}::${secondaryOptionSignature}`
 }
 
-function buildFilterControlKey(config: ColumnFilterMenuConfig, localValue: any) {
+function buildFilterControlKey(config: ColumnFilterMenuConfig) {
   const optionSignature = buildOptionsSignature(
     config.options,
     config.optionValue,
@@ -685,10 +836,18 @@ function buildFilterControlKey(config: ColumnFilterMenuConfig, localValue: any) 
     config.secondaryOptionLabel,
     config.secondaryFilterField,
   )
-  const valueSignature = serializeFilterValue(localValue)
+  const valueSignature = serializeFilterValue(config.value)
 
   return `${config.key}::${config.type ?? 'select'}::${valueSignature}::${optionSignature}::${secondaryOptionSignature}`
 }
+
+onMounted(() => {
+  document.addEventListener('pointerdown', handleDocumentPointerDown, true)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', handleDocumentPointerDown, true)
+})
 </script>
 
 <style scoped>

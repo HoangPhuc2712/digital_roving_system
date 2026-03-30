@@ -16,9 +16,11 @@ const vi = {
     close: 'Đóng',
     submit: 'Gửi',
     cancel: 'Hủy',
+    apply: 'Áp dụng',
     deleted: 'Đã xóa',
     noData: 'Không có dữ liệu',
     loading: 'Đang tải dữ liệu',
+    invalidDateFilter: 'Bộ lọc ngày không hợp lệ, vui lòng chọn đúng ngày From - To',
   },
   languageSwitcher: {
     languages: {
@@ -27,6 +29,11 @@ const vi = {
       'zh-TW': '繁體中文',
       'zh-CN': '简体中文',
     },
+  },
+  pagination: {
+    show: 'Hiển thị',
+    to: 'đến',
+    of: 'trên',
   },
   login: {
     title: 'Hệ thống tuần tra nội bộ',
@@ -204,6 +211,8 @@ const vi = {
     finishTime: 'Thời gian kết thúc',
     patrolTime: 'Thời gian tuần tra',
     guardName: 'Tên bảo vệ',
+    eventInfoZh: 'Thông tin sự kiện Zh',
+    eventInfoVi: 'Thông tin sự kiện Vi',
   },
   patrolSummaryReportList: {
     title: 'Báo cáo tổng hợp tuần tra',
@@ -215,6 +224,7 @@ const vi = {
     missedPatrolCount: 'Số lượt tuần tra bị thiếu',
     timeProblemCount: 'Số lỗi thời gian',
     insufficientNumberOfPatrol: 'Thiếu số lượt tuần tra',
+    shiftProblemCount: 'Số lỗi lệch ca',
     abnormalRate: 'Tỷ lệ bất thường',
     noReportFound: 'Không tìm thấy báo cáo',
   },
@@ -230,6 +240,14 @@ const vi = {
     patrolTime: 'Thời gian tuần tra',
     actualTime: 'Thời gian tuần tra thực tế',
     standardTime: 'Thời gian tuần tra tiêu chuẩn',
+  },
+  patrolSummaryShiftProblemDialog: {
+    title: 'Ngày tuần tra',
+    routeName: 'Tên lộ trình',
+    checkPoint: 'Điểm kiểm tra',
+    patrolTime: 'Thời gian tuần tra',
+    actualTime: 'Thời gian thực tế',
+    guardName: 'Tên bảo vệ',
   },
   areaList: {
     areaStatusOptions: {

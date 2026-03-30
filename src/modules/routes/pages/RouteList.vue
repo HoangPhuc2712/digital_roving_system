@@ -58,14 +58,14 @@ const routeFilterAreaOptions = computed(() => {
 })
 
 const routeStatusOptions = [
-  { label: t('routeList.routeStatusOptions.all'), value: t('routeList.routeStatusOptions.all') },
+  { label: t('routeList.routeStatusOptions.all'), value: 'ALL' },
   {
     label: t('routeList.routeStatusOptions.active'),
-    value: t('routeList.routeStatusOptions.active'),
+    value: 'ACTIVE',
   },
   {
     label: t('routeList.routeStatusOptions.inactive'),
-    value: t('routeList.routeStatusOptions.inactive'),
+    value: 'INACTIVE',
   },
 ]
 const confirmDeleteVisible = ref(false)

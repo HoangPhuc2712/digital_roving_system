@@ -16,9 +16,11 @@ const zhCN = {
     close: '关闭',
     submit: '提交',
     cancel: '取消',
+    apply: '应用',
     deleted: '已删除',
     noData: '无数据',
     loading: '正在加载数据',
+    invalidDateFilter: '日期筛选无效，请选择正确的 From - To 日期',
   },
   languageSwitcher: {
     languages: {
@@ -27,6 +29,11 @@ const zhCN = {
       'zh-TW': '繁體中文',
       'zh-CN': '简体中文',
     },
+  },
+  pagination: {
+    show: '显示',
+    to: '到',
+    of: '共',
   },
   login: {
     title: '内部巡逻系统',
@@ -204,6 +211,8 @@ const zhCN = {
     finishTime: '结束时间',
     patrolTime: '巡逻时间',
     guardName: '警卫姓名',
+    eventInfoZh: '事件信息 Zh',
+    eventInfoVi: '事件信息 Vi',
   },
   patrolSummaryReportList: {
     title: '巡逻总结报告',
@@ -215,6 +224,7 @@ const zhCN = {
     missedPatrolCount: '缺少巡逻次数',
     timeProblemCount: '时间异常次数',
     insufficientNumberOfPatrol: '巡逻次数不足',
+    shiftProblemCount: '跨班异常次数',
     abnormalRate: '异常率',
     noReportFound: '未找到报告',
   },
@@ -230,6 +240,14 @@ const zhCN = {
     patrolTime: '巡逻时间',
     actualTime: '实际巡逻时间',
     standardTime: '标准巡逻时间',
+  },
+  patrolSummaryShiftProblemDialog: {
+    title: '巡逻日期',
+    routeName: '路线名称',
+    checkPoint: '检查点',
+    patrolTime: '巡逻时间',
+    actualTime: '实际时间',
+    guardName: '保安姓名',
   },
   areaList: {
     areaStatusOptions: {

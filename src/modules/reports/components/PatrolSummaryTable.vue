@@ -17,6 +17,7 @@ const emit = defineEmits<{
   (e: 'open-missed-details', row: PatrolSummaryReportRow): void
   (e: 'open-time-problem-details', row: PatrolSummaryReportRow): void
   (e: 'open-insufficient-details', row: PatrolSummaryReportRow): void
+  (e: 'open-shift-problem-details', row: PatrolSummaryReportRow): void
 }>()
 
 function formatRate(rate: number) {
@@ -58,6 +59,15 @@ function openInsufficientDetails(row: PatrolSummaryReportRow) {
   if (!canOpenInsufficientDetails(row)) return
   emit('open-insufficient-details', row)
 }
+
+function canOpenShiftProblemDetails(row: PatrolSummaryReportRow) {
+  return Number(row.shift_problem_count ?? 0) > 0
+}
+
+function openShiftProblemDetails(row: PatrolSummaryReportRow) {
+  if (!canOpenShiftProblemDetails(row)) return
+  emit('open-shift-problem-details', row)
+}
 </script>
 
 <template>
@@ -98,6 +108,9 @@ function openInsufficientDetails(row: PatrolSummaryReportRow) {
           </th>
           <th class="border border-slate-200 px-4 py-3 text-center font-semibold">
             {{ t('patrolSummaryReportList.insufficientNumberOfPatrol') }}
+          </th>
+          <th class="border border-slate-200 px-4 py-3 text-center font-semibold">
+            {{ t('patrolSummaryReportList.shiftProblemCount') }}
           </th>
           <th class="border border-slate-200 px-4 py-3 text-center font-semibold">
             {{ t('patrolSummaryReportList.abnormalRate') }}
@@ -168,6 +181,20 @@ function openInsufficientDetails(row: PatrolSummaryReportRow) {
               </button>
               <span v-else>{{ row.insufficient_count }}</span>
             </td>
+            <td
+              class="border border-slate-200 px-4 py-3 text-center"
+              :class="abnormalCountClass(row.shift_problem_count)"
+            >
+              <button
+                v-if="canOpenShiftProblemDetails(row)"
+                type="button"
+                class="font-medium text-red-500 hover:text-red-800 hover:cursor-pointer"
+                @click="openShiftProblemDetails(row)"
+              >
+                {{ row.shift_problem_count }}
+              </button>
+              <span v-else>{{ row.shift_problem_count }}</span>
+            </td>
             <td class="border border-slate-200 px-4 py-3 text-center">
               {{ formatRate(row.abnormal_rate) }}
             </td>
@@ -177,7 +204,7 @@ function openInsufficientDetails(row: PatrolSummaryReportRow) {
 
       <tbody v-else-if="!props.loading">
         <tr>
-          <td colspan="8" class="border border-slate-200 px-4 py-8 text-center text-slate-500">
+          <td colspan="9" class="border border-slate-200 px-4 py-8 text-center text-slate-500">
             {{ t('patrolSummaryReportList.noReportFound') }}.
           </td>
         </tr>

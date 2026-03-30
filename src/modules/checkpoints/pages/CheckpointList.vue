@@ -47,15 +47,15 @@ const { t, locale } = useI18n()
 const checkpointStatusOptions = [
   {
     label: t('checkpointList.checkpointStatusOptions.all'),
-    value: t('checkpointList.checkpointStatusOptions.all'),
+    value: 'ALL',
   },
   {
     label: t('checkpointList.checkpointStatusOptions.active'),
-    value: t('checkpointList.checkpointStatusOptions.active'),
+    value: 'ACTIVE',
   },
   {
     label: t('checkpointList.checkpointStatusOptions.inactive'),
-    value: t('checkpointList.checkpointStatusOptions.inactive'),
+    value: 'INACTIVE',
   },
 ]
 const confirmDeleteVisible = ref(false)
@@ -562,7 +562,6 @@ async function onExport() {
           size="small"
           severity="danger"
           outlined
-          class="ml-2"
           :disabled="!canManage || !(selectedRows && selectedRows.length)"
           @click="onDeleteSelected"
         />

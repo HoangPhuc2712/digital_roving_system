@@ -10,6 +10,7 @@ import type {
   PatrolSummaryInsufficientPatrolDetailRow,
   PatrolSummaryMissedPatrolDetailRow,
   PatrolSummaryReportRow,
+  PatrolSummaryShiftProblemDetailRow,
   PatrolSummaryTimeProblemDetailRow,
   ReportImage,
   ReportNoteGroup,
@@ -185,6 +186,7 @@ type ApiPlannedPatrolShiftView = {
   realityMinutes?: number
   realitySeconds?: number
   timeProblem?: boolean
+  shiftProblem?: boolean
   planPoint?: number
   realityPoint?: number
   pointProblem?: boolean
@@ -1109,6 +1111,35 @@ function buildPlannedShiftStart(view: ApiPlannedPatrolShiftView) {
   return Number.isFinite(d.getTime()) ? d : null
 }
 
+function buildPlannedShiftEnd(view: ApiPlannedPatrolShiftView) {
+  const year = Number(view.psYear ?? 0)
+  const month = Number(view.psMonth ?? 0)
+  const day = Number(view.psDay ?? 0)
+  const hourTo = Number(view.psHourTo ?? 0)
+
+  if (!year || !month || !day) return null
+
+  const d = new Date(year, month - 1, day, hourTo, 59, 59, 999)
+  return Number.isFinite(d.getTime()) ? d : null
+}
+
+function formatActualShiftProblemTime(value: unknown) {
+  const raw = String(value ?? '').trim()
+  if (!raw) return '-'
+
+  const d = new Date(raw)
+  if (!Number.isFinite(d.getTime())) return raw
+
+  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`
+}
+
+function isOutsideShiftWindow(value: Date | null, shiftStart: Date | null, shiftEnd: Date | null) {
+  if (!value || !shiftStart || !shiftEnd) return false
+
+  const t = value.getTime()
+  return t < shiftStart.getTime() || t > shiftEnd.getTime()
+}
+
 // function buildActualShiftStart(view: ApiPatrolShiftReportView): Date | null {
 //   const points = Array.isArray(view.pointReports) ? view.pointReports : []
 
@@ -1293,6 +1324,42 @@ function buildInsufficientPatrolDetails(
   return rows
 }
 
+function buildShiftProblemDetails(
+  views: ApiPlannedPatrolShiftView[],
+  actualViewMap: Map<number, ApiPatrolShiftReportView>,
+): PatrolSummaryShiftProblemDetailRow[] {
+  const rows: PatrolSummaryShiftProblemDetailRow[] = []
+
+  for (const item of views) {
+    const psId = Number(item.psId ?? 0)
+    const actualView = actualViewMap.get(psId)
+    const pointReports = Array.isArray(actualView?.pointReports) ? actualView.pointReports : []
+    const shiftStart = buildPlannedShiftStart(item)
+    const shiftEnd = buildPlannedShiftEnd(item)
+    const patrolTime = extractShiftTimeRange(item) || '-'
+    const routeName = String(actualView?.routeName ?? item.routeName ?? '').trim() || '-'
+
+    for (const [pointIndex, point] of pointReports.entries()) {
+      const actualTimeRaw = String(point?.reportAt ?? '').trim()
+      const actualTime = actualTimeRaw ? new Date(actualTimeRaw) : null
+
+      rows.push({
+        row_id: `${psId}-${Number(point?.prId ?? 0)}-${pointIndex}`,
+        route_name: routeName,
+        cp_name: String(point?.cpName ?? '').trim() || '-',
+        patrol_time: patrolTime,
+        actual_time: formatActualShiftProblemTime(actualTimeRaw),
+        guard_name:
+          String(point?.reportName ?? actualView?.reportName ?? item.reportName ?? '').trim() ||
+          '-',
+        is_out_of_shift: isOutsideShiftWindow(actualTime, shiftStart, shiftEnd),
+      })
+    }
+  }
+
+  return rows
+}
+
 export async function fetchPatrolSummaryRows(
   dateFrom: Date,
   dateTo: Date,
@@ -1364,7 +1431,10 @@ export async function fetchPatrolSummaryRows(
         insufficientRows,
         actualViewMap,
       )
-      const abnormalTotal = missedCount + timeProblemCount + insufficientCount
+      const shiftProblemRows = actualRows.filter((item) => Boolean(item.shiftProblem))
+      const shiftProblemCount = shiftProblemRows.length
+      const shiftProblemDetails = buildShiftProblemDetails(shiftProblemRows, actualViewMap)
+      const abnormalTotal = missedCount + timeProblemCount + insufficientCount + shiftProblemCount
       const abnormalRate = requiredCount > 0 ? (abnormalTotal / requiredCount) * 100 : 0
 
       rows.push({
@@ -1377,10 +1447,12 @@ export async function fetchPatrolSummaryRows(
         missed_count: missedCount,
         time_problem_count: timeProblemCount,
         insufficient_count: insufficientCount,
+        shift_problem_count: shiftProblemCount,
         abnormal_rate: Number(abnormalRate.toFixed(2)),
         missed_patrol_details: missedPatrolDetails,
         time_problem_details: timeProblemDetails,
         insufficient_patrol_details: insufficientPatrolDetails,
+        shift_problem_details: shiftProblemDetails,
       })
     }
   }

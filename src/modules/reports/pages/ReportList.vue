@@ -54,6 +54,10 @@ const formModel = ref<ReportFormModel | null>(null)
 const canEditStatus = computed(() => auth.isAdminUser)
 const dateReloadTimer = ref<number | null>(null)
 const suppressDateReload = ref(false)
+const hasInvalidDateFilter = computed(
+  () => (store.filterDateFrom == null) !== (store.filterDateTo == null),
+)
+const tableRows = computed(() => (hasInvalidDateFilter.value ? [] : store.filteredRows))
 
 const reportSwitchButtons = computed(() => [
   {
@@ -111,7 +115,7 @@ useResetFirstOnFilterChange(
 )
 
 const { onPage } = usePagination({
-  load: () => store.load(),
+  load: () => (hasInvalidDateFilter.value ? Promise.resolve() : store.load()),
   setFirst: (first) => store.setFirst(first),
 })
 
@@ -120,38 +124,68 @@ watch(
   () => {
     if (suppressDateReload.value) return
     store.setFirst(0)
+    if (hasInvalidDateFilter.value) {
+      clearDateReloadTimer()
+      return
+    }
     scheduleReloadByDate()
   },
 )
 
-const REPORTS_DASHBOARD_RELOAD_KEY = 'reports:dashboard-query-reload'
-
-function hasDashboardQuery() {
-  return (
-    route.name === 'reports' &&
-    (route.query.result != null ||
-      route.query.issueStatus != null ||
-      route.query.fromDashboard != null)
-  )
-}
+const REPORTS_RELOAD_STATE_KEY = 'reports:reload-state'
 
 function handleBeforeUnload() {
-  if (hasDashboardQuery()) {
-    sessionStorage.setItem(REPORTS_DASHBOARD_RELOAD_KEY, '1')
-  } else {
-    sessionStorage.removeItem(REPORTS_DASHBOARD_RELOAD_KEY)
-  }
+  persistReloadState()
 }
 
-function shouldResetDashboardQueryAfterReload() {
-  if (!hasDashboardQuery()) return false
-
-  const shouldReset = sessionStorage.getItem(REPORTS_DASHBOARD_RELOAD_KEY) === '1'
-  if (shouldReset) {
-    sessionStorage.removeItem(REPORTS_DASHBOARD_RELOAD_KEY)
+function persistReloadState() {
+  const payload = {
+    searchText: store.searchText ?? '',
+    filterAreaId: store.filterAreaId ?? null,
+    filterRouteName: store.filterRouteName ?? null,
+    filterIssueStatus: store.filterIssueStatus ?? null,
+    filterResult: store.filterResult ?? 'ALL',
+    filterGuardId: store.filterGuardId ?? '',
+    filterDateFrom: store.filterDateFrom ? store.filterDateFrom.toISOString() : null,
+    filterDateTo: store.filterDateTo ? store.filterDateTo.toISOString() : null,
+    first: store.first ?? 0,
   }
 
-  return shouldReset
+  sessionStorage.setItem(REPORTS_RELOAD_STATE_KEY, JSON.stringify(payload))
+}
+
+function restoreReloadState() {
+  const raw = sessionStorage.getItem(REPORTS_RELOAD_STATE_KEY)
+  if (!raw) return false
+
+  try {
+    const payload = JSON.parse(raw) as {
+      searchText?: string
+      filterAreaId?: number | null
+      filterRouteName?: string | null
+      filterIssueStatus?: number | null
+      filterResult?: ResultFilter
+      filterGuardId?: string
+      filterDateFrom?: string | null
+      filterDateTo?: string | null
+      first?: number
+    }
+
+    store.searchText = payload.searchText ?? ''
+    store.filterAreaId = payload.filterAreaId ?? null
+    store.filterRouteName = payload.filterRouteName ?? null
+    store.filterIssueStatus = payload.filterIssueStatus ?? null
+    store.filterResult = payload.filterResult ?? 'ALL'
+    store.filterGuardId = payload.filterGuardId ?? ''
+    store.filterDateFrom = payload.filterDateFrom ? new Date(payload.filterDateFrom) : null
+    store.filterDateTo = payload.filterDateTo ? new Date(payload.filterDateTo) : null
+    store.setFirst(payload.first ?? 0)
+
+    return true
+  } catch {
+    sessionStorage.removeItem(REPORTS_RELOAD_STATE_KEY)
+    return false
+  }
 }
 
 function applyRouteFilters() {
@@ -185,28 +219,24 @@ function applyRouteFilters() {
 onMounted(async () => {
   window.addEventListener('beforeunload', handleBeforeUnload)
 
-  if (shouldResetDashboardQueryAfterReload()) {
-    resetPageState()
-    await router.replace({ name: 'reports' })
-    suppressDateReload.value = false
-    await store.load()
-    return
+  const restored = restoreReloadState()
+
+  if (!restored) {
+    applyRouteFilters()
   }
 
-  applyRouteFilters()
   suppressDateReload.value = false
   await store.load()
 })
 
 onBeforeRouteLeave(() => {
+  sessionStorage.removeItem(REPORTS_RELOAD_STATE_KEY)
   resetPageState()
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload)
   clearDateReloadTimer()
-  sessionStorage.removeItem(REPORTS_DASHBOARD_RELOAD_KEY)
-  resetPageState()
 })
 
 function formatDateTime(iso: string) {
@@ -271,6 +301,11 @@ function onColumnFilter(payload: { key: string; value: any }) {
   if (payload.key === 'issueStatus') store.filterIssueStatus = payload.value ?? null
   if (payload.key === 'result') store.filterResult = payload.value ?? 'ALL'
   if (payload.key === 'guardId') store.filterGuardId = payload.value ?? ''
+  if (payload.key === 'reportDate') {
+    const value = payload.value && typeof payload.value === 'object' ? payload.value : {}
+    store.filterDateFrom = value.from ?? null
+    store.filterDateTo = value.to ?? null
+  }
 }
 
 function clearAll() {
@@ -344,7 +379,7 @@ async function onExport() {
   exporting.value = true
   try {
     await exportPatrolReportXlsx({
-      rows: store.filteredRows,
+      rows: tableRows.value,
       fileName: `patrol_reports_${new Date().toISOString().slice(0, 10)}.xlsx`,
     })
   } finally {
@@ -363,18 +398,13 @@ async function onExport() {
     <BaseDataTable
       :key="`report-list-table-${locale}`"
       title=""
-      :value="store.filteredRows"
+      :value="tableRows"
       :loading="store.loading"
       dataKey="pr_id"
       :rows="store.rowsPerPage"
       :first="store.first"
       :modelSearch="store.searchText"
-      :modelDateFrom="store.filterDateFrom"
-      :modelDateTo="store.filterDateTo"
-      :showDateSelection="true"
       @update:modelSearch="store.searchText = $event"
-      @update:modelDateFrom="store.filterDateFrom = $event"
-      @update:modelDateTo="store.filterDateTo = $event"
       @update:columnFilter="onColumnFilter"
       @clear="clearAll"
       @page="onPage"
@@ -396,7 +426,9 @@ async function onExport() {
 
       <template #empty>
         <div class="p-4 text-slate-600 flex justify-center">
-          {{ t('reportList.noReportsFound') }}
+          {{
+            hasInvalidDateFilter ? t('common.invalidDateFilter') : t('reportList.noReportsFound')
+          }}
         </div>
       </template>
 
@@ -476,6 +508,14 @@ async function onExport() {
         :header="t('reportList.table.reportDate')"
         style="min-width: 12rem"
         sortField="report_at"
+        :filterMenu="{
+          key: 'reportDate',
+          type: 'date-range',
+          value: {
+            from: store.filterDateFrom,
+            to: store.filterDateTo,
+          },
+        }"
       >
         <template #body="{ data }">
           {{ formatDateTime(data.report_at || data.scan_at || data.created_at) }}

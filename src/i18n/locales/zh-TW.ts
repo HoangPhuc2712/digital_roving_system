@@ -16,9 +16,11 @@ const zhTW = {
     close: '關閉',
     submit: '提交',
     cancel: '取消',
+    apply: '套用',
     deleted: '已刪除',
     noData: '無資料',
     loading: '資料載入中',
+    invalidDateFilter: '日期篩選無效，請選擇正確的 From - To 日期',
   },
   languageSwitcher: {
     languages: {
@@ -27,6 +29,11 @@ const zhTW = {
       'zh-TW': '繁體中文',
       'zh-CN': '简体中文',
     },
+  },
+  pagination: {
+    show: '顯示',
+    to: '到',
+    of: '共',
   },
   login: {
     title: '內部巡邏系統',
@@ -204,6 +211,8 @@ const zhTW = {
     finishTime: '結束時間',
     patrolTime: '巡邏時間',
     guardName: '警衛姓名',
+    eventInfoZh: '事件資訊 Zh',
+    eventInfoVi: '事件資訊 Vi',
   },
   patrolSummaryReportList: {
     title: '巡邏總結報告',
@@ -215,6 +224,7 @@ const zhTW = {
     missedPatrolCount: '缺少巡邏次數',
     timeProblemCount: '時間異常次數',
     insufficientNumberOfPatrol: '巡邏次數不足',
+    shiftProblemCount: '跨班異常次數',
     abnormalRate: '異常率',
     noReportFound: '找不到報告',
   },
@@ -230,6 +240,14 @@ const zhTW = {
     patrolTime: '巡邏時間',
     actualTime: '實際巡邏時間',
     standardTime: '標準巡邏時間',
+  },
+  patrolSummaryShiftProblemDialog: {
+    title: '巡邏日期',
+    routeName: '路線名稱',
+    checkPoint: '檢查點',
+    patrolTime: '巡邏時間',
+    actualTime: '實際時間',
+    guardName: '警衛姓名',
   },
   areaList: {
     areaStatusOptions: {

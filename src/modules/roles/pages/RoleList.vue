@@ -38,11 +38,11 @@ const canManage = computed(() => auth.isAdminUser && auth.canAccess('roles.manag
 const exporting = ref(false)
 
 const roleStatusOptions = [
-  { label: t('roleList.roleStatusOptions.all'), value: t('roleList.roleStatusOptions.all') },
-  { label: t('roleList.roleStatusOptions.active'), value: t('roleList.roleStatusOptions.active') },
+  { label: t('roleList.roleStatusOptions.all'), value: 'ALL' },
+  { label: t('roleList.roleStatusOptions.active'), value: 'ACTIVE' },
   {
     label: t('roleList.roleStatusOptions.inactive'),
-    value: t('roleList.roleStatusOptions.inactive'),
+    value: 'INACTIVE',
   },
 ]
 const confirmDeleteVisible = ref(false)
