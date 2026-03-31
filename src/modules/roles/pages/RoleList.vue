@@ -405,6 +405,7 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
           type: 'select',
           value: store.filterMenuId,
           options: store.menuOptions,
+          placeholder: t('roleList.accessPermission'),
         }"
       >
         <template #body="{ data }">

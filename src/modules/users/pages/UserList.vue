@@ -334,6 +334,7 @@ function onViewPatrolPath(row: UserRow) {
           type: 'select',
           value: store.filterAreaId,
           options: store.areaOptions,
+          placeholder: t('userList.area'),
         }"
       >
         <template #body="{ data }">
@@ -350,6 +351,7 @@ function onViewPatrolPath(row: UserRow) {
           type: 'select',
           value: store.filterRoleId,
           options: store.roleOptions,
+          placeholder: t('userList.role'),
         }"
       >
         <template #body="{ data }">

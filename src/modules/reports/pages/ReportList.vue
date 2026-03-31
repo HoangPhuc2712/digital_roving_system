@@ -532,6 +532,7 @@ async function onExport() {
           value: store.filterIssueStatus,
           options: issueStatusOptions,
           showClear: true,
+          placeholder: t('reportList.issueStatusOptions.all'),
         }"
       >
         <template #body="{ data }">

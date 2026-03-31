@@ -447,6 +447,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
           type: 'select',
           value: store.filterAreaId,
           options: routeFilterAreaOptions,
+          placeholder: t('routeList.area'),
         }"
       >
         <template #body="{ data }">
