@@ -458,36 +458,44 @@ function submit() {
           />
         </div>
 
-        <div>
-          <label class="block text-sm text-slate-600 mb-1">{{ t('routeForm.minMinute') }}</label>
-          <div v-if="isView" class="text-slate-800 font-semibold">
-            {{ form.route_min_minute }}:00
+        <template v-if="isView">
+          <div aria-hidden="true"></div>
+
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">{{ t('routeForm.minMinute') }}</label>
+            <div class="text-slate-800 font-semibold">{{ form.route_min_minute }}:00</div>
           </div>
-          <InputNumber
-            v-else
-            v-model="form.route_min_minute"
-            class="w-full"
-            size="small"
-            :min="0"
-            :step="1"
-            :useGrouping="false"
-          />
-        </div>
-        <div>
-          <label class="block text-sm text-slate-600 mb-1">{{ t('routeForm.maxMinute') }}</label>
-          <div v-if="isView" class="text-slate-800 font-semibold">
-            {{ form.route_max_minute }}:00
+
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">{{ t('routeForm.maxMinute') }}</label>
+            <div class="text-slate-800 font-semibold">{{ form.route_max_minute }}:00</div>
           </div>
-          <InputNumber
-            v-else
-            v-model="form.route_max_minute"
-            class="w-full"
-            size="small"
-            :min="0"
-            :step="1"
-            :useGrouping="false"
-          />
-        </div>
+        </template>
+
+        <template v-else>
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">{{ t('routeForm.minMinute') }}</label>
+            <InputNumber
+              v-model="form.route_min_minute"
+              class="w-full"
+              size="small"
+              :min="0"
+              :step="1"
+              :useGrouping="false"
+            />
+          </div>
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">{{ t('routeForm.maxMinute') }}</label>
+            <InputNumber
+              v-model="form.route_max_minute"
+              class="w-full"
+              size="small"
+              :min="0"
+              :step="1"
+              :useGrouping="false"
+            />
+          </div>
+        </template>
       </div>
 
       <div class="border-t border-slate-200 pt-3 space-y-3">

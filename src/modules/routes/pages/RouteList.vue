@@ -258,7 +258,7 @@ function closeDeleteConfirm() {
 
 async function onDelete(row: RouteRow) {
   openDeleteConfirm(
-    `${t('routeList.error.deleteDetail')} ${row.route_code} - ${row.route_name}?`,
+    `${t('routeList.error.areYouSure')} ${row.route_code} - ${row.route_name}?`,
     async () => {
       try {
         await deleteRouteMock({ route_id: row.route_id, actor_id: auth.user?.user_id ?? '' })

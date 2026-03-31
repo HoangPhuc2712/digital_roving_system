@@ -18,6 +18,12 @@ function buildRouteDetailText(row: RouteRow) {
   return parts.length ? parts.join(' -> ') : '-'
 }
 
+function formatMinuteClock(value: number | null | undefined) {
+  const minute = Number(value ?? 0)
+  if (!Number.isFinite(minute)) return '-'
+  return `${Math.max(0, Math.trunc(minute))}:00`
+}
+
 async function saveWorkbook(wb: ExcelJS.Workbook, fileName: string) {
   const buf = await wb.xlsx.writeBuffer()
   const blob = new Blob([buf], {
@@ -42,8 +48,8 @@ export async function exportRoutesXlsx(params: { rows: RouteRow[]; fileName: str
     { header: 'Area', key: 'area_name', width: 20 },
     { header: 'Role', key: 'role_name', width: 20 },
     { header: 'Priority', key: 'route_priority', width: 12 },
-    { header: 'Maximum Time', key: 'route_max_minute', width: 16 },
     { header: 'Minimum Time', key: 'route_min_minute', width: 16 },
+    { header: 'Maximum Time', key: 'route_max_minute', width: 16 },
     { header: 'Route Detail', key: 'route_detail', width: 32 },
   ]
 
@@ -62,8 +68,8 @@ export async function exportRoutesXlsx(params: { rows: RouteRow[]; fileName: str
       area_name: row.area_name || '-',
       role_name: row.role_name || row.role_code || '-',
       route_priority: Number(row.route_priority ?? 0),
-      route_max_minute: Number(row.route_max_minute ?? 0),
-      route_min_minute: Number(row.route_min_minute ?? 0),
+      route_max_minute: formatMinuteClock(row.route_max_minute),
+      route_min_minute: formatMinuteClock(row.route_min_minute),
       route_detail: buildRouteDetailText(row),
     })
   }
