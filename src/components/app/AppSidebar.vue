@@ -195,7 +195,7 @@ function closeMobile() {
 
 function itemClass(active: boolean) {
   return [
-    'w-full flex items-center justify-between gap-3',
+    'w-full flex items-center justify-between gap-3 cursor-pointer',
     'px-3 py-2 rounded-lg transition',
     active ? 'bg-white/10' : 'hover:bg-white/5',
   ].join(' ')
@@ -203,7 +203,7 @@ function itemClass(active: boolean) {
 
 function subItemClass(active: boolean) {
   return [
-    'w-full flex items-center gap-3',
+    'w-full flex items-center gap-3 cursor-pointer',
     'px-3 py-2 rounded-lg transition',
     active ? 'bg-white/10' : 'hover:bg-white/5',
   ].join(' ')
@@ -211,6 +211,19 @@ function subItemClass(active: boolean) {
 
 function isActivePath(prefix: string) {
   return route.path === prefix || route.path.startsWith(prefix + '/')
+}
+
+function isAreasGroupActive() {
+  return (
+    isActivePath('/areas') ||
+    route.path === '/checkpoints' ||
+    route.path.startsWith('/checkpoints/')
+  )
+}
+
+function isNavItemActive(item: NavItem, isActive: boolean) {
+  if (item.key === 'AREAS') return isActive || isAreasGroupActive()
+  return isActive || isActivePath(item.prefix)
 }
 
 function isReportsGroupActive() {
@@ -326,7 +339,7 @@ function logout() {
 
           <template v-else>
             <RouterLink :to="item.to" v-slot="{ isActive }">
-              <a :class="itemClass(isActive || isActivePath(item.prefix))" @click="closeMobile">
+              <a :class="itemClass(isNavItemActive(item, isActive))" @click="closeMobile">
                 <span class="flex items-center gap-3">
                   <i :class="item.icon"></i>
                   <span>{{ item.label }}</span>
