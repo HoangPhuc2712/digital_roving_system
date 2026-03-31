@@ -223,6 +223,8 @@ const zhTW = {
     actualPatrolCount: '實際巡邏次數',
     missedPatrolCount: '缺少巡邏次數',
     timeProblemCount: '時間異常次數',
+    tooShortPatrolCount: '過短巡邏班次數',
+    tooLongPatrolCount: '過長巡邏班次數',
     insufficientNumberOfPatrol: '巡邏次數不足',
     shiftProblemCount: '跨班異常次數',
     abnormalRate: '異常率',
@@ -240,6 +242,8 @@ const zhTW = {
     patrolTime: '巡邏時間',
     actualTime: '實際巡邏時間',
     standardTime: '標準巡邏時間',
+    minimumTime: '最短時間',
+    maximumTime: '最長時間',
   },
   patrolSummaryShiftProblemDialog: {
     title: '巡邏日期',

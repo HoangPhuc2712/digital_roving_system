@@ -223,6 +223,8 @@ const en = {
     actualPatrolCount: 'Actual Patrols Count',
     missedPatrolCount: 'Missed Patrols Count',
     timeProblemCount: 'Time Problem Count',
+    tooShortPatrolCount: 'Too Short Patrol Count',
+    tooLongPatrolCount: 'Too Long Patrol Count',
     insufficientNumberOfPatrol: 'Insufficient Number of Patrols',
     shiftProblemCount: 'Shift Problem Count',
     abnormalRate: 'Abnormal Rate',
@@ -240,6 +242,8 @@ const en = {
     patrolTime: 'Patrol Time',
     actualTime: 'Actual Patrol Time',
     standardTime: 'Standard Patrol Time',
+    minimumTime: 'Minimum Time',
+    maximumTime: 'Maximum Time',
   },
   patrolSummaryShiftProblemDialog: {
     title: 'Patrol Date',

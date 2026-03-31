@@ -223,6 +223,8 @@ const vi = {
     actualPatrolCount: 'Số lượt tuần tra thực tế',
     missedPatrolCount: 'Số lượt tuần tra bị thiếu',
     timeProblemCount: 'Số lỗi thời gian',
+    tooShortPatrolCount: 'Số ca tuần tra quá ngắn',
+    tooLongPatrolCount: 'Số ca tuần tra quá dài',
     insufficientNumberOfPatrol: 'Thiếu số lượt tuần tra',
     shiftProblemCount: 'Số lỗi lệch ca',
     abnormalRate: 'Tỷ lệ bất thường',
@@ -240,6 +242,8 @@ const vi = {
     patrolTime: 'Thời gian tuần tra',
     actualTime: 'Thời gian tuần tra thực tế',
     standardTime: 'Thời gian tuần tra tiêu chuẩn',
+    minimumTime: 'Thời gian tối thiểu',
+    maximumTime: 'Thời gian tối đa',
   },
   patrolSummaryShiftProblemDialog: {
     title: 'Ngày tuần tra',

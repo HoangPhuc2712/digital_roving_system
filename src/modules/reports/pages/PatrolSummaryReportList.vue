@@ -30,11 +30,13 @@ const exporting = ref(false)
 const autoLoadEnabled = ref(false)
 const chartCardRef = ref<PatrolSummaryChartExpose | null>(null)
 const missedDialogVisible = ref(false)
-const timeProblemDialogVisible = ref(false)
+const slowTimeProblemDialogVisible = ref(false)
+const fastTimeProblemDialogVisible = ref(false)
 const insufficientDialogVisible = ref(false)
 const shiftProblemDialogVisible = ref(false)
 const selectedMissedRow = ref<PatrolSummaryReportRow | null>(null)
-const selectedTimeProblemRow = ref<PatrolSummaryReportRow | null>(null)
+const selectedSlowTimeProblemRow = ref<PatrolSummaryReportRow | null>(null)
+const selectedFastTimeProblemRow = ref<PatrolSummaryReportRow | null>(null)
 const selectedInsufficientRow = ref<PatrolSummaryReportRow | null>(null)
 const selectedShiftProblemRow = ref<PatrolSummaryReportRow | null>(null)
 
@@ -97,11 +99,13 @@ function resetPageState() {
   autoLoadEnabled.value = false
   clearFilterLoadTimer()
   missedDialogVisible.value = false
-  timeProblemDialogVisible.value = false
+  slowTimeProblemDialogVisible.value = false
+  fastTimeProblemDialogVisible.value = false
   insufficientDialogVisible.value = false
   shiftProblemDialogVisible.value = false
   selectedMissedRow.value = null
-  selectedTimeProblemRow.value = null
+  selectedSlowTimeProblemRow.value = null
+  selectedFastTimeProblemRow.value = null
   selectedInsufficientRow.value = null
   selectedShiftProblemRow.value = null
   store.clearFilters()
@@ -111,9 +115,17 @@ const selectedMissedPatrolDate = computed(() => selectedMissedRow.value?.date_la
 const selectedMissedPatrolRows = computed(
   () => selectedMissedRow.value?.missed_patrol_details ?? [],
 )
-const selectedTimeProblemDate = computed(() => selectedTimeProblemRow.value?.date_label ?? '')
-const selectedTimeProblemRows = computed(
-  () => selectedTimeProblemRow.value?.time_problem_details ?? [],
+const selectedSlowTimeProblemDate = computed(
+  () => selectedSlowTimeProblemRow.value?.date_label ?? '',
+)
+const selectedSlowTimeProblemRows = computed(
+  () => selectedSlowTimeProblemRow.value?.time_slow_problem_details ?? [],
+)
+const selectedFastTimeProblemDate = computed(
+  () => selectedFastTimeProblemRow.value?.date_label ?? '',
+)
+const selectedFastTimeProblemRows = computed(
+  () => selectedFastTimeProblemRow.value?.time_fast_problem_details ?? [],
 )
 
 const selectedInsufficientDate = computed(() => selectedInsufficientRow.value?.date_label ?? '')
@@ -130,9 +142,14 @@ function openMissedDetails(row: PatrolSummaryReportRow) {
   missedDialogVisible.value = true
 }
 
-function openTimeProblemDetails(row: PatrolSummaryReportRow) {
-  selectedTimeProblemRow.value = row
-  timeProblemDialogVisible.value = true
+function openSlowTimeProblemDetails(row: PatrolSummaryReportRow) {
+  selectedSlowTimeProblemRow.value = row
+  slowTimeProblemDialogVisible.value = true
+}
+
+function openFastTimeProblemDetails(row: PatrolSummaryReportRow) {
+  selectedFastTimeProblemRow.value = row
+  fastTimeProblemDialogVisible.value = true
 }
 
 function openInsufficientDetails(row: PatrolSummaryReportRow) {
@@ -152,10 +169,17 @@ function onMissedDialogVisibleChange(value: boolean) {
   }
 }
 
-function onTimeProblemDialogVisibleChange(value: boolean) {
-  timeProblemDialogVisible.value = value
+function onSlowTimeProblemDialogVisibleChange(value: boolean) {
+  slowTimeProblemDialogVisible.value = value
   if (!value) {
-    selectedTimeProblemRow.value = null
+    selectedSlowTimeProblemRow.value = null
+  }
+}
+
+function onFastTimeProblemDialogVisibleChange(value: boolean) {
+  fastTimeProblemDialogVisible.value = value
+  if (!value) {
+    selectedFastTimeProblemRow.value = null
   }
 }
 
@@ -241,7 +265,8 @@ async function onExport() {
         :groupedRows="groupedRows"
         :loading="store.loading"
         @open-missed-details="openMissedDetails"
-        @open-time-problem-details="openTimeProblemDetails"
+        @open-slow-time-problem-details="openSlowTimeProblemDetails"
+        @open-fast-time-problem-details="openFastTimeProblemDetails"
         @open-insufficient-details="openInsufficientDetails"
         @open-shift-problem-details="openShiftProblemDetails"
       />
@@ -255,10 +280,19 @@ async function onExport() {
     />
 
     <PatrolSummaryTimeProblemDialog
-      :visible="timeProblemDialogVisible"
-      :patrolDate="selectedTimeProblemDate"
-      :rows="selectedTimeProblemRows"
-      @update:visible="onTimeProblemDialogVisibleChange"
+      :visible="slowTimeProblemDialogVisible"
+      :patrolDate="selectedSlowTimeProblemDate"
+      :rows="selectedSlowTimeProblemRows"
+      :standardTimeLabel="t('PatrolSummaryTimeProblemDialog.minimumTime')"
+      @update:visible="onSlowTimeProblemDialogVisibleChange"
+    />
+
+    <PatrolSummaryTimeProblemDialog
+      :visible="fastTimeProblemDialogVisible"
+      :patrolDate="selectedFastTimeProblemDate"
+      :rows="selectedFastTimeProblemRows"
+      :standardTimeLabel="t('PatrolSummaryTimeProblemDialog.maximumTime')"
+      @update:visible="onFastTimeProblemDialogVisibleChange"
     />
 
     <PatrolSummaryInsufficientPatrolDialog

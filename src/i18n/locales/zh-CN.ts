@@ -223,6 +223,8 @@ const zhCN = {
     actualPatrolCount: '实际巡逻次数',
     missedPatrolCount: '缺少巡逻次数',
     timeProblemCount: '时间异常次数',
+    tooShortPatrolCount: '过短巡逻班次数',
+    tooLongPatrolCount: '过长巡逻班次数',
     insufficientNumberOfPatrol: '巡逻次数不足',
     shiftProblemCount: '跨班异常次数',
     abnormalRate: '异常率',
@@ -240,6 +242,8 @@ const zhCN = {
     patrolTime: '巡逻时间',
     actualTime: '实际巡逻时间',
     standardTime: '标准巡逻时间',
+    minimumTime: '最短时间',
+    maximumTime: '最长时间',
   },
   patrolSummaryShiftProblemDialog: {
     title: '巡逻日期',
