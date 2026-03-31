@@ -443,6 +443,10 @@ const en = {
     roleName: 'Role Name',
     administrationPermission: 'Administration Permission',
     permission: 'Permissions',
+    isPermission: {
+      yes: 'Yes',
+      no: 'No',
+    },
     enterName: 'Enter Name',
     selectPermission: 'Select Access Permissions',
     hourReportPermission: 'Hour Report Permission',

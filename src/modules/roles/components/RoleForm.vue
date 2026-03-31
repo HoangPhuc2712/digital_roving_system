@@ -158,7 +158,9 @@ function submit() {
             t('roleForm.administrationPermission')
           }}</label>
           <div class="text-slate-800 font-semibold">
-            {{ form.role_is_admin ? 'Yes' : 'No' }}
+            {{
+              form.role_is_admin ? t('roleForm.isPermission.yes') : t('roleForm.isPermission.no')
+            }}
           </div>
         </div>
 

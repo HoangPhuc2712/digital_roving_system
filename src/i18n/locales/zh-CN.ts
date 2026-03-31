@@ -443,6 +443,10 @@ const zhCN = {
     roleName: '角色名称',
     administrationPermission: '管理权限',
     permission: '权限',
+    isPermission: {
+      yes: '是',
+      no: '否',
+    },
     enterName: '输入名称',
     selectPermission: '选择访问权限',
     hourReportPermission: '小时报告权限',

@@ -443,6 +443,10 @@ const zhTW = {
     roleName: '角色名稱',
     administrationPermission: '管理權限',
     permission: '權限',
+    isPermission: {
+      yes: '是',
+      no: '否',
+    },
     enterName: '輸入名稱',
     selectPermission: '選擇存取權限',
     hourReportPermission: '每小時報告權限',

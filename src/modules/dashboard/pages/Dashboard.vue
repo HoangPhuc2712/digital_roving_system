@@ -11,7 +11,11 @@ import type {
   DashboardTotalAppItem,
   DashboardTotalPointReportByStatusItem,
 } from '@/modules/dashboard/dashboard.types'
-import { translateMenuCategoryName, translateRoleName } from '@/utils/dataI18n'
+import {
+  translateIssueStatusName,
+  translateMenuCategoryName,
+  translateRoleName,
+} from '@/utils/dataI18n'
 
 const auth = useAuthStore()
 const store = useDashboardStore()
@@ -259,7 +263,9 @@ onMounted(async () => {
           :style="{ ...statusCardStyle(card), animationDelay: `${idx * 100}ms` }"
           @click="openStatusCard(card)"
         >
-          <div class="text-md font-semibold text-white/85">{{ card.pr_status_name }}</div>
+          <div class="text-md font-semibold text-white/85">
+            {{ translateIssueStatusName(String(card.pr_status_name ?? ''), t) }}
+          </div>
 
           <div class="mt-2 text-3xl font-semibold text-white">
             <span v-if="store.loading">—</span>

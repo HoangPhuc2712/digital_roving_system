@@ -443,6 +443,10 @@ const vi = {
     roleName: 'Tên vai trò',
     administrationPermission: 'Quyền quản trị',
     permission: 'Quyền',
+    isPermission: {
+      yes: 'Có',
+      no: 'Không',
+    },
     enterName: 'Nhập tên',
     selectPermission: 'Chọn quyền truy cập',
     hourReportPermission: 'Quyền báo cáo theo giờ',

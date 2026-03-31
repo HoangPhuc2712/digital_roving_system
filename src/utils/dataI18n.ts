@@ -4,6 +4,7 @@ function normalizeHardText(input?: string | null) {
   return String(input ?? '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[Đđ]/g, 'D')
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim()
     .replace(/\s+/g, ' ')
@@ -57,6 +58,25 @@ export function translateReportNote(rawValue: string, t: TranslateFn) {
       return t('dataTranslation.reportNote.noIssue')
     case 'CO VAN DE PHAT SINH':
       return t('dataTranslation.reportNote.hasIssue')
+    default:
+      return String(rawValue ?? '')
+  }
+}
+
+export function translateIssueStatusName(rawValue: string, t: TranslateFn) {
+  switch (normalizeHardText(rawValue)) {
+    case 'PENDING':
+    case 'DANG CHO XU LY':
+      return t('reportList.issueStatusOptions.pending')
+    case 'IN PROGRESS':
+    case 'DANG XU LY':
+      return t('reportList.issueStatusOptions.inProgress')
+    case 'COMPLETED':
+    case 'HOAN THANH':
+      return t('reportList.issueStatusOptions.completed')
+    case 'INCOMPLETED':
+    case 'CHUA HOAN THANH':
+      return t('reportList.issueStatusOptions.incompleted')
     default:
       return String(rawValue ?? '')
   }
