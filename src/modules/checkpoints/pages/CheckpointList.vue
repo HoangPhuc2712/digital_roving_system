@@ -6,6 +6,7 @@ import { exportCheckpointsXlsx } from '@/services/export/checkpoints.export'
 import { printSingleCheckpointQr } from '@/services/print/checkpoints.print'
 import { normalizeImageSource } from '@/utils/base64'
 import { useI18n } from 'vue-i18n'
+import { translateRoleNames, translateRoleName } from '@/utils/dataI18n'
 
 import Column from 'primevue/column'
 import Tag from 'primevue/tag'
@@ -64,6 +65,13 @@ const confirmDeleteLoading = ref(false)
 const pendingDeleteAction = ref<null | (() => Promise<void>)>(null)
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('checkpoints.manage'))
+
+const translatedRoleOptions = computed(() =>
+  (store.roleOptions ?? []).map((option) => ({
+    ...option,
+    label: translateRoleName(String(option.label ?? ''), t),
+  })),
+)
 
 const lockedAreaId = computed<number | null>(() => {
   const raw = Array.isArray(route.query.areaId) ? route.query.areaId[0] : route.query.areaId
@@ -650,13 +658,17 @@ async function onExport() {
           key: 'roleIds',
           type: 'multiselect',
           value: store.filterRoleIds,
-          options: store.roleOptions,
+          options: translatedRoleOptions,
           placeholder: 'Select role',
         }"
       >
         <template #body="{ data }">
           <div class="text-slate-800">
-            {{ Array.isArray(data.role_names) ? data.role_names.join(', ') : '-' }}
+            {{
+              Array.isArray(data.role_names)
+                ? translateRoleNames(data.role_names, t).join(', ')
+                : '-'
+            }}
           </div>
         </template>
       </Column>
@@ -744,7 +756,7 @@ async function onExport() {
       :mode="formMode"
       :model="formModel"
       :areaOptions="store.areaOptions"
-      :roleOptions="store.roleOptions"
+      :roleOptions="translatedRoleOptions"
       @submit="handleCheckpointFormSubmit"
       @close="formModel = null"
     />

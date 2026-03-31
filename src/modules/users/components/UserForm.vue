@@ -10,6 +10,7 @@ import BasePasswordInput from '@/components/common/inputs/BasePasswordInput.vue'
 import BaseMessage from '@/components/common/messages/BaseMessage.vue'
 
 import { createUserMock, updateUserMock } from '@/modules/users/users.api'
+import { translateRoleName } from '@/utils/dataI18n'
 
 export type UserFormMode = 'new' | 'view' | 'edit'
 
@@ -30,7 +31,7 @@ export type UserFormSubmitPayload = {
   submit: (actor_id: string) => Promise<void>
 }
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const props = defineProps<{
   visible: boolean
   mode: UserFormMode
@@ -67,10 +68,9 @@ const form = reactive<UserFormState>({
 })
 
 const roleLabel = computed(() => {
-  return (
-    props.roleOptions.find((x) => x.value === form.user_role_id)?.label ??
-    String(form.user_role_id ?? '')
-  )
+  const matchedLabel = props.roleOptions.find((x) => x.value === form.user_role_id)?.label
+  if (matchedLabel) return matchedLabel
+  return translateRoleName(String(form.user_role_id ?? ''), t)
 })
 
 const areaLabel = computed(() => {

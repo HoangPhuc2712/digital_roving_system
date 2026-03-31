@@ -622,6 +622,27 @@ const zhTW = {
       shiftFailed: '建立班次失敗。',
     },
   },
+  dataTranslation: {
+    menuCategory: {
+      roles: '角色',
+      users: '使用者',
+      areas: '區域',
+      routes: '巡邏路線',
+      reports: '報表',
+      tutorial: '教學',
+      checkpoints: '檢查點',
+    },
+    role: {
+      administrator: '管理員',
+      guard: '保全',
+      expat: '外籍人員',
+      it: 'IT',
+    },
+    reportNote: {
+      noIssue: '無異常狀況',
+      hasIssue: '有異常狀況',
+    },
+  },
 }
 
 export default zhTW

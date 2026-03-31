@@ -11,11 +11,12 @@ import type {
   DashboardTotalAppItem,
   DashboardTotalPointReportByStatusItem,
 } from '@/modules/dashboard/dashboard.types'
+import { translateMenuCategoryName, translateRoleName } from '@/utils/dataI18n'
 
 const auth = useAuthStore()
 const store = useDashboardStore()
 const router = useRouter()
-const { t, locale } = useI18n()
+const { t } = useI18n()
 
 const canSeeAdminDashboardSummary = computed(() => auth.isAdminUser)
 
@@ -72,6 +73,7 @@ const cards = computed(() => {
     .map((item) => ({
       ...item,
       ...cardMetaOf(item),
+      displayName: translateMenuCategoryName(String(item.name ?? ''), t),
     }))
     .filter((item) => canSeeMc(item.mcCode))
     .sort((a, b) => a.stt - b.stt)
@@ -163,7 +165,10 @@ const chartOptions = computed(() => {
 })
 
 const roleChartData = computed(() => ({
-  labels: store.totalUsersByRole.map((x) => x.role_name || x.role_code || `Role ${x.role_id}`),
+  labels: store.totalUsersByRole.map((x) => {
+    const rawRoleName = String(x.role_name ?? '').trim()
+    return rawRoleName ? translateRoleName(rawRoleName, t) : x.role_code || `Role ${x.role_id}`
+  }),
   datasets: [
     {
       data: store.totalUsersByRole.map((x) => x.total_user),
@@ -225,7 +230,7 @@ onMounted(async () => {
         :style="{ ...cardStyle(card), animationDelay: `${idx * 100}ms` }"
         @click="open(card)"
       >
-        <div class="text-md font-semibold text-white/85">{{ card.name }}</div>
+        <div class="text-md font-semibold text-white/85">{{ card.displayName || card.name }}</div>
 
         <div class="mt-2 text-3xl font-semibold text-white">
           <span v-if="store.loading">—</span>

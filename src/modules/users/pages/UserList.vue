@@ -28,6 +28,7 @@ import {
   resetFiltersWithSearchDraft,
 } from '@/composables/useFilters'
 import { usePagination } from '@/composables/usePagination'
+import { translateRoleName } from '@/utils/dataI18n'
 
 const toast = useToast()
 
@@ -38,6 +39,13 @@ const { t, locale } = useI18n()
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('users.manage'))
 const exporting = ref(false)
+
+const translatedRoleOptions = computed(() =>
+  (store.roleOptions ?? []).map((option) => ({
+    ...option,
+    label: translateRoleName(String(option.label ?? ''), t),
+  })),
+)
 const confirmDeleteVisible = ref(false)
 const confirmDeleteMessage = ref('')
 const confirmDeleteLoading = ref(false)
@@ -70,6 +78,10 @@ function statusLabel(s: number) {
 
 function statusSeverity(s: number) {
   return s === 1 ? 'success' : 'secondary'
+}
+
+function displayRoleName(roleName: string) {
+  return translateRoleName(String(roleName ?? ''), t)
 }
 
 const selectedUsers = ref<UserRow[] | null>(null)
@@ -350,12 +362,12 @@ function onViewPatrolPath(row: UserRow) {
           key: 'roleId',
           type: 'select',
           value: store.filterRoleId,
-          options: store.roleOptions,
+          options: translatedRoleOptions,
           placeholder: t('userList.role'),
         }"
       >
         <template #body="{ data }">
-          <div class="text-slate-800">{{ data.role_name }}</div>
+          <div class="text-slate-800">{{ displayRoleName(data.role_name) }}</div>
         </template>
       </Column>
 
@@ -415,7 +427,7 @@ function onViewPatrolPath(row: UserRow) {
       v-model:visible="formVisible"
       :mode="formMode"
       :model="formModel"
-      :roleOptions="store.roleOptions"
+      :roleOptions="translatedRoleOptions"
       :areaOptions="store.areaOptions"
       @submit="handleSubmit"
       @close="formVisible = false"

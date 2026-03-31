@@ -12,6 +12,7 @@ import BaseMessage from '@/components/common/messages/BaseMessage.vue'
 import QrPreview from '@/modules/checkpoints/components/QrPreview.vue'
 import { normalizeImageSource } from '@/utils/base64'
 import { createCheckpointMock, updateCheckpointMock } from '@/modules/checkpoints/checkpoints.api'
+import { translateRoleNames } from '@/utils/dataI18n'
 
 export type CheckpointFormMode = 'new' | 'view' | 'edit'
 
@@ -56,7 +57,7 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const isView = computed(() => props.mode === 'view')
 const isNew = computed(() => props.mode === 'new')
 
@@ -116,7 +117,7 @@ const areaLabel = computed(() => {
 })
 
 const roleLabels = computed(() => {
-  if (props.model?.role_names?.length) return props.model.role_names
+  if (props.model?.role_names?.length) return translateRoleNames(props.model.role_names, t)
 
   const map = new Map(props.roleOptions.map((x) => [x.value, x.label]))
   return form.role_ids.map((id) => map.get(id) ?? String(id))

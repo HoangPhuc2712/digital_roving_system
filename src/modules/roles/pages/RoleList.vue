@@ -15,6 +15,7 @@ import type { RoleRow } from '@/modules/roles/roles.types'
 import { deleteRole, fetchRoleById } from '@/modules/roles/roles.api'
 import { fetchUserRows } from '@/modules/users/users.api'
 import { exportRolesXlsx } from '@/services/export/roles.export'
+import { translateMenuCategoryName, translateRoleName } from '@/utils/dataI18n'
 
 import {
   useDebouncedSearchDraft,
@@ -36,6 +37,13 @@ const { t, locale } = useI18n()
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('roles.manage'))
 const exporting = ref(false)
+
+const translatedMenuOptions = computed(() =>
+  (store.menuOptions ?? []).map((option) => ({
+    ...option,
+    label: translateMenuCategoryName(String(option.label ?? ''), t),
+  })),
+)
 
 const roleStatusOptions = [
   { label: t('roleList.roleStatusOptions.all'), value: 'ALL' },
@@ -73,6 +81,10 @@ onMounted(async () => {
 
 function statusLabel(s: number) {
   return s === 1 ? t('roleList.roleStatusOptions.active') : t('roleList.roleStatusOptions.inactive')
+}
+
+function displayRoleName(roleName: string) {
+  return translateRoleName(String(roleName ?? ''), t)
 }
 function statusSeverity(s: number) {
   return s === 1 ? 'success' : 'secondary'
@@ -174,27 +186,30 @@ async function onDelete(row: RoleRow) {
       return
     }
 
-    openDeleteConfirm(`${t('roleList.error.areYouSure')} ${row.role_name}?`, async () => {
-      try {
-        await deleteRole({ role_id: row.role_id, actor_id: auth.user?.user_id ?? '' })
-        await store.load()
-        selectedRoles.value = null
-        toast.add({
-          severity: 'success',
-          summary: t('common.deleted'),
-          detail: t('roleList.success.deleteDetail'),
-          life: 2000,
-        })
-      } catch (e: any) {
-        toast.add({
-          severity: 'error',
-          summary: t('common.error'),
-          detail: e?.message ?? t('roleList.error.deleteFailed'),
-          life: 3000,
-        })
-        throw e
-      }
-    })
+    openDeleteConfirm(
+      `${t('roleList.error.areYouSure')} ${displayRoleName(row.role_name)}?`,
+      async () => {
+        try {
+          await deleteRole({ role_id: row.role_id, actor_id: auth.user?.user_id ?? '' })
+          await store.load()
+          selectedRoles.value = null
+          toast.add({
+            severity: 'success',
+            summary: t('common.deleted'),
+            detail: t('roleList.success.deleteDetail'),
+            life: 2000,
+          })
+        } catch (e: any) {
+          toast.add({
+            severity: 'error',
+            summary: t('common.error'),
+            detail: e?.message ?? t('roleList.error.deleteFailed'),
+            life: 3000,
+          })
+          throw e
+        }
+      },
+    )
   } catch (e: any) {
     toast.add({
       severity: 'error',
@@ -223,7 +238,7 @@ async function confirmDeleteSelected() {
         summary: t('roleList.error.deleteRestricted'),
         detail:
           blocked.length === 1 && firstBlocked
-            ? `${t('roleList.error.DeleteDetailMultipleFirst')} "${firstBlocked.role_name}" ${t('roleList.error.assignedFirst')} ${counts.get(firstBlocked.role_id) ?? 0} ${t('roleList.error.user')}.`
+            ? `${t('roleList.error.DeleteDetailMultipleFirst')} "${displayRoleName(firstBlocked.role_name)}" ${t('roleList.error.assignedFirst')} ${counts.get(firstBlocked.role_id) ?? 0} ${t('roleList.error.user')}.`
             : `${t('roleList.error.DeleteDetailMultipleSecond')} ${blocked.length} ${t('roleList.error.assignedSecond')} ${totalAssigned} ${t('roleList.error.user')}).`,
         life: 4000,
       })
@@ -394,7 +409,11 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
       />
 
       <Column field="role_code" :header="t('roleList.roleCode')" style="min-width: 10rem" />
-      <Column field="role_name" :header="t('roleList.roleName')" style="min-width: 14rem" />
+      <Column field="role_name" :header="t('roleList.roleName')" style="min-width: 14rem">
+        <template #body="{ data }">
+          <div class="text-slate-800">{{ displayRoleName(data.role_name) }}</div>
+        </template>
+      </Column>
 
       <Column
         :header="t('roleList.accessPermission')"
@@ -404,7 +423,7 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
           key: 'menuId',
           type: 'select',
           value: store.filterMenuId,
-          options: store.menuOptions,
+          options: translatedMenuOptions,
           placeholder: t('roleList.accessPermission'),
         }"
       >
@@ -482,7 +501,7 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
       v-model:visible="formVisible"
       :mode="formMode"
       :model="formModel"
-      :menuOptions="store.menuOptions"
+      :menuOptions="translatedMenuOptions"
       @submit="handleSubmit"
       @close="formVisible = false"
     />

@@ -622,6 +622,27 @@ const en = {
       shiftFailed: 'Failed to create shifts.',
     },
   },
+  dataTranslation: {
+    menuCategory: {
+      roles: 'Roles',
+      users: 'Users',
+      areas: 'Areas',
+      routes: 'Patrol Routes',
+      reports: 'Reports',
+      tutorial: 'Tutorial',
+      checkpoints: 'Check Points',
+    },
+    role: {
+      administrator: 'Administrator',
+      guard: 'Security',
+      expat: 'Expat',
+      it: 'IT',
+    },
+    reportNote: {
+      noIssue: 'No issue occurred',
+      hasIssue: 'Issue occurred',
+    },
+  },
 }
 
 export default en
