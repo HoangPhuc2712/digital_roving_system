@@ -443,6 +443,10 @@ const zhTW = {
     roleName: '角色名稱',
     administrationPermission: '管理權限',
     permission: '權限',
+    isPermission: {
+      yes: '是',
+      no: '否',
+    },
     enterName: '輸入名稱',
     selectPermission: '選擇存取權限',
     hourReportPermission: '每小時報告權限',
@@ -620,6 +624,27 @@ const zhTW = {
     error: {
       shiftError: '建立班次請求未成功。',
       shiftFailed: '建立班次失敗。',
+    },
+  },
+  dataTranslation: {
+    menuCategory: {
+      roles: '角色',
+      users: '使用者',
+      areas: '區域',
+      routes: '巡邏路線',
+      reports: '報表',
+      tutorial: '教學',
+      checkpoints: '檢查點',
+    },
+    role: {
+      administrator: '管理員',
+      guard: '保全',
+      expat: '外籍人員',
+      it: 'IT',
+    },
+    reportNote: {
+      noIssue: '無異常狀況',
+      hasIssue: '有異常狀況',
     },
   },
 }

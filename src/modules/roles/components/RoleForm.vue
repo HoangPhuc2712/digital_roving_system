@@ -10,6 +10,7 @@ import BaseInput from '@/components/common/inputs/BaseInput.vue'
 import BaseMessage from '@/components/common/messages/BaseMessage.vue'
 
 import { createRole, updateRole } from '@/modules/roles/roles.api'
+import { translateRoleName } from '@/utils/dataI18n'
 
 export type RoleFormMode = 'new' | 'view' | 'edit'
 
@@ -26,7 +27,7 @@ export type RoleFormSubmitPayload = {
   submit: (actor_id: string) => Promise<void>
 }
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const props = defineProps<{
   visible: boolean
   mode: RoleFormMode
@@ -85,6 +86,8 @@ const permissionLabels = computed(() => {
   const ids = new Set<number>((form.mc_ids ?? []).map((x) => Number(x)))
   return (props.menuOptions ?? []).filter((x) => ids.has(Number(x.value))).map((x) => x.label)
 })
+
+const translatedRoleName = computed(() => translateRoleName(String(form.role_name ?? ''), t))
 
 function close() {
   submitted.value = false
@@ -147,7 +150,7 @@ function submit() {
 
         <div>
           <label class="block text-sm text-slate-600 mb-1">{{ t('roleForm.roleName') }}</label>
-          <div class="text-slate-800 font-semibold">{{ form.role_name }}</div>
+          <div class="text-slate-800 font-semibold">{{ translatedRoleName }}</div>
         </div>
 
         <div>
@@ -155,7 +158,9 @@ function submit() {
             t('roleForm.administrationPermission')
           }}</label>
           <div class="text-slate-800 font-semibold">
-            {{ form.role_is_admin ? 'Yes' : 'No' }}
+            {{
+              form.role_is_admin ? t('roleForm.isPermission.yes') : t('roleForm.isPermission.no')
+            }}
           </div>
         </div>
 

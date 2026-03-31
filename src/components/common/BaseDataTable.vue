@@ -25,6 +25,7 @@
     </div>
 
     <DataTable
+      :key="`base-list-table-${locale}`"
       ref="dt"
       :value="value"
       :loading="loading"
@@ -53,7 +54,7 @@
 
       <template #empty>
         <slot name="empty">
-          <div class="py-6 text-center text-slate-500">No data</div>
+          <div class="py-6 text-center text-slate-500">{{ t('common.noData') }}</div>
         </slot>
       </template>
     </DataTable>
@@ -187,7 +188,7 @@ const emit = defineEmits<{
 
 const slots = useSlots()
 const instance = getCurrentInstance()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const activeFilterKey = ref<string | null>(null)
 const popoverRefs = ref<Record<string, any>>({})
 const filterButtonRefs = ref<Record<string, HTMLElement | null>>({})

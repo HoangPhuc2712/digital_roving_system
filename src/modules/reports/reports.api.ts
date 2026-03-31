@@ -913,8 +913,13 @@ function normalizePatrolDetailRows(views: ApiPatrolShiftReportView[]): PatrolDet
   const sortedViews = [...views].sort((a, b) => {
     const aStart = String(a.reportTimeFrom ?? '')
     const bStart = String(b.reportTimeFrom ?? '')
-    if (aStart === bStart) return Number(a.psId ?? 0) - Number(b.psId ?? 0)
-    return aStart.localeCompare(bStart)
+    if (aStart !== bStart) return aStart.localeCompare(bStart)
+
+    const aEnd = String(a.reportTimeTo ?? '')
+    const bEnd = String(b.reportTimeTo ?? '')
+    if (aEnd !== bEnd) return aEnd.localeCompare(bEnd)
+
+    return Number(a.psId ?? 0) - Number(b.psId ?? 0)
   })
 
   const shiftColorMap = new Map<string, string>()
@@ -995,10 +1000,18 @@ function normalizePatrolDetailRows(views: ApiPatrolShiftReportView[]): PatrolDet
   })
 
   return rows.sort((a, b) => {
+    const aStart = String(a.start_time ?? '')
+    const bStart = String(b.start_time ?? '')
+    if (aStart !== bStart) return aStart.localeCompare(bStart)
+
+    const aEnd = String(a.finish_time ?? '')
+    const bEnd = String(b.finish_time ?? '')
+    if (aEnd !== bEnd) return aEnd.localeCompare(bEnd)
+
     const aTime = String(a.patrol_time ?? '')
     const bTime = String(b.patrol_time ?? '')
-
     if (aTime !== bTime) return aTime.localeCompare(bTime)
+
     if (a.ps_id !== b.ps_id) return Number(a.ps_id ?? 0) - Number(b.ps_id ?? 0)
     if (a.pr_id !== b.pr_id) return Number(a.pr_id ?? 0) - Number(b.pr_id ?? 0)
     return String(a.row_id ?? '').localeCompare(String(b.row_id ?? ''))
@@ -1316,10 +1329,36 @@ function buildInsufficientPatrolDetails(
   views: ApiPlannedPatrolShiftView[],
   actualViewMap: Map<number, ApiPatrolShiftReportView>,
 ): PatrolSummaryInsufficientPatrolDetailRow[] {
-  const rows: PatrolSummaryInsufficientPatrolDetailRow[] = []
+  const rows: Array<
+    PatrolSummaryInsufficientPatrolDetailRow & {
+      _shift_start_time: number
+      _shift_end_time: number
+      _detail_order: number
+    }
+  > = []
   const shiftColorMap = buildSummaryShiftColorMap(views)
 
-  for (const item of views) {
+  const sortedViews = [...views].sort((a, b) => {
+    const aStart = buildPlannedShiftStart(a)
+    const bStart = buildPlannedShiftStart(b)
+    const aStartTime =
+      aStart && Number.isFinite(aStart.getTime()) ? aStart.getTime() : Number.MAX_SAFE_INTEGER
+    const bStartTime =
+      bStart && Number.isFinite(bStart.getTime()) ? bStart.getTime() : Number.MAX_SAFE_INTEGER
+    if (aStartTime !== bStartTime) return aStartTime - bStartTime
+
+    const aEnd = buildPlannedShiftEnd(a)
+    const bEnd = buildPlannedShiftEnd(b)
+    const aEndTime =
+      aEnd && Number.isFinite(aEnd.getTime()) ? aEnd.getTime() : Number.MAX_SAFE_INTEGER
+    const bEndTime =
+      bEnd && Number.isFinite(bEnd.getTime()) ? bEnd.getTime() : Number.MAX_SAFE_INTEGER
+    if (aEndTime !== bEndTime) return aEndTime - bEndTime
+
+    return Number(a.psId ?? 0) - Number(b.psId ?? 0)
+  })
+
+  for (const item of sortedViews) {
     const psId = Number(item.psId ?? 0)
     const actualView = actualViewMap.get(psId)
     const actualPoints = Array.isArray(actualView?.pointReports) ? actualView.pointReports : []
@@ -1342,6 +1381,15 @@ function buildInsufficientPatrolDetails(
       return !actualPointNameSet.has(cpNameKey)
     })
 
+    const shiftStart = buildPlannedShiftStart(item)
+    const shiftEnd = buildPlannedShiftEnd(item)
+    const shiftStartTime =
+      shiftStart && Number.isFinite(shiftStart.getTime())
+        ? shiftStart.getTime()
+        : Number.MAX_SAFE_INTEGER
+    const shiftEndTime =
+      shiftEnd && Number.isFinite(shiftEnd.getTime()) ? shiftEnd.getTime() : Number.MAX_SAFE_INTEGER
+
     for (const [detailIndex, detail] of missingDetails.entries()) {
       rows.push({
         row_id: `${psId}-${Number(detail?.cpId ?? 0)}-${detailIndex}`,
@@ -1354,11 +1402,30 @@ function buildInsufficientPatrolDetails(
         guard_name: String(actualView?.reportName ?? item.reportName ?? '').trim() || '-',
         event_information: '',
         shift_color: shiftColorMap.get(psId) ?? '#ffeeba',
+        _shift_start_time: shiftStartTime,
+        _shift_end_time: shiftEndTime,
+        _detail_order: detailIndex,
       })
     }
   }
 
   return rows
+    .sort((a, b) => {
+      if (a._shift_start_time !== b._shift_start_time) {
+        return a._shift_start_time - b._shift_start_time
+      }
+      if (a._shift_end_time !== b._shift_end_time) return a._shift_end_time - b._shift_end_time
+      if (a._detail_order !== b._detail_order) return a._detail_order - b._detail_order
+      return String(a.row_id ?? '').localeCompare(String(b.row_id ?? ''))
+    })
+    .map(
+      ({
+        _shift_start_time: _ignoredShiftStartTime,
+        _shift_end_time: _ignoredShiftEndTime,
+        _detail_order: _ignoredDetailOrder,
+        ...row
+      }) => row,
+    )
 }
 
 function buildShiftProblemDetails(
@@ -1366,16 +1433,48 @@ function buildShiftProblemDetails(
   actualViewMap: Map<number, ApiPatrolShiftReportView>,
 ): PatrolSummaryShiftProblemDetailRow[] {
   const rows: Array<
-    PatrolSummaryShiftProblemDetailRow & { _sort_time: number; _sort_index: number }
+    PatrolSummaryShiftProblemDetailRow & {
+      _shift_start_time: number
+      _shift_end_time: number
+      _sort_time: number
+      _sort_index: number
+      _ps_id: number
+    }
   > = []
   const shiftColorMap = buildSummaryShiftColorMap(views)
 
-  for (const item of views) {
+  const sortedViews = [...views].sort((a, b) => {
+    const aStart = buildPlannedShiftStart(a)
+    const bStart = buildPlannedShiftStart(b)
+    const aStartTime =
+      aStart && Number.isFinite(aStart.getTime()) ? aStart.getTime() : Number.MAX_SAFE_INTEGER
+    const bStartTime =
+      bStart && Number.isFinite(bStart.getTime()) ? bStart.getTime() : Number.MAX_SAFE_INTEGER
+    if (aStartTime !== bStartTime) return aStartTime - bStartTime
+
+    const aEnd = buildPlannedShiftEnd(a)
+    const bEnd = buildPlannedShiftEnd(b)
+    const aEndTime =
+      aEnd && Number.isFinite(aEnd.getTime()) ? aEnd.getTime() : Number.MAX_SAFE_INTEGER
+    const bEndTime =
+      bEnd && Number.isFinite(bEnd.getTime()) ? bEnd.getTime() : Number.MAX_SAFE_INTEGER
+    if (aEndTime !== bEndTime) return aEndTime - bEndTime
+
+    return Number(a.psId ?? 0) - Number(b.psId ?? 0)
+  })
+
+  for (const item of sortedViews) {
     const psId = Number(item.psId ?? 0)
     const actualView = actualViewMap.get(psId)
     const pointReports = Array.isArray(actualView?.pointReports) ? actualView.pointReports : []
     const shiftStart = buildPlannedShiftStart(item)
     const shiftEnd = buildPlannedShiftEnd(item)
+    const shiftStartTime =
+      shiftStart && Number.isFinite(shiftStart.getTime())
+        ? shiftStart.getTime()
+        : Number.MAX_SAFE_INTEGER
+    const shiftEndTime =
+      shiftEnd && Number.isFinite(shiftEnd.getTime()) ? shiftEnd.getTime() : Number.MAX_SAFE_INTEGER
     const patrolTime = extractShiftTimeRange(item) || '-'
     const routeName = String(actualView?.routeName ?? item.routeName ?? '').trim() || '-'
 
@@ -1398,18 +1497,35 @@ function buildShiftProblemDetails(
           '-',
         is_out_of_shift: isOutsideShiftWindow(actualTime, shiftStart, shiftEnd),
         shift_color: shiftColorMap.get(psId) ?? '#ffeeba',
+        _shift_start_time: shiftStartTime,
+        _shift_end_time: shiftEndTime,
         _sort_time: sortTime,
         _sort_index: pointIndex,
+        _ps_id: psId,
       })
     }
   }
 
   return rows
     .sort((a, b) => {
+      if (a._shift_start_time !== b._shift_start_time) {
+        return a._shift_start_time - b._shift_start_time
+      }
+      if (a._shift_end_time !== b._shift_end_time) return a._shift_end_time - b._shift_end_time
       if (a._sort_time !== b._sort_time) return a._sort_time - b._sort_time
+      if (a._ps_id !== b._ps_id) return a._ps_id - b._ps_id
       return a._sort_index - b._sort_index
     })
-    .map(({ _sort_time: _ignoredSortTime, _sort_index: _ignoredSortIndex, ...row }) => row)
+    .map(
+      ({
+        _shift_start_time: _ignoredShiftStartTime,
+        _shift_end_time: _ignoredShiftEndTime,
+        _sort_time: _ignoredSortTime,
+        _sort_index: _ignoredSortIndex,
+        _ps_id: _ignoredPsId,
+        ...row
+      }) => row,
+    )
 }
 
 export async function fetchPatrolSummaryRows(

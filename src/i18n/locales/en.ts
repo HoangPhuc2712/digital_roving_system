@@ -443,6 +443,10 @@ const en = {
     roleName: 'Role Name',
     administrationPermission: 'Administration Permission',
     permission: 'Permissions',
+    isPermission: {
+      yes: 'Yes',
+      no: 'No',
+    },
     enterName: 'Enter Name',
     selectPermission: 'Select Access Permissions',
     hourReportPermission: 'Hour Report Permission',
@@ -620,6 +624,27 @@ const en = {
     error: {
       shiftError: 'Create shifts request did not succeed.',
       shiftFailed: 'Failed to create shifts.',
+    },
+  },
+  dataTranslation: {
+    menuCategory: {
+      roles: 'Roles',
+      users: 'Users',
+      areas: 'Areas',
+      routes: 'Patrol Routes',
+      reports: 'Reports',
+      tutorial: 'Tutorial',
+      checkpoints: 'Check Points',
+    },
+    role: {
+      administrator: 'Administrator',
+      guard: 'Security',
+      expat: 'Expat',
+      it: 'IT',
+    },
+    reportNote: {
+      noIssue: 'No issue occurred',
+      hasIssue: 'Issue occurred',
     },
   },
 }

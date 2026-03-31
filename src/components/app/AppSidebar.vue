@@ -1,11 +1,13 @@
 <script setup lang="ts">
 defineOptions({ inheritAttrs: false })
 import { computed, onMounted, ref, watch, useAttrs } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { http } from '@/services/http/axios'
 import { endpoints } from '@/services/http/endpoints'
 import BaseBadgeButton from '../common/buttons/BaseBadgeButton.vue'
+import { translateMenuCategoryName, translateRoleName } from '@/utils/dataI18n'
 
 const props = withDefaults(
   defineProps<{
@@ -24,6 +26,8 @@ const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const attrs = useAttrs()
+
+const { t } = useI18n()
 
 type ApiEnvelope<T> = { data: T; success: boolean; message: string }
 
@@ -117,7 +121,7 @@ const navItems = computed<NavItem[]>(() => {
   const dash = MENU_MAP['DASHBOARD']!
   items.push({
     key: 'DASHBOARD',
-    label: 'Dashboard',
+    label: t('dashboard.title'),
     to: dash.to,
     icon: dash.icon,
     prefix: dash.prefix,
@@ -150,7 +154,7 @@ const navItems = computed<NavItem[]>(() => {
     const meta = MENU_MAP[menuName]
     if (!meta) continue
 
-    const label = menuName === 'ROUTES' ? 'Patrol Routes' : String((mc as any).mcName ?? '')
+    const label = translateMenuCategoryName(String((mc as any).mcName ?? ''), t) || menuName
     items.push({
       key: menuName,
       label: label || menuName,
@@ -187,7 +191,10 @@ watch(
 
 const userFullName = computed(() => auth.user?.user_name ?? '—')
 const userCode = computed(() => auth.user?.user_code ?? '—')
-const userRoleName = computed(() => auth.user?.role?.role_name ?? '—')
+const userRoleName = computed(() => {
+  const rawRoleName = String(auth.user?.role?.role_name ?? '').trim()
+  return rawRoleName ? translateRoleName(rawRoleName, t) : '—'
+})
 
 function closeMobile() {
   emit('update:mobileOpen', false)
@@ -315,7 +322,7 @@ function logout() {
               >
                 <span class="flex items-center gap-3">
                   <i class="pi pi-shield"></i>
-                  <span>Patrols Data</span>
+                  <span>{{ t('breadcrumb.patrolsData') }}</span>
                 </span>
               </button>
 
@@ -331,7 +338,7 @@ function logout() {
               >
                 <span class="flex items-center gap-3">
                   <i class="pi pi-file"></i>
-                  <span>Reports Data</span>
+                  <span>{{ t('breadcrumb.reportsData') }}</span>
                 </span>
               </button>
             </div>

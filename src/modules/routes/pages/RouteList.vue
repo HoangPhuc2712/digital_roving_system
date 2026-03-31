@@ -35,6 +35,7 @@ import RouteForm, {
   type RouteFormModel,
   type RouteFormSubmitPayload,
 } from '../components/RouteForm.vue'
+import { translateRoleName } from '@/utils/dataI18n'
 
 const toast = useToast()
 const store = useRoutesStore()
@@ -43,6 +44,13 @@ const { t, locale } = useI18n()
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('routes.manage'))
 const exporting = ref(false)
+
+const translatedRoleOptions = computed(() =>
+  (store.roleOptions ?? []).map((option) => ({
+    ...option,
+    label: translateRoleName(String(option.label ?? ''), t),
+  })),
+)
 
 const routeFilterAreaOptions = computed(() => {
   const map = new Map<number, string>()
@@ -113,6 +121,11 @@ function statusLabel(s: number) {
 }
 function statusSeverity(s: number) {
   return s === 1 ? 'success' : 'secondary'
+}
+
+function displayRoleName(roleName: string, roleCode?: string) {
+  const rawRoleName = String(roleName ?? '').trim()
+  return rawRoleName ? translateRoleName(rawRoleName, t) : roleCode || '—'
 }
 
 const selectedRoutes = ref<RouteRow[] | null>(null)
@@ -447,6 +460,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
           type: 'select',
           value: store.filterAreaId,
           options: routeFilterAreaOptions,
+          placeholder: t('routeList.area'),
         }"
       >
         <template #body="{ data }">
@@ -456,7 +470,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
 
       <Column :header="t('routeList.role')" style="min-width: 8rem" sortField="role_name">
         <template #body="{ data }">
-          <div class="text-slate-800">{{ data.role_name || data.role_code || '—' }}</div>
+          <div class="text-slate-800">{{ displayRoleName(data.role_name, data.role_code) }}</div>
         </template>
       </Column>
 
@@ -556,7 +570,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
       :mode="formMode"
       :model="formModel"
       :areaOptions="store.areaOptions"
-      :roleOptions="store.roleOptions"
+      :roleOptions="translatedRoleOptions"
       @submit="handleSubmit"
       @close="formModel = null"
     />

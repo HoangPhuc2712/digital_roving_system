@@ -443,6 +443,10 @@ const vi = {
     roleName: 'Tên vai trò',
     administrationPermission: 'Quyền quản trị',
     permission: 'Quyền',
+    isPermission: {
+      yes: 'Có',
+      no: 'Không',
+    },
     enterName: 'Nhập tên',
     selectPermission: 'Chọn quyền truy cập',
     hourReportPermission: 'Quyền báo cáo theo giờ',
@@ -620,6 +624,27 @@ const vi = {
     error: {
       shiftError: 'Yêu cầu tạo ca trực không thành công.',
       shiftFailed: 'Tạo ca trực thất bại.',
+    },
+  },
+  dataTranslation: {
+    menuCategory: {
+      roles: 'Vai trò',
+      users: 'Người dùng',
+      areas: 'Khu vực',
+      routes: 'Tuyến tuần tra',
+      reports: 'Báo cáo',
+      tutorial: 'Hướng dẫn',
+      checkpoints: 'Điểm kiểm tra',
+    },
+    role: {
+      administrator: 'Quản trị viên',
+      guard: 'Bảo vệ',
+      expat: 'Nhân sự nước ngoài',
+      it: 'IT',
+    },
+    reportNote: {
+      noIssue: 'Không có vấn đề phát sinh',
+      hasIssue: 'Có vấn đề phát sinh',
     },
   },
 }

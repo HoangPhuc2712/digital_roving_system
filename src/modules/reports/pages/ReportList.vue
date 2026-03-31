@@ -22,6 +22,7 @@ import { exportPatrolReportXlsx } from '@/services/export/patrolReport.export'
 import { changeReportStatus, fetchReportRowById } from '@/modules/reports/reports.api'
 import { useResetFirstOnFilterChange } from '@/composables/useFilters'
 import { usePagination } from '@/composables/usePagination'
+import { translateReportNote } from '@/utils/dataI18n'
 
 const toast = useToast()
 const auth = useAuthStore()
@@ -292,6 +293,10 @@ function inspectionSeverity(hasProblem: boolean) {
   return hasProblem ? 'danger' : 'success'
 }
 
+function displayReportNote(note: string) {
+  return translateReportNote(String(note ?? ''), t)
+}
+
 function onColumnFilter(payload: { key: string; value: any }) {
   if (payload.key === 'routeName') {
     const value = payload.value && typeof payload.value === 'object' ? payload.value : {}
@@ -498,8 +503,8 @@ async function onExport() {
 
       <Column :header="t('reportList.table.note')" style="min-width: 16rem" sortField="pr_note">
         <template #body="{ data }">
-          <div class="max-w-[420px] truncate" :title="data.pr_note || ''">
-            {{ data.pr_note || t('reportList.emptyNote') }}
+          <div class="max-w-[420px] truncate" :title="displayReportNote(data.pr_note || '')">
+            {{ data.pr_note ? displayReportNote(data.pr_note) : t('reportList.emptyNote') }}
           </div>
         </template>
       </Column>
@@ -532,6 +537,7 @@ async function onExport() {
           value: store.filterIssueStatus,
           options: issueStatusOptions,
           showClear: true,
+          placeholder: t('reportList.issueStatusOptions.all'),
         }"
       >
         <template #body="{ data }">

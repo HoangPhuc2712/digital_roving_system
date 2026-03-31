@@ -18,6 +18,7 @@ import {
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import QrPreview from '@/modules/checkpoints/components/QrPreview.vue'
 import { normalizeImageSource } from '@/utils/base64'
+import { translateRoleName, translateRoleNames } from '@/utils/dataI18n'
 
 type AreaOption = {
   label: string
@@ -61,8 +62,11 @@ const visibleProxy = computed({
 })
 
 const roleFilterOptions = computed(() => [
-  { label: 'All', value: 'ALL' as const },
-  ...roleOptions.value,
+  { label: t('common.all'), value: 'ALL' as const },
+  ...roleOptions.value.map((option) => ({
+    ...option,
+    label: translateRoleName(String(option.label ?? ''), t),
+  })),
 ])
 
 const hasAppliedFilter = computed(
@@ -99,7 +103,9 @@ const previewRows = computed<PreviewRow[]>(() => {
       cp_qr: row.cp_qr,
       area_id: Number(row.area_id ?? 0),
       area_label: row.area_code || row.area_name || '',
-      role_label: Array.isArray(row.role_names) ? row.role_names.join(', ') : '',
+      role_label: Array.isArray(row.role_names)
+        ? translateRoleNames(row.role_names, t).join(', ')
+        : '',
     }))
     .sort(
       (a, b) =>

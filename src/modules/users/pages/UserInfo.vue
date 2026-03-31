@@ -7,10 +7,11 @@ import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import ChangePasswordForm from '@/modules/users/components/ChangePasswordForm.vue'
 import { fetchUserById, changeCurrentUserPassword } from '@/modules/users/users.api'
 import { useAuthStore } from '@/stores/auth.store'
+import { translateRoleName } from '@/utils/dataI18n'
 
 const auth = useAuthStore()
 const toast = useToast()
-const { t, locale } = useI18n()
+const { t } = useI18n()
 
 const loading = ref(false)
 const changingPassword = ref(false)
@@ -24,6 +25,9 @@ const userInfo = ref<{
 
 const userId = computed(() => String(auth.user?.user_id ?? ''))
 const userCode = computed(() => String(auth.user?.user_code ?? ''))
+const displayRoleName = computed(() =>
+  translateRoleName(String(userInfo.value?.role_name ?? ''), t),
+)
 
 async function loadUserInfo() {
   if (!userId.value) return
@@ -121,7 +125,9 @@ onMounted(async () => {
 
           <div>
             <div class="text-sm text-slate-500 mb-1">{{ t('userInfo.role') }}</div>
-            <div class="text-lg text-slate-800 font-semibold">{{ userInfo?.role_name || '-' }}</div>
+            <div class="text-lg text-slate-800 font-semibold">
+              {{ userInfo?.role_name ? displayRoleName : '-' }}
+            </div>
           </div>
         </div>
 

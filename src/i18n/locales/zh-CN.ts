@@ -443,6 +443,10 @@ const zhCN = {
     roleName: '角色名称',
     administrationPermission: '管理权限',
     permission: '权限',
+    isPermission: {
+      yes: '是',
+      no: '否',
+    },
     enterName: '输入名称',
     selectPermission: '选择访问权限',
     hourReportPermission: '小时报告权限',
@@ -620,6 +624,27 @@ const zhCN = {
     error: {
       shiftError: '创建班次请求未成功。',
       shiftFailed: '创建班次失败。',
+    },
+  },
+  dataTranslation: {
+    menuCategory: {
+      roles: '角色',
+      users: '用户',
+      areas: '区域',
+      routes: '巡逻路线',
+      reports: '报表',
+      tutorial: '教程',
+      checkpoints: '检查点',
+    },
+    role: {
+      administrator: '管理员',
+      guard: '保安',
+      expat: '外籍人员',
+      it: 'IT',
+    },
+    reportNote: {
+      noIssue: '没有异常情况',
+      hasIssue: '有异常情况',
     },
   },
 }

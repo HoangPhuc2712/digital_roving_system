@@ -21,6 +21,7 @@ import {
   fetchScanPointsByArea,
 } from '@/modules/routes/routes.api'
 import { useI18n } from 'vue-i18n'
+import { translateRoleName } from '@/utils/dataI18n'
 
 export type RouteFormMode = 'new' | 'view' | 'edit'
 
@@ -95,9 +96,11 @@ const areaLabel = computed(() => {
 })
 
 const roleLabel = computed(() => {
-  return (
-    props.roleOptions.find((x) => x.value === form.role_id)?.label ?? props.model?.role_name ?? '—'
-  )
+  const matchedLabel = props.roleOptions.find((x) => x.value === form.role_id)?.label
+  if (matchedLabel) return matchedLabel
+
+  const rawRoleName = String(props.model?.role_name ?? form.role_name ?? '').trim()
+  return rawRoleName ? translateRoleName(rawRoleName, t) : '—'
 })
 
 const scanPointOptions = ref<ScanPointOption[]>([])
