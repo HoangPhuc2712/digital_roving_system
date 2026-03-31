@@ -10,16 +10,6 @@ function applyBorder(cell: ExcelJS.Cell) {
   }
 }
 
-function formatSeconds(sec: number) {
-  const s = Math.max(0, Number(sec) || 0)
-  const h = Math.floor(s / 3600)
-  const m = Math.floor((s % 3600) / 60)
-  const r = s % 60
-  const mm = String(m).padStart(2, '0')
-  const rr = String(r).padStart(2, '0')
-  return h > 0 ? `${h}:${mm}:${rr}` : `${m}:${rr}`
-}
-
 function buildRouteDetailText(row: RouteRow) {
   const parts = (row.details ?? [])
     .map((detail) => String(detail.cp_priority ?? '').trim())
@@ -52,11 +42,12 @@ export async function exportRoutesXlsx(params: { rows: RouteRow[]; fileName: str
     { header: 'Area', key: 'area_name', width: 20 },
     { header: 'Role', key: 'role_name', width: 20 },
     { header: 'Priority', key: 'route_priority', width: 12 },
-    { header: 'Total Time', key: 'route_total_time', width: 16 },
+    { header: 'Maximum Time', key: 'route_max_minute', width: 16 },
+    { header: 'Minimum Time', key: 'route_min_minute', width: 16 },
     { header: 'Route Detail', key: 'route_detail', width: 32 },
   ]
 
-  for (let c = 1; c <= 7; c++) {
+  for (let c = 1; c <= 8; c++) {
     const cell = ws.getCell(1, c)
     cell.font = { bold: true, color: { argb: 'FF0F172A' } }
     cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
@@ -71,7 +62,8 @@ export async function exportRoutesXlsx(params: { rows: RouteRow[]; fileName: str
       area_name: row.area_name || '-',
       role_name: row.role_name || row.role_code || '-',
       route_priority: Number(row.route_priority ?? 0),
-      route_total_time: formatSeconds(row.route_total_second),
+      route_max_minute: Number(row.route_max_minute ?? 0),
+      route_min_minute: Number(row.route_min_minute ?? 0),
       route_detail: buildRouteDetailText(row),
     })
   }

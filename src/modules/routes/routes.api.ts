@@ -35,8 +35,8 @@ type ApiRouteView = {
   routeKeyword?: string
   routeCode: string
   routeName: string
-  routeTotalSecond?: number
-  routeTotalMinute?: number
+  routeMaxMinute?: number
+  routeMinMinute?: number
   areaId: number
   areaCode?: string
   areaName?: string
@@ -155,8 +155,8 @@ function mapRouteView(
   const roleId = Number(v.roleId ?? 0)
   const roleCode = String(v.roleCode ?? '')
   const roleName = resolveRoleLabel(roleId, roleCode, String(v.roleName ?? ''), roleOptions)
-  const totalSecond = Number(v.routeTotalSecond ?? 0)
-  const totalMinute = Number(v.routeTotalMinute ?? 0)
+  const MinMinute = Number(v.routeMinMinute ?? 0)
+  const maxMinute = Number(v.routeMaxMinute ?? 0)
 
   return {
     route_id: Number(v.routeId ?? 0),
@@ -164,12 +164,8 @@ function mapRouteView(
     route_name: String(v.routeName ?? ''),
     route_status: apiStatusToUi(v.routeStatus),
     route_priority: Number(v.routePriority ?? 0),
-    route_total_minute:
-      totalMinute > 0
-        ? totalMinute
-        : Math.ceil((totalSecond > 0 ? totalSecond : sumSeconds(details)) / 60),
-    route_total_second:
-      totalSecond > 0 ? totalSecond : totalMinute > 0 ? totalMinute * 60 : sumSeconds(details),
+    route_min_minute: Number(v.routeMinMinute ?? 0),
+    route_max_minute: Number(v.routeMaxMinute ?? 0),
 
     area_id: Number(v.areaId ?? 0),
     area_code: String(v.areaCode ?? ''),
@@ -288,7 +284,8 @@ export async function fetchRouteById(routeId: number, roleOptions: RoleOption[] 
     role_id: row.role_id,
     role_name: row.role_name,
     route_priority: row.route_priority,
-    route_total_minute: row.route_total_minute,
+    route_min_minute: row.route_min_minute,
+    route_max_minute: row.route_max_minute,
     details: row.details.map((d) => ({ ...d })),
   }
 }
@@ -298,7 +295,8 @@ export async function createRouteMock(payload: {
   area_id: number
   role_id: number
   route_priority: number
-  route_total_minute: number
+  route_min_minute: number
+  route_max_minute: number
   details: RouteDetailModel[]
   actor_id: string
 }) {
@@ -311,7 +309,8 @@ export async function createRouteMock(payload: {
 
   const body = {
     routeName: payload.route_name.trim(),
-    routeTotalMinute: Number(payload.route_total_minute ?? 0),
+    routeMinMinute: Number(payload.route_min_minute ?? 0),
+    routeMaxMinute: Number(payload.route_max_minute ?? 0),
     areaId: payload.area_id,
     roleId: Number(payload.role_id ?? 0),
     routePriority: Number(payload.route_priority ?? 0),
@@ -338,7 +337,8 @@ export async function updateRouteMock(payload: {
   area_id: number
   role_id: number
   route_priority: number
-  route_total_minute: number
+  route_min_minute: number
+  route_max_minute: number
   details: RouteDetailModel[]
   actor_id: string
 }) {
@@ -351,7 +351,8 @@ export async function updateRouteMock(payload: {
 
   const body = {
     routeName: payload.route_name.trim(),
-    routeTotalMinute: Number(payload.route_total_minute ?? 0),
+    routeMinMinute: Number(payload.route_min_minute ?? 0),
+    routeMaxMinute: Number(payload.route_max_minute ?? 0),
     areaId: payload.area_id,
     roleId: Number(payload.role_id ?? 0),
     routePriority: Number(payload.route_priority ?? 0),

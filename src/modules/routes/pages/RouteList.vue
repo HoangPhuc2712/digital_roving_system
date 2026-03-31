@@ -143,7 +143,8 @@ function mapRowToFormModel(row: RouteRow): RouteFormModel {
     role_id: row.role_id,
     role_name: row.role_name,
     route_priority: row.route_priority,
-    route_total_minute: row.route_total_minute,
+    route_max_minute: row.route_max_minute,
+    route_min_minute: row.route_min_minute,
     details: row.details.map((d) => ({ ...d })),
   }
 }
@@ -203,7 +204,8 @@ function openNew() {
     role_id: 0,
     role_name: '',
     route_priority: 1,
-    route_total_minute: 0,
+    route_min_minute: 0,
+    route_max_minute: 0,
     details: [],
   }
   formVisible.value = true
@@ -448,12 +450,12 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
         sortDisabled
       />
 
-      <Column field="route_code" :header="t('routeList.routeCode')" style="min-width: 10rem" />
-      <Column field="route_name" :header="t('routeList.routeName')" style="min-width: 14rem" />
+      <!-- <Column field="route_code" :header="t('routeList.routeCode')" style="min-width: 8rem" /> -->
+      <Column field="route_name" :header="t('routeList.routeName')" style="min-width: 16rem" />
 
       <Column
         :header="t('routeList.area')"
-        style="min-width: 10rem"
+        style="min-width: 12rem"
         sortField="area_name"
         :filterMenu="{
           key: 'areaId',
@@ -477,12 +479,22 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
       <Column field="route_priority" :header="t('routeList.priority')" style="min-width: 8rem" />
 
       <Column
-        :header="t('routeList.totalTime')"
-        style="min-width: 10rem"
-        sortField="route_total_second"
+        :header="t('routeList.minMinute')"
+        style="min-width: 12rem"
+        sortField="route_min_minute"
       >
         <template #body="{ data }">
-          <div class="text-slate-800">{{ formatSeconds(data.route_total_second) }}</div>
+          <div class="text-slate-800">{{ data.route_min_minute }}:00</div>
+        </template>
+      </Column>
+
+      <Column
+        :header="t('routeList.maxMinute')"
+        style="min-width: 12rem"
+        sortField="route_max_minute"
+      >
+        <template #body="{ data }">
+          <div class="text-slate-800">{{ data.route_max_minute }}:00</div>
         </template>
       </Column>
 
@@ -498,7 +510,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
 
       <Column
         :header="t('routeList.status')"
-        style="min-width: 10rem"
+        style="min-width: 12rem"
         sortField="route_status"
         :filterMenu="{
           key: 'status',
