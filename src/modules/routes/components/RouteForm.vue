@@ -33,7 +33,8 @@ export type RouteFormModel = {
   role_id: number
   role_name?: string
   route_priority: number
-  route_total_minute: number
+  route_min_minute: number
+  route_max_minute: number
   details: RouteDetailModel[]
 }
 
@@ -114,7 +115,8 @@ const form = reactive<RouteFormState>({
   role_id: 0,
   role_name: '',
   route_priority: 1,
-  route_total_minute: 0,
+  route_min_minute: 0,
+  route_max_minute: 0,
   details: [],
   selected_cp_ids: [],
 })
@@ -209,7 +211,8 @@ watch(
     form.role_id = Number(m.role_id ?? 0)
     form.role_name = m.role_name ?? ''
     form.route_priority = Number(m.route_priority ?? 1)
-    form.route_total_minute = Number(m.route_total_minute ?? 0)
+    form.route_min_minute = Number(m.route_min_minute ?? 0)
+    form.route_max_minute = Number(m.route_max_minute ?? 0)
     form.details = Array.isArray(m.details) ? m.details.map((d) => ({ ...d })) : []
     form.selected_cp_ids = []
 
@@ -327,7 +330,8 @@ function submit() {
           area_id: areaId,
           role_id: roleId,
           route_priority: Number(form.route_priority ?? 1),
-          route_total_minute: Number(form.route_total_minute ?? 0),
+          route_min_minute: Number(form.route_min_minute ?? 0),
+          route_max_minute: Number(form.route_max_minute ?? 0),
           details,
           actor_id,
         })
@@ -342,7 +346,8 @@ function submit() {
         area_id: areaId,
         role_id: roleId,
         route_priority: Number(form.route_priority ?? 1),
-        route_total_minute: Number(form.route_total_minute ?? 0),
+        route_min_minute: Number(form.route_min_minute ?? 0),
+        route_max_minute: Number(form.route_max_minute ?? 0),
         details,
         actor_id,
       })
@@ -453,21 +458,44 @@ function submit() {
           />
         </div>
 
-        <div>
-          <label class="block text-sm text-slate-600 mb-1">{{ t('routeForm.totalMinutes') }}</label>
-          <div v-if="isView" class="text-slate-800 font-semibold">
-            {{ form.route_total_minute }}:00
+        <template v-if="isView">
+          <div aria-hidden="true"></div>
+
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">{{ t('routeForm.minMinute') }}</label>
+            <div class="text-slate-800 font-semibold">{{ form.route_min_minute }}:00</div>
           </div>
-          <InputNumber
-            v-else
-            v-model="form.route_total_minute"
-            class="w-full"
-            size="small"
-            :min="0"
-            :step="1"
-            :useGrouping="false"
-          />
-        </div>
+
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">{{ t('routeForm.maxMinute') }}</label>
+            <div class="text-slate-800 font-semibold">{{ form.route_max_minute }}:00</div>
+          </div>
+        </template>
+
+        <template v-else>
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">{{ t('routeForm.minMinute') }}</label>
+            <InputNumber
+              v-model="form.route_min_minute"
+              class="w-full"
+              size="small"
+              :min="0"
+              :step="1"
+              :useGrouping="false"
+            />
+          </div>
+          <div>
+            <label class="block text-sm text-slate-600 mb-1">{{ t('routeForm.maxMinute') }}</label>
+            <InputNumber
+              v-model="form.route_max_minute"
+              class="w-full"
+              size="small"
+              :min="0"
+              :step="1"
+              :useGrouping="false"
+            />
+          </div>
+        </template>
       </div>
 
       <div class="border-t border-slate-200 pt-3 space-y-3">
@@ -566,7 +594,7 @@ function submit() {
 
             <Column :header="t('routeForm.minutes')" style="width: 10rem">
               <template #body="{ data }">
-                <div v-if="isView" class="text-slate-800">{{ data.rd_minute }}</div>
+                <div v-if="isView" class="text-slate-800">{{ data.rd_minute }}:00</div>
                 <InputNumber
                   v-else
                   v-model="data.rd_minute"

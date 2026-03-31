@@ -3,7 +3,7 @@ import ProgressSpinner from 'primevue/progressspinner'
 import type { PatrolSummaryReportRow } from '@/modules/reports/reports.types'
 import { useI18n } from 'vue-i18n'
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const props = defineProps<{
   groupedRows: Array<{
     date_key: string
@@ -15,7 +15,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'open-missed-details', row: PatrolSummaryReportRow): void
-  (e: 'open-time-problem-details', row: PatrolSummaryReportRow): void
+  (e: 'open-slow-time-problem-details', row: PatrolSummaryReportRow): void
+  (e: 'open-fast-time-problem-details', row: PatrolSummaryReportRow): void
   (e: 'open-insufficient-details', row: PatrolSummaryReportRow): void
   (e: 'open-shift-problem-details', row: PatrolSummaryReportRow): void
 }>()
@@ -42,13 +43,22 @@ function openMissedDetails(row: PatrolSummaryReportRow) {
   emit('open-missed-details', row)
 }
 
-function canOpenTimeProblemDetails(row: PatrolSummaryReportRow) {
-  return Number(row.time_problem_count ?? 0) > 0
+function canOpenSlowTimeProblemDetails(row: PatrolSummaryReportRow) {
+  return Number(row.time_slow_problem_count ?? 0) > 0
 }
 
-function openTimeProblemDetails(row: PatrolSummaryReportRow) {
-  if (!canOpenTimeProblemDetails(row)) return
-  emit('open-time-problem-details', row)
+function openSlowTimeProblemDetails(row: PatrolSummaryReportRow) {
+  if (!canOpenSlowTimeProblemDetails(row)) return
+  emit('open-slow-time-problem-details', row)
+}
+
+function canOpenFastTimeProblemDetails(row: PatrolSummaryReportRow) {
+  return Number(row.time_fast_problem_count ?? 0) > 0
+}
+
+function openFastTimeProblemDetails(row: PatrolSummaryReportRow) {
+  if (!canOpenFastTimeProblemDetails(row)) return
+  emit('open-fast-time-problem-details', row)
 }
 
 function canOpenInsufficientDetails(row: PatrolSummaryReportRow) {
@@ -85,7 +95,7 @@ function openShiftProblemDetails(row: PatrolSummaryReportRow) {
       <div class="text-sm text-slate-500">{{ t('patrolSummaryReportList.loadingData') }}...</div>
     </div>
 
-    <table class="w-full min-w-[1100px] border-collapse text-[0.95rem] text-slate-700">
+    <table class="w-full min-w-[1280px] border-collapse text-[0.95rem] text-slate-700">
       <thead>
         <tr class="bg-slate-50 text-slate-800">
           <th class="border border-slate-200 px-4 py-3 text-center font-semibold">
@@ -104,7 +114,10 @@ function openShiftProblemDetails(row: PatrolSummaryReportRow) {
             {{ t('patrolSummaryReportList.missedPatrolCount') }}
           </th>
           <th class="border border-slate-200 px-4 py-3 text-center font-semibold">
-            {{ t('patrolSummaryReportList.timeProblemCount') }}
+            {{ t('patrolSummaryReportList.tooShortPatrolCount') }}
+          </th>
+          <th class="border border-slate-200 px-4 py-3 text-center font-semibold">
+            {{ t('patrolSummaryReportList.tooLongPatrolCount') }}
           </th>
           <th class="border border-slate-200 px-4 py-3 text-center font-semibold">
             {{ t('patrolSummaryReportList.insufficientNumberOfPatrol') }}
@@ -155,17 +168,31 @@ function openShiftProblemDetails(row: PatrolSummaryReportRow) {
             </td>
             <td
               class="border border-slate-200 px-4 py-3 text-center"
-              :class="abnormalCountClass(row.time_problem_count)"
+              :class="abnormalCountClass(row.time_slow_problem_count)"
             >
               <button
-                v-if="canOpenTimeProblemDetails(row)"
+                v-if="canOpenSlowTimeProblemDetails(row)"
                 type="button"
                 class="font-medium text-red-500 hover:text-red-800 hover:cursor-pointer"
-                @click="openTimeProblemDetails(row)"
+                @click="openSlowTimeProblemDetails(row)"
               >
-                {{ row.time_problem_count }}
+                {{ row.time_slow_problem_count }}
               </button>
-              <span v-else>{{ row.time_problem_count }}</span>
+              <span v-else>{{ row.time_slow_problem_count }}</span>
+            </td>
+            <td
+              class="border border-slate-200 px-4 py-3 text-center"
+              :class="abnormalCountClass(row.time_fast_problem_count)"
+            >
+              <button
+                v-if="canOpenFastTimeProblemDetails(row)"
+                type="button"
+                class="font-medium text-red-500 hover:text-red-800 hover:cursor-pointer"
+                @click="openFastTimeProblemDetails(row)"
+              >
+                {{ row.time_fast_problem_count }}
+              </button>
+              <span v-else>{{ row.time_fast_problem_count }}</span>
             </td>
             <td
               class="border border-slate-200 px-4 py-3 text-center"
@@ -204,7 +231,7 @@ function openShiftProblemDetails(row: PatrolSummaryReportRow) {
 
       <tbody v-else-if="!props.loading">
         <tr>
-          <td colspan="9" class="border border-slate-200 px-4 py-8 text-center text-slate-500">
+          <td colspan="10" class="border border-slate-200 px-4 py-8 text-center text-slate-500">
             {{ t('patrolSummaryReportList.noReportFound') }}.
           </td>
         </tr>

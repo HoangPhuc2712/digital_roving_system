@@ -177,15 +177,20 @@ type ApiPlannedPatrolShiftView = {
   routeName?: string
   areaId?: number
   roleId?: number
-  planSecond?: number
-  planHours?: number
-  planMinutes?: number
-  planSeconds?: number
+  planMinSecond?: number
+  planMaxSecond?: number
+  planMinHours?: number
+  planMaxHours?: number
+  planMinMinutes?: number
+  planMaxMinutes?: number
+  planMinSeconds?: number
+  planMaxSeconds?: number
   realitySecond?: number
   realityHours?: number
   realityMinutes?: number
   realitySeconds?: number
-  timeProblem?: boolean
+  timeFastProblem?: boolean
+  timeSlowProblem?: boolean
   shiftProblem?: boolean
   planPoint?: number
   realityPoint?: number
@@ -1297,22 +1302,50 @@ function buildMissedPatrolDetails(
 
 function buildTimeProblemDetails(
   views: ApiPlannedPatrolShiftView[],
+  mode: 'slow' | 'fast',
 ): PatrolSummaryTimeProblemDetailRow[] {
-  return views.map((item, index) => ({
-    row_id: `${Number(item.psId ?? 0)}-${Number(item.routeId ?? 0)}-time-${index}`,
-    patrol_time:
-      [formatShiftDatePrefix(item), extractShiftTimeRange(item)].filter(Boolean).join(' ') || '-',
-    actual_patrol_time: formatSummaryDuration(
-      Number(item.realityHours ?? 0),
-      Number(item.realityMinutes ?? 0),
-      Number(item.realitySeconds ?? 0),
-    ),
-    standard_patrol_time: formatSummaryDuration(
-      Number(item.planHours ?? 0),
-      Number(item.planMinutes ?? 0),
-      Number(item.planSeconds ?? 0),
-    ),
-  }))
+  return [...views]
+    .sort((a, b) => {
+      const aStart = buildPlannedShiftStart(a)
+      const bStart = buildPlannedShiftStart(b)
+      const aStartTime =
+        aStart && Number.isFinite(aStart.getTime()) ? aStart.getTime() : Number.MAX_SAFE_INTEGER
+      const bStartTime =
+        bStart && Number.isFinite(bStart.getTime()) ? bStart.getTime() : Number.MAX_SAFE_INTEGER
+      if (aStartTime !== bStartTime) return aStartTime - bStartTime
+
+      const aEnd = buildPlannedShiftEnd(a)
+      const bEnd = buildPlannedShiftEnd(b)
+      const aEndTime =
+        aEnd && Number.isFinite(aEnd.getTime()) ? aEnd.getTime() : Number.MAX_SAFE_INTEGER
+      const bEndTime =
+        bEnd && Number.isFinite(bEnd.getTime()) ? bEnd.getTime() : Number.MAX_SAFE_INTEGER
+      if (aEndTime !== bEndTime) return aEndTime - bEndTime
+
+      return Number(a.psId ?? 0) - Number(b.psId ?? 0)
+    })
+    .map((item, index) => ({
+      row_id: `${Number(item.psId ?? 0)}-${Number(item.routeId ?? 0)}-${mode}-${index}`,
+      patrol_time:
+        [formatShiftDatePrefix(item), extractShiftTimeRange(item)].filter(Boolean).join(' ') || '-',
+      actual_patrol_time: formatSummaryDuration(
+        Number(item.realityHours ?? 0),
+        Number(item.realityMinutes ?? 0),
+        Number(item.realitySeconds ?? 0),
+      ),
+      standard_patrol_time:
+        mode === 'slow'
+          ? formatSummaryDuration(
+              Number(item.planMinHours ?? 0),
+              Number(item.planMinMinutes ?? 0),
+              Number(item.planMinSeconds ?? 0),
+            )
+          : formatSummaryDuration(
+              Number(item.planMaxHours ?? 0),
+              Number(item.planMaxMinutes ?? 0),
+              Number(item.planMaxSeconds ?? 0),
+            ),
+    }))
 }
 
 function buildPatrolShiftViewDateKey(view: ApiPatrolShiftReportView) {
@@ -1585,13 +1618,16 @@ export async function fetchPatrolSummaryRows(
 
       const actualRows = plannedRows.filter(hasActualPatrolData)
       const missedRows = plannedRows.filter((item) => !hasActualPatrolData(item))
-      const timeProblemRows = actualRows.filter((item) => Boolean(item.timeProblem))
+      const slowProblemRows = actualRows.filter((item) => Boolean(item.timeSlowProblem))
+      const fastProblemRows = actualRows.filter((item) => Boolean(item.timeFastProblem))
 
       const actualCount = actualRows.length
       const missedCount = missedRows.length
       const missedPatrolDetails = buildMissedPatrolDetails(missedRows)
-      const timeProblemDetails = buildTimeProblemDetails(timeProblemRows)
-      const timeProblemCount = timeProblemRows.length
+      const slowProblemDetails = buildTimeProblemDetails(slowProblemRows, 'slow')
+      const slowProblemCount = slowProblemRows.length
+      const fastProblemDetails = buildTimeProblemDetails(fastProblemRows, 'fast')
+      const fastProblemCount = fastProblemRows.length
       const insufficientRows = actualRows.filter((item) => Boolean(item.pointProblem))
       const insufficientCount = insufficientRows.length
       const insufficientPatrolDetails = buildInsufficientPatrolDetails(
@@ -1602,7 +1638,8 @@ export async function fetchPatrolSummaryRows(
       const shiftProblemRows = actualRows.filter((item) => Boolean(item.shiftProblem))
       const shiftProblemCount = shiftProblemRows.length
       const shiftProblemDetails = buildShiftProblemDetails(shiftProblemRows, actualViewMap)
-      const abnormalTotal = missedCount + timeProblemCount + insufficientCount + shiftProblemCount
+      const abnormalTotal =
+        missedCount + slowProblemCount + fastProblemCount + insufficientCount + shiftProblemCount
       const abnormalRate = requiredCount > 0 ? (abnormalTotal / requiredCount) * 100 : 0
 
       rows.push({
@@ -1613,12 +1650,14 @@ export async function fetchPatrolSummaryRows(
         required_count: requiredCount,
         actual_count: actualCount,
         missed_count: missedCount,
-        time_problem_count: timeProblemCount,
+        time_slow_problem_count: slowProblemCount,
+        time_fast_problem_count: fastProblemCount,
         insufficient_count: insufficientCount,
         shift_problem_count: shiftProblemCount,
         abnormal_rate: Number(abnormalRate.toFixed(2)),
         missed_patrol_details: missedPatrolDetails,
-        time_problem_details: timeProblemDetails,
+        time_slow_problem_details: slowProblemDetails,
+        time_fast_problem_details: fastProblemDetails,
         insufficient_patrol_details: insufficientPatrolDetails,
         shift_problem_details: shiftProblemDetails,
       })

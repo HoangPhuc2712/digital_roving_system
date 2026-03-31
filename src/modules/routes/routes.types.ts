@@ -28,8 +28,8 @@ export type RouteRow = {
   route_name: string
   route_status: number // UI: 1 active, 0 inactive
   route_priority: number
-  route_total_minute: number
-  route_total_second: number
+  route_max_minute: number
+  route_min_minute: number
 
   area_id: number
   area_code: string
