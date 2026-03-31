@@ -21,6 +21,31 @@ function applyBorder(cell: ExcelJS.Cell) {
   }
 }
 
+function buildCheckpointRichText(params: { name: string; code: string; colorArgb?: string }) {
+  const name = params.name || '-'
+  const code = params.code || '-'
+  const color = params.colorArgb
+
+  return {
+    richText: [
+      {
+        text: name,
+        font: {
+          size: 11,
+          ...(color ? { color: { argb: color } } : {}),
+        },
+      },
+      {
+        text: `\n${code}`,
+        font: {
+          size: 9,
+          ...(color ? { color: { argb: color } } : {}),
+        },
+      },
+    ],
+  }
+}
+
 export async function exportIncorrectScanLogXlsx(params: {
   rows: IncorrectScanLogRow[]
   fileName: string
@@ -47,20 +72,30 @@ export async function exportIncorrectScanLogXlsx(params: {
   }
 
   for (const row of params.rows ?? []) {
-    ws.addRow({
+    const excelRow = ws.addRow({
       route_name: row.route_name || '-',
       ps_start_at: formatDateTime(row.ps_start_at),
       ps_end_at: formatDateTime(row.ps_end_at),
       created_at: formatDateTime(row.created_at),
-      wrong_scan: `${row.wrong_cp_name || '-'}\n${row.wrong_cp_code || '-'}`,
-      correct_scan: `${row.correct_cp_name || '-'}\n${row.correct_cp_code || '-'}`,
+      wrong_scan: '',
+      correct_scan: '',
       created_name: row.created_name || '-',
+    })
+
+    excelRow.getCell(5).value = buildCheckpointRichText({
+      name: row.wrong_cp_name || '-',
+      code: row.wrong_cp_code || '-',
+      colorArgb: 'FFDC2626',
+    })
+    excelRow.getCell(6).value = buildCheckpointRichText({
+      name: row.correct_cp_name || '-',
+      code: row.correct_cp_code || '-',
     })
   }
 
   ws.eachRow((row, rowNumber) => {
     if (rowNumber === 1) return
-    row.height = 28
+    row.height = 32
     row.eachCell((cell) => {
       cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true }
       applyBorder(cell)
