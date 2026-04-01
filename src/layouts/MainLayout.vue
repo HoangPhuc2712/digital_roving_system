@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppSidebar from '@/components/app/AppSidebar.vue'
 import BasePageHeader from '@/components/common/BasePageHeader.vue'
+import BasePageFooter from '@/components/common/BasePageFooter.vue'
 import 'primeicons/primeicons.css'
 
 const sidebarOpen = ref(false)
@@ -17,19 +18,21 @@ watch(
 </script>
 
 <template>
-  <div class="h-screen flex bg-slate-50 overflow-hidden">
-    <aside class="shrink-0 h-screen">
-      <AppSidebar v-model:mobileOpen="sidebarOpen" class="h-full" />
+  <div class="min-h-screen flex bg-slate-50">
+    <aside class="sticky top-0 self-start shrink-0 h-screen">
+      <AppSidebar v-model:mobileOpen="sidebarOpen" class="h-screen" />
     </aside>
 
-    <div class="flex-1 min-w-0 flex flex-col h-screen">
-      <header class="shrink-0">
+    <div class="flex-1 min-w-0 flex flex-col min-h-screen">
+      <header class="sticky top-0 z-30 shrink-0">
         <BasePageHeader @open-menu="sidebarOpen = true" />
       </header>
 
-      <main class="flex-1 p-4 overflow-y-auto overflow-x-hidden">
+      <main class="flex-1 p-4">
         <router-view />
       </main>
+
+      <BasePageFooter class="mt-auto" />
     </div>
   </div>
 </template>

@@ -661,6 +661,10 @@ const en = {
     serverMaintenance: 'Server Maintenance',
     serverMaintenanceDetail: 'The server is currently under maintenance. Please try again later.',
   },
+  footer: {
+    detail: `The company’s application system may contain personal or business data, so please avoid any illegal actions when using it. Improper collection or processing of data, or abuse of authority that causes any damage to the company or clients, will be subject to penalties according to company policy and the law. If you have any questions about this application, please contact the IT department. Wishing you successful use!`,
+    version: 'Version',
+  },
 }
 
 export default en

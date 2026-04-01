@@ -661,6 +661,11 @@ const vi = {
     serverMaintenance: 'Bảo trì máy chủ',
     serverMaintenanceDetail: 'Máy chủ hiện đang được bảo trì. Vui lòng thử lại sau.',
   },
+  footer: {
+    detail:
+      'Hệ thống ứng dụng của công ty có thể có chứa dữ liệu về cá nhân hoặc kinh doanh nên khi sử dụng cần tránh các hành động bất hợp pháp. Nếu thu thập và xử lý dữ liệu không đúng cách, lạm dụng quyền hạn gây ra bất kỳ thiệt hại nào cho công ty hoặc khách hàng sẽ bị xử phạt dựa trên chính sách của công ty và pháp luật. Nếu bạn có bất kỳ câu hỏi nào về ứng dụng này vui lòng liên hệ với bộ phận CNTT, chúc bạn sử dụng thành công!',
+    version: 'Phiên bản',
+  },
 }
 
 export default vi
