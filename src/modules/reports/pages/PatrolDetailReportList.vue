@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { onBeforeRouteLeave, useRouter } from 'vue-router'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import Column from 'primevue/column'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
@@ -9,12 +9,14 @@ import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import BaseButtonGroup from '@/components/common/buttons/BaseButtonGroup.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import { usePatrolDetailReportsStore } from '@/modules/reports/patrolDetailReports.store'
+import { parseReportMailDateRange } from '@/modules/reports/reportMailLink'
 import { exportPatrolDetailReportXlsx } from '@/services/export/patrolDetailReport.export'
 import { useResetFirstOnFilterChange } from '@/composables/useFilters'
 import { usePagination } from '@/composables/usePagination'
 
 const toast = useToast()
 const router = useRouter()
+const route = useRoute()
 const store = usePatrolDetailReportsStore()
 const exporting = ref(false)
 const { t, locale } = useI18n()
@@ -61,6 +63,12 @@ const { onPage } = usePagination({
 })
 
 onMounted(async () => {
+  const mailRange = parseReportMailDateRange(route.query)
+  if (mailRange.hasQuery && mailRange.from && mailRange.to) {
+    store.filterDateFrom = mailRange.from
+    store.filterDateTo = mailRange.to
+  }
+
   await store.load()
 })
 
