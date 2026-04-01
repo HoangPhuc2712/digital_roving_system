@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { onBeforeRouteLeave, useRouter } from 'vue-router'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import Toolbar from 'primevue/toolbar'
 import { useI18n } from 'vue-i18n'
@@ -15,6 +15,7 @@ import PatrolSummaryTimeProblemDialog from '@/modules/reports/components/PatrolS
 import PatrolSummaryInsufficientPatrolDialog from '@/modules/reports/components/PatrolSummaryInsufficientPatrolDialog.vue'
 import PatrolSummaryShiftProblemDialog from '@/modules/reports/components/PatrolSummaryShiftProblemDialog.vue'
 import { usePatrolSummaryReportsStore } from '@/modules/reports/patrolSummaryReports.store'
+import { parseReportMailDateRange } from '@/modules/reports/reportMailLink'
 import type { PatrolSummaryReportRow } from '@/modules/reports/reports.types'
 import { exportPatrolSummaryReportXlsx } from '@/services/export/patrolSummaryReport.export'
 
@@ -24,6 +25,7 @@ type PatrolSummaryChartExpose = {
 
 const toast = useToast()
 const router = useRouter()
+const route = useRoute()
 const store = usePatrolSummaryReportsStore()
 const { t, locale } = useI18n()
 const exporting = ref(false)
@@ -63,6 +65,12 @@ const reportSwitchButtons = computed(() => [
 ])
 
 onMounted(async () => {
+  const mailRange = parseReportMailDateRange(route.query)
+  if (mailRange.hasQuery && mailRange.from && mailRange.to) {
+    store.filterDateFrom = mailRange.from
+    store.filterDateTo = mailRange.to
+  }
+
   await store.load()
   autoLoadEnabled.value = true
 })
