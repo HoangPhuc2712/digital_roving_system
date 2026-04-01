@@ -45,14 +45,14 @@ const translatedMenuOptions = computed(() =>
   })),
 )
 
-const roleStatusOptions = [
+const roleStatusOptions = computed(() => [
   { label: t('roleList.roleStatusOptions.all'), value: 'ALL' },
   { label: t('roleList.roleStatusOptions.active'), value: 'ACTIVE' },
   {
     label: t('roleList.roleStatusOptions.inactive'),
     value: 'INACTIVE',
   },
-]
+])
 const confirmDeleteVisible = ref(false)
 const confirmDeleteMessage = ref('')
 const confirmDeleteLoading = ref(false)

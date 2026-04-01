@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 
 const props = defineProps<{
@@ -11,17 +12,18 @@ const props = defineProps<{
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 
 const titleText = computed(() => {
   if (props.title) return props.title
-  if (route.name === 'forbidden') return 'Access Restricted'
-  return 'Server Maintenance'
+  if (route.name === 'forbidden') return t('restricted.accessRestricted')
+  return t('restricted.serverMaintenance')
 })
 
 const messageText = computed(() => {
   if (props.message) return props.message
-  if (route.name === 'forbidden') return 'You do not have permission to access this page.'
-  return 'The server is currently under maintenance. Please try again later.'
+  if (route.name === 'forbidden') return t('restricted.accessRestrictedDetail')
+  return t('serverMaintenanceDetail')
 })
 
 const showLogin = computed(() => props.showLoginButton !== false)

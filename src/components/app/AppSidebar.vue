@@ -12,9 +12,11 @@ import { translateMenuCategoryName, translateRoleName } from '@/utils/dataI18n'
 const props = withDefaults(
   defineProps<{
     mobileOpen?: boolean
+    desktopOpen?: boolean
   }>(),
   {
     mobileOpen: false,
+    desktopOpen: true,
   },
 )
 
@@ -275,110 +277,119 @@ function logout() {
 </script>
 
 <template>
-  <div v-if="mobileOpen" class="fixed inset-0 bg-black/40 z-40 lg:hidden" @click="closeMobile" />
+  <div v-if="mobileOpen" class="fixed inset-0 z-40 bg-black/40 lg:hidden" @click="closeMobile" />
 
   <aside
     v-bind="attrs"
-    class="h-screen w-72 flex flex-col bg-slate-900 text-slate-100 z-50 fixed inset-y-0 left-0 transform transition-transform duration-200 lg:static lg:translate-x-0"
-    :class="mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+    class="fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-300 lg:sticky lg:top-0 lg:left-auto lg:inset-y-auto lg:self-start lg:h-screen lg:translate-x-0 lg:overflow-hidden lg:transition-[width]"
+    :class="[
+      mobileOpen ? 'translate-x-0' : '-translate-x-full',
+      props.desktopOpen ? 'lg:w-72' : 'lg:w-0',
+    ]"
   >
-    <header class="px-4 py-4 border-b border-white/10">
-      <div class="flex items-center gap-3">
-        <div class="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center text-xs">
-          <img src="/src/styles/logo/JiaHsinLogo.png" alt="" />
+    <div class="h-screen w-72 flex flex-col bg-slate-900 text-slate-100">
+      <header class="px-4 py-4 border-b border-white/10">
+        <div class="flex items-center gap-3">
+          <div class="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center text-xs">
+            <img src="/src/styles/logo/JiaHsinLogo.png" alt="" />
+          </div>
+          <div class="leading-tight">
+            <div class="text-base font-semibold">JIAHSIN CO., LTD</div>
+          </div>
         </div>
-        <div class="leading-tight">
-          <div class="text-base font-semibold">JIAHSIN CO., LTD</div>
-        </div>
-      </div>
-    </header>
+      </header>
 
-    <nav class="flex-1 overflow-y-auto px-2 py-3">
-      <ul class="space-y-1">
-        <li v-for="item in navItems" :key="item.key">
-          <template v-if="item.key === 'REPORTS'">
-            <button type="button" :class="itemClass(isReportsGroupActive())" @click="toggleReports">
-              <span class="flex items-center gap-3">
-                <i :class="item.icon"></i>
-                <span>{{ item.label }}</span>
-              </span>
-              <i
-                class="pi transition-transform"
-                :class="reportsOpen ? 'pi-chevron-down' : 'pi-chevron-right'"
-              ></i>
-            </button>
-
-            <div v-if="reportsOpen" class="mt-1 ml-4 space-y-1">
+      <nav class="flex-1 overflow-y-auto px-2 py-3">
+        <ul class="space-y-1">
+          <li v-for="item in navItems" :key="item.key">
+            <template v-if="item.key === 'REPORTS'">
               <button
                 type="button"
-                :class="
-                  subItemClass(
-                    isActivePath('/reports') ||
-                      isActivePath('/incorrect-scan-reports') ||
-                      isActivePath('/ctpat-reports'),
-                  )
-                "
-                @click="goToPatrolsData"
+                :class="itemClass(isReportsGroupActive())"
+                @click="toggleReports"
               >
-                <span class="flex items-center gap-3">
-                  <i class="pi pi-shield"></i>
-                  <span>{{ t('breadcrumb.patrolsData') }}</span>
-                </span>
-              </button>
-
-              <button
-                type="button"
-                :class="
-                  subItemClass(
-                    isActivePath('/patrol-detail-reports') ||
-                      isActivePath('/patrol-summary-reports'),
-                  )
-                "
-                @click="goToReportsData"
-              >
-                <span class="flex items-center gap-3">
-                  <i class="pi pi-file"></i>
-                  <span>{{ t('breadcrumb.reportsData') }}</span>
-                </span>
-              </button>
-            </div>
-          </template>
-
-          <template v-else>
-            <RouterLink :to="item.to" v-slot="{ isActive }">
-              <a :class="itemClass(isNavItemActive(item, isActive))" @click="closeMobile">
                 <span class="flex items-center gap-3">
                   <i :class="item.icon"></i>
                   <span>{{ item.label }}</span>
                 </span>
-              </a>
-            </RouterLink>
-          </template>
-        </li>
-      </ul>
-    </nav>
+                <i
+                  class="pi transition-transform"
+                  :class="reportsOpen ? 'pi-chevron-down' : 'pi-chevron-right'"
+                ></i>
+              </button>
 
-    <footer class="border-t border-white/10 px-4 py-4">
-      <div class="mb-3">
-        <button
+              <div v-if="reportsOpen" class="mt-1 ml-4 space-y-1">
+                <button
+                  type="button"
+                  :class="
+                    subItemClass(
+                      isActivePath('/reports') ||
+                        isActivePath('/incorrect-scan-reports') ||
+                        isActivePath('/ctpat-reports'),
+                    )
+                  "
+                  @click="goToPatrolsData"
+                >
+                  <span class="flex items-center gap-3">
+                    <i class="pi pi-shield"></i>
+                    <span>{{ t('breadcrumb.patrolsData') }}</span>
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  :class="
+                    subItemClass(
+                      isActivePath('/patrol-detail-reports') ||
+                        isActivePath('/patrol-summary-reports'),
+                    )
+                  "
+                  @click="goToReportsData"
+                >
+                  <span class="flex items-center gap-3">
+                    <i class="pi pi-file"></i>
+                    <span>{{ t('breadcrumb.reportsData') }}</span>
+                  </span>
+                </button>
+              </div>
+            </template>
+
+            <template v-else>
+              <RouterLink :to="item.to" v-slot="{ isActive }">
+                <a :class="itemClass(isNavItemActive(item, isActive))" @click="closeMobile">
+                  <span class="flex items-center gap-3">
+                    <i :class="item.icon"></i>
+                    <span>{{ item.label }}</span>
+                  </span>
+                </a>
+              </RouterLink>
+            </template>
+          </li>
+        </ul>
+      </nav>
+
+      <footer class="border-t border-white/10 px-4 py-4">
+        <div class="mb-3">
+          <button
+            type="button"
+            class="text-sm font-semibold flex items-center gap-2 leading-snug text-left hover:text-white transition"
+            @click="goToUserInfo"
+          >
+            <i class="pi pi-user"></i>
+            <span class="hover:underline cursor-pointer">{{ userFullName }}</span>
+          </button>
+          <div class="text-xs text-slate-300 mt-1">User Code: {{ userCode }}</div>
+          <div class="text-xs text-slate-300">Role: {{ userRoleName }}</div>
+        </div>
+
+        <BaseBadgeButton
           type="button"
-          class="text-sm font-semibold flex items-center gap-2 leading-snug text-left hover:text-white transition"
-          @click="goToUserInfo"
-        >
-          <i class="pi pi-user"></i>
-          <span class="hover:underline cursor-pointer">{{ userFullName }}</span>
-        </button>
-        <div class="text-xs text-slate-300 mt-1">User Code: {{ userCode }}</div>
-        <div class="text-xs text-slate-300">Role: {{ userRoleName }}</div>
-      </div>
-
-      <BaseBadgeButton
-        type="button"
-        label="Logout"
-        severity="contrast"
-        class="w-full rounded-lg px-3 py-2 bg-red-500/10 text-red-100 hover:bg-red-500/20 transition"
-        @click="logout"
-      />
-    </footer>
+          label="Logout"
+          severity="contrast"
+          class="w-full rounded-lg px-3 py-2 bg-red-500/10 text-red-100 hover:bg-red-500/20 transition"
+          @click="logout"
+        />
+      </footer>
+    </div>
   </aside>
 </template>

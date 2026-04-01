@@ -65,7 +65,7 @@ const routeFilterAreaOptions = computed(() => {
     .sort((a, b) => String(a.label).localeCompare(String(b.label)))
 })
 
-const routeStatusOptions = [
+const routeStatusOptions = computed(() => [
   { label: t('routeList.routeStatusOptions.all'), value: 'ALL' },
   {
     label: t('routeList.routeStatusOptions.active'),
@@ -75,7 +75,7 @@ const routeStatusOptions = [
     label: t('routeList.routeStatusOptions.inactive'),
     value: 'INACTIVE',
   },
-]
+])
 const confirmDeleteVisible = ref(false)
 const createShiftsVisible = ref(false)
 const createShiftsLoading = ref(false)

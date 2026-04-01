@@ -45,7 +45,7 @@ const printingCheckpointId = ref<number | null>(null)
 const DELETE_CHECKPOINT_API_DRY_RUN = false
 const { t, locale } = useI18n()
 
-const checkpointStatusOptions = [
+const checkpointStatusOptions = computed(() => [
   {
     label: t('checkpointList.checkpointStatusOptions.all'),
     value: 'ALL',
@@ -58,7 +58,7 @@ const checkpointStatusOptions = [
     label: t('checkpointList.checkpointStatusOptions.inactive'),
     value: 'INACTIVE',
   },
-]
+])
 const confirmDeleteVisible = ref(false)
 const confirmDeleteMessage = ref('')
 const confirmDeleteLoading = ref(false)
@@ -609,7 +609,12 @@ async function onExport() {
         style="min-width: 14rem"
       />
 
-      <Column :header="t('checkpointList.qrImg')" style="min-width: 8rem" sortDisabled>
+      <Column
+        :header="t('checkpointList.qrImg')"
+        v-if="canManage"
+        style="min-width: 8rem"
+        sortDisabled
+      >
         <template #body="{ data }">
           <div class="flex justify-start">
             <QrPreview

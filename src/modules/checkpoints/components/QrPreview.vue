@@ -30,10 +30,11 @@ function normalizeSrc(v: string) {
 
 const src = computed(() => normalizeSrc(props.value))
 const thumb = computed(() => props.size ?? 44)
+const canViewQr = computed(() => auth.isAdminUser && !!src.value)
 const canPrint = computed(() => auth.isAdminUser && !!props.printItem && !!src.value)
 
 function open() {
-  if (!src.value) return
+  if (!canViewQr.value) return
   visible.value = true
 }
 
@@ -68,14 +69,23 @@ async function onPrint() {
 <template>
   <div class="inline-flex items-center">
     <div
-      class="border border-slate-200 rounded-md overflow-hidden bg-white cursor-pointer"
+      class="border border-slate-200 rounded-md overflow-hidden bg-white relative"
+      :class="canViewQr ? 'cursor-pointer' : 'cursor-not-allowed'"
       :style="{ width: thumb + 'px', height: thumb + 'px' }"
       @click="open"
     >
-      <img v-if="src" :src="src" alt="QR" class="w-full h-full object-cover block" />
+      <img
+        v-if="src"
+        :src="src"
+        alt="QR"
+        class="w-full h-full object-cover block transition"
+        :class="canViewQr ? '' : 'blur-sm scale-110 select-none pointer-events-none'"
+        draggable="false"
+      />
       <div v-else class="w-full h-full flex items-center justify-center text-xs text-slate-500">
         N/A
       </div>
+      <div v-if="src && !canViewQr" class="absolute inset-0 bg-white/20" aria-hidden="true" />
     </div>
 
     <Dialog
