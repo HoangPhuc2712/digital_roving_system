@@ -653,6 +653,14 @@ const zhCN = {
       hasIssue: '有异常情况',
     },
   },
+  restricted: {
+    status404: '404 未找到',
+    status404Detail: `此页面似乎不存在`,
+    accessRestricted: '访问受限',
+    accessRestrictedDetail: '您没有权限访问此页面。',
+    serverMaintenance: '服务器维护中',
+    serverMaintenanceDetail: '服务器当前正在维护中。请稍后再试。',
+  },
 }
 
 export default zhCN

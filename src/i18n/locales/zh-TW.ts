@@ -653,6 +653,14 @@ const zhTW = {
       hasIssue: '有異常狀況',
     },
   },
+  restricted: {
+    status404: '404 找不到頁面',
+    status404Detail: `此頁面似乎不存在`,
+    accessRestricted: '存取受限',
+    accessRestrictedDetail: '您沒有權限存取此頁面。',
+    serverMaintenance: '伺服器維護中',
+    serverMaintenanceDetail: '伺服器目前正在維護中。請稍後再試。',
+  },
 }
 
 export default zhTW

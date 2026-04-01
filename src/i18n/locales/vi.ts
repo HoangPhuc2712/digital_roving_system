@@ -653,6 +653,14 @@ const vi = {
       hasIssue: 'Có vấn đề phát sinh',
     },
   },
+  restricted: {
+    status404: '404 KHÔNG TÌM THẤY',
+    status404Detail: `Trang này dường như không tồn tại`,
+    accessRestricted: 'Truy cập bị hạn chế',
+    accessRestrictedDetail: 'Bạn không có quyền truy cập vào trang này.',
+    serverMaintenance: 'Bảo trì máy chủ',
+    serverMaintenanceDetail: 'Máy chủ hiện đang được bảo trì. Vui lòng thử lại sau.',
+  },
 }
 
 export default vi
