@@ -45,7 +45,7 @@ const printingCheckpointId = ref<number | null>(null)
 const DELETE_CHECKPOINT_API_DRY_RUN = false
 const { t, locale } = useI18n()
 
-const checkpointStatusOptions = [
+const checkpointStatusOptions = computed(() => [
   {
     label: t('checkpointList.checkpointStatusOptions.all'),
     value: 'ALL',
@@ -58,7 +58,7 @@ const checkpointStatusOptions = [
     label: t('checkpointList.checkpointStatusOptions.inactive'),
     value: 'INACTIVE',
   },
-]
+])
 const confirmDeleteVisible = ref(false)
 const confirmDeleteMessage = ref('')
 const confirmDeleteLoading = ref(false)

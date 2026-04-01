@@ -3,7 +3,7 @@ const vi = {
     searchPlaceholder: 'Tìm kiếm...',
     clearFilters: 'Xóa bộ lọc',
     all: 'Tất cả',
-    new: 'Mới',
+    new: 'Thêm mới',
     delete: 'Xóa',
     cannotDelete: 'Không thể xóa',
     export: 'Xuất Excel',
