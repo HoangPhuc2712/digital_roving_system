@@ -609,7 +609,12 @@ async function onExport() {
         style="min-width: 14rem"
       />
 
-      <Column :header="t('checkpointList.qrImg')" style="min-width: 8rem" sortDisabled>
+      <Column
+        :header="t('checkpointList.qrImg')"
+        v-if="canManage"
+        style="min-width: 8rem"
+        sortDisabled
+      >
         <template #body="{ data }">
           <div class="flex justify-start">
             <QrPreview

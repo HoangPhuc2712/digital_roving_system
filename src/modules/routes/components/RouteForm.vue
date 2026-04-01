@@ -13,6 +13,7 @@ import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import BaseMessage from '@/components/common/messages/BaseMessage.vue'
 import QrPreview from '@/modules/checkpoints/components/QrPreview.vue'
 import { normalizeImageSource } from '@/utils/base64'
+import { useAuthStore } from '@/stores/auth.store'
 
 import type { RouteDetailModel } from '@/modules/routes/routes.types'
 import {
@@ -125,6 +126,8 @@ const routeNameError = computed(() => submitted.value && !String(form.route_name
 const areaError = computed(() => submitted.value && !Number(form.area_id ?? 0))
 const roleError = computed(() => submitted.value && !Number(form.role_id ?? 0))
 const detailsError = computed(() => submitted.value && !form.details.length)
+const auth = useAuthStore()
+const canManage = computed(() => auth.isAdminUser && auth.canAccess('routes.manage'))
 const addScanPointError = computed(
   () =>
     addScanPointSubmitted.value &&
@@ -577,7 +580,7 @@ function submit() {
               </template>
             </Column>
 
-            <Column :header="t('routeForm.qrImg')" style="width: 8rem">
+            <Column :header="t('routeForm.qrImg')" v-if="canManage" style="width: 8rem">
               <template #body="{ data }">
                 <QrPreview
                   :value="getQrValue(data)"
