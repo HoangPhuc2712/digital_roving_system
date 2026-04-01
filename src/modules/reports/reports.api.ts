@@ -1618,16 +1618,16 @@ export async function fetchPatrolSummaryRows(
 
       const actualRows = plannedRows.filter(hasActualPatrolData)
       const missedRows = plannedRows.filter((item) => !hasActualPatrolData(item))
-      const slowProblemRows = actualRows.filter((item) => Boolean(item.timeSlowProblem))
-      const fastProblemRows = actualRows.filter((item) => Boolean(item.timeFastProblem))
+      const shortPatrolProblemRows = actualRows.filter((item) => Boolean(item.timeFastProblem))
+      const longPatrolProblemRows = actualRows.filter((item) => Boolean(item.timeSlowProblem))
 
       const actualCount = actualRows.length
       const missedCount = missedRows.length
       const missedPatrolDetails = buildMissedPatrolDetails(missedRows)
-      const slowProblemDetails = buildTimeProblemDetails(slowProblemRows, 'slow')
-      const slowProblemCount = slowProblemRows.length
-      const fastProblemDetails = buildTimeProblemDetails(fastProblemRows, 'fast')
-      const fastProblemCount = fastProblemRows.length
+      const shortPatrolProblemDetails = buildTimeProblemDetails(shortPatrolProblemRows, 'slow')
+      const shortPatrolProblemCount = shortPatrolProblemRows.length
+      const longPatrolProblemDetails = buildTimeProblemDetails(longPatrolProblemRows, 'fast')
+      const longPatrolProblemCount = longPatrolProblemRows.length
       const insufficientRows = actualRows.filter((item) => Boolean(item.pointProblem))
       const insufficientCount = insufficientRows.length
       const insufficientPatrolDetails = buildInsufficientPatrolDetails(
@@ -1639,7 +1639,11 @@ export async function fetchPatrolSummaryRows(
       const shiftProblemCount = shiftProblemRows.length
       const shiftProblemDetails = buildShiftProblemDetails(shiftProblemRows, actualViewMap)
       const abnormalTotal =
-        missedCount + slowProblemCount + fastProblemCount + insufficientCount + shiftProblemCount
+        missedCount +
+        shortPatrolProblemCount +
+        longPatrolProblemCount +
+        insufficientCount +
+        shiftProblemCount
       const abnormalRate = requiredCount > 0 ? (abnormalTotal / requiredCount) * 100 : 0
 
       rows.push({
@@ -1650,14 +1654,14 @@ export async function fetchPatrolSummaryRows(
         required_count: requiredCount,
         actual_count: actualCount,
         missed_count: missedCount,
-        time_slow_problem_count: slowProblemCount,
-        time_fast_problem_count: fastProblemCount,
+        time_slow_problem_count: shortPatrolProblemCount,
+        time_fast_problem_count: longPatrolProblemCount,
         insufficient_count: insufficientCount,
         shift_problem_count: shiftProblemCount,
         abnormal_rate: Number(abnormalRate.toFixed(2)),
         missed_patrol_details: missedPatrolDetails,
-        time_slow_problem_details: slowProblemDetails,
-        time_fast_problem_details: fastProblemDetails,
+        time_slow_problem_details: shortPatrolProblemDetails,
+        time_fast_problem_details: longPatrolProblemDetails,
         insufficient_patrol_details: insufficientPatrolDetails,
         shift_problem_details: shiftProblemDetails,
       })
