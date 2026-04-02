@@ -83,7 +83,7 @@ const areaLabel = computed(() => {
 const userNameError = computed(() => submitted.value && !String(form.user_name ?? '').trim())
 const userCodeError = computed(() => submitted.value && !String(form.user_code ?? '').trim())
 const passwordError = computed(
-  () => submitted.value && isNew.value && !String(form.user_password ?? '').trim(),
+  () => submitted.value && !isView.value && !String(form.user_password ?? '').trim(),
 )
 const roleError = computed(() => submitted.value && !Number(form.user_role_id ?? 0))
 const areaError = computed(() => submitted.value && !Number(form.user_area_id ?? 0))
@@ -117,13 +117,9 @@ function submit() {
   const code = String(form.user_code ?? '').trim()
   const roleId = Number(form.user_role_id ?? 0)
   const areaId = Number(form.user_area_id ?? 0)
+  const pwd = String(form.user_password ?? '').trim()
 
-  if (!name || !code || !roleId || !areaId) return
-
-  if (props.mode === 'new') {
-    const pwd = String(form.user_password ?? '').trim()
-    if (!pwd) return
-  }
+  if (!name || !code || !pwd || !roleId || !areaId) return
 
   emit('submit', {
     submit: async (actor_id: string) => {
@@ -131,7 +127,7 @@ function submit() {
         await createUserMock({
           user_name: name,
           user_code: code,
-          user_password: String(form.user_password ?? '').trim(),
+          user_password: pwd,
           user_role_id: roleId,
           user_area_id: areaId,
           actor_id,
@@ -143,7 +139,7 @@ function submit() {
           user_id: form.user_id,
           user_name: name,
           user_code: code,
-          user_password: String(form.user_password ?? '').trim() || undefined,
+          user_password: pwd,
           user_role_id: roleId,
           user_area_id: areaId,
           actor_id,
@@ -204,7 +200,7 @@ function submit() {
             size="small"
             :placeholder="t('userForm.enterPassword')"
             :hasError="passwordError"
-            :message="isNew ? t('userForm.error.passwordRequired') : ''"
+            :message="t('userForm.error.passwordRequired')"
           />
         </div>
 

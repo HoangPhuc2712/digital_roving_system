@@ -520,10 +520,10 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
         sortDisabled
       />
 
-      <Column field="area_code" :header="t('areaList.areaCode')" style="min-width: 10rem" />
-      <Column field="area_name" :header="t('areaList.areaName')" style="min-width: 14rem" />
+      <Column field="area_code" :header="t('areaList.areaCode')" />
+      <Column field="area_name" :header="t('areaList.areaName')" />
 
-      <Column :header="t('areaList.areaCheckPoints')" style="min-width: 12rem">
+      <Column :header="t('areaList.areaCheckPoints')">
         <template #body="{ data }">
           <BaseButton
             :label="`${t('common.view')} (${data.checkpoint_count})`"
@@ -536,7 +536,6 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
 
       <Column
         :header="t('areaList.status')"
-        style="min-width: 10rem"
         sortField="area_status"
         :filterMenu="{
           key: 'status',
@@ -554,12 +553,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
         </template>
       </Column>
 
-      <Column
-        :header="t('common.action')"
-        :exportable="false"
-        style="min-width: 18rem"
-        sortDisabled
-      >
+      <Column :header="t('common.action')" :exportable="false" sortDisabled>
         <template #body="{ data }">
           <div class="flex gap-2 justify-start">
             <BaseIconButton
