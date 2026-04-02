@@ -56,7 +56,7 @@ function renderChart() {
         data: dataset.data,
         borderColor: chartPalette[index % chartPalette.length],
         backgroundColor: chartPalette[index % chartPalette.length],
-        tension: 0,
+        tension: 0.4,
         fill: false,
         pointRadius: 4,
         pointHoverRadius: 5,

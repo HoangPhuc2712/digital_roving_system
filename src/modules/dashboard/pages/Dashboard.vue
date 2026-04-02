@@ -153,7 +153,7 @@ const chartOptions = computed(() => {
     maintainAspectRatio: false,
     responsive: true,
     animation: {
-      animateScale: true,
+      // animateScale: true,
       animateRotate: true,
       duration: 1400,
       easing: 'easeOutCubic',

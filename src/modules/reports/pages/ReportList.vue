@@ -110,6 +110,7 @@ useResetFirstOnFilterChange(
     store.filterRouteName,
     store.filterIssueStatus,
     store.filterResult,
+    store.filterCheckPointName,
     store.filterGuardId,
   ],
   () => store.setFirst(0),
@@ -146,6 +147,7 @@ function persistReloadState() {
     filterRouteName: store.filterRouteName ?? null,
     filterIssueStatus: store.filterIssueStatus ?? null,
     filterResult: store.filterResult ?? 'ALL',
+    filterCheckPointName: store.filterCheckPointName ?? null,
     filterGuardId: store.filterGuardId ?? '',
     filterDateFrom: store.filterDateFrom ? store.filterDateFrom.toISOString() : null,
     filterDateTo: store.filterDateTo ? store.filterDateTo.toISOString() : null,
@@ -166,6 +168,7 @@ function restoreReloadState() {
       filterRouteName?: string | null
       filterIssueStatus?: number | null
       filterResult?: ResultFilter
+      filterCheckPointName?: string | null
       filterGuardId?: string
       filterDateFrom?: string | null
       filterDateTo?: string | null
@@ -177,6 +180,7 @@ function restoreReloadState() {
     store.filterRouteName = payload.filterRouteName ?? null
     store.filterIssueStatus = payload.filterIssueStatus ?? null
     store.filterResult = payload.filterResult ?? 'ALL'
+    store.filterCheckPointName = payload.filterCheckPointName ?? null
     store.filterGuardId = payload.filterGuardId ?? ''
     store.filterDateFrom = payload.filterDateFrom ? new Date(payload.filterDateFrom) : null
     store.filterDateTo = payload.filterDateTo ? new Date(payload.filterDateTo) : null
@@ -467,7 +471,18 @@ async function onExport() {
         </template>
       </Column>
 
-      <Column :header="t('reportList.table.checkPoint')" sortField="cp_code">
+      <Column
+        :header="t('reportList.table.checkPoint')"
+        sortField="cp_code"
+        :filterMenu="{
+          key: 'checkPointName',
+          type: 'select',
+          value: store.filterCheckPointName,
+          options: store.checkPointOptions,
+          filter: true,
+          placeholder: t('reportList.table.checkPoint'),
+        }"
+      >
         <template #body="{ data }">
           <div class="flex flex-col">
             <div class="text-slate-800 font-semibold">{{ data.cp_name }}</div>
