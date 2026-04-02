@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Chart from 'primevue/chart'
 import { useI18n } from 'vue-i18n'
@@ -151,10 +151,19 @@ const chartOptions = computed(() => {
     },
     cutout: '60%',
     maintainAspectRatio: false,
+    responsive: true,
     animation: {
       animateScale: true,
       animateRotate: true,
-      duration: 900,
+      duration: 1400,
+      easing: 'easeOutCubic',
+    },
+    transitions: {
+      active: {
+        animation: {
+          duration: 200,
+        },
+      },
     },
     elements: {
       arc: {
@@ -206,6 +215,158 @@ const checkpointChartData = computed(() => ({
   ],
 }))
 
+const animatedCardTotals = ref<Record<string, number>>({})
+const animatedStatusTotals = ref<Record<string, number>>({})
+const roleChartRef = ref()
+const areaUserChartRef = ref()
+const checkpointChartRef = ref()
+
+function animateNumber(
+  from: number,
+  to: number,
+  duration: number,
+  onUpdate: (value: number) => void,
+) {
+  const start = performance.now()
+
+  const step = (now: number) => {
+    const progress = Math.min((now - start) / duration, 1)
+    const eased = 1 - Math.pow(1 - progress, 3)
+    const nextValue = Math.round(from + (to - from) * eased)
+    onUpdate(nextValue)
+
+    if (progress < 1) {
+      requestAnimationFrame(step)
+    }
+  }
+
+  requestAnimationFrame(step)
+}
+
+function runCardAnimations() {
+  const nextTotals: Record<string, number> = {}
+
+  for (const card of cards.value) {
+    const key = `${card.stt}-${card.name}`
+    nextTotals[key] = 0
+    animateNumber(0, Number(card.totalItem ?? 0), 900, (value) => {
+      animatedCardTotals.value = {
+        ...animatedCardTotals.value,
+        [key]: value,
+      }
+    })
+  }
+
+  animatedCardTotals.value = nextTotals
+}
+
+function runStatusCardAnimations() {
+  const nextTotals: Record<string, number> = {}
+
+  for (const card of pointReportStatusCards.value) {
+    const key = `${card.pr_status}-${card.pr_status_name}`
+    nextTotals[key] = 0
+    animateNumber(0, Number(card.total_problem ?? 0), 900, (value) => {
+      animatedStatusTotals.value = {
+        ...animatedStatusTotals.value,
+        [key]: value,
+      }
+    })
+  }
+
+  animatedStatusTotals.value = nextTotals
+}
+
+function getAnimatedCardTotal(card: DashboardTotalAppItem) {
+  const key = `${card.stt}-${card.name}`
+  return animatedCardTotals.value[key] ?? 0
+}
+
+function getAnimatedStatusTotal(card: DashboardTotalPointReportByStatusItem) {
+  const key = `${card.pr_status}-${card.pr_status_name}`
+  return animatedStatusTotals.value[key] ?? 0
+}
+
+const chartsReady = ref(false)
+let chartMountTimeout: number | null = null
+let chartAnimationFrame: number | null = null
+
+function clearChartRenderJobs() {
+  if (chartMountTimeout != null) {
+    window.clearTimeout(chartMountTimeout)
+    chartMountTimeout = null
+  }
+
+  if (chartAnimationFrame != null) {
+    window.cancelAnimationFrame(chartAnimationFrame)
+    chartAnimationFrame = null
+  }
+}
+
+function replayDoughnutChartAnimation(chartRef: { value?: any }) {
+  const chart = chartRef?.value?.chart
+  if (!chart) return
+
+  chart.stop?.()
+  chart.reset?.()
+  chart.update?.()
+}
+
+function replayAllChartAnimations() {
+  replayDoughnutChartAnimation(roleChartRef)
+  replayDoughnutChartAnimation(areaUserChartRef)
+  replayDoughnutChartAnimation(checkpointChartRef)
+}
+
+function scheduleChartsRender() {
+  chartsReady.value = false
+  clearChartRenderJobs()
+
+  chartMountTimeout = window.setTimeout(() => {
+    chartsReady.value = true
+    chartMountTimeout = null
+
+    chartAnimationFrame = window.requestAnimationFrame(() => {
+      chartAnimationFrame = window.requestAnimationFrame(() => {
+        replayAllChartAnimations()
+        chartAnimationFrame = null
+      })
+    })
+  }, 80)
+}
+
+watch(
+  () => store.loading,
+  async (loading) => {
+    if (loading) return
+
+    runCardAnimations()
+    runStatusCardAnimations()
+
+    await nextTick()
+    if (canSeeAdminDashboardSummary.value) {
+      scheduleChartsRender()
+    }
+  },
+  { immediate: false },
+)
+
+watch(canSeeAdminDashboardSummary, async (visible) => {
+  if (!visible) {
+    chartsReady.value = false
+    return
+  }
+
+  if (store.loading) return
+
+  await nextTick()
+  scheduleChartsRender()
+})
+
+onBeforeUnmount(() => {
+  clearChartRenderJobs()
+})
+
 onMounted(async () => {
   await store.load()
 })
@@ -222,23 +383,19 @@ onMounted(async () => {
 
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
       <button
-        v-for="(card, idx) in cards"
+        v-for="card in cards"
         :key="`${card.stt}-${card.name}`"
-        v-animateonscroll="{
-          enterClass: 'dashboard-card-enter',
-          leaveClass: 'dashboard-card-leave',
-        }"
         type="button"
         class="dashboard-card rounded-2xl shadow-sm hover:shadow transition p-4 text-left"
         :class="card.to ? 'cursor-pointer' : 'cursor-default'"
-        :style="{ ...cardStyle(card), animationDelay: `${idx * 100}ms` }"
+        :style="cardStyle(card)"
         @click="open(card)"
       >
         <div class="text-md font-semibold text-white/85">{{ card.displayName || card.name }}</div>
 
         <div class="mt-2 text-3xl font-semibold text-white">
           <span v-if="store.loading">—</span>
-          <span v-else>{{ card.totalItem }}</span>
+          <span v-else>{{ getAnimatedCardTotal(card) }}</span>
         </div>
 
         <div class="mt-2 text-xs text-white/80">{{ t('dashboard.clickToView') }}</div>
@@ -252,15 +409,11 @@ onMounted(async () => {
         class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"
       >
         <button
-          v-for="(card, idx) in pointReportStatusCards"
+          v-for="card in pointReportStatusCards"
           :key="`problem-${card.pr_status}-${card.pr_status_name}`"
-          v-animateonscroll="{
-            enterClass: 'dashboard-card-enter',
-            leaveClass: 'dashboard-card-leave',
-          }"
           type="button"
           class="dashboard-card rounded-2xl shadow-sm hover:shadow transition p-4 text-left cursor-pointer"
-          :style="{ ...statusCardStyle(card), animationDelay: `${idx * 100}ms` }"
+          :style="statusCardStyle(card)"
           @click="openStatusCard(card)"
         >
           <div class="text-md font-semibold text-white/85">
@@ -269,7 +422,7 @@ onMounted(async () => {
 
           <div class="mt-2 text-3xl font-semibold text-white">
             <span v-if="store.loading">—</span>
-            <span v-else>{{ card.total_problem }}</span>
+            <span v-else>{{ getAnimatedStatusTotal(card) }}</span>
           </div>
 
           <div class="mt-2 text-xs text-white/80">{{ t('dashboard.clickToView') }}</div>
@@ -278,119 +431,56 @@ onMounted(async () => {
     </div>
 
     <div v-if="canSeeAdminDashboardSummary" class="mt-20 grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <div
-        v-animateonscroll="{
-          enterClass: 'dashboard-chart-enter',
-          leaveClass: 'dashboard-chart-leave',
-        }"
-        class="rounded-2xl border border-slate-200 bg-white p-4"
-      >
+      <div class="rounded-2xl border border-slate-200 bg-white p-4">
         <div class="text-base font-semibold text-slate-800">
           {{ t('dashboard.totalUsersByRole') }}
         </div>
         <div class="mt-4 h-[320px]">
           <Chart
+            v-if="chartsReady"
+            ref="roleChartRef"
             type="doughnut"
             :data="roleChartData"
             :options="chartOptions"
             class="h-full w-full"
           />
+          <div v-else class="h-full w-full" />
         </div>
       </div>
 
-      <div
-        v-animateonscroll="{
-          enterClass: 'dashboard-chart-enter',
-          leaveClass: 'dashboard-chart-leave',
-        }"
-        class="rounded-2xl border border-slate-200 bg-white p-4"
-        style="animation-delay: 100ms"
-      >
+      <div class="rounded-2xl border border-slate-200 bg-white p-4">
         <div class="text-base font-semibold text-slate-800">
           {{ t('dashboard.totalUsersByArea') }}
         </div>
         <div class="mt-4 h-[320px]">
           <Chart
+            v-if="chartsReady"
+            ref="areaUserChartRef"
             type="doughnut"
             :data="areaUserChartData"
             :options="chartOptions"
             class="h-full w-full"
           />
+          <div v-else class="h-full w-full" />
         </div>
       </div>
 
-      <div
-        v-animateonscroll="{
-          enterClass: 'dashboard-chart-enter',
-          leaveClass: 'dashboard-chart-leave',
-        }"
-        class="rounded-2xl border border-slate-200 bg-white p-4"
-        style="animation-delay: 200ms"
-      >
+      <div class="rounded-2xl border border-slate-200 bg-white p-4">
         <div class="text-base font-semibold text-slate-800">
           {{ t('dashboard.totalCheckpointsByArea') }}
         </div>
         <div class="mt-4 h-[320px]">
           <Chart
+            v-if="chartsReady"
+            ref="checkpointChartRef"
             type="doughnut"
             :data="checkpointChartData"
             :options="chartOptions"
             class="h-full w-full"
           />
+          <div v-else class="h-full w-full" />
         </div>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.dashboard-card-enter {
-  animation: dashboard-fade-in-left 0.7s ease-out both;
-}
-
-.dashboard-card-leave {
-  animation: dashboard-fade-out 0.2s ease-in both;
-}
-
-.dashboard-chart-enter {
-  animation: dashboard-pop-center 0.7s ease-out both;
-}
-
-.dashboard-chart-leave {
-  animation: dashboard-fade-out 0.2s ease-in both;
-}
-
-@keyframes dashboard-fade-in-left {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes dashboard-pop-center {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes dashboard-fade-out {
-  from {
-    opacity: 1;
-  }
-
-  to {
-    opacity: 0;
-  }
-}
-</style>

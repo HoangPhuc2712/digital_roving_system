@@ -439,7 +439,6 @@ async function onExport() {
 
       <Column
         :header="t('reportList.table.routeName')"
-        style="min-width: 10rem"
         sortField="route_name"
         :filterMenu="{
           key: 'routeName',
@@ -468,11 +467,7 @@ async function onExport() {
         </template>
       </Column>
 
-      <Column
-        :header="t('reportList.table.checkPoint')"
-        style="min-width: 12rem"
-        sortField="cp_code"
-      >
+      <Column :header="t('reportList.table.checkPoint')" sortField="cp_code">
         <template #body="{ data }">
           <div class="flex flex-col">
             <div class="text-slate-800 font-semibold">{{ data.cp_name }}</div>
@@ -483,7 +478,6 @@ async function onExport() {
 
       <Column
         :header="t('reportList.table.inspectionResult')"
-        style="min-width: 10rem"
         sortField="pr_has_problem"
         :filterMenu="{
           key: 'result',
@@ -501,7 +495,7 @@ async function onExport() {
         </template>
       </Column>
 
-      <Column :header="t('reportList.table.note')" style="min-width: 16rem" sortField="pr_note">
+      <Column :header="t('reportList.table.note')" sortField="pr_note">
         <template #body="{ data }">
           <div class="max-w-[420px] truncate" :title="displayReportNote(data.pr_note || '')">
             {{ data.pr_note ? displayReportNote(data.pr_note) : t('reportList.emptyNote') }}
@@ -511,7 +505,6 @@ async function onExport() {
 
       <Column
         :header="t('reportList.table.reportDate')"
-        style="min-width: 12rem"
         sortField="report_at"
         :filterMenu="{
           key: 'reportDate',
@@ -529,7 +522,6 @@ async function onExport() {
 
       <Column
         :header="t('reportList.table.issueStatus')"
-        style="min-width: 12rem"
         sortField="pr_status"
         :filterMenu="{
           key: 'issueStatus',
@@ -551,7 +543,6 @@ async function onExport() {
       <Column
         field="report_name"
         :header="t('reportList.table.guardName')"
-        style="min-width: 12rem"
         :filterMenu="{
           key: 'guardId',
           type: 'select',
@@ -562,7 +553,7 @@ async function onExport() {
         }"
       />
 
-      <Column :header="t('reportList.table.action')" style="width: 160px" sortDisabled>
+      <Column :header="t('reportList.table.action')" sortDisabled>
         <template #body="{ data }">
           <div class="flex gap-2 justify-start">
             <BaseIconButton

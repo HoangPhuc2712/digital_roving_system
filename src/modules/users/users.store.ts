@@ -8,9 +8,11 @@ export const useUsersStore = defineStore('users', {
     loading: false,
 
     searchText: '' as string,
+    filterUserId: null as string | null,
     filterRoleId: null as number | null,
     filterAreaId: null as number | null,
 
+    userOptions: [] as { label: string; value: string }[],
     roleOptions: [] as { label: string; value: number }[],
     areaOptions: [] as { label: string; value: number }[],
 
@@ -25,6 +27,7 @@ export const useUsersStore = defineStore('users', {
       return state.rows.filter((r) => {
         if (q && (!r._q || !r._q.includes(q))) return false
 
+        if (state.filterUserId != null && r.user_id !== state.filterUserId) return false
         if (state.filterRoleId != null && r.user_role_id !== state.filterRoleId) return false
         if (state.filterAreaId != null && r.user_area_id !== state.filterAreaId) return false
 
@@ -42,6 +45,16 @@ export const useUsersStore = defineStore('users', {
           fetchRoleOptions().catch(() => []),
           fetchAreaOptions().catch(() => []),
         ])
+
+        const fallbackUserOptions = Array.from(
+          new Map(
+            rows
+              .filter((r) => String(r.user_id).trim() && String(r.user_name).trim())
+              .map((r) => [String(r.user_id), String(r.user_name)]),
+          ).entries(),
+        )
+          .map(([value, label]) => ({ value, label }))
+          .sort((a, b) => a.label.localeCompare(b.label))
 
         const fallbackRoleOptions = Array.from(
           new Map(
@@ -70,6 +83,7 @@ export const useUsersStore = defineStore('users', {
           .sort((a, b) => a.label.localeCompare(b.label))
 
         this.rows = rows
+        this.userOptions = fallbackUserOptions
         this.roleOptions = roles.length ? roles : fallbackRoleOptions
         this.areaOptions = areas.length ? areas : fallbackAreaOptions
       } finally {
@@ -79,6 +93,7 @@ export const useUsersStore = defineStore('users', {
 
     clearFilters() {
       this.searchText = ''
+      this.filterUserId = null
       this.filterRoleId = null
       this.filterAreaId = null
       this.first = 0
