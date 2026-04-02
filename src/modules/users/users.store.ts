@@ -9,10 +9,12 @@ export const useUsersStore = defineStore('users', {
 
     searchText: '' as string,
     filterUserId: null as string | null,
+    filterUserCode: '' as string,
     filterRoleId: null as number | null,
     filterAreaId: null as number | null,
 
     userOptions: [] as { label: string; value: string }[],
+    userCodeOptions: [] as { label: string; value: string }[],
     roleOptions: [] as { label: string; value: number }[],
     areaOptions: [] as { label: string; value: number }[],
 
@@ -28,6 +30,14 @@ export const useUsersStore = defineStore('users', {
         if (q && (!r._q || !r._q.includes(q))) return false
 
         if (state.filterUserId != null && r.user_id !== state.filterUserId) return false
+        if (
+          state.filterUserCode.trim() &&
+          !String(r.user_code ?? '')
+            .toLowerCase()
+            .includes(state.filterUserCode.trim().toLowerCase())
+        ) {
+          return false
+        }
         if (state.filterRoleId != null && r.user_role_id !== state.filterRoleId) return false
         if (state.filterAreaId != null && r.user_area_id !== state.filterAreaId) return false
 
@@ -54,6 +64,12 @@ export const useUsersStore = defineStore('users', {
           ).entries(),
         )
           .map(([value, label]) => ({ value, label }))
+          .sort((a, b) => a.label.localeCompare(b.label))
+
+        const fallbackUserCodeOptions = Array.from(
+          new Set(rows.map((r) => String(r.user_code ?? '').trim()).filter(Boolean)),
+        )
+          .map((value) => ({ value, label: value }))
           .sort((a, b) => a.label.localeCompare(b.label))
 
         const fallbackRoleOptions = Array.from(
@@ -84,6 +100,7 @@ export const useUsersStore = defineStore('users', {
 
         this.rows = rows
         this.userOptions = fallbackUserOptions
+        this.userCodeOptions = fallbackUserCodeOptions
         this.roleOptions = roles.length ? roles : fallbackRoleOptions
         this.areaOptions = areas.length ? areas : fallbackAreaOptions
       } finally {
@@ -94,6 +111,7 @@ export const useUsersStore = defineStore('users', {
     clearFilters() {
       this.searchText = ''
       this.filterUserId = null
+      this.filterUserCode = ''
       this.filterRoleId = null
       this.filterAreaId = null
       this.first = 0

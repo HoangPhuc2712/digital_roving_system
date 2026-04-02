@@ -59,7 +59,13 @@ const { searchDraft } = useDebouncedSearchDraft({
 })
 
 useResetFirstOnFilterChange(
-  () => [store.searchText, store.filterUserId, store.filterRoleId, store.filterAreaId],
+  () => [
+    store.searchText,
+    store.filterUserId,
+    store.filterUserCode,
+    store.filterRoleId,
+    store.filterAreaId,
+  ],
   () => store.setFirst(0),
 )
 
@@ -211,6 +217,7 @@ function confirmDeleteSelected() {
 
 function onColumnFilter(payload: { key: string; value: any }) {
   if (payload.key === 'userId') store.filterUserId = payload.value ?? null
+  if (payload.key === 'userCode') store.filterUserCode = String(payload.value ?? '')
   if (payload.key === 'roleId') store.filterRoleId = payload.value ?? null
   if (payload.key === 'areaId') store.filterAreaId = payload.value ?? null
 }
@@ -349,7 +356,23 @@ function onViewPatrolPath(row: UserRow) {
           filter: true,
         }"
       />
-      <Column field="user_code" :header="t('userList.userCode')" style="min-width: 10rem" />
+      <!--
+        If you want the User Code filter to show a selectable list later, uncomment:
+        options: store.userCodeOptions,
+        filter: true,
+        and change type from 'text' to 'select'.
+      -->
+      <Column
+        field="user_code"
+        :header="t('userList.userCode')"
+        style="min-width: 10rem"
+        :filterMenu="{
+          key: 'userCode',
+          type: 'text',
+          value: store.filterUserCode,
+          placeholder: t('userList.userCode'),
+        }"
+      />
       <Column
         :header="t('userList.area')"
         style="min-width: 14rem"

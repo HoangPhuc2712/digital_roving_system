@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import {
+  fetchPatrolDetailCheckpointOptions,
   fetchReportAreaOptions,
   fetchReportGuardOptions,
   fetchReportRouteFilterOptions,
@@ -30,6 +31,7 @@ export const useReportsStore = defineStore('reports', {
     filterRouteName: null as string | null,
     filterResult: 'ALL' as ResultFilter,
     filterIssueStatus: null as number | null,
+    filterCheckPointName: null as string | null,
     filterGuardId: '' as string,
     filterDateFrom: startOfToday() as Date | null,
     filterDateTo: endOfToday() as Date | null,
@@ -39,6 +41,7 @@ export const useReportsStore = defineStore('reports', {
 
     areaFilterOptions: [] as { label: string; value: number }[],
     routeFilterOptions: [] as { label: string; value: string; areaId: number }[],
+    checkPointFilterOptions: [] as { label: string; value: string }[],
     guardFilterOptions: [] as { label: string; value: string }[],
   }),
 
@@ -106,6 +109,22 @@ export const useReportsStore = defineStore('reports', {
         .sort((a, b) => a.label.localeCompare(b.label))
     },
 
+    checkPointOptions(state): { label: string; value: string }[] {
+      if (state.checkPointFilterOptions.length) return state.checkPointFilterOptions
+
+      const seen = new Set<string>()
+      const options: { label: string; value: string }[] = []
+
+      for (const r of this.visibleRows) {
+        const value = String(r.cp_name ?? '').trim()
+        if (!value || seen.has(value)) continue
+        seen.add(value)
+        options.push({ label: value, value })
+      }
+
+      return options.sort((a, b) => a.label.localeCompare(b.label))
+    },
+
     filteredRows(): ReportRow[] {
       const q = this.searchText.trim().toLowerCase()
       let fromTime = this.filterDateFrom ? this.filterDateFrom.getTime() : null
@@ -140,6 +159,8 @@ export const useReportsStore = defineStore('reports', {
         if (this.filterRouteName != null && r.route_name !== this.filterRouteName) return false
         if (this.filterResult === 'OK' && r.pr_has_problem !== false) return false
         if (this.filterResult === 'NOT_OK' && r.pr_has_problem !== true) return false
+        if (this.filterCheckPointName != null && r.cp_name !== this.filterCheckPointName)
+          return false
         if (this.filterIssueStatus != null) {
           if (!r.pr_has_problem) return false
           if (r.pr_status !== this.filterIssueStatus) return false
@@ -166,11 +187,12 @@ export const useReportsStore = defineStore('reports', {
       if (
         this.areaFilterOptions.length &&
         this.routeFilterOptions.length &&
+        this.checkPointFilterOptions.length &&
         this.guardFilterOptions.length
       )
         return
 
-      const [routeFilters, guards] = await Promise.all([
+      const [routeFilters, checkpoints, guards] = await Promise.all([
         this.areaFilterOptions.length && this.routeFilterOptions.length
           ? Promise.resolve({
               areaOptions: this.areaFilterOptions,
@@ -180,6 +202,9 @@ export const useReportsStore = defineStore('reports', {
               areaOptions: await fetchReportAreaOptions().catch(() => []),
               routeOptions: [] as { label: string; value: string; areaId: number }[],
             })),
+        this.checkPointFilterOptions.length
+          ? Promise.resolve(this.checkPointFilterOptions)
+          : fetchPatrolDetailCheckpointOptions().catch(() => []),
         this.guardFilterOptions.length
           ? Promise.resolve(this.guardFilterOptions)
           : fetchReportGuardOptions().catch(() => []),
@@ -187,6 +212,7 @@ export const useReportsStore = defineStore('reports', {
 
       if (!this.areaFilterOptions.length) this.areaFilterOptions = routeFilters.areaOptions
       if (!this.routeFilterOptions.length) this.routeFilterOptions = routeFilters.routeOptions
+      if (!this.checkPointFilterOptions.length) this.checkPointFilterOptions = checkpoints
       if (!this.guardFilterOptions.length) this.guardFilterOptions = guards
     },
 
@@ -222,6 +248,7 @@ export const useReportsStore = defineStore('reports', {
       this.filterRouteName = null
       this.filterResult = 'ALL'
       this.filterIssueStatus = null
+      this.filterCheckPointName = null
       this.filterGuardId = ''
       this.filterDateFrom = startOfToday()
       this.filterDateTo = endOfToday()
