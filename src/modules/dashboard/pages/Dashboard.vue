@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Chart from 'primevue/chart'
 import { useI18n } from 'vue-i18n'
@@ -217,6 +217,9 @@ const checkpointChartData = computed(() => ({
 
 const animatedCardTotals = ref<Record<string, number>>({})
 const animatedStatusTotals = ref<Record<string, number>>({})
+const roleChartRef = ref()
+const areaUserChartRef = ref()
+const checkpointChartRef = ref()
 
 function animateNumber(
   from: number,
@@ -286,19 +289,48 @@ function getAnimatedStatusTotal(card: DashboardTotalPointReportByStatusItem) {
 
 const chartsReady = ref(false)
 let chartMountTimeout: number | null = null
+let chartAnimationFrame: number | null = null
 
-function scheduleChartsRender() {
-  chartsReady.value = false
-
+function clearChartRenderJobs() {
   if (chartMountTimeout != null) {
     window.clearTimeout(chartMountTimeout)
     chartMountTimeout = null
   }
 
+  if (chartAnimationFrame != null) {
+    window.cancelAnimationFrame(chartAnimationFrame)
+    chartAnimationFrame = null
+  }
+}
+
+function replayDoughnutChartAnimation(chartRef: { value?: any }) {
+  const chart = chartRef?.value?.chart
+  if (!chart) return
+
+  chart.stop?.()
+  chart.reset?.()
+  chart.update?.()
+}
+
+function replayAllChartAnimations() {
+  replayDoughnutChartAnimation(roleChartRef)
+  replayDoughnutChartAnimation(areaUserChartRef)
+  replayDoughnutChartAnimation(checkpointChartRef)
+}
+
+function scheduleChartsRender() {
+  chartsReady.value = false
+  clearChartRenderJobs()
+
   chartMountTimeout = window.setTimeout(() => {
-    requestAnimationFrame(() => {
-      chartsReady.value = true
-      chartMountTimeout = null
+    chartsReady.value = true
+    chartMountTimeout = null
+
+    chartAnimationFrame = window.requestAnimationFrame(() => {
+      chartAnimationFrame = window.requestAnimationFrame(() => {
+        replayAllChartAnimations()
+        chartAnimationFrame = null
+      })
     })
   }, 80)
 }
@@ -329,6 +361,10 @@ watch(canSeeAdminDashboardSummary, async (visible) => {
 
   await nextTick()
   scheduleChartsRender()
+})
+
+onBeforeUnmount(() => {
+  clearChartRenderJobs()
 })
 
 onMounted(async () => {
@@ -402,6 +438,7 @@ onMounted(async () => {
         <div class="mt-4 h-[320px]">
           <Chart
             v-if="chartsReady"
+            ref="roleChartRef"
             type="doughnut"
             :data="roleChartData"
             :options="chartOptions"
@@ -418,6 +455,7 @@ onMounted(async () => {
         <div class="mt-4 h-[320px]">
           <Chart
             v-if="chartsReady"
+            ref="areaUserChartRef"
             type="doughnut"
             :data="areaUserChartData"
             :options="chartOptions"
@@ -434,6 +472,7 @@ onMounted(async () => {
         <div class="mt-4 h-[320px]">
           <Chart
             v-if="chartsReady"
+            ref="checkpointChartRef"
             type="doughnut"
             :data="checkpointChartData"
             :options="chartOptions"

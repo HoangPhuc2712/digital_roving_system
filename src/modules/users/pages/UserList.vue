@@ -59,7 +59,7 @@ const { searchDraft } = useDebouncedSearchDraft({
 })
 
 useResetFirstOnFilterChange(
-  () => [store.searchText, store.filterRoleId, store.filterAreaId],
+  () => [store.searchText, store.filterUserId, store.filterRoleId, store.filterAreaId],
   () => store.setFirst(0),
 )
 
@@ -210,6 +210,7 @@ function confirmDeleteSelected() {
 }
 
 function onColumnFilter(payload: { key: string; value: any }) {
+  if (payload.key === 'userId') store.filterUserId = payload.value ?? null
   if (payload.key === 'roleId') store.filterRoleId = payload.value ?? null
   if (payload.key === 'areaId') store.filterAreaId = payload.value ?? null
 }
@@ -335,7 +336,19 @@ function onViewPatrolPath(row: UserRow) {
         sortDisabled
       />
 
-      <Column field="user_name" :header="t('userList.userName')" style="min-width: 14rem" />
+      <Column
+        field="user_name"
+        :header="t('userList.userName')"
+        style="min-width: 14rem"
+        :filterMenu="{
+          key: 'userId',
+          type: 'select',
+          value: store.filterUserId,
+          options: store.userOptions,
+          placeholder: t('userList.userName'),
+          filter: true,
+        }"
+      />
       <Column field="user_code" :header="t('userList.userCode')" style="min-width: 10rem" />
       <Column
         :header="t('userList.area')"
