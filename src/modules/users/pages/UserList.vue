@@ -354,6 +354,8 @@ function onViewPatrolPath(row: UserRow) {
           options: store.userOptions,
           placeholder: t('userList.userName'),
           filter: true,
+          filterField: 'searchText',
+          filterMatchMode: 'contains',
         }"
       />
       <!--

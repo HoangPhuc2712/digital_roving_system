@@ -116,6 +116,7 @@ type ColumnFilterMenuConfig = {
   filter?: boolean
   disabled?: boolean
   filterField?: string
+  filterMatchMode?: 'contains' | 'startsWith' | 'endsWith'
   secondaryOptions?: FilterOption[]
   secondaryOptionLabel?: string
   secondaryOptionValue?: string
@@ -349,6 +350,10 @@ const FilterMenuControl = defineComponent({
             placeholder: filterProps.config.placeholder ?? '',
             showClear: filterProps.config.showClear ?? true,
             filter: filterProps.config.filter ?? true,
+            filterFields: filterProps.config.filterField
+              ? [filterProps.config.filterField]
+              : undefined,
+            filterMatchMode: filterProps.config.filterMatchMode ?? 'contains',
             class: 'app-filter-select w-full',
             size: 'small',
             appendTo: 'self',
@@ -364,6 +369,10 @@ const FilterMenuControl = defineComponent({
             placeholder: filterProps.config.secondaryPlaceholder ?? '',
             showClear: filterProps.config.showClear ?? true,
             filter: filterProps.config.secondaryFilter ?? filterProps.config.filter ?? true,
+            filterFields: filterProps.config.secondaryFilterField
+              ? [filterProps.config.secondaryFilterField]
+              : undefined,
+            filterMatchMode: filterProps.config.filterMatchMode ?? 'contains',
             class: 'app-filter-select w-full',
             size: 'small',
             appendTo: 'self',
@@ -412,6 +421,10 @@ const FilterMenuControl = defineComponent({
             optionValue: filterProps.config.optionValue ?? 'value',
             placeholder: filterProps.config.placeholder ?? 'Select',
             filter: filterProps.config.filter ?? true,
+            filterFields: filterProps.config.filterField
+              ? [filterProps.config.filterField]
+              : undefined,
+            filterMatchMode: filterProps.config.filterMatchMode ?? 'contains',
             showClear: filterProps.config.showClear ?? true,
             class: 'app-filter-multiselect w-full',
             size: 'small',
@@ -452,6 +465,10 @@ const FilterMenuControl = defineComponent({
           placeholder: filterProps.config.placeholder ?? '',
           showClear: filterProps.config.showClear ?? true,
           filter: filterProps.config.filter ?? true,
+          filterFields: filterProps.config.filterField
+            ? [filterProps.config.filterField]
+            : undefined,
+          filterMatchMode: filterProps.config.filterMatchMode ?? 'contains',
           class: 'app-filter-select w-full',
           size: 'small',
           appendTo: 'self',

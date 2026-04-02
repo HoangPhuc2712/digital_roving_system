@@ -8,6 +8,7 @@ export type RoleOption = {
 export type UserRow = {
   user_id: string
   user_name: string
+  user_keyword: string
   user_code: string
 
   user_role_id: number
