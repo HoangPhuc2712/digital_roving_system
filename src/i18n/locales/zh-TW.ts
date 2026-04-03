@@ -598,6 +598,7 @@ const zhTW = {
     enterConfirm: '確認新密碼',
     error: {
       currPasswordRequired: '目前密碼為必填項',
+      currentPasswordIncorrect: '目前密碼不正確',
       passwordRepeatable: '新密碼必須與目前密碼不同',
       newPasswordRequired: '新密碼為必填項',
       passwordMismatch: '確認的新密碼不一致',

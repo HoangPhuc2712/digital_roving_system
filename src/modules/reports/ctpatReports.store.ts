@@ -26,7 +26,7 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
     filterDateTo: endOfToday() as Date | null,
 
     first: 0,
-    rowsPerPage: 10,
+    rowsPerPage: 25,
     areaFilterOptions: [] as { label: string; value: string }[],
     routeFilterOptions: [] as { label: string; value: string; areaName: string }[],
   }),

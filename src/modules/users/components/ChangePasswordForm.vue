@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Dialog from 'primevue/dialog'
 
@@ -11,16 +11,19 @@ export type ChangePasswordSubmitPayload = {
   newPassword: string
 }
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const props = defineProps<{
   visible: boolean
   loading?: boolean
+  currentPasswordInvalid?: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void
   (e: 'submit', payload: ChangePasswordSubmitPayload): void
   (e: 'close'): void
+  (e: 'current-password-input', value: string): void
+  (e: 'validate-current-password', value: string): void
 }>()
 
 const submitted = ref(false)
@@ -34,6 +37,17 @@ const currentPasswordError = computed(
   () => submitted.value && !String(form.currentPassword ?? '').trim(),
 )
 const newPasswordError = computed(() => submitted.value && !String(form.newPassword ?? '').trim())
+
+const currentPasswordHasError = computed(
+  () => currentPasswordError.value || Boolean(props.currentPasswordInvalid),
+)
+const currentPasswordMessage = computed(() =>
+  props.currentPasswordInvalid
+    ? t('changePasswordForm.error.currentPasswordIncorrect')
+    : t('changePasswordForm.error.currPasswordRequired'),
+)
+
+let validateCurrentPasswordTimer: ReturnType<typeof setTimeout> | null = null
 const confirmPasswordError = computed(
   () => submitted.value && !String(form.confirmNewPassword ?? '').trim(),
 )
@@ -53,10 +67,37 @@ const samePasswordError = computed(
 )
 
 watch(
+  () => form.currentPassword,
+  (value) => {
+    emit('current-password-input', value)
+
+    if (validateCurrentPasswordTimer) {
+      clearTimeout(validateCurrentPasswordTimer)
+      validateCurrentPasswordTimer = null
+    }
+
+    const trimmed = String(value ?? '').trim()
+    if (!props.visible || !trimmed) {
+      emit('validate-current-password', '')
+      return
+    }
+
+    validateCurrentPasswordTimer = setTimeout(() => {
+      emit('validate-current-password', trimmed)
+    }, 400)
+  },
+)
+
+watch(
   () => props.visible,
   (visible) => {
     if (!visible) {
       submitted.value = false
+      if (validateCurrentPasswordTimer) {
+        clearTimeout(validateCurrentPasswordTimer)
+        validateCurrentPasswordTimer = null
+      }
+      emit('validate-current-password', '')
       form.currentPassword = ''
       form.newPassword = ''
       form.confirmNewPassword = ''
@@ -66,6 +107,11 @@ watch(
 
 function close() {
   submitted.value = false
+  if (validateCurrentPasswordTimer) {
+    clearTimeout(validateCurrentPasswordTimer)
+    validateCurrentPasswordTimer = null
+  }
+  emit('validate-current-password', '')
   form.currentPassword = ''
   form.newPassword = ''
   form.confirmNewPassword = ''
@@ -83,9 +129,17 @@ function submit() {
   if (!currentPassword || !newPassword || !confirmNewPassword) return
   if (newPassword !== confirmNewPassword) return
   if (currentPassword === newPassword) return
+  if (props.currentPasswordInvalid) return
 
   emit('submit', { currentPassword, newPassword })
 }
+
+onBeforeUnmount(() => {
+  if (validateCurrentPasswordTimer) {
+    clearTimeout(validateCurrentPasswordTimer)
+    validateCurrentPasswordTimer = null
+  }
+})
 </script>
 
 <template>
@@ -109,8 +163,8 @@ function submit() {
             label=""
             size="small"
             :placeholder="t('changePasswordForm.entercurrent')"
-            :hasError="currentPasswordError"
-            :message="t('changePasswordForm.error.currPasswordRequired')"
+            :hasError="currentPasswordHasError"
+            :message="currentPasswordMessage"
           />
         </div>
 

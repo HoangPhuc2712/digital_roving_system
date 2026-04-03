@@ -350,12 +350,9 @@ export async function fetchAreaOptions() {
     .sort((a, b) => a.label.localeCompare(b.label))
 }
 
-export async function changeCurrentUserPassword(payload: {
-  user_id: string
+export async function validateCurrentUserPassword(payload: {
   user_code: string
   current_password: string
-  new_password: string
-  actor_id: string
 }) {
   const validateRes = await http.post(endpoints.user.validate, {
     userCode: payload.user_code.trim(),
@@ -365,12 +362,23 @@ export async function changeCurrentUserPassword(payload: {
   const validatePayload = validateRes?.data
   if (!validatePayload?.success) {
     const msg = String(validatePayload?.message ?? '')
-    const lower = msg.toLowerCase()
-    if (lower.includes('mật khẩu') || lower.includes('password')) {
-      throw new Error(msg || 'CURRENT_PASSWORD_INCORRECT')
-    }
     throw new Error(msg || 'CURRENT_PASSWORD_INCORRECT')
   }
+
+  return true
+}
+
+export async function changeCurrentUserPassword(payload: {
+  user_id: string
+  user_code: string
+  current_password: string
+  new_password: string
+  actor_id: string
+}) {
+  await validateCurrentUserPassword({
+    user_code: payload.user_code,
+    current_password: payload.current_password,
+  })
 
   try {
     const res = await http.patch(endpoints.user.changePassword(payload.user_id), {

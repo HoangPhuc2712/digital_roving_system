@@ -307,6 +307,7 @@ function onColumnFilter(payload: { key: string; value: any }) {
     store.filterAreaId = value.primaryValue ?? null
     store.filterRouteName = value.secondaryValue ?? null
   }
+  if (payload.key === 'checkPointName') store.filterCheckPointName = payload.value ?? null
   if (payload.key === 'issueStatus') store.filterIssueStatus = payload.value ?? null
   if (payload.key === 'result') store.filterResult = payload.value ?? 'ALL'
   if (payload.key === 'guardId') store.filterGuardId = payload.value ?? ''
@@ -487,6 +488,8 @@ async function onExport() {
           value: store.filterCheckPointName,
           options: store.checkPointOptions,
           filter: true,
+          filterField: 'searchText',
+          filterMatchMode: 'contains',
           placeholder: t('reportList.table.checkPoint'),
         }"
       >
@@ -572,6 +575,8 @@ async function onExport() {
           options: store.guardOptions,
           placeholder: t('reportList.filters.guardName'),
           filter: true,
+          filterField: 'searchText',
+          filterMatchMode: 'contains',
         }"
       />
 

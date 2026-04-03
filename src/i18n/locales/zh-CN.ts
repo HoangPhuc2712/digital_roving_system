@@ -598,6 +598,7 @@ const zhCN = {
     enterConfirm: '确认新密码',
     error: {
       currPasswordRequired: '当前密码为必填项',
+      currentPasswordIncorrect: '当前密码不正确',
       passwordRepeatable: '新密码必须与当前密码不同',
       newPasswordRequired: '新密码为必填项',
       passwordMismatch: '确认的新密码不匹配',

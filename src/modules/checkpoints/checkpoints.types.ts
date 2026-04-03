@@ -8,6 +8,7 @@ export type CheckpointRow = {
   cp_id: number
   cp_code: string
   cp_name: string
+  cp_keyword: string
   cp_qr: string
   cp_description: string
   cp_priority: number

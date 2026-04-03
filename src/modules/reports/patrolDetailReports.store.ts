@@ -36,11 +36,11 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
     areaLabelMap: {} as Record<number, string>,
     areaFilterOptions: [] as { label: string; value: number }[],
     routeFilterOptions: [] as { label: string; value: string; areaId: number }[],
-    checkPointFilterOptions: [] as { label: string; value: string }[],
-    guardFilterOptions: [] as { label: string; value: string }[],
+    checkPointFilterOptions: [] as { label: string; value: string; searchText?: string }[],
+    guardFilterOptions: [] as { label: string; value: string; searchText?: string }[],
 
     first: 0,
-    rowsPerPage: 10,
+    rowsPerPage: 25,
   }),
 
   getters: {
@@ -88,33 +88,41 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
       return options.sort((a, b) => a.label.localeCompare(b.label))
     },
 
-    checkPointOptions(state): { label: string; value: string }[] {
+    checkPointOptions(state): { label: string; value: string; searchText?: string }[] {
       if (state.checkPointFilterOptions.length) return state.checkPointFilterOptions
 
       const seen = new Set<string>()
-      const options: { label: string; value: string }[] = []
+      const options: { label: string; value: string; searchText?: string }[] = []
 
       for (const row of this.rows) {
         const value = String(row.check_point_name ?? '').trim()
         if (!value || seen.has(value)) continue
         seen.add(value)
-        options.push({ label: value, value })
+        options.push({
+          label: value,
+          value,
+          searchText: String(value).toLowerCase().trim(),
+        })
       }
 
       return options.sort((a, b) => a.label.localeCompare(b.label))
     },
 
-    guardOptions(state): { label: string; value: string }[] {
+    guardOptions(state): { label: string; value: string; searchText?: string }[] {
       if (state.guardFilterOptions.length) return state.guardFilterOptions
 
       const seen = new Set<string>()
-      const options: { label: string; value: string }[] = []
+      const options: { label: string; value: string; searchText?: string }[] = []
 
       for (const row of this.rows) {
         const value = String(row.report_name ?? '').trim()
         if (!value || seen.has(value)) continue
         seen.add(value)
-        options.push({ label: value, value })
+        options.push({
+          label: value,
+          value,
+          searchText: String(value).toLowerCase().trim(),
+        })
       }
 
       return options.sort((a, b) => a.label.localeCompare(b.label))

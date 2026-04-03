@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import ChangePasswordForm from '@/modules/users/components/ChangePasswordForm.vue'
-import { fetchUserById, changeCurrentUserPassword } from '@/modules/users/users.api'
+import {
+  fetchUserById,
+  changeCurrentUserPassword,
+  validateCurrentUserPassword,
+} from '@/modules/users/users.api'
 import { useAuthStore } from '@/stores/auth.store'
 import { translateRoleName } from '@/utils/dataI18n'
 
@@ -16,6 +20,9 @@ const { t } = useI18n()
 const loading = ref(false)
 const changingPassword = ref(false)
 const changePasswordVisible = ref(false)
+
+const currentPasswordInvalid = ref(false)
+const validateCurrentPasswordSeq = ref(0)
 const userInfo = ref<{
   user_name: string
   user_code: string
@@ -60,8 +67,43 @@ async function loadUserInfo() {
   }
 }
 
+function resetCurrentPasswordValidation() {
+  validateCurrentPasswordSeq.value += 1
+  currentPasswordInvalid.value = false
+}
+
+async function onValidateCurrentPassword(value: string) {
+  const currentPassword = String(value ?? '').trim()
+  resetCurrentPasswordValidation()
+
+  if (!changePasswordVisible.value || !userCode.value || !currentPassword) return
+
+  const seq = validateCurrentPasswordSeq.value
+
+  try {
+    await validateCurrentUserPassword({
+      user_code: userCode.value,
+      current_password: currentPassword,
+    })
+
+    if (seq !== validateCurrentPasswordSeq.value) return
+    currentPasswordInvalid.value = false
+  } catch (e: any) {
+    if (seq !== validateCurrentPasswordSeq.value) return
+
+    const msg = String(e?.message ?? '')
+    const lower = msg.toLowerCase()
+    currentPasswordInvalid.value =
+      lower.includes('mật khẩu') ||
+      lower.includes('password') ||
+      lower.includes('current_password_incorrect')
+  }
+}
+
 async function onSubmitChangePassword(payload: { currentPassword: string; newPassword: string }) {
   if (!userId.value || !userCode.value) return
+
+  if (currentPasswordInvalid.value) return
 
   changingPassword.value = true
   try {
@@ -83,6 +125,13 @@ async function onSubmitChangePassword(payload: { currentPassword: string; newPas
     })
   } catch (e: any) {
     const msg = String(e?.message ?? '')
+    const lower = msg.toLowerCase()
+
+    if (lower.includes('mật khẩu') || lower.includes('password')) {
+      currentPasswordInvalid.value = true
+      return
+    }
+
     toast.add({
       severity: 'error',
       summary: t('common.error'),
@@ -93,6 +142,10 @@ async function onSubmitChangePassword(payload: { currentPassword: string; newPas
     changingPassword.value = false
   }
 }
+
+watch(changePasswordVisible, (visible) => {
+  if (!visible) resetCurrentPasswordValidation()
+})
 
 onMounted(async () => {
   await loadUserInfo()
@@ -144,6 +197,9 @@ onMounted(async () => {
     <ChangePasswordForm
       v-model:visible="changePasswordVisible"
       :loading="changingPassword"
+      :currentPasswordInvalid="currentPasswordInvalid"
+      @current-password-input="resetCurrentPasswordValidation"
+      @validate-current-password="onValidateCurrentPassword"
       @submit="onSubmitChangePassword"
     />
   </div>
