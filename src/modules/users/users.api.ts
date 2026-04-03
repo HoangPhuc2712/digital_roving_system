@@ -14,6 +14,7 @@ type ApiUserEntity = {
   userId: string
   userStatus?: number
   userName: string
+  userKeyword?: string
   userCode: string
   userPassword?: string
   userRoleId: number
@@ -62,12 +63,13 @@ function nowIso() {
 function normalizeSearch(u: {
   user_name: string
   user_code: string
+  user_keyword: string
   role_name: string
   role_code: string
   area_name: string
   area_code: string
 }) {
-  return `${u.user_name} ${u.user_code} ${u.role_name} ${u.role_code} ${u.area_name} ${u.area_code}`.toLowerCase()
+  return `${u.user_name} ${u.user_code} ${u.user_keyword} ${u.role_name} ${u.role_code} ${u.area_name} ${u.area_code}`.toLowerCase()
 }
 
 function ensureSuccess<T>(envelope: any): ApiEnvelope<T> {
@@ -148,6 +150,7 @@ export async function fetchUserRows(): Promise<UserRow[]> {
       const userId = String(v.userId ?? '')
       const userName = String(v.userName ?? '')
       const userCode = String(v.userCode ?? '')
+      const userKeyword = String(v.userKeyword ?? '')
 
       const roleId = Number(v.userRoleId ?? 0)
       const roleName = String(v.userRoleName ?? '')
@@ -163,6 +166,7 @@ export async function fetchUserRows(): Promise<UserRow[]> {
         user_id: userId,
         user_name: userName,
         user_code: userCode,
+        user_keyword: userKeyword,
 
         user_role_id: roleId,
         role_name: roleName,
@@ -176,19 +180,15 @@ export async function fetchUserRows(): Promise<UserRow[]> {
         created_date: v.createdAt ?? nowIso(),
         updated_date: v.updatedAt ?? nowIso(),
 
-        _q: String(
-          v.userKeyword ??
-            normalizeSearch({
-              user_name: userName,
-              user_code: userCode,
-              role_name: roleName,
-              role_code: roleCode,
-              area_name: areaName,
-              area_code: areaCode,
-            }),
-        )
-          .toLowerCase()
-          .trim(),
+        _q: normalizeSearch({
+          user_name: userName,
+          user_code: userCode,
+          user_keyword: userKeyword,
+          role_name: roleName,
+          role_code: roleCode,
+          area_name: areaName,
+          area_code: areaCode,
+        }),
       }
     })
     .sort((a, b) => a.user_name.localeCompare(b.user_name))

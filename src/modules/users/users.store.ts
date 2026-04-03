@@ -13,7 +13,7 @@ export const useUsersStore = defineStore('users', {
     filterRoleId: null as number | null,
     filterAreaId: null as number | null,
 
-    userOptions: [] as { label: string; value: string }[],
+    userOptions: [] as { label: string; value: string; searchText?: string }[],
     userCodeOptions: [] as { label: string; value: string }[],
     roleOptions: [] as { label: string; value: number }[],
     areaOptions: [] as { label: string; value: number }[],
@@ -60,10 +60,20 @@ export const useUsersStore = defineStore('users', {
           new Map(
             rows
               .filter((r) => String(r.user_id).trim() && String(r.user_name).trim())
-              .map((r) => [String(r.user_id), String(r.user_name)]),
+              .map((r) => [
+                String(r.user_id),
+                {
+                  label: String(r.user_name),
+                  searchText: String(
+                    [r.user_name, r.user_code, r.user_keyword].filter(Boolean).join(' '),
+                  )
+                    .toLowerCase()
+                    .trim(),
+                },
+              ]),
           ).entries(),
         )
-          .map(([value, label]) => ({ value, label }))
+          .map(([value, option]) => ({ value, ...option }))
           .sort((a, b) => a.label.localeCompare(b.label))
 
         const fallbackUserCodeOptions = Array.from(

@@ -124,6 +124,7 @@ const zhTW = {
     toast: {
       updated: '異常狀態已更新。',
       failedToUpdate: '更新異常狀態失敗。',
+      failedToExport: '匯出失敗',
     },
   },
   dashboard: {

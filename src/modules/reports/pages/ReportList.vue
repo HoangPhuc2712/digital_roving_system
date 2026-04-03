@@ -391,6 +391,13 @@ async function onExport() {
       rows: tableRows.value,
       fileName: `patrol_reports_${new Date().toISOString().slice(0, 10)}.xlsx`,
     })
+  } catch (e: any) {
+    toast.add({
+      severity: 'error',
+      summary: t('common.error'),
+      detail: t('reportList.toast.failedToExport'),
+      life: 3000,
+    })
   } finally {
     exporting.value = false
   }

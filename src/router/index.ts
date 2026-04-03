@@ -54,14 +54,21 @@ function clearPageFiltersByRouteName(routeName: string | symbol | null | undefin
   }
 }
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   clearPageFiltersByRouteName(to.name)
 
   const auth = useAuthStore()
   if (!auth.token) auth.restoreSession()
 
-  if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    return { name: 'login' }
+  if (to.meta.requiresAuth) {
+    if (!auth.isAuthenticated) {
+      return { name: 'login' }
+    }
+
+    const ok = await auth.syncSessionWithServer()
+    if (!ok || !auth.isAuthenticated) {
+      return { name: 'login' }
+    }
   }
 
   const required = to.meta.permission as any

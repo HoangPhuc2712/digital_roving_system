@@ -124,6 +124,7 @@ const en = {
     toast: {
       updated: 'Issue status has been updated.',
       failedToUpdate: 'Failed to update issue status.',
+      failedToExport: 'Failed to export',
     },
   },
   dashboard: {
