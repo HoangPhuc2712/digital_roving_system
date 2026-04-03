@@ -598,6 +598,7 @@ const vi = {
     enterConfirm: 'Xác nhận mật khẩu mới',
     error: {
       currPasswordRequired: 'Mật khẩu hiện tại là bắt buộc',
+      currentPasswordIncorrect: 'Mật khẩu hiện tại không đúng',
       passwordRepeatable: 'Mật khẩu mới phải khác mật khẩu hiện tại',
       newPasswordRequired: 'Mật khẩu mới là bắt buộc',
       passwordMismatch: 'Xác nhận mật khẩu mới không khớp',

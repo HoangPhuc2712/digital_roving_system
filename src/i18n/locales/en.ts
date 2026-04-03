@@ -598,6 +598,7 @@ const en = {
     enterConfirm: 'Confirm your new password',
     error: {
       currPasswordRequired: 'Current Password is required',
+      currentPasswordIncorrect: 'Current Password is incorrect',
       passwordRepeatable: 'New Password must be different from Current Password',
       newPasswordRequired: 'New Password is required',
       passwordMismatch: 'Confirm New Password does not match',
