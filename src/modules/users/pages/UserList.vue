@@ -254,7 +254,33 @@ async function onExport() {
 async function handleSubmit(payload: UserFormSubmitPayload) {
   try {
     const actor = auth.user?.user_id ?? ''
+    const editingUserId = String(formModel.value?.user_id ?? '')
+    const isEditingSelf =
+      formMode.value === 'edit' &&
+      editingUserId &&
+      editingUserId === String(auth.user?.user_id ?? '')
+
     await payload.submit(actor)
+
+    if (isEditingSelf) {
+      const ok = await auth.syncSessionWithServer()
+
+      if (!ok) {
+        formVisible.value = false
+        selectedUsers.value = null
+        await router.replace({ name: 'login' })
+        return
+      }
+
+      const currentRequired = router.currentRoute.value.meta.permission as any
+      if (currentRequired && !auth.canAccess(currentRequired)) {
+        formVisible.value = false
+        selectedUsers.value = null
+        await router.replace({ name: 'forbidden' })
+        return
+      }
+    }
+
     await store.load()
     selectedUsers.value = null
     formVisible.value = false

@@ -95,5 +95,17 @@ export const useAuthStore = defineStore('auth', {
       localStorage.setItem('role_allow_view', allow)
       localStorage.setItem('allow_views', JSON.stringify(allowViews ?? []))
     },
+
+    async syncSessionWithServer() {
+      if (!this.token) return false
+
+      try {
+        await this.fetchMe()
+        return true
+      } catch {
+        this.clearSession()
+        return false
+      }
+    },
   },
 })
