@@ -124,6 +124,7 @@ const zhCN = {
     toast: {
       updated: '异常状态已更新。',
       failedToUpdate: '更新异常状态失败。',
+      failedToExport: '导出失败',
     },
   },
   dashboard: {

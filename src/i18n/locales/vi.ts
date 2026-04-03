@@ -124,6 +124,7 @@ const vi = {
     toast: {
       updated: 'Trạng thái bất thường đã được cập nhật.',
       failedToUpdate: 'Cập nhật trạng thái bất thường thất bại.',
+      failedToExport: 'Xuất file thất bại',
     },
   },
   dashboard: {
