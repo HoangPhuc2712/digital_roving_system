@@ -220,6 +220,7 @@ type ApiUserViewOption = {
   userId?: string
   userName?: string
   userCode?: string
+  userKeyword?: string
   userRoleIsAdmin?: boolean
 }
 
@@ -805,7 +806,9 @@ export async function fetchCtpatRouteFilterOptions(): Promise<{
   }
 }
 
-export async function fetchReportGuardOptions(): Promise<{ label: string; value: string }[]> {
+export async function fetchReportGuardOptions(): Promise<
+  { label: string; value: string; searchText?: string }[]
+> {
   const res = await http.post(endpoints.userView.getList, {})
   const list = ensureSuccess<ApiUserViewOption[] | ApiUserViewOption>(res.data).data
   const items = asArray(list)
@@ -816,6 +819,11 @@ export async function fetchReportGuardOptions(): Promise<{ label: string; value:
     .map((user) => ({
       label: String(user?.userName ?? '').trim(),
       value: String(user?.userId ?? '').trim(),
+      searchText: String(
+        [user?.userName, user?.userCode, user?.userKeyword].filter(Boolean).join(' '),
+      )
+        .toLowerCase()
+        .trim(),
     }))
     .filter((x) => {
       if (!x.label || !x.value || seen.has(x.value)) return false
@@ -825,7 +833,9 @@ export async function fetchReportGuardOptions(): Promise<{ label: string; value:
     .sort((a, b) => a.label.localeCompare(b.label))
 }
 
-export async function fetchPatrolDetailGuardOptions(): Promise<{ label: string; value: string }[]> {
+export async function fetchPatrolDetailGuardOptions(): Promise<
+  { label: string; value: string; searchText?: string }[]
+> {
   const res = await http.post(endpoints.userView.getList, {})
   const list = ensureSuccess<ApiUserViewOption[] | ApiUserViewOption>(res.data).data
   const items = asArray(list)
@@ -835,7 +845,15 @@ export async function fetchPatrolDetailGuardOptions(): Promise<{ label: string; 
     .filter((user) => !Boolean(user?.userRoleIsAdmin))
     .map((user) => {
       const value = String(user?.userName ?? '').trim()
-      return { label: value, value }
+      return {
+        label: value,
+        value,
+        searchText: String(
+          [user?.userName, user?.userCode, user?.userKeyword].filter(Boolean).join(' '),
+        )
+          .toLowerCase()
+          .trim(),
+      }
     })
     .filter((x) => {
       if (!x.label || seen.has(x.value)) return false

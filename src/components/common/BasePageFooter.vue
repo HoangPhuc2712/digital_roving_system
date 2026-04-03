@@ -30,7 +30,7 @@ const { t } = useI18n()
       class="mt-3 flex flex-col gap-2 border-t border-slate-200 pt-3 text-[13px] text-slate-500 sm:flex-row sm:items-center sm:justify-between"
     >
       <div class="flex flex-wrap items-center gap-1">
-        <span>©{{ copyrightYearRange }}</span>
+        <span>Internal Patrol System ©{{ copyrightYearRange }}</span>
         <a
           :href="JHV_LINK"
           target="_blank"

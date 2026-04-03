@@ -304,6 +304,8 @@ function onColumnFilter(payload: { key: string; value: any }) {
           value: store.filterGuardName,
           options: store.guardOptions,
           filter: true,
+          filterField: 'searchText',
+          filterMatchMode: 'contains',
         }"
       />
 

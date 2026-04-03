@@ -42,7 +42,7 @@ export const useReportsStore = defineStore('reports', {
     areaFilterOptions: [] as { label: string; value: number }[],
     routeFilterOptions: [] as { label: string; value: string; areaId: number }[],
     checkPointFilterOptions: [] as { label: string; value: string }[],
-    guardFilterOptions: [] as { label: string; value: string }[],
+    guardFilterOptions: [] as { label: string; value: string; searchText?: string }[],
   }),
 
   getters: {
@@ -91,7 +91,7 @@ export const useReportsStore = defineStore('reports', {
       return options.sort((a, b) => a.label.localeCompare(b.label))
     },
 
-    guardOptions(state): { label: string; value: string }[] {
+    guardOptions(state): { label: string; value: string; searchText?: string }[] {
       if (state.guardFilterOptions.length) return state.guardFilterOptions
 
       const seen = new Map<string, string>()
@@ -113,7 +113,7 @@ export const useReportsStore = defineStore('reports', {
       if (state.checkPointFilterOptions.length) return state.checkPointFilterOptions
 
       const seen = new Set<string>()
-      const options: { label: string; value: string }[] = []
+      const options: { label: string; value: string; searchText?: string }[] = []
 
       for (const r of this.visibleRows) {
         const value = String(r.cp_name ?? '').trim()

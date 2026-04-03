@@ -572,6 +572,8 @@ async function onExport() {
           options: store.guardOptions,
           placeholder: t('reportList.filters.guardName'),
           filter: true,
+          filterField: 'searchText',
+          filterMatchMode: 'contains',
         }"
       />
 
