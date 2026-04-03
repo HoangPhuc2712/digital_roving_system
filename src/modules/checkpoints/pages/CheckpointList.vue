@@ -127,7 +127,7 @@ const { searchDraft } = useDebouncedSearchDraft({
 })
 
 useResetFirstOnFilterChange(
-  () => [store.searchText, store.filterStatus, lockedAreaId.value],
+  () => [store.searchText, store.filterCheckPointName, store.filterStatus, lockedAreaId.value],
   () => store.setFirst(0),
 )
 
@@ -152,10 +152,12 @@ onMounted(async () => {
   applyLockedAreaFilter()
   await store.load()
   applyLockedAreaFilter()
+  console.log(store.filteredRows)
 })
 
 function onColumnFilter(payload: { key: string; value: any }) {
   if (payload.key === 'areaId') store.filterAreaId = payload.value ?? null
+  if (payload.key === 'checkPointName') store.filterCheckPointName = payload.value ?? null
   if (payload.key === 'status') store.filterStatus = payload.value ?? 'ALL'
   if (payload.key === 'roleIds')
     store.filterRoleIds = Array.isArray(payload.value) ? payload.value : []
@@ -165,6 +167,7 @@ function clearAll() {
   resetFiltersWithSearchDraft({
     clear: () => {
       store.searchText = ''
+      store.filterCheckPointName = null
       store.filterStatus = 'ALL'
       store.filterRoleIds = []
       applyLockedAreaFilter()
@@ -607,6 +610,16 @@ async function onExport() {
         field="cp_name"
         :header="t('checkpointList.checkpointName')"
         style="min-width: 14rem"
+        :filterMenu="{
+          key: 'checkPointName',
+          type: 'select',
+          value: store.filterCheckPointName,
+          options: store.checkPointNameOptions,
+          filter: true,
+          filterField: 'searchText',
+          filterMatchMode: 'contains',
+          placeholder: t('checkpointList.checkpointName'),
+        }"
       />
 
       <Column

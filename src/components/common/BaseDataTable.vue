@@ -42,6 +42,8 @@
       sortMode="single"
       removableSort
       responsiveLayout="scroll"
+      :scrollable="scrollable"
+      :scrollHeight="scrollable ? scrollHeight : undefined"
       class="app-datatable"
       @page="onPage"
       @sort="onSort"
@@ -150,14 +152,16 @@ const props = withDefaults(
     dateInputWidthClass?: string
     stateKey?: string
     stateStorage?: 'session' | 'local'
+    scrollable?: boolean
+    scrollHeight?: string
   }>(),
   {
     loading: false,
     dataKey: 'id',
     paginator: true,
-    rows: 10,
+    rows: 25,
     first: 0,
-    rowsPerPageOptions: () => [10, 25, 50],
+    rowsPerPageOptions: () => [25, 50, 100],
     paginatorTemplate:
       'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown',
     currentPageReportTemplate: 'Showing {first} to {last} of {totalRecords}',
@@ -173,8 +177,13 @@ const props = withDefaults(
     dateInputWidthClass: 'w-full min-w-0 xl:w-[280px] xl:flex-none',
     stateKey: '',
     stateStorage: 'session',
+    scrollable: true,
+    scrollHeight: '600px',
   },
 )
+
+const scrollable = computed(() => props.scrollable !== false)
+const scrollHeight = computed(() => props.scrollHeight || '600px')
 
 const emit = defineEmits<{
   (e: 'update:selection', value: AnyRow[] | null): void

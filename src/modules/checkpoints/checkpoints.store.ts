@@ -15,6 +15,7 @@ export const useCheckpointsStore = defineStore('checkpoints', {
 
     searchText: '' as string,
     filterAreaId: null as number | null,
+    filterCheckPointName: null as string | null,
     filterStatus: 'ALL' as CheckpointStatusFilter,
     filterRoleIds: [] as CheckpointRoleFilterValue,
 
@@ -26,6 +27,28 @@ export const useCheckpointsStore = defineStore('checkpoints', {
   }),
 
   getters: {
+    checkPointNameOptions(state): { label: string; value: string; searchText?: string }[] {
+      const seen = new Set<string>()
+      const options: { label: string; value: string; searchText?: string }[] = []
+
+      for (const row of state.rows) {
+        if (state.filterAreaId != null && row.area_id !== state.filterAreaId) continue
+
+        const value = String(row.cp_name ?? '').trim()
+        if (!value || seen.has(value)) continue
+        seen.add(value)
+        options.push({
+          label: value,
+          value,
+          searchText: String([row.cp_name, row.cp_code, row.cp_keyword].join(' '))
+            .toLowerCase()
+            .trim(),
+        })
+      }
+
+      return options.sort((a, b) => a.label.localeCompare(b.label))
+    },
+
     filteredRows(state): CheckpointRow[] {
       const q = state.searchText.trim().toLowerCase()
 
@@ -33,6 +56,8 @@ export const useCheckpointsStore = defineStore('checkpoints', {
         if (q && (!r._q || !r._q.includes(q))) return false
 
         if (state.filterAreaId != null && r.area_id !== state.filterAreaId) return false
+        if (state.filterCheckPointName != null && r.cp_name !== state.filterCheckPointName)
+          return false
 
         if (state.filterStatus === 'ACTIVE' && r.cp_status !== 1) return false
         if (state.filterStatus === 'INACTIVE' && r.cp_status !== 0) return false
@@ -68,6 +93,7 @@ export const useCheckpointsStore = defineStore('checkpoints', {
     clearFilters() {
       this.searchText = ''
       this.filterAreaId = null
+      this.filterCheckPointName = null
       this.filterStatus = 'ALL'
       this.filterRoleIds = []
       this.first = 0

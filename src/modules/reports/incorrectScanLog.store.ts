@@ -24,7 +24,7 @@ export const useIncorrectScanLogStore = defineStore('incorrectScanLog', {
     filterDateTo: endOfToday() as Date | null,
 
     first: 0,
-    rowsPerPage: 10,
+    rowsPerPage: 25,
   }),
 
   getters: {

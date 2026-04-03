@@ -247,6 +247,8 @@ function onColumnFilter(payload: { key: string; value: any }) {
           value: store.filterCheckPointName,
           options: store.checkPointOptions,
           filter: true,
+          filterField: 'searchText',
+          filterMatchMode: 'contains',
           placeholder: t('patrolDetailReport.checkpointName'),
         }"
       />

@@ -216,6 +216,16 @@ type ApiCheckpointBase = {
   areaName?: string
 }
 
+type ApiCheckpointViewOption = {
+  cpId?: number
+  cpCode?: string
+  cpName?: string
+  cpKeyword?: string
+  areaId?: number
+  areaCode?: string
+  areaName?: string
+}
+
 type ApiUserViewOption = {
   userId?: string
   userName?: string
@@ -864,17 +874,23 @@ export async function fetchPatrolDetailGuardOptions(): Promise<
 }
 
 export async function fetchPatrolDetailCheckpointOptions(): Promise<
-  { label: string; value: string }[]
+  { label: string; value: string; searchText?: string }[]
 > {
-  const res = await http.post(endpoints.checkPoint.getBaseList, {})
-  const list = ensureSuccess<ApiCheckpointBase[] | ApiCheckpointBase>(res.data).data
+  const res = await http.post(endpoints.checkPointView.getList, {})
+  const list = ensureSuccess<ApiCheckpointViewOption[] | ApiCheckpointViewOption>(res.data).data
   const items = asArray(list)
   const seen = new Set<string>()
 
   return items
     .map((cp) => {
       const value = String(cp?.cpName ?? '').trim()
-      return { label: value, value }
+      const code = String(cp?.cpCode ?? '').trim()
+      const keyword = String(cp?.cpKeyword ?? '').trim()
+      return {
+        label: value,
+        value,
+        searchText: String([value, code, keyword].join(' ')).toLowerCase().trim(),
+      }
     })
     .filter((x) => {
       if (!x.value || seen.has(x.value)) return false

@@ -37,11 +37,11 @@ export const useReportsStore = defineStore('reports', {
     filterDateTo: endOfToday() as Date | null,
 
     first: 0,
-    rowsPerPage: 10,
+    rowsPerPage: 25,
 
     areaFilterOptions: [] as { label: string; value: number }[],
     routeFilterOptions: [] as { label: string; value: string; areaId: number }[],
-    checkPointFilterOptions: [] as { label: string; value: string }[],
+    checkPointFilterOptions: [] as { label: string; value: string; searchText?: string }[],
     guardFilterOptions: [] as { label: string; value: string; searchText?: string }[],
   }),
 
@@ -109,7 +109,7 @@ export const useReportsStore = defineStore('reports', {
         .sort((a, b) => a.label.localeCompare(b.label))
     },
 
-    checkPointOptions(state): { label: string; value: string }[] {
+    checkPointOptions(state): { label: string; value: string; searchText?: string }[] {
       if (state.checkPointFilterOptions.length) return state.checkPointFilterOptions
 
       const seen = new Set<string>()
@@ -119,7 +119,11 @@ export const useReportsStore = defineStore('reports', {
         const value = String(r.cp_name ?? '').trim()
         if (!value || seen.has(value)) continue
         seen.add(value)
-        options.push({ label: value, value })
+        options.push({
+          label: value,
+          value,
+          searchText: String([r.cp_name, r.cp_code].join(' ')).toLowerCase().trim(),
+        })
       }
 
       return options.sort((a, b) => a.label.localeCompare(b.label))

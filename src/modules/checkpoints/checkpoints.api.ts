@@ -152,6 +152,7 @@ export async function fetchCheckpointRows(
         cp_id: v.cpId,
         cp_code: v.cpCode,
         cp_name: v.cpName,
+        cp_keyword: keyword,
         cp_qr: String(v.cpQr ?? ''),
         cp_description: String(v.cpDescription ?? ''),
         cp_priority: Number(v.cpPriority ?? 1),
