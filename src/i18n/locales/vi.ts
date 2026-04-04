@@ -66,6 +66,7 @@ const vi = {
     routes: 'Lộ trình tuần tra',
     userInfo: 'Thông tin người dùng',
     tutorial: 'Hướng dẫn',
+    organizations: 'Sơ đồ tổ chức',
   },
   dateFilter: {
     from: 'Từ',
@@ -125,6 +126,31 @@ const vi = {
       updated: 'Trạng thái bất thường đã được cập nhật.',
       failedToUpdate: 'Cập nhật trạng thái bất thường thất bại.',
       failedToExport: 'Xuất file thất bại',
+    },
+  },
+  organizations: {
+    title: 'Sơ đồ tổ chức',
+    description:
+      'Trang mẫu để chuyển đổi giữa giao diện sơ đồ tổ chức và cây bảng trước khi kết nối backend.',
+    currentView: 'Giao diện hiện tại',
+    helper:
+      'Dùng các nút chọn để chuyển đổi giao diện. Ở chế độ Org Chart, hãy dùng con lăn chuột để phóng to thu nhỏ và giữ chuột trái để kéo sơ đồ.',
+    viewModes: {
+      orgChart: 'Org Chart',
+      treeTable: 'Tree Table',
+    },
+    zoomLabel: 'Thu phóng {value}%',
+    deleteConfirm: 'Bạn có chắc muốn xóa',
+    toast: {
+      editPending: 'Chức năng chỉnh sửa hiện chưa được kết nối.',
+      deleted: 'Thành viên đã được xóa khỏi dữ liệu mẫu.',
+    },
+    table: {
+      userName: 'Tên người dùng',
+      userCode: 'Mã người dùng',
+      roleName: 'Vai trò',
+      areaName: 'Khu vực',
+      teamSize: 'Số cấp dưới',
     },
   },
   dashboard: {
@@ -642,6 +668,7 @@ const vi = {
       routes: 'Tuyến tuần tra',
       reports: 'Báo cáo',
       tutorial: 'Hướng dẫn',
+      organizations: 'Sơ đồ tổ chức',
       checkpoints: 'Điểm kiểm tra',
     },
     role: {

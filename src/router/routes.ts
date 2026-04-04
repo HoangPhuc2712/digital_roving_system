@@ -7,6 +7,7 @@ import { checkpointsRoutes } from '@/modules/checkpoints/checkpoints.routes'
 import { reportsRoutes } from '@/modules/reports/reports.routes'
 import { rolesRoutes } from '@/modules/roles/roles.routes'
 import { routesRoutes } from '@/modules/routes/routes.routes'
+import { organizationsRoutes } from '@/modules/organizations/organizations.routes'
 
 export const routes = [
   ...authRoutes,
@@ -23,6 +24,7 @@ export const routes = [
       ...areasRoutes,
       ...checkpointsRoutes,
       ...routesRoutes,
+      ...organizationsRoutes,
       {
         path: 'tutorial',
         name: 'tutorial',
