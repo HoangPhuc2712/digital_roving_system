@@ -16,6 +16,7 @@ const zhCN = {
     close: '关闭',
     submit: '提交',
     cancel: '取消',
+    today: '今天',
     apply: '应用',
     deleted: '已删除',
     noData: '无数据',
