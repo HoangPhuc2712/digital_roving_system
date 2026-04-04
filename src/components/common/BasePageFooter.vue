@@ -11,7 +11,7 @@ const copyrightYearRange = computed(() => {
 const JHV_LINK = 'https://www.jiahsin.com.vn/'
 const SHM_LINK = 'http://www.shimmer.com.vn/'
 const PORTAL_LINK = 'https://portal.jiahsin.com.vn/portal/'
-const APP_VERSION = '1.0.0'
+const APP_VERSION = '1.0.1'
 const { t } = useI18n()
 </script>
 
