@@ -15,7 +15,7 @@ export const useRoutesStore = defineStore('routes', {
     roleOptions: [] as RoleOption[],
 
     first: 0,
-    rowsPerPage: 10,
+    rowsPerPage: 25,
   }),
 
   getters: {

@@ -14,7 +14,7 @@ export const useRolesStore = defineStore('roles', {
     menuOptions: [] as MenuCategoryOption[],
 
     first: 0,
-    rowsPerPage: 10,
+    rowsPerPage: 25,
   }),
 
   getters: {
