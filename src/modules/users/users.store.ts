@@ -19,7 +19,7 @@ export const useUsersStore = defineStore('users', {
     areaOptions: [] as { label: string; value: number }[],
 
     first: 0,
-    rowsPerPage: 10,
+    rowsPerPage: 25,
   }),
 
   getters: {

@@ -23,7 +23,7 @@ export const useCheckpointsStore = defineStore('checkpoints', {
     roleOptions: [] as RoleOption[],
 
     first: 0,
-    rowsPerPage: 10,
+    rowsPerPage: 25,
   }),
 
   getters: {
