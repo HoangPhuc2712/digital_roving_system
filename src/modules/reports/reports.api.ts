@@ -828,7 +828,7 @@ export async function fetchReportGuardOptions(): Promise<
     .filter((user) => !Boolean(user?.userRoleIsAdmin))
     .map((user) => ({
       label: String(user?.userName ?? '').trim(),
-      value: String(user?.userId ?? '').trim(),
+      value: String(user?.userName ?? '').trim(),
       searchText: String(
         [user?.userName, user?.userCode, user?.userKeyword].filter(Boolean).join(' '),
       )
