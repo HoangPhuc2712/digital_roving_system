@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative min-w-[15rem] max-w-[16rem] rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm"
+    class="organization-chart-interactive relative min-w-[15rem] max-w-[16rem] cursor-default"
     @mousedown.stop
   >
     <BaseIconButton
@@ -9,7 +9,7 @@
       severity="secondary"
       outlined
       rounded
-      class="!absolute !-left-2 !-top-2"
+      class="organization-chart-interactive !absolute !-right-2 !-top-2"
       @click="toggleActions"
     />
 
@@ -35,16 +35,16 @@
     </Popover>
 
     <div class="flex flex-col gap-1 text-center">
-      <div class="text-sm font-semibold text-slate-900 leading-5 break-words">
+      <div class="break-words text-sm font-semibold leading-5 text-slate-900">
         {{ member.userName }}
       </div>
       <div class="text-xs font-medium text-slate-500">
         {{ member.userCode }}
       </div>
-      <div class="text-sm text-slate-700 break-words">
+      <div class="break-words text-sm text-slate-700">
         {{ member.roleName }}
       </div>
-      <div class="text-xs text-slate-500 break-words">
+      <div class="break-words text-xs text-slate-500">
         {{ member.areaName }}
       </div>
       <div class="mt-2 flex flex-wrap items-center justify-center gap-2 text-[11px] text-slate-500">

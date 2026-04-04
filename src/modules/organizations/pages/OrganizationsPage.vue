@@ -218,6 +218,27 @@ function onChartWheel(event: WheelEvent) {
 function onChartMouseDown(event: MouseEvent) {
   if (event.button !== 0 || !chartViewport.value) return
 
+  const target = event.target as HTMLElement | null
+  if (
+    target?.closest(
+      [
+        '.p-node-toggler',
+        '.p-node-toggler *',
+        '.p-node-toggler-icon',
+        '.p-organizationchart-node-toggler',
+        '.p-organizationchart-node-toggler *',
+        '.p-organizationchart-node-toggle-button',
+        '.p-organizationchart-node-toggle-button *',
+        'button',
+        '[role="button"]',
+        '.p-popover',
+        '.p-popover *',
+      ].join(', '),
+    )
+  ) {
+    return
+  }
+
   isDragging.value = true
   chartDragStart.value = {
     x: event.clientX,
@@ -403,10 +424,10 @@ function resolveOrganizationChartMember(slotProps: any): OrganizationChartMember
 
       <div
         ref="chartViewport"
-        class="relative h-[70vh] overflow-auto rounded-xl border border-slate-200 bg-slate-50"
+        class="organization-chart relative h-[70vh] overflow-auto rounded-xl border border-slate-200 bg-slate-50"
         :class="isDragging ? 'cursor-grabbing' : 'cursor-grab'"
         @wheel="onChartWheel"
-        @mousedown="onChartMouseDown"
+        @mousedown.capture="onChartMouseDown"
       >
         <div class="relative min-h-full min-w-full" :style="chartCanvasStyle">
           <div
@@ -563,6 +584,19 @@ function resolveOrganizationChartMember(slotProps: any): OrganizationChartMember
   border: none;
   background: transparent;
   overflow: visible;
+}
+
+:deep(.p-node-toggler),
+:deep(.p-node-toggler-icon),
+:deep(.p-organizationchart-node-toggler),
+:deep(.p-organizationchart-node-toggle-button) {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+:deep(.p-organizationchart-table td),
+:deep(.p-organizationchart-table tr) {
+  pointer-events: auto;
 }
 
 :deep(.p-treetable .p-treetable-tbody > tr > td) {
