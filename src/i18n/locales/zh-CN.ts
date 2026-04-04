@@ -66,6 +66,7 @@ const zhCN = {
     routes: '巡逻路线',
     userInfo: '用户信息',
     tutorial: '教程',
+    organizations: '组织架构',
   },
   dateFilter: {
     from: '从',
@@ -125,6 +126,30 @@ const zhCN = {
       updated: '异常状态已更新。',
       failedToUpdate: '更新异常状态失败。',
       failedToExport: '导出失败',
+    },
+  },
+  organizations: {
+    title: '组织架构',
+    description: '在连接后端之前，用于切换组织图与树形表格界面的原型页面。',
+    currentView: '当前视图',
+    helper:
+      '使用切换按钮切换界面。在 Org Chart 模式下，可使用鼠标滚轮缩放，并按住鼠标左键拖动图表区域。',
+    viewModes: {
+      orgChart: 'Org Chart',
+      treeTable: 'Tree Table',
+    },
+    zoomLabel: '缩放 {value}%',
+    deleteConfirm: '您确定要删除',
+    toast: {
+      editPending: '编辑功能尚未连接。',
+      deleted: '成员已从模拟数据中移除。',
+    },
+    table: {
+      userName: '用户名',
+      userCode: '用户代码',
+      roleName: '角色',
+      areaName: '区域',
+      teamSize: '下属人数',
     },
   },
   dashboard: {
@@ -642,6 +667,7 @@ const zhCN = {
       routes: '巡逻路线',
       reports: '报表',
       tutorial: '教程',
+      organizations: '组织架构',
       checkpoints: '检查点',
     },
     role: {

@@ -41,6 +41,8 @@ const items = computed<BreadcrumbItem[]>(() => {
       return [root, { label: t('breadcrumb.userInfo') }]
     case 'tutorial':
       return [root, { label: t('breadcrumb.tutorial') }]
+    case 'organizations':
+      return [root, { label: t('breadcrumb.organizations') }]
     case 'reports':
       return [
         root,

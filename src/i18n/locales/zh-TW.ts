@@ -66,6 +66,7 @@ const zhTW = {
     routes: '巡邏路線',
     userInfo: '使用者資訊',
     tutorial: '教學',
+    organizations: '組織架構',
   },
   dateFilter: {
     from: '從',
@@ -125,6 +126,30 @@ const zhTW = {
       updated: '異常狀態已更新。',
       failedToUpdate: '更新異常狀態失敗。',
       failedToExport: '匯出失敗',
+    },
+  },
+  organizations: {
+    title: '組織架構',
+    description: '在串接後端之前，用來切換組織圖與樹狀表格畫面的原型頁面。',
+    currentView: '目前檢視',
+    helper:
+      '使用切換按鈕來切換畫面。在 Org Chart 模式下，可使用滑鼠滾輪縮放，並按住滑鼠左鍵拖曳圖表區域。',
+    viewModes: {
+      orgChart: 'Org Chart',
+      treeTable: 'Tree Table',
+    },
+    zoomLabel: '縮放 {value}%',
+    deleteConfirm: '您確定要刪除',
+    toast: {
+      editPending: '編輯功能尚未串接。',
+      deleted: '成員已從模擬資料中移除。',
+    },
+    table: {
+      userName: '使用者姓名',
+      userCode: '使用者代碼',
+      roleName: '角色',
+      areaName: '區域',
+      teamSize: '下屬人數',
     },
   },
   dashboard: {
@@ -642,6 +667,7 @@ const zhTW = {
       routes: '巡邏路線',
       reports: '報表',
       tutorial: '教學',
+      organizations: '組織架構',
       checkpoints: '檢查點',
     },
     role: {

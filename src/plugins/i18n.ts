@@ -8,7 +8,7 @@ export const SUPPORTED_LOCALES = ['en', 'vi', 'zh-CN', 'zh-TW'] as const
 export type AppLocale = (typeof SUPPORTED_LOCALES)[number]
 
 const LOCALE_STORAGE_KEY = 'app:locale'
-const DEFAULT_LOCALE: AppLocale = 'en'
+const DEFAULT_LOCALE: AppLocale = 'vi'
 
 function normalizeLocale(input?: string | null): AppLocale {
   if (!input) return DEFAULT_LOCALE

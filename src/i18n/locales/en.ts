@@ -66,6 +66,7 @@ const en = {
     routes: 'Patrol Routes',
     userInfo: 'User Information',
     tutorial: 'Tutorial',
+    organizations: 'Organizations',
   },
   dateFilter: {
     from: 'From',
@@ -125,6 +126,31 @@ const en = {
       updated: 'Issue status has been updated.',
       failedToUpdate: 'Failed to update issue status.',
       failedToExport: 'Failed to export',
+    },
+  },
+  organizations: {
+    title: 'Organizations',
+    description:
+      'Prototype page for switching between organization chart and tree table layouts before backend integration.',
+    currentView: 'Current View',
+    helper:
+      'Use the select buttons to switch layouts. In Org Chart mode, use the mouse wheel to zoom and hold the left mouse button to drag the chart area.',
+    viewModes: {
+      orgChart: 'Org Chart',
+      treeTable: 'Tree Table',
+    },
+    zoomLabel: 'Zoom {value}%',
+    deleteConfirm: 'Are you sure you want to delete',
+    toast: {
+      editPending: 'Edit is not connected yet.',
+      deleted: 'Organization member has been removed from the mock data.',
+    },
+    table: {
+      userName: 'User Name',
+      userCode: 'User Code',
+      roleName: 'Role Name',
+      areaName: 'Area',
+      teamSize: 'Team Size',
     },
   },
   dashboard: {
@@ -642,6 +668,7 @@ const en = {
       routes: 'Patrol Routes',
       reports: 'Reports',
       tutorial: 'Tutorial',
+      organizations: 'Organizations',
       checkpoints: 'Check Points',
     },
     role: {
