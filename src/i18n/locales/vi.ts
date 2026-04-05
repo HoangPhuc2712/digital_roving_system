@@ -16,6 +16,7 @@ const vi = {
     close: 'Đóng',
     submit: 'Gửi',
     cancel: 'Hủy',
+    today: 'Hôm nay',
     apply: 'Áp dụng',
     deleted: 'Đã xóa',
     noData: 'Không có dữ liệu',

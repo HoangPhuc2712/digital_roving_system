@@ -151,7 +151,7 @@ onBeforeUnmount(() => {
           :showTime="props.showTime"
           hourFormat="12"
           size="small"
-          :manualInput="false"
+          :manualInput="true"
           showButtonBar
           showIcon
           :appendTo="props.appendTo"
@@ -174,7 +174,7 @@ onBeforeUnmount(() => {
           :showTime="props.showTime"
           hourFormat="12"
           size="small"
-          :manualInput="false"
+          :manualInput="true"
           showButtonBar
           showIcon
           :appendTo="props.appendTo"

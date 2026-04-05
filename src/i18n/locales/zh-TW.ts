@@ -16,6 +16,7 @@ const zhTW = {
     close: '關閉',
     submit: '提交',
     cancel: '取消',
+    today: '今天',
     apply: '套用',
     deleted: '已刪除',
     noData: '無資料',

@@ -98,7 +98,9 @@ function openShiftProblemDetails(row: PatrolSummaryReportRow) {
     <table class="w-full min-w-[1280px] border-collapse text-[0.95rem] text-slate-700">
       <thead>
         <tr class="bg-slate-50 text-slate-800">
-          <th class="border border-slate-200 px-4 py-3 text-center font-semibold">
+          <th
+            class="summary-date-column border border-slate-200 px-4 py-3 text-center font-semibold"
+          >
             {{ t('patrolSummaryReportList.patrolDate') }}
           </th>
           <th class="border border-slate-200 px-4 py-3 text-center font-semibold">
@@ -136,7 +138,7 @@ function openShiftProblemDetails(row: PatrolSummaryReportRow) {
           <tr v-for="(row, index) in group.items" :key="`${group.date_key}-${row.area_id}`">
             <td
               v-if="index === 0"
-              class="border border-slate-200 px-4 py-3 text-center align-middle"
+              class="summary-date-column border border-slate-200 px-4 py-3 text-center align-middle"
               :rowspan="group.items.length"
             >
               {{ group.date_label }}
@@ -248,5 +250,15 @@ function openShiftProblemDetails(row: PatrolSummaryReportRow) {
 
 :deep(.summary-loading-spinner .p-progress-spinner-circle) {
   stroke: #cbd5e1 !important;
+}
+
+.summary-date-column {
+  width: 180px;
+  min-width: 180px;
+  max-width: 180px;
+}
+
+:deep(tbody .summary-date-column) {
+  white-space: nowrap;
 }
 </style>

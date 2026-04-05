@@ -16,6 +16,7 @@ const en = {
     close: 'Close',
     submit: 'Submit',
     cancel: 'Cancel',
+    today: 'Today',
     apply: 'Apply',
     deleted: 'Deleted',
     noData: 'No data',
