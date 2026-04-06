@@ -1,142 +1,5 @@
 import ExcelJS from 'exceljs'
 import type { ReportImage, ReportNoteGroup, ReportRow } from '@/modules/reports/reports.types'
-import { imageSourceToDataUrl, parseDataImageUrl } from '@/utils/base64'
-
-function stripDataUrl(s: string) {
-  return parseDataImageUrl(s, 'jpeg')
-}
-
-function colWidthToPx(w: number) {
-  return Math.round(w * 7 + 5)
-}
-
-function rowHeightToPx(hPt: number) {
-  return Math.round((hPt * 96) / 72)
-}
-
-function getImgSize(dataUrl: string) {
-  return new Promise<{ w: number; h: number }>((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight })
-    img.onerror = reject
-    img.src = dataUrl
-  })
-}
-
-function loadImageElement(dataUrl: string) {
-  return new Promise<HTMLImageElement>((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => resolve(img)
-    img.onerror = reject
-    img.src = dataUrl
-  })
-}
-
-async function buildHorizontalImageStrip(params: {
-  images: string[]
-  maxWidth: number
-  maxHeight: number
-}) {
-  const { images, maxWidth, maxHeight } = params
-  if (!images.length) return null
-
-  const GAP_X = 8
-  const SLOT_INSET_X = 2
-  const SLOT_INSET_Y = 2
-
-  const slotCount = images.length
-  const slotW = Math.max(20, Math.floor((maxWidth - GAP_X * (slotCount - 1)) / slotCount))
-  const innerSlotW = Math.max(12, slotW - SLOT_INSET_X * 2)
-  const innerSlotH = Math.max(12, maxHeight - SLOT_INSET_Y * 2)
-
-  const EXPORT_SCALE = 2
-
-  const canvas = document.createElement('canvas')
-  canvas.width = Math.max(1, Math.floor(maxWidth * EXPORT_SCALE))
-  canvas.height = Math.max(1, Math.floor(maxHeight * EXPORT_SCALE))
-
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return null
-
-  ctx.scale(EXPORT_SCALE, EXPORT_SCALE)
-  ctx.clearRect(0, 0, maxWidth, maxHeight)
-  ctx.imageSmoothingEnabled = true
-  ctx.imageSmoothingQuality = 'high'
-
-  for (const [index, raw] of images.entries()) {
-    const dataUrl = await imageSourceToDataUrl(raw, { fallbackExt: 'jpeg' })
-    if (!dataUrl) continue
-
-    const img = await loadImageElement(dataUrl)
-
-    const scale = Math.min(innerSlotW / img.naturalWidth, innerSlotH / img.naturalHeight, 1)
-    const drawW = Math.max(1, Math.floor(img.naturalWidth * scale))
-    const drawH = Math.max(1, Math.floor(img.naturalHeight * scale))
-
-    const slotLeft = index * (slotW + GAP_X)
-    const drawX = slotLeft + Math.max(0, Math.floor((slotW - drawW) / 2))
-    const drawY = Math.max(0, Math.floor((maxHeight - drawH) / 2))
-
-    ctx.drawImage(img, drawX, drawY, drawW, drawH)
-  }
-
-  return {
-    dataUrl: canvas.toDataURL('image/png'),
-    width: maxWidth,
-    height: maxHeight,
-  }
-}
-
-async function addImagesToCellHorizontally(
-  ws: ExcelJS.Worksheet,
-  wb: ExcelJS.Workbook,
-  r: number,
-  c: number,
-  images: ReportImage[],
-) {
-  const validImages: string[] = (images ?? [])
-    .map((img) => String(img?.pri_image ?? '').trim())
-    .filter((v): v is string => Boolean(v))
-    .slice(0, 10)
-
-  if (!validImages.length) return
-
-  const colW = ws.getColumn(c).width ?? 18
-  const rowH = ws.getRow(r).height ?? 72
-  const cellWpx = colWidthToPx(colW)
-  const cellHpx = rowHeightToPx(rowH)
-
-  const INSET_X = 10
-  const INSET_Y = 8
-
-  const availW = Math.max(20, cellWpx - INSET_X * 2)
-  const availH = Math.max(20, cellHpx - INSET_Y * 2)
-
-  const strip = await buildHorizontalImageStrip({
-    images: validImages,
-    maxWidth: availW,
-    maxHeight: availH,
-  })
-
-  if (!strip) return
-
-  const imgId = wb.addImage({
-    extension: 'png',
-    base64: strip.dataUrl,
-  })
-
-  ws.addImage(imgId, {
-    tl: {
-      col: c - 1 + INSET_X / Math.max(1, cellWpx),
-      row: r - 1 + INSET_Y / Math.max(1, cellHpx),
-    },
-    ext: {
-      width: strip.width,
-      height: strip.height,
-    },
-    editAs: 'oneCell',
-  } as any)
-}
 
 function pad2(n: number) {
   return String(n).padStart(2, '0')
@@ -166,6 +29,13 @@ type ExportNoteBlock = {
   noteText: string
   images: ReportImage[]
 }
+
+type ExpandedExportNoteBlock = {
+  noteText: string
+  photoLinks: string[]
+}
+
+const DATA_ROW_HEIGHT = 42
 
 function buildNoteBlocks(row: ReportRow): ExportNoteBlock[] {
   const noteGroups = Array.isArray(row.note_groups) ? row.note_groups : []
@@ -208,6 +78,64 @@ function applyBorderRange(
   }
 }
 
+function isRemoteUrl(value: string) {
+  return /^https?:\/\//i.test(String(value ?? '').trim())
+}
+
+function normalizePhotoLinks(images: ReportImage[]) {
+  const values = (images ?? [])
+    .map((img) => String(img?.pri_image ?? '').trim())
+    .filter((value): value is string => Boolean(value))
+    .slice(0, 10)
+
+  const remoteLinks = values.filter((value) => isRemoteUrl(value))
+  if (remoteLinks.length > 0) return remoteLinks
+
+  if (values.length > 0) return ['Image link unavailable']
+
+  return [] as string[]
+}
+
+function expandNoteBlocks(row: ReportRow): ExpandedExportNoteBlock[] {
+  return buildNoteBlocks(row).map((block) => ({
+    noteText: block.noteText,
+    photoLinks: normalizePhotoLinks(block.images),
+  }))
+}
+
+function estimateWrappedLines(text: string, approxCharsPerLine: number) {
+  const normalized = String(text ?? '').trim()
+  if (!normalized) return 1
+
+  return normalized
+    .split(/\r?\n/)
+    .map((line) => Math.max(1, Math.ceil(line.length / Math.max(1, approxCharsPerLine))))
+    .reduce((sum, lines) => sum + lines, 0)
+}
+
+function setPhotoCellValue(cell: ExcelJS.Cell, photoLink: string, linkIndex = 0) {
+  const value = String(photoLink ?? '').trim()
+
+  if (!value) {
+    cell.value = '—'
+    cell.font = { color: { argb: 'FF475569' } }
+    return
+  }
+
+  if (isRemoteUrl(value)) {
+    const label = `View Image${linkIndex > 0 ? ` ${linkIndex}` : ''}`
+    cell.value = { text: label, hyperlink: value }
+    cell.font = {
+      color: { argb: 'FF2563EB' },
+      underline: true,
+    }
+    return
+  }
+
+  cell.value = value
+  cell.font = { color: { argb: 'FF475569' } }
+}
+
 export async function exportPatrolReportXlsx(params: { rows: ReportRow[]; fileName: string }) {
   const wb = new ExcelJS.Workbook()
   const ws = wb.addWorksheet(sanitizeSheetName('Patrol Abnormal Cases Report'))
@@ -219,14 +147,6 @@ export async function exportPatrolReportXlsx(params: { rows: ReportRow[]; fileNa
     return String(a.cp_name ?? '').localeCompare(String(b.cp_name ?? ''))
   })
 
-  const maxImagesPerBlock = Math.max(
-    1,
-    ...rows.flatMap((row) =>
-      buildNoteBlocks(row).map((block) => Math.min(block.images.length, 10)),
-    ),
-  )
-  const photoColumnWidth = Math.max(36, Math.min(110, 22 + maxImagesPerBlock * 9))
-
   ws.columns = [
     { key: 'area', width: 16 },
     { key: 'checkpoint', width: 24 },
@@ -234,7 +154,7 @@ export async function exportPatrolReportXlsx(params: { rows: ReportRow[]; fileNa
     { key: 'guardName', width: 20 },
     { key: 'inspectionResult', width: 18 },
     { key: 'noteDetail', width: 28 },
-    { key: 'photo', width: photoColumnWidth },
+    { key: 'photo', width: 20 },
   ]
 
   ws.mergeCells(1, 1, 1, 7)
@@ -254,7 +174,7 @@ export async function exportPatrolReportXlsx(params: { rows: ReportRow[]; fileNa
     'Photo',
   ]
 
-  for (let i = 0; i < headers.length; i++) {
+  for (let i = 0; i < headers.length; i += 1) {
     const cell = ws.getCell(headerRowIdx, i + 1)
     cell.value = headers[i]
     cell.font = { bold: true, color: { argb: 'FF0F172A' } }
@@ -268,13 +188,13 @@ export async function exportPatrolReportXlsx(params: { rows: ReportRow[]; fileNa
   let rowCursor = headerRowIdx + 1
 
   for (const row of rows) {
-    const blocks = buildNoteBlocks(row)
-    const startRow = rowCursor
-    const endRow = rowCursor + blocks.length - 1
+    const blocks = expandNoteBlocks(row)
+    const expandedRowCount = blocks.reduce((sum, block) => {
+      return sum + Math.max(1, block.photoLinks.length)
+    }, 0)
 
-    for (let rr = startRow; rr <= endRow; rr++) {
-      ws.getRow(rr).height = 96
-    }
+    const startRow = rowCursor
+    const endRow = rowCursor + expandedRowCount - 1
 
     const areaText = String(row.area_name ?? '').trim() || '—'
     const checkpointText = String(row.cp_name ?? '').trim() || '—'
@@ -290,7 +210,7 @@ export async function exportPatrolReportXlsx(params: { rows: ReportRow[]; fileNa
     ws.getCell(startRow, 4).value = guardText
     ws.getCell(startRow, 5).value = resultText
 
-    if (blocks.length > 1) {
+    if (expandedRowCount > 1) {
       ws.mergeCells(startRow, 1, endRow, 1)
       ws.mergeCells(startRow, 2, endRow, 2)
       ws.mergeCells(startRow, 3, endRow, 3)
@@ -298,7 +218,7 @@ export async function exportPatrolReportXlsx(params: { rows: ReportRow[]; fileNa
       ws.mergeCells(startRow, 5, endRow, 5)
     }
 
-    for (let cc = 1; cc <= 5; cc++) {
+    for (let cc = 1; cc <= 5; cc += 1) {
       const cell = ws.getCell(startRow, cc)
       cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }
       if (cc === 5) {
@@ -312,23 +232,38 @@ export async function exportPatrolReportXlsx(params: { rows: ReportRow[]; fileNa
     }
 
     let blockCursor = startRow
+
     for (const block of blocks) {
-      ws.getCell(blockCursor, 6).value = block.noteText
-      ws.getCell(blockCursor, 6).alignment = {
+      const photoLinks = block.photoLinks.length > 0 ? block.photoLinks : ['—']
+      const blockStartRow = blockCursor
+      const blockEndRow = blockCursor + photoLinks.length - 1
+      const perRowHeight = DATA_ROW_HEIGHT
+
+      ws.getCell(blockStartRow, 6).value = block.noteText
+      ws.getCell(blockStartRow, 6).alignment = {
         vertical: 'middle',
         horizontal: 'center',
         wrapText: true,
       }
 
-      ws.getCell(blockCursor, 7).alignment = { vertical: 'middle', horizontal: 'center' }
-
-      if (block.images.length > 0) {
-        await addImagesToCellHorizontally(ws, wb, blockCursor, 7, block.images)
-      } else {
-        ws.getCell(blockCursor, 7).value = ''
+      if (photoLinks.length > 1) {
+        ws.mergeCells(blockStartRow, 6, blockEndRow, 6)
       }
 
-      blockCursor += 1
+      for (let i = 0; i < photoLinks.length; i += 1) {
+        const currentRow = blockStartRow + i
+        ws.getRow(currentRow).height = perRowHeight
+
+        const photoCell = ws.getCell(currentRow, 7)
+        setPhotoCellValue(photoCell, photoLinks[i] ?? '—', i + 1)
+        photoCell.alignment = {
+          vertical: 'middle',
+          horizontal: 'left',
+          wrapText: true,
+        }
+      }
+
+      blockCursor = blockEndRow + 1
     }
 
     applyBorderRange(ws, startRow, endRow, 1, 7)

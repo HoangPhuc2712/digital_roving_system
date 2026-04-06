@@ -262,7 +262,15 @@ export async function fetchRouteRows(roleOptions: RoleOption[] = []): Promise<Ro
 
   return views
     .map((v) => mapRouteView(v, roleOptions, checkpointMetaMap))
-    .sort((a, b) => a.route_code.localeCompare(b.route_code))
+    .sort((a, b) => {
+      const areaCompare = Number(a.area_id ?? 0) - Number(b.area_id ?? 0)
+      if (areaCompare !== 0) return areaCompare
+
+      const priorityCompare = Number(a.route_priority ?? 0) - Number(b.route_priority ?? 0)
+      if (priorityCompare !== 0) return priorityCompare
+
+      return String(a.route_code ?? '').localeCompare(String(b.route_code ?? ''))
+    })
 }
 
 export async function fetchRouteById(routeId: number, roleOptions: RoleOption[] = []) {

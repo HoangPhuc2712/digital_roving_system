@@ -184,8 +184,7 @@ watch(
       path.startsWith('/incorrect-scan-reports/') ||
       path.startsWith('/ctpat-reports/') ||
       path.startsWith('/patrol-detail-reports/') ||
-      path.startsWith('/patrol-summary-reports/') ||
-      path.startsWith('/routes-chart-reports/')
+      path.startsWith('/patrol-summary-reports/')
     ) {
       reportsOpen.value = true
     }
@@ -249,8 +248,7 @@ function isReportsGroupActive() {
     route.path.startsWith('/incorrect-scan-reports/') ||
     route.path.startsWith('/ctpat-reports/') ||
     route.path.startsWith('/patrol-detail-reports/') ||
-    route.path.startsWith('/patrol-summary-reports/') ||
-    route.path.startsWith('/routes-chart-reports/')
+    route.path.startsWith('/patrol-summary-reports/')
   )
 }
 
@@ -323,39 +321,56 @@ function logout() {
               </button>
 
               <div v-if="reportsOpen" class="mt-1 ml-4 space-y-1">
-                <button
-                  type="button"
-                  :class="
-                    subItemClass(
-                      isActivePath('/reports') ||
-                        isActivePath('/incorrect-scan-reports') ||
-                        isActivePath('/ctpat-reports'),
-                    )
-                  "
-                  @click="goToPatrolsData"
-                >
-                  <span class="flex items-center gap-3">
-                    <i class="pi pi-shield"></i>
-                    <span>{{ t('breadcrumb.patrolsData') }}</span>
-                  </span>
-                </button>
+                <RouterLink :to="{ name: 'reports' }" custom v-slot="{ href, navigate }">
+                  <a
+                    :href="href"
+                    :class="
+                      subItemClass(
+                        isActivePath('/reports') ||
+                          isActivePath('/incorrect-scan-reports') ||
+                          isActivePath('/ctpat-reports'),
+                      )
+                    "
+                    @click="
+                      (event) => {
+                        navigate(event)
+                        closeMobile()
+                      }
+                    "
+                  >
+                    <span class="flex items-center gap-3">
+                      <i class="pi pi-shield"></i>
+                      <span>{{ t('breadcrumb.patrolsData') }}</span>
+                    </span>
+                  </a>
+                </RouterLink>
 
-                <button
-                  type="button"
-                  :class="
-                    subItemClass(
-                      isActivePath('/patrol-detail-reports') ||
-                        isActivePath('/patrol-summary-reports') ||
-                        isActivePath('/routes-chart-reports'),
-                    )
-                  "
-                  @click="goToReportsData"
+                <RouterLink
+                  :to="{ name: 'patrol-detail-reports' }"
+                  custom
+                  v-slot="{ href, navigate }"
                 >
-                  <span class="flex items-center gap-3">
-                    <i class="pi pi-file"></i>
-                    <span>{{ t('breadcrumb.reportsData') }}</span>
-                  </span>
-                </button>
+                  <a
+                    :href="href"
+                    :class="
+                      subItemClass(
+                        isActivePath('/patrol-detail-reports') ||
+                          isActivePath('/patrol-summary-reports'),
+                      )
+                    "
+                    @click="
+                      (event) => {
+                        navigate(event)
+                        closeMobile()
+                      }
+                    "
+                  >
+                    <span class="flex items-center gap-3">
+                      <i class="pi pi-file"></i>
+                      <span>{{ t('breadcrumb.reportsData') }}</span>
+                    </span>
+                  </a>
+                </RouterLink>
               </div>
             </template>
 
