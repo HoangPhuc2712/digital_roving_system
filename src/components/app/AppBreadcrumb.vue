@@ -73,6 +73,12 @@ const items = computed<BreadcrumbItem[]>(() => {
         { label: t('breadcrumb.reportsData'), to: { name: 'patrol-detail-reports' } },
         { label: t('breadcrumb.patrolSummaryReport') },
       ]
+    case 'routes-chart-reports':
+      return [
+        root,
+        { label: t('breadcrumb.reportsData'), to: { name: 'patrol-detail-reports' } },
+        { label: t('breadcrumb.routesChartReport') },
+      ]
     default:
       return [root]
   }

@@ -29,4 +29,10 @@ export const reportsRoutes = [
     component: () => import('@/modules/reports/pages/PatrolSummaryReportList.vue'),
     meta: { permission: ['reports.view_all', 'reports.view_mine'] },
   },
+  {
+    path: 'routes-chart-reports',
+    name: 'routes-chart-reports',
+    component: () => import('@/modules/reports/pages/RoutesChartReportList.vue'),
+    meta: { permission: ['reports.view_all', 'reports.view_mine'] },
+  },
 ]

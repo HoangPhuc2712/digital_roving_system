@@ -179,11 +179,13 @@ watch(
       path === '/ctpat-reports' ||
       path === '/patrol-detail-reports' ||
       path === '/patrol-summary-reports' ||
+      path === '/routes-chart-reports' ||
       path.startsWith('/reports/') ||
       path.startsWith('/incorrect-scan-reports/') ||
       path.startsWith('/ctpat-reports/') ||
       path.startsWith('/patrol-detail-reports/') ||
-      path.startsWith('/patrol-summary-reports/')
+      path.startsWith('/patrol-summary-reports/') ||
+      path.startsWith('/routes-chart-reports/')
     ) {
       reportsOpen.value = true
     }
@@ -242,11 +244,13 @@ function isReportsGroupActive() {
     route.path === '/ctpat-reports' ||
     route.path === '/patrol-detail-reports' ||
     route.path === '/patrol-summary-reports' ||
+    route.path === '/routes-chart-reports' ||
     route.path.startsWith('/reports/') ||
     route.path.startsWith('/incorrect-scan-reports/') ||
     route.path.startsWith('/ctpat-reports/') ||
     route.path.startsWith('/patrol-detail-reports/') ||
-    route.path.startsWith('/patrol-summary-reports/')
+    route.path.startsWith('/patrol-summary-reports/') ||
+    route.path.startsWith('/routes-chart-reports/')
   )
 }
 
@@ -341,7 +345,8 @@ function logout() {
                   :class="
                     subItemClass(
                       isActivePath('/patrol-detail-reports') ||
-                        isActivePath('/patrol-summary-reports'),
+                        isActivePath('/patrol-summary-reports') ||
+                        isActivePath('/routes-chart-reports'),
                     )
                   "
                   @click="goToReportsData"

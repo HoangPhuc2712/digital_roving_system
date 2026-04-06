@@ -15,6 +15,7 @@ import type {
   ReportImage,
   ReportNoteGroup,
   ReportRow,
+  RoutesChartShiftNode,
 } from './reports.types'
 
 type ApiEnvelope<T> = {
@@ -1593,6 +1594,99 @@ function buildShiftProblemDetails(
         ...row
       }) => row,
     )
+}
+
+function buildActualPatrolAnchor(view: ApiPlannedPatrolShiftView): Date | null {
+  const candidates = [view.psStartAt, view.psEndAt]
+
+  for (const rawValue of candidates) {
+    const raw = String(rawValue ?? '').trim()
+    if (!raw) continue
+
+    const d = new Date(raw)
+    if (Number.isFinite(d.getTime())) return d
+  }
+
+  return null
+}
+
+function resolveRoutesChartWindowEnd(windowStart: Date, windowEnd: Date) {
+  const now = new Date()
+  const startTime = windowStart.getTime()
+  const endTime = windowEnd.getTime()
+  const nowTime = now.getTime()
+
+  if (startTime <= nowTime && nowTime <= endTime) {
+    return now
+  }
+
+  return windowEnd
+}
+
+function buildRoutesChartHourLabel(view: ApiPlannedPatrolShiftView, actualAt: Date | null) {
+  const date = actualAt ?? buildPlannedShiftStart(view)
+  if (!date) return ''
+
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hourFrom = Number(view.psHourFrom ?? NaN)
+  const hourTo = Number(view.psHourTo ?? NaN)
+  const hour = Number.isFinite(hourFrom) ? hourFrom : hourTo
+
+  if (!Number.isFinite(hour)) {
+    return `${year}-${month}-${day}`
+  }
+
+  return `${year}-${month}-${day} ${hour}h`
+}
+
+export async function fetchRoutesChartShiftNodes(
+  from: Date,
+  to: Date,
+): Promise<RoutesChartShiftNode[]> {
+  if (!Number.isFinite(from.getTime()) || !Number.isFinite(to.getTime())) return []
+  if (from.getTime() > to.getTime()) return []
+
+  const windowStart = new Date(from)
+  const windowEnd = resolveRoutesChartWindowEnd(windowStart, new Date(to))
+  const dates = eachDateInclusive(windowStart, windowEnd)
+  const views = (
+    await Promise.all(dates.map((date: Date) => fetchPlannedPatrolShiftByDate(date)))
+  ).flat() as ApiPlannedPatrolShiftView[]
+
+  return views
+    .filter((view: ApiPlannedPatrolShiftView) => hasActualPatrolData(view))
+    .map((view: ApiPlannedPatrolShiftView) => ({
+      view,
+      actualAt: buildActualPatrolAnchor(view),
+    }))
+    .filter((item: { view: ApiPlannedPatrolShiftView; actualAt: Date | null }) =>
+      isWithinWindow(item.actualAt, windowStart, windowEnd),
+    )
+    .map(({ view, actualAt }: { view: ApiPlannedPatrolShiftView; actualAt: Date | null }) => {
+      const realitySecond = Number(view.realitySecond ?? 0)
+
+      return {
+        ps_id: Number(view.psId ?? 0),
+        route_id: Number(view.routeId ?? 0),
+        route_name: String(view.routeName ?? '').trim(),
+        patrol_at: actualAt?.toISOString() ?? '',
+        patrol_label: buildRoutesChartHourLabel(view, actualAt),
+        reality_second: realitySecond,
+        reality_minute: Number((realitySecond / 60).toFixed(2)),
+        ps_hour_from: Number.isFinite(Number(view.psHourFrom ?? NaN))
+          ? Number(view.psHourFrom)
+          : null,
+        ps_hour_to: Number.isFinite(Number(view.psHourTo ?? NaN)) ? Number(view.psHourTo) : null,
+      }
+    })
+    .filter((item: RoutesChartShiftNode) => item.route_id > 0)
+    .sort((a: RoutesChartShiftNode, b: RoutesChartShiftNode) => {
+      const aTime = new Date(a.patrol_at).getTime()
+      const bTime = new Date(b.patrol_at).getTime()
+      return aTime - bTime
+    })
 }
 
 export async function fetchPatrolSummaryRows(

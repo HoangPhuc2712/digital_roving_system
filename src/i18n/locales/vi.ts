@@ -60,6 +60,7 @@ const vi = {
     reportsData: 'Dữ liệu báo cáo',
     patrolDetailReport: 'Báo cáo chi tiết tuần tra',
     patrolSummaryReport: 'Báo cáo tổng hợp tuần tra',
+    routesChartReport: 'Biểu đồ lộ trình',
     users: 'Người dùng',
     roles: 'Vai trò',
     areas: 'Khu vực',
@@ -228,6 +229,7 @@ const vi = {
   reportDataButtonSwitch: {
     switchPatrolDetailReport: 'Báo cáo chi tiết tuần tra',
     switchPatrolSummaryReport: 'Báo cáo tổng hợp tuần tra',
+    switchRoutesChartReport: 'Biểu đồ lộ trình',
   },
   patrolDetailReport: {
     title: 'Báo cáo chi tiết tuần tra',
@@ -257,6 +259,16 @@ const vi = {
     shiftProblemCount: 'Số lỗi lệch ca',
     abnormalRate: 'Tỷ lệ bất thường',
     noReportFound: 'Không tìm thấy báo cáo',
+  },
+  routesChartReportList: {
+    title: 'Biểu đồ lộ trình',
+    yAxisTitle: 'Phút',
+    actualPatrolTime: 'Thời gian tuần tra thực tế',
+    minimumMinute: 'Tối thiểu',
+    maximumMinute: 'Tối đa',
+    averageMinute: 'Trung bình',
+    patrolTime: 'Thời gian tuần tra',
+    noData: 'Không có dữ liệu',
   },
   patrolSummaryMissedPatrolDialog: {
     patrolDate: 'Ngày tuần tra',

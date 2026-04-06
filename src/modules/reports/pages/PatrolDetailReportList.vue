@@ -42,6 +42,14 @@ const reportSwitchButtons = computed(() => [
     outlined: true,
     onClick: () => router.push({ name: 'patrol-summary-reports' }),
   },
+  {
+    label: t('reportDataButtonSwitch.switchRoutesChartReport'),
+    icon: 'pi pi-chart-bar',
+    size: 'small',
+    severity: 'secondary' as const,
+    outlined: true,
+    onClick: () => router.push({ name: 'routes-chart-reports' }),
+  },
 ])
 
 useResetFirstOnFilterChange(

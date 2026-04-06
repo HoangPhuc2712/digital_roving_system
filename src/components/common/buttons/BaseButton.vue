@@ -19,7 +19,7 @@ import Button from 'primevue/button'
 
 type Severity = 'secondary' | 'success' | 'info' | 'warn' | 'help' | 'danger' | 'contrast'
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     label?: string
     severity?: Severity
@@ -31,7 +31,6 @@ const props = withDefaults(
     plain?: boolean
     loading?: boolean
     disabled?: boolean
-    onClick?: () => void
   }>(),
   {
     raised: false,
@@ -44,12 +43,7 @@ const props = withDefaults(
   },
 )
 
-const emit = defineEmits<{
+defineEmits<{
   (e: 'click', ev: MouseEvent): void
 }>()
-
-function handleClick(ev: MouseEvent) {
-  props.onClick?.()
-  emit('click', ev)
-}
 </script>

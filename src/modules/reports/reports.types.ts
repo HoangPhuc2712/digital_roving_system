@@ -187,3 +187,27 @@ export type IncorrectScanLogRow = {
 
   _q: string
 }
+
+export type RoutesChartShiftNode = {
+  ps_id: number
+  route_id: number
+  route_name: string
+  patrol_at: string
+  patrol_label: string
+  reality_second: number
+  reality_minute: number
+  ps_hour_from: number | null
+  ps_hour_to: number | null
+}
+
+export type RoutesChartRouteCard = {
+  route_id: number
+  route_code: string
+  route_name: string
+  route_min_minute: number
+  route_max_minute: number
+  labels: string[]
+  values: number[]
+  tooltip_titles: string[]
+  average_minute: number | null
+}
