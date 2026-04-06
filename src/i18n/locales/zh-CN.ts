@@ -22,6 +22,7 @@ const zhCN = {
     noData: '无数据',
     loading: '正在加载数据',
     invalidDateFilter: '日期筛选无效，请选择正确的起始日期和结束日期',
+    selectLayout: '选择版式',
   },
   languageSwitcher: {
     languages: {

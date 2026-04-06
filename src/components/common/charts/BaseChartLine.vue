@@ -238,8 +238,8 @@ function renderChart() {
   datasets.push({
     label: props.actualLabel,
     data: hasActualData.value ? props.values : [],
-    borderColor: '#38BDF8',
-    backgroundColor: '#38BDF8',
+    borderColor: '#17a2b8',
+    backgroundColor: '#17a2b8',
     borderWidth: 2,
     tension: 0.3,
     fill: false,

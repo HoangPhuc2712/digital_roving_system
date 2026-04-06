@@ -3,7 +3,6 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 import { useRoute } from 'vue-router'
 import { exportCheckpointsXlsx } from '@/services/export/checkpoints.export'
-import { printSingleCheckpointQr } from '@/services/print/checkpoints.print'
 import { normalizeImageSource } from '@/utils/base64'
 import { useI18n } from 'vue-i18n'
 import { translateRoleNames, translateRoleName } from '@/utils/dataI18n'
@@ -23,6 +22,7 @@ import { fetchRouteRows } from '@/modules/routes/routes.api'
 import type { RouteRow } from '@/modules/routes/routes.types'
 
 import QrPreview from '@/modules/checkpoints/components/QrPreview.vue'
+import QrExportLayoutButton from '@/modules/checkpoints/components/QrExportLayoutButton.vue'
 import CheckpointForm, {
   type CheckpointFormMode,
   type CheckpointFormModel,
@@ -41,7 +41,6 @@ const toast = useToast()
 const store = useCheckpointsStore()
 const auth = useAuthStore()
 const exporting = ref(false)
-const printingCheckpointId = ref<number | null>(null)
 const DELETE_CHECKPOINT_API_DRY_RUN = false
 const { t, locale } = useI18n()
 
@@ -489,34 +488,6 @@ function normalizeQr(src: string) {
   return normalizeImageSource(src, { fallbackExt: 'png' })
 }
 
-async function onPrintCheckpointQr(row: CheckpointRow) {
-  printingCheckpointId.value = row.cp_id
-  try {
-    await printSingleCheckpointQr({
-      areaLabel: row.area_code || row.area_name,
-      cpName: row.cp_name,
-      cpCode: row.cp_code,
-      cpPriority: row.cp_priority,
-      qrSrc: row.cp_qr,
-    })
-  } catch (e: any) {
-    const msg = String(e?.message ?? '')
-    toast.add({
-      severity: 'error',
-      summary: 'QR PDF Error',
-      detail:
-        msg === 'QR_IMAGE_NOT_FOUND'
-          ? t('checkpointList.error.noQrAvailablie')
-          : msg === 'QR_IMAGE_FORMAT_NOT_SUPPORTED'
-            ? t('checkpointList.error.qrFormatNotSupport')
-            : msg || t('checkpointList.error.exportPdfFailed'),
-      life: 3500,
-    })
-  } finally {
-    printingCheckpointId.value = null
-  }
-}
-
 async function onExport() {
   exporting.value = true
   try {
@@ -712,7 +683,7 @@ async function onExport() {
       <Column
         :header="t('common.action')"
         :exportable="false"
-        style="min-width: 18rem"
+        style="min-width: 14rem"
         sortDisabled
       >
         <template #body="{ data }">
@@ -725,17 +696,21 @@ async function onExport() {
               rounded
               @click="openView(data)"
             />
-            <BaseIconButton
+            <QrExportLayoutButton
               v-if="canManage"
+              :item="{
+                areaLabel: data.area_code || data.area_name,
+                cpName: data.cp_name,
+                cpCode: data.cp_code,
+                cpPriority: data.cp_priority,
+                qrSrc: normalizeQr(data.cp_qr),
+              }"
               icon="pi pi-file-pdf"
               size="small"
               severity="secondary"
               outlined
               rounded
               ariaLabel="Print Qr"
-              :loading="printingCheckpointId === data.cp_id"
-              :disabled="printingCheckpointId === data.cp_id"
-              @click="onPrintCheckpointQr(data)"
             />
             <BaseIconButton
               v-if="canManage"

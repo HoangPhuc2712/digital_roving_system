@@ -22,6 +22,7 @@ const en = {
     noData: 'No data',
     loading: 'Loading data',
     invalidDateFilter: 'Invalid Date Filter, please Select the correct date From -To',
+    selectLayout: 'Select Layout',
   },
   languageSwitcher: {
     languages: {

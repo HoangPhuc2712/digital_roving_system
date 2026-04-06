@@ -24,8 +24,7 @@ const { t } = useI18n()
       </div>
       <div class="min-w-0">
         <div class="truncate text-xl font-semibold text-slate-800">
-          {{ props.routeCode || props.routeName }}
-          <span v-if="props.routeCode && props.routeName">({{ props.routeName }})</span>
+          {{ props.routeName }}
         </div>
       </div>
     </div>

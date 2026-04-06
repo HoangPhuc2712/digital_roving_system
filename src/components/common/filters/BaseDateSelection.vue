@@ -499,6 +499,27 @@ onMounted(async () => {
   attachNativeInputListener('to')
 })
 
+function isAnyPickerPanelOpen() {
+  return isOverlayVisible('from') || isOverlayVisible('to')
+}
+
+function closeOpenPickerPanels() {
+  let closed = false
+
+  ;(['from', 'to'] as const).forEach((kind) => {
+    if (!isOverlayVisible(kind)) return
+    hidePickerOverlay(kind)
+    closed = true
+  })
+
+  return closed
+}
+
+defineExpose({
+  isAnyPickerPanelOpen,
+  closeOpenPickerPanels,
+})
+
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', handleDocumentPointerDown, true)
   detachNativeInputListener('from')

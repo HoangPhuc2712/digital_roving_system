@@ -22,6 +22,7 @@ const vi = {
     noData: 'Không có dữ liệu',
     loading: 'Đang tải dữ liệu',
     invalidDateFilter: 'Bộ lọc ngày không hợp lệ, vui lòng chọn đúng ngày From - To',
+    selectLayout: 'Chọn bố cục',
   },
   languageSwitcher: {
     languages: {
