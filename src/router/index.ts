@@ -7,6 +7,7 @@ import { useCtpatReportsStore } from '@/modules/reports/ctpatReports.store'
 import { useIncorrectScanLogStore } from '@/modules/reports/incorrectScanLog.store'
 import { usePatrolDetailReportsStore } from '@/modules/reports/patrolDetailReports.store'
 import { usePatrolSummaryReportsStore } from '@/modules/reports/patrolSummaryReports.store'
+import { useRoutesChartReportsStore } from '@/modules/reports/routesChartReports.store'
 import { useReportsStore } from '@/modules/reports/reports.store'
 import { useRolesStore } from '@/modules/roles/roles.store'
 import { useRoutesStore } from '@/modules/routes/routes.store'
@@ -39,6 +40,9 @@ function clearPageFiltersByRouteName(routeName: string | symbol | null | undefin
       break
     case 'patrol-summary-reports':
       usePatrolSummaryReportsStore().clearFilters()
+      break
+    case 'routes-chart-reports':
+      useRoutesChartReportsStore().clearFilters()
       break
     case 'roles':
       useRolesStore().clearFilters()

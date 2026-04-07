@@ -41,6 +41,7 @@
       :stateKey="props.stateKey || undefined"
       sortMode="single"
       removableSort
+      showGridlines
       responsiveLayout="scroll"
       :scrollable="scrollable"
       :scrollHeight="scrollable ? scrollHeight : undefined"
@@ -265,6 +266,7 @@ const FilterMenuControl = defineComponent({
   emits: ['update:modelValue', 'close'],
   setup(filterProps, { emit: filterEmit }) {
     const localValue = ref(cloneFilterValue(filterProps.config.value))
+    const dateSelectionRef = ref<any>(null)
 
     watch(
       [() => serializeFilterValue(filterProps.config.value), () => filterProps.revision],
@@ -288,6 +290,26 @@ const FilterMenuControl = defineComponent({
     function cancelChanges() {
       localValue.value = cloneFilterValue(filterProps.config.value)
       filterEmit('close')
+    }
+
+    function handleEnterKey(event: KeyboardEvent, type: ColumnFilterType) {
+      if (event.key !== 'Enter') return
+
+      const target = event.target as HTMLElement | null
+      if (target?.closest('button')) return
+
+      event.preventDefault()
+      event.stopPropagation()
+
+      if (type === 'date-range') {
+        const dateSelection = dateSelectionRef.value
+        if (dateSelection?.isAnyPickerPanelOpen?.()) {
+          dateSelection.closeOpenPickerPanels?.()
+          return
+        }
+      }
+
+      applyChanges()
     }
 
     const controlKey = computed(
@@ -347,12 +369,157 @@ const FilterMenuControl = defineComponent({
                 return option[secondaryFilterField] === primaryValue
               })
 
-        return h('div', { class: 'flex w-[260px] flex-col gap-3' }, [
+        return h(
+          'div',
+          {
+            class: 'flex w-[260px] flex-col gap-3',
+            onKeydownCapture: (event: KeyboardEvent) => handleEnterKey(event, 'dual-select'),
+          },
+          [
+            h(Select, {
+              key: `${controlKey.value}::primary`,
+              modelValue: primaryValue,
+              'onUpdate:modelValue': (value: any) =>
+                updateDraft({ primaryValue: value ?? null, secondaryValue: null }),
+              options: filterProps.config.options ?? [],
+              optionLabel: filterProps.config.optionLabel ?? 'label',
+              optionValue: filterProps.config.optionValue ?? 'value',
+              placeholder: filterProps.config.placeholder ?? '',
+              showClear: filterProps.config.showClear ?? true,
+              filter: filterProps.config.filter ?? true,
+              filterFields: filterProps.config.filterField
+                ? [filterProps.config.filterField]
+                : undefined,
+              filterMatchMode: filterProps.config.filterMatchMode ?? 'contains',
+              class: 'app-filter-select w-full',
+              size: 'small',
+              appendTo: 'self',
+            }),
+            h(Select, {
+              key: `${controlKey.value}::secondary`,
+              modelValue: secondaryValue,
+              'onUpdate:modelValue': (value: any) =>
+                updateDraft({ primaryValue, secondaryValue: value ?? null }),
+              options: secondaryOptions,
+              optionLabel: filterProps.config.secondaryOptionLabel ?? 'label',
+              optionValue: filterProps.config.secondaryOptionValue ?? 'value',
+              placeholder: filterProps.config.secondaryPlaceholder ?? '',
+              showClear: filterProps.config.showClear ?? true,
+              filter: filterProps.config.secondaryFilter ?? filterProps.config.filter ?? true,
+              filterFields: filterProps.config.secondaryFilterField
+                ? [filterProps.config.secondaryFilterField]
+                : undefined,
+              filterMatchMode: filterProps.config.filterMatchMode ?? 'contains',
+              class: 'app-filter-select w-full',
+              size: 'small',
+              appendTo: 'self',
+              disabled: !allSecondaryOptions.length,
+            }),
+            renderFooter(),
+          ],
+        )
+      }
+
+      if (type === 'date-range') {
+        const currentValue =
+          localValue.value && typeof localValue.value === 'object'
+            ? localValue.value
+            : { from: null, to: null }
+
+        const fromValue =
+          currentValue.from instanceof Date ? currentValue.from : (currentValue.from ?? null)
+        const toValue =
+          currentValue.to instanceof Date ? currentValue.to : (currentValue.to ?? null)
+
+        return h(
+          'div',
+          {
+            class: 'w-[280px] max-w-full',
+            onKeydownCapture: (event: KeyboardEvent) => handleEnterKey(event, 'date-range'),
+          },
+          [
+            h(BaseDateSelection, {
+              ref: dateSelectionRef,
+              modelDateFrom: fromValue,
+              modelDateTo: toValue,
+              wrapperClass: 'flex w-full flex-col gap-3',
+              inputWidthClass: 'w-full',
+              showTime: filterProps.config.showTime ?? true,
+              appendTo: 'self',
+              'onUpdate:modelDateFrom': (value: Date | null) =>
+                updateDraft({ from: value ?? null, to: toValue }),
+              'onUpdate:modelDateTo': (value: Date | null) =>
+                updateDraft({ from: fromValue, to: value ?? null }),
+            }),
+            renderFooter(),
+          ],
+        )
+      }
+
+      if (type === 'multiselect') {
+        return h(
+          'div',
+          {
+            class: 'w-[240px] max-w-full',
+            onKeydownCapture: (event: KeyboardEvent) => handleEnterKey(event, 'multiselect'),
+          },
+          [
+            h(MultiSelect, {
+              key: controlKey.value,
+              modelValue: Array.isArray(localValue.value) ? localValue.value : [],
+              'onUpdate:modelValue': (value: any) => updateDraft(Array.isArray(value) ? value : []),
+              options: filterProps.config.options ?? [],
+              optionLabel: filterProps.config.optionLabel ?? 'label',
+              optionValue: filterProps.config.optionValue ?? 'value',
+              placeholder: filterProps.config.placeholder ?? 'Select',
+              filter: filterProps.config.filter ?? true,
+              filterFields: filterProps.config.filterField
+                ? [filterProps.config.filterField]
+                : undefined,
+              filterMatchMode: filterProps.config.filterMatchMode ?? 'contains',
+              showClear: filterProps.config.showClear ?? true,
+              class: 'app-filter-multiselect w-full',
+              size: 'small',
+              appendTo: 'self',
+              maxSelectedLabels: 2,
+            }),
+            renderFooter(),
+          ],
+        )
+      }
+
+      if (type === 'text') {
+        return h(
+          'div',
+          {
+            class: 'w-[240px] max-w-full',
+            onKeydownCapture: (event: KeyboardEvent) => handleEnterKey(event, 'text'),
+          },
+          [
+            h(InputText, {
+              key: controlKey.value,
+              modelValue: String(localValue.value ?? ''),
+              'onUpdate:modelValue': (value: string) => updateDraft(value),
+              placeholder: filterProps.config.placeholder ?? 'Search',
+              class: 'w-full',
+              size: 'small',
+            }),
+            renderFooter(),
+          ],
+        )
+      }
+
+      return h(
+        'div',
+        {
+          class: 'w-[240px] max-w-full',
+          onKeydownCapture: (event: KeyboardEvent) => handleEnterKey(event, 'select'),
+        },
+        [
           h(Select, {
-            key: `${controlKey.value}::primary`,
-            modelValue: primaryValue,
-            'onUpdate:modelValue': (value: any) =>
-              updateDraft({ primaryValue: value ?? null, secondaryValue: null }),
+            key: controlKey.value,
+            modelValue: localValue.value,
+            'onUpdate:modelValue': (value: any) => updateDraft(value),
             options: filterProps.config.options ?? [],
             optionLabel: filterProps.config.optionLabel ?? 'label',
             optionValue: filterProps.config.optionValue ?? 'value',
@@ -367,123 +534,9 @@ const FilterMenuControl = defineComponent({
             size: 'small',
             appendTo: 'self',
           }),
-          h(Select, {
-            key: `${controlKey.value}::secondary`,
-            modelValue: secondaryValue,
-            'onUpdate:modelValue': (value: any) =>
-              updateDraft({ primaryValue, secondaryValue: value ?? null }),
-            options: secondaryOptions,
-            optionLabel: filterProps.config.secondaryOptionLabel ?? 'label',
-            optionValue: filterProps.config.secondaryOptionValue ?? 'value',
-            placeholder: filterProps.config.secondaryPlaceholder ?? '',
-            showClear: filterProps.config.showClear ?? true,
-            filter: filterProps.config.secondaryFilter ?? filterProps.config.filter ?? true,
-            filterFields: filterProps.config.secondaryFilterField
-              ? [filterProps.config.secondaryFilterField]
-              : undefined,
-            filterMatchMode: filterProps.config.filterMatchMode ?? 'contains',
-            class: 'app-filter-select w-full',
-            size: 'small',
-            appendTo: 'self',
-            disabled: !allSecondaryOptions.length,
-          }),
           renderFooter(),
-        ])
-      }
-
-      if (type === 'date-range') {
-        const currentValue =
-          localValue.value && typeof localValue.value === 'object'
-            ? localValue.value
-            : { from: null, to: null }
-
-        const fromValue =
-          currentValue.from instanceof Date ? currentValue.from : (currentValue.from ?? null)
-        const toValue =
-          currentValue.to instanceof Date ? currentValue.to : (currentValue.to ?? null)
-
-        return h('div', { class: 'w-[280px] max-w-full' }, [
-          h(BaseDateSelection, {
-            modelDateFrom: fromValue,
-            modelDateTo: toValue,
-            wrapperClass: 'flex w-full flex-col gap-3',
-            inputWidthClass: 'w-full',
-            showTime: filterProps.config.showTime ?? true,
-            appendTo: 'self',
-            'onUpdate:modelDateFrom': (value: Date | null) =>
-              updateDraft({ from: value ?? null, to: toValue }),
-            'onUpdate:modelDateTo': (value: Date | null) =>
-              updateDraft({ from: fromValue, to: value ?? null }),
-          }),
-          renderFooter(),
-        ])
-      }
-
-      if (type === 'multiselect') {
-        return h('div', { class: 'w-[240px] max-w-full' }, [
-          h(MultiSelect, {
-            key: controlKey.value,
-            modelValue: Array.isArray(localValue.value) ? localValue.value : [],
-            'onUpdate:modelValue': (value: any) => updateDraft(Array.isArray(value) ? value : []),
-            options: filterProps.config.options ?? [],
-            optionLabel: filterProps.config.optionLabel ?? 'label',
-            optionValue: filterProps.config.optionValue ?? 'value',
-            placeholder: filterProps.config.placeholder ?? 'Select',
-            filter: filterProps.config.filter ?? true,
-            filterFields: filterProps.config.filterField
-              ? [filterProps.config.filterField]
-              : undefined,
-            filterMatchMode: filterProps.config.filterMatchMode ?? 'contains',
-            showClear: filterProps.config.showClear ?? true,
-            class: 'app-filter-multiselect w-full',
-            size: 'small',
-            appendTo: 'self',
-            maxSelectedLabels: 2,
-          }),
-          renderFooter(),
-        ])
-      }
-
-      if (type === 'text') {
-        return h('div', { class: 'w-[240px] max-w-full' }, [
-          h(InputText, {
-            key: controlKey.value,
-            modelValue: String(localValue.value ?? ''),
-            'onUpdate:modelValue': (value: string) => updateDraft(value),
-            placeholder: filterProps.config.placeholder ?? 'Search',
-            class: 'w-full',
-            size: 'small',
-            onKeydown: (event: KeyboardEvent) => {
-              if (event.key === 'Enter') {
-                applyChanges()
-              }
-            },
-          }),
-          renderFooter(),
-        ])
-      }
-
-      return h('div', { class: 'w-[240px] max-w-full' }, [
-        h(Select, {
-          key: controlKey.value,
-          modelValue: localValue.value,
-          'onUpdate:modelValue': (value: any) => updateDraft(value),
-          options: filterProps.config.options ?? [],
-          optionLabel: filterProps.config.optionLabel ?? 'label',
-          optionValue: filterProps.config.optionValue ?? 'value',
-          placeholder: filterProps.config.placeholder ?? '',
-          showClear: filterProps.config.showClear ?? true,
-          filter: filterProps.config.filter ?? true,
-          filterFields: filterProps.config.filterField
-            ? [filterProps.config.filterField]
-            : undefined,
-          filterMatchMode: filterProps.config.filterMatchMode ?? 'contains',
-          class: 'app-filter-select w-full',
-          size: 'small',
-          appendTo: 'self',
-        }),
-        renderFooter(),
-      ])
+        ],
+      )
     }
   },
 })
@@ -601,12 +654,18 @@ function buildColumnChildren(node: VNode, sortable: boolean, filterMenu?: Column
               type: 'button',
               class: [
                 'inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-700',
-                isFilterActive(resolvedFilterMenu.value) ? 'bg-slate-100 text-slate-700' : '',
               ],
               'aria-label': 'Filter column',
               onClick: (event: MouseEvent) => toggleFilterPopover(resolvedFilterMenu.key, event),
             },
-            [h('i', { class: 'pi pi-filter text-sm' })],
+            [
+              h('i', {
+                class: [
+                  'pi text-sm',
+                  isFilterActive(resolvedFilterMenu.value) ? 'pi-filter-fill' : 'pi-filter',
+                ],
+              }),
+            ],
           ),
           h(
             Popover,

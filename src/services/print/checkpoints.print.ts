@@ -1,4 +1,4 @@
-import { PDFDocument, rgb } from 'pdf-lib'
+import { PDFDocument } from 'pdf-lib'
 import { dataUrlToBytes, imageSourceToDataUrl, normalizeImageSource } from '@/utils/base64'
 
 export type CheckpointPrintItem = {
@@ -7,6 +7,18 @@ export type CheckpointPrintItem = {
   cpCode: string
   cpPriority: number | string
   qrSrc: string
+}
+
+export type CheckpointQrLayout = '1x2' | '2x2' | '3x2'
+
+type CardOrientation = 'standard' | 'rotated'
+
+const DEFAULT_CHECKPOINT_QR_LAYOUT: CheckpointQrLayout = '3x2'
+
+const LAYOUT_DIMENSIONS: Record<CheckpointQrLayout, { rows: number; columns: number }> = {
+  '1x2': { rows: 2, columns: 1 },
+  '2x2': { rows: 2, columns: 2 },
+  '3x2': { rows: 3, columns: 2 },
 }
 
 type LoadedQrImage = {
@@ -20,31 +32,114 @@ type TextLine = {
   width: number
 }
 
-const ITEMS_PER_PAGE = 6
+type LayoutMetrics = {
+  layout: CheckpointQrLayout
+  orientation: CardOrientation
+  rows: number
+  columns: number
+  itemsPerPage: number
+  slotWidth: number
+  slotHeight: number
+  cardWidth: number
+  cardHeight: number
+  columnGap: number
+  rowGap: number
+  paddingX: number
+  paddingTop: number
+  paddingBottom: number
+  areaFontSize: number
+  titleFontSize: number
+  nameFontSize: number
+  priorityFontSize: number
+  priorityDiameter: number
+  headerMinHeight: number
+  headerMaxHeight: number
+  qrSideCap: number
+}
+
 const PAGE_WIDTH = 595.28
 const PAGE_HEIGHT = 841.89
 const PAGE_MARGIN = 24
-const COLUMN_GAP = 24
-const ROW_GAP = 28
-const SLOT_WIDTH = (PAGE_WIDTH - PAGE_MARGIN * 2 - COLUMN_GAP) / 2
-const SLOT_HEIGHT = (PAGE_HEIGHT - PAGE_MARGIN * 2 - ROW_GAP * 2) / 3
-const CARD_WIDTH = SLOT_WIDTH - 18
-const CARD_HEIGHT = SLOT_HEIGHT
-const CARD_PADDING_X = 14
-const CARD_PADDING_TOP = 11
-const CARD_PADDING_BOTTOM = 12
 const CARD_BORDER_COLOR = '#D1D5DB'
 const CARD_TEXT_COLOR = '#1F2937'
 const PRIORITY_COLOR = '#111827'
-const AREA_FONT_SIZE = 13
-const TITLE_FONT_SIZE = 16
-const NAME_FONT_SIZE = 14
-const PRIORITY_FONT_SIZE = 11
-const PRIORITY_DIAMETER = 20
-const HEADER_MIN_HEIGHT = 58
-const HEADER_MAX_HEIGHT = 76
-const QR_SIDE = 164
+const BASE_COLUMN_GAP = 24
+const BASE_ROW_GAP = 28
+const BASE_SLOT_WIDTH = (PAGE_WIDTH - PAGE_MARGIN * 2 - BASE_COLUMN_GAP) / 2
+const BASE_SLOT_HEIGHT = (PAGE_HEIGHT - PAGE_MARGIN * 2 - BASE_ROW_GAP * 2) / 3
+const BASE_CARD_WIDTH = BASE_SLOT_WIDTH - 18
+const BASE_CARD_HEIGHT = BASE_SLOT_HEIGHT
+const BASE_CARD_PADDING_X = 14
+const BASE_CARD_PADDING_TOP = 11
+const BASE_CARD_PADDING_BOTTOM = 12
+const BASE_AREA_FONT_SIZE = 13
+const BASE_TITLE_FONT_SIZE = 16
+const BASE_NAME_FONT_SIZE = 14
+const BASE_PRIORITY_FONT_SIZE = 11
+const BASE_PRIORITY_DIAMETER = 20
+const BASE_HEADER_MIN_HEIGHT = 58
+const BASE_HEADER_MAX_HEIGHT = 76
+const BASE_QR_SIDE = 164
 const CARD_SCALE = 2
+
+function getLayoutMetrics(
+  layout: CheckpointQrLayout = DEFAULT_CHECKPOINT_QR_LAYOUT,
+): LayoutMetrics {
+  const dimensions = LAYOUT_DIMENSIONS[layout] ?? LAYOUT_DIMENSIONS[DEFAULT_CHECKPOINT_QR_LAYOUT]
+  const { rows, columns } = dimensions
+  const columnGap = columns > 1 ? BASE_COLUMN_GAP : 0
+  const rowGap = rows > 1 ? BASE_ROW_GAP : 0
+  const slotWidth = (PAGE_WIDTH - PAGE_MARGIN * 2 - columnGap * Math.max(columns - 1, 0)) / columns
+  const slotHeight = (PAGE_HEIGHT - PAGE_MARGIN * 2 - rowGap * Math.max(rows - 1, 0)) / rows
+
+  let cardWidth = Math.max(120, slotWidth - 18)
+  let cardHeight = Math.max(120, slotHeight)
+  let orientation: CardOrientation = 'standard'
+
+  if (layout === '1x2') {
+    cardWidth = Math.max(220, Math.min(slotWidth - 88, slotHeight * 1.72))
+    cardHeight = Math.max(180, slotHeight - 12)
+  } else if (layout === '2x2') {
+    cardWidth = Math.max(160, slotWidth - 22)
+    cardHeight = Math.max(180, slotHeight - 20)
+    orientation = 'rotated'
+  }
+
+  const scale = Math.max(0.9, Math.min(cardWidth / BASE_CARD_WIDTH, cardHeight / BASE_CARD_HEIGHT))
+
+  let qrSideCap = Math.max(BASE_QR_SIDE * scale, Math.min(cardWidth, cardHeight) * 0.64)
+  if (layout === '1x2') {
+    qrSideCap = Math.max(qrSideCap, Math.min(cardWidth, cardHeight) * 0.7)
+  }
+  if (layout === '2x2') {
+    qrSideCap = Math.max(qrSideCap, Math.min(cardWidth, cardHeight) * 0.84)
+  }
+
+  return {
+    layout,
+    orientation,
+    rows,
+    columns,
+    itemsPerPage: rows * columns,
+    slotWidth,
+    slotHeight,
+    cardWidth,
+    cardHeight,
+    columnGap,
+    rowGap,
+    paddingX: BASE_CARD_PADDING_X * scale,
+    paddingTop: BASE_CARD_PADDING_TOP * scale,
+    paddingBottom: BASE_CARD_PADDING_BOTTOM * scale,
+    areaFontSize: BASE_AREA_FONT_SIZE * scale,
+    titleFontSize: BASE_TITLE_FONT_SIZE * scale,
+    nameFontSize: BASE_NAME_FONT_SIZE * scale,
+    priorityFontSize: BASE_PRIORITY_FONT_SIZE * scale,
+    priorityDiameter: BASE_PRIORITY_DIAMETER * scale,
+    headerMinHeight: BASE_HEADER_MIN_HEIGHT * scale,
+    headerMaxHeight: BASE_HEADER_MAX_HEIGHT * scale,
+    qrSideCap,
+  }
+}
 
 function normalizeQr(src: string) {
   return normalizeImageSource(src, { fallbackExt: 'png' })
@@ -245,37 +340,66 @@ function drawCenteredText(params: {
   context.fillText(text, x + width / 2, y)
 }
 
-async function renderCheckpointCard(item: CheckpointPrintItem) {
-  const qrImageData = await loadQrImage(item.qrSrc)
-  const qrDataUrl = bytesToDataUrl(qrImageData.bytes, qrImageData.mimeType)
-  const qrImage = await loadHtmlImage(qrDataUrl)
+function drawPriorityBadge(
+  context: CanvasRenderingContext2D,
+  metrics: LayoutMetrics,
+  cpPriority: number | string,
+  rotateText = false,
+) {
+  const priorityX = metrics.cardWidth - metrics.paddingX - metrics.priorityDiameter
+  const priorityY = metrics.paddingTop
+  const badgeCenterX = priorityX + metrics.priorityDiameter / 2
+  const badgeCenterY = priorityY + metrics.priorityDiameter / 2
 
-  const renderWidth = Math.round(CARD_WIDTH * CARD_SCALE)
-  const renderHeight = Math.round(CARD_HEIGHT * CARD_SCALE)
-  const canvas = document.createElement('canvas')
-  canvas.width = renderWidth
-  canvas.height = renderHeight
+  context.strokeStyle = PRIORITY_COLOR
+  context.lineWidth = 1
+  context.beginPath()
+  context.arc(badgeCenterX, badgeCenterY, metrics.priorityDiameter / 2, 0, Math.PI * 2)
+  context.stroke()
 
-  const context = canvas.getContext('2d')
-  if (!context) throw new Error('CANVAS_CONTEXT_NOT_AVAILABLE')
+  context.save()
+  context.translate(badgeCenterX, badgeCenterY)
+  if (rotateText) {
+    context.rotate(Math.PI / 2)
+  }
+  setCanvasFont(context, metrics.priorityFontSize, '400')
+  context.fillStyle = PRIORITY_COLOR
+  context.textAlign = 'center'
+  context.textBaseline = 'middle'
+  context.fillText(fitText(String(cpPriority ?? ''), 3), 0, 0)
+  context.restore()
+}
 
-  context.scale(CARD_SCALE, CARD_SCALE)
-  context.fillStyle = '#FFFFFF'
-  context.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT)
-  context.strokeStyle = CARD_BORDER_COLOR
-  context.lineWidth = 0.8
-  context.strokeRect(0.4, 0.4, CARD_WIDTH - 0.8, CARD_HEIGHT - 0.8)
+function drawStandardCardContent(params: {
+  context: CanvasRenderingContext2D
+  item: CheckpointPrintItem
+  qrImage: HTMLImageElement
+  metrics: LayoutMetrics
+  availableWidth?: number
+  availableHeight?: number
+  compactHeader?: boolean
+  qrBottomInset?: number
+}) {
+  const {
+    context,
+    item,
+    qrImage,
+    metrics,
+    availableWidth = metrics.cardWidth,
+    availableHeight = metrics.cardHeight,
+    compactHeader = false,
+    qrBottomInset = 0,
+  } = params
 
-  const innerX = CARD_PADDING_X
-  const innerWidth = CARD_WIDTH - CARD_PADDING_X * 2
-  const priorityX = CARD_WIDTH - CARD_PADDING_X - PRIORITY_DIAMETER
-  const priorityY = CARD_PADDING_TOP
-  const headerTop = CARD_PADDING_TOP + AREA_FONT_SIZE
+  const innerX = metrics.paddingX
+  const innerWidth = availableWidth - metrics.paddingX * 2
+  const headerTop = metrics.paddingTop + metrics.areaFontSize
+  const measureContext = createMeasureContext()
 
   const areaLines = wrapText(
-    fitText(item.areaLabel, 24),
-    context,
-    AREA_FONT_SIZE,
+    fitText(item.areaLabel, compactHeader ? 20 : 24),
+    measureContext,
+    metrics.areaFontSize,
     '700',
     innerWidth,
     1,
@@ -283,14 +407,21 @@ async function renderCheckpointCard(item: CheckpointPrintItem) {
 
   const titleLines = wrapText(
     `Điểm tuần tra số ${String(item.cpPriority ?? '')}`,
-    context,
-    TITLE_FONT_SIZE,
+    measureContext,
+    metrics.titleFontSize,
     '700',
     innerWidth,
-    2,
+    compactHeader ? 1 : 2,
   )
 
-  const nameLines = wrapText(item.cpName, context, NAME_FONT_SIZE, '700', innerWidth, 1)
+  const nameLines = wrapText(
+    item.cpName,
+    measureContext,
+    metrics.nameFontSize,
+    '700',
+    innerWidth,
+    1,
+  )
 
   let cursorY = headerTop
   for (const line of areaLines) {
@@ -300,14 +431,16 @@ async function renderCheckpointCard(item: CheckpointPrintItem) {
       x: innerX,
       y: cursorY,
       width: innerWidth,
-      fontSize: AREA_FONT_SIZE,
+      fontSize: metrics.areaFontSize,
       weight: '700',
       color: CARD_TEXT_COLOR,
     })
-    cursorY += AREA_FONT_SIZE * 1.02
+    cursorY += metrics.areaFontSize * 1.02
   }
 
-  cursorY += 11
+  cursorY += compactHeader
+    ? 7 * (metrics.titleFontSize / BASE_TITLE_FONT_SIZE)
+    : 11 * (metrics.titleFontSize / BASE_TITLE_FONT_SIZE)
 
   for (const line of titleLines) {
     drawCenteredText({
@@ -316,14 +449,14 @@ async function renderCheckpointCard(item: CheckpointPrintItem) {
       x: innerX,
       y: cursorY,
       width: innerWidth,
-      fontSize: TITLE_FONT_SIZE,
+      fontSize: metrics.titleFontSize,
       weight: '700',
       color: CARD_TEXT_COLOR,
     })
-    cursorY += TITLE_FONT_SIZE * 1.08
+    cursorY += metrics.titleFontSize * 1.08
   }
 
-  cursorY += 2
+  cursorY += compactHeader ? 0 : 2 * (metrics.nameFontSize / BASE_NAME_FONT_SIZE)
 
   for (const line of nameLines) {
     drawCenteredText({
@@ -332,62 +465,250 @@ async function renderCheckpointCard(item: CheckpointPrintItem) {
       x: innerX,
       y: cursorY,
       width: innerWidth,
-      fontSize: NAME_FONT_SIZE,
+      fontSize: metrics.nameFontSize,
       weight: '700',
       color: CARD_TEXT_COLOR,
     })
-    cursorY += NAME_FONT_SIZE * 1.08
+    cursorY += metrics.nameFontSize * 1.08
   }
 
+  const headerMinHeight = compactHeader ? metrics.headerMinHeight * 0.76 : metrics.headerMinHeight
+  const headerMaxHeight = compactHeader ? metrics.headerMaxHeight * 0.82 : metrics.headerMaxHeight
   const usedHeaderHeight = Math.min(
-    HEADER_MAX_HEIGHT,
-    Math.max(HEADER_MIN_HEIGHT, cursorY - CARD_PADDING_TOP),
+    headerMaxHeight,
+    Math.max(headerMinHeight, cursorY - metrics.paddingTop),
   )
-
-  context.strokeStyle = PRIORITY_COLOR
-  context.lineWidth = 1
-  context.beginPath()
-  context.arc(
-    priorityX + PRIORITY_DIAMETER / 2,
-    priorityY + PRIORITY_DIAMETER / 2,
-    PRIORITY_DIAMETER / 2,
-    0,
-    Math.PI * 2,
-  )
-  context.stroke()
-
-  drawCenteredText({
-    context,
-    text: fitText(String(item.cpPriority ?? ''), 3),
-    x: priorityX,
-    y: priorityY + PRIORITY_DIAMETER / 2 + PRIORITY_FONT_SIZE / 2 - 1,
-    width: PRIORITY_DIAMETER,
-    fontSize: PRIORITY_FONT_SIZE,
-    weight: '400',
-    color: PRIORITY_COLOR,
-  })
 
   const qrMaxSide = Math.min(
-    QR_SIDE,
+    metrics.qrSideCap,
     innerWidth,
-    CARD_HEIGHT - usedHeaderHeight - CARD_PADDING_BOTTOM - CARD_PADDING_TOP,
+    availableHeight - usedHeaderHeight - metrics.paddingBottom - metrics.paddingTop - qrBottomInset,
   )
-  const qrX = (CARD_WIDTH - qrMaxSide) / 2
-  const qrY = CARD_HEIGHT - CARD_PADDING_BOTTOM - qrMaxSide
+  const qrX = (availableWidth - qrMaxSide) / 2
+  const qrY = availableHeight - metrics.paddingBottom - qrBottomInset - qrMaxSide
 
   context.imageSmoothingEnabled = false
   context.drawImage(qrImage, qrX, qrY, qrMaxSide, qrMaxSide)
+}
+
+function createTwoByTwoTextCanvas(item: CheckpointPrintItem, metrics: LayoutMetrics) {
+  const areaFontSize = metrics.areaFontSize * 0.88
+  const titleFontSize = metrics.titleFontSize * 0.82
+  const nameFontSize = metrics.nameFontSize * 0.84
+  const measureContext = createMeasureContext()
+
+  const blockWidth = Math.max(104, Math.min(metrics.cardHeight * 0.32, 124))
+  const innerWidth = Math.max(86, blockWidth - 10)
+
+  const areaLines = wrapText(
+    fitText(item.areaLabel, 20),
+    measureContext,
+    areaFontSize,
+    '700',
+    innerWidth,
+    1,
+  )
+
+  const titleLines = wrapText(
+    `Điểm tuần tra số ${String(item.cpPriority ?? '')}`,
+    measureContext,
+    titleFontSize,
+    '700',
+    innerWidth,
+    2,
+  )
+
+  const nameLines = wrapText(item.cpName, measureContext, nameFontSize, '700', innerWidth, 3)
+
+  const areaLineHeight = areaFontSize * 1.02
+  const titleLineHeight = titleFontSize * 1.06
+  const nameLineHeight = nameFontSize * 1.06
+  const gapAfterArea = 6 * (titleFontSize / BASE_TITLE_FONT_SIZE)
+  const gapAfterTitle = 3 * (nameFontSize / BASE_NAME_FONT_SIZE)
+  const topInset = 2
+  const bottomInset = 2
+
+  const blockHeight =
+    topInset +
+    areaLines.length * areaLineHeight +
+    gapAfterArea +
+    titleLines.length * titleLineHeight +
+    gapAfterTitle +
+    nameLines.length * nameLineHeight +
+    bottomInset
+
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.max(1, Math.ceil(blockWidth * CARD_SCALE))
+  canvas.height = Math.max(1, Math.ceil(blockHeight * CARD_SCALE))
+
+  const context = canvas.getContext('2d')
+  if (!context) throw new Error('CANVAS_CONTEXT_NOT_AVAILABLE')
+
+  context.scale(CARD_SCALE, CARD_SCALE)
+  context.clearRect(0, 0, blockWidth, blockHeight)
+
+  let cursorY = topInset + areaFontSize
+  for (const line of areaLines) {
+    drawCenteredText({
+      context,
+      text: line.text,
+      x: 0,
+      y: cursorY,
+      width: blockWidth,
+      fontSize: areaFontSize,
+      weight: '700',
+      color: CARD_TEXT_COLOR,
+    })
+    cursorY += areaLineHeight
+  }
+
+  cursorY += gapAfterArea
+
+  for (const line of titleLines) {
+    drawCenteredText({
+      context,
+      text: line.text,
+      x: 0,
+      y: cursorY,
+      width: blockWidth,
+      fontSize: titleFontSize,
+      weight: '700',
+      color: CARD_TEXT_COLOR,
+    })
+    cursorY += titleLineHeight
+  }
+
+  cursorY += gapAfterTitle
+
+  for (const line of nameLines) {
+    drawCenteredText({
+      context,
+      text: line.text,
+      x: 0,
+      y: cursorY,
+      width: blockWidth,
+      fontSize: nameFontSize,
+      weight: '700',
+      color: CARD_TEXT_COLOR,
+    })
+    cursorY += nameLineHeight
+  }
+
+  return {
+    canvas,
+    width: blockWidth,
+    height: blockHeight,
+  }
+}
+
+function drawImageRotated(params: {
+  context: CanvasRenderingContext2D
+  image: CanvasImageSource
+  centerX: number
+  centerY: number
+  drawWidth: number
+  drawHeight: number
+  angleRadians: number
+}) {
+  const { context, image, centerX, centerY, drawWidth, drawHeight, angleRadians } = params
+  context.save()
+  context.translate(centerX, centerY)
+  context.rotate(angleRadians)
+  context.drawImage(image, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight)
+  context.restore()
+}
+
+function drawTwoByTwoCardContent(
+  context: CanvasRenderingContext2D,
+  item: CheckpointPrintItem,
+  qrImage: HTMLImageElement,
+  metrics: LayoutMetrics,
+) {
+  const textBlock = createTwoByTwoTextCanvas(item, metrics)
+
+  const textTop = metrics.paddingTop + 16
+  const textCenterX = metrics.cardWidth / 2
+  const textCenterY = textTop + textBlock.width / 2
+
+  drawImageRotated({
+    context,
+    image: textBlock.canvas,
+    centerX: textCenterX,
+    centerY: textCenterY,
+    drawWidth: textBlock.width,
+    drawHeight: textBlock.height,
+    angleRadians: Math.PI / 2,
+  })
+
+  const textBottom = textTop + textBlock.width
+  const qrTop = textBottom + 12
+  const qrSide = Math.min(
+    metrics.qrSideCap,
+    metrics.cardWidth - metrics.paddingX * 2 - 12,
+    metrics.cardHeight - qrTop - metrics.paddingBottom - 8,
+  )
+  const qrX = (metrics.cardWidth - qrSide) / 2
+  const qrY = Math.max(qrTop, metrics.cardHeight - metrics.paddingBottom - 8 - qrSide)
+
+  context.imageSmoothingEnabled = false
+  drawImageRotated({
+    context,
+    image: qrImage,
+    centerX: qrX + qrSide / 2,
+    centerY: qrY + qrSide / 2,
+    drawWidth: qrSide,
+    drawHeight: qrSide,
+    angleRadians: Math.PI / 2,
+  })
+}
+
+async function renderCheckpointCard(item: CheckpointPrintItem, metrics: LayoutMetrics) {
+  const qrImageData = await loadQrImage(item.qrSrc)
+  const qrDataUrl = bytesToDataUrl(qrImageData.bytes, qrImageData.mimeType)
+  const qrImage = await loadHtmlImage(qrDataUrl)
+
+  const renderWidth = Math.round(metrics.cardWidth * CARD_SCALE)
+  const renderHeight = Math.round(metrics.cardHeight * CARD_SCALE)
+  const canvas = document.createElement('canvas')
+  canvas.width = renderWidth
+  canvas.height = renderHeight
+
+  const context = canvas.getContext('2d')
+  if (!context) throw new Error('CANVAS_CONTEXT_NOT_AVAILABLE')
+
+  context.scale(CARD_SCALE, CARD_SCALE)
+  context.fillStyle = '#FFFFFF'
+  context.fillRect(0, 0, metrics.cardWidth, metrics.cardHeight)
+  context.strokeStyle = CARD_BORDER_COLOR
+  context.lineWidth = 1
+  context.strokeRect(0.5, 0.5, metrics.cardWidth - 1, metrics.cardHeight - 1)
+
+  if (metrics.layout === '2x2') {
+    drawTwoByTwoCardContent(context, item, qrImage, metrics)
+  } else {
+    drawStandardCardContent({
+      context,
+      item,
+      qrImage,
+      metrics,
+      compactHeader: metrics.layout === '1x2',
+      qrBottomInset: metrics.layout === '1x2' ? 1 : 0,
+    })
+  }
+
+  drawPriorityBadge(context, metrics, item.cpPriority, metrics.layout === '2x2')
 
   return canvasToBytes(canvas)
 }
 
-function getGridPosition(indexInPage: number) {
-  const row = Math.floor(indexInPage / 2)
-  const col = indexInPage % 2
-  const slotX = PAGE_MARGIN + col * (SLOT_WIDTH + COLUMN_GAP)
-  const slotY = PAGE_HEIGHT - PAGE_MARGIN - SLOT_HEIGHT - row * (SLOT_HEIGHT + ROW_GAP)
-  const x = slotX + (SLOT_WIDTH - CARD_WIDTH) / 2
-  const y = slotY
+function getGridPosition(indexInPage: number, metrics: LayoutMetrics) {
+  const row = Math.floor(indexInPage / metrics.columns)
+  const col = indexInPage % metrics.columns
+  const slotX = PAGE_MARGIN + col * (metrics.slotWidth + metrics.columnGap)
+  const slotY =
+    PAGE_HEIGHT - PAGE_MARGIN - metrics.slotHeight - row * (metrics.slotHeight + metrics.rowGap)
+  const x = slotX + (metrics.slotWidth - metrics.cardWidth) / 2
+  const y = slotY + (metrics.slotHeight - metrics.cardHeight) / 2
   return { x, y }
 }
 
@@ -405,33 +726,38 @@ function downloadPdf(bytes: Uint8Array, fileName: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1500)
 }
 
-async function createPdf(items: CheckpointPrintItem[], singleMode: boolean) {
+async function createPdf(
+  items: CheckpointPrintItem[],
+  singleMode: boolean,
+  layout: CheckpointQrLayout = DEFAULT_CHECKPOINT_QR_LAYOUT,
+) {
   const pdf = await PDFDocument.create()
+  const metrics = getLayoutMetrics(layout)
 
   if (singleMode) {
     const page = pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT])
-    const { x, y } = getGridPosition(0)
-    const cardBytes = await renderCheckpointCard(items[0]!)
+    const { x, y } = getGridPosition(0, metrics)
+    const cardBytes = await renderCheckpointCard(items[0]!, metrics)
     const cardImage = await pdf.embedPng(cardBytes)
     page.drawImage(cardImage, {
       x,
       y,
-      width: CARD_WIDTH,
-      height: CARD_HEIGHT,
+      width: metrics.cardWidth,
+      height: metrics.cardHeight,
     })
   } else {
-    const pages = chunkItems(items, ITEMS_PER_PAGE)
+    const pages = chunkItems(items, metrics.itemsPerPage)
     for (const itemsInPage of pages) {
       const page = pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT])
       for (let i = 0; i < itemsInPage.length; i += 1) {
-        const position = getGridPosition(i)
-        const cardBytes = await renderCheckpointCard(itemsInPage[i]!)
+        const position = getGridPosition(i, metrics)
+        const cardBytes = await renderCheckpointCard(itemsInPage[i]!, metrics)
         const cardImage = await pdf.embedPng(cardBytes)
         page.drawImage(cardImage, {
           x: position.x,
           y: position.y,
-          width: CARD_WIDTH,
-          height: CARD_HEIGHT,
+          width: metrics.cardWidth,
+          height: metrics.cardHeight,
         })
       }
     }
@@ -440,11 +766,14 @@ async function createPdf(items: CheckpointPrintItem[], singleMode: boolean) {
   return pdf.save()
 }
 
-export async function printSingleCheckpointQr(item: CheckpointPrintItem) {
+export async function printSingleCheckpointQr(
+  item: CheckpointPrintItem,
+  layout: CheckpointQrLayout = DEFAULT_CHECKPOINT_QR_LAYOUT,
+) {
   const qrSrc = normalizeQr(item.qrSrc)
   if (!qrSrc) throw new Error('QR_IMAGE_NOT_FOUND')
 
-  const bytes = await createPdf([{ ...item, qrSrc }], true)
+  const bytes = await createPdf([{ ...item, qrSrc }], true, layout)
   const fileName = `${item.areaLabel || item.cpCode || item.cpName || 'checkpoint'}_${item.cpCode || 'qr'}`
   downloadPdf(bytes, fileName)
 }
@@ -452,6 +781,7 @@ export async function printSingleCheckpointQr(item: CheckpointPrintItem) {
 export async function printCheckpointQrSheets(
   items: CheckpointPrintItem[],
   title = 'Checkpoint Qr Codes',
+  layout: CheckpointQrLayout = DEFAULT_CHECKPOINT_QR_LAYOUT,
 ) {
   const normalizedItems = (items ?? [])
     .map((item) => ({
@@ -462,6 +792,8 @@ export async function printCheckpointQrSheets(
 
   if (!normalizedItems.length) throw new Error('QR_IMAGE_NOT_FOUND')
 
-  const bytes = await createPdf(normalizedItems, false)
+  const bytes = await createPdf(normalizedItems, false, layout)
   downloadPdf(bytes, title)
 }
+
+export { DEFAULT_CHECKPOINT_QR_LAYOUT }

@@ -68,7 +68,7 @@ export async function fetchAreaRows(): Promise<AreaRow[]> {
         _q: q,
       }
     })
-    .sort((a, b) => a.area_name.localeCompare(b.area_name))
+    .sort((a, b) => Number(a.area_id ?? 0) - Number(b.area_id ?? 0))
 }
 
 export async function fetchAreaById(area_id: number) {
@@ -162,5 +162,5 @@ export async function fetchAreaOptions() {
       label: a.areaName ?? a.areaCode ?? String(a.areaId),
       value: a.areaId,
     }))
-    .sort((x: any, y: any) => String(x.label).localeCompare(String(y.label)))
+    .sort((x: any, y: any) => Number(x.value ?? 0) - Number(y.value ?? 0))
 }

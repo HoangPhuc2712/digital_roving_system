@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 type BreadcrumbItem = {
   label: string
   to?: { name: string; query?: Record<string, any> }
+  clickableWhenLast?: boolean
 }
 
 const route = useRoute()
@@ -22,7 +23,10 @@ const items = computed<BreadcrumbItem[]>(() => {
 
   switch (routeName.value) {
     case 'dashboard':
-      return [root]
+      return [
+        root,
+        { label: t('dashboard.title'), to: { name: 'dashboard' }, clickableWhenLast: true },
+      ]
     case 'users':
       return [root, { label: t('breadcrumb.users') }]
     case 'roles':
@@ -73,13 +77,19 @@ const items = computed<BreadcrumbItem[]>(() => {
         { label: t('breadcrumb.reportsData'), to: { name: 'patrol-detail-reports' } },
         { label: t('breadcrumb.patrolSummaryReport') },
       ]
+    case 'routes-chart-reports':
+      return [
+        root,
+        { label: t('breadcrumb.reportsData'), to: { name: 'patrol-detail-reports' } },
+        { label: t('breadcrumb.routesChartReport') },
+      ]
     default:
       return [root]
   }
 })
 
-function onNavigate(item: BreadcrumbItem, isLast: boolean) {
-  if (isLast || !item.to) return
+function onNavigate(item: BreadcrumbItem) {
+  if (!item.to) return
   router.push(item.to)
 }
 </script>
@@ -93,10 +103,11 @@ function onNavigate(item: BreadcrumbItem, isLast: boolean) {
         class="flex items-center gap-1.5 min-w-0"
       >
         <button
-          v-if="item.to && index < items.length - 1"
+          v-if="item.to && (index < items.length - 1 || item.clickableWhenLast)"
           type="button"
           class="truncate rounded text-left transition hover:text-slate-900 hover:cursor-pointer"
-          @click="onNavigate(item, index === items.length - 1)"
+          :class="index === items.length - 1 ? 'text-slate-800 font-medium' : ''"
+          @click="onNavigate(item)"
         >
           {{ item.label }}
         </button>

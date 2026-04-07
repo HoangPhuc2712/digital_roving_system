@@ -8,7 +8,6 @@ import Tag from 'primevue/tag'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
-import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import BaseConfirmDelete from '@/components/common/BaseConfirmDelete.vue'
 
 import { useAuthStore } from '@/stores/auth.store'
@@ -418,7 +417,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
             @click="confirmDeleteSelected"
           />
           <BaseIconButton
-            icon="pi pi-sparkles"
+            icon="pi pi-calendar"
             :label="t('createShifts.button')"
             size="small"
             severity="info"

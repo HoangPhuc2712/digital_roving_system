@@ -12,8 +12,10 @@ import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import type { CheckpointRow, RoleOption } from '@/modules/checkpoints/checkpoints.types'
 import { fetchCheckpointRows, fetchRoleOptions } from '@/modules/checkpoints/checkpoints.api'
 import {
+  DEFAULT_CHECKPOINT_QR_LAYOUT,
   printCheckpointQrSheets,
   type CheckpointPrintItem,
+  type CheckpointQrLayout,
 } from '@/services/print/checkpoints.print'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import QrPreview from '@/modules/checkpoints/components/QrPreview.vue'
@@ -55,6 +57,7 @@ const selectedRoleId = ref<number | 'ALL' | null>(null)
 const checkpoints = ref<CheckpointRow[]>([])
 const roleOptions = ref<RoleOption[]>([])
 const initialized = ref(false)
+const selectedLayout = ref<CheckpointQrLayout>(DEFAULT_CHECKPOINT_QR_LAYOUT)
 
 const visibleProxy = computed({
   get: () => props.visible,
@@ -67,6 +70,12 @@ const roleFilterOptions = computed(() => [
     ...option,
     label: translateRoleName(String(option.label ?? ''), t),
   })),
+])
+
+const layoutOptions = computed(() => [
+  { label: '1x2', value: '1x2' as CheckpointQrLayout },
+  { label: '2x2', value: '2x2' as CheckpointQrLayout },
+  { label: '3x2', value: '3x2' as CheckpointQrLayout },
 ])
 
 const hasAppliedFilter = computed(
@@ -182,7 +191,11 @@ async function onPrint() {
 
   printing.value = true
   try {
-    await printCheckpointQrSheets(buildPrintItems(previewRows.value), 'Check Point Qr Codes')
+    await printCheckpointQrSheets(
+      buildPrintItems(previewRows.value),
+      'Check Point Qr Codes',
+      selectedLayout.value,
+    )
   } catch (e: any) {
     const msg = String(e?.message ?? '')
     toast.add({
@@ -212,7 +225,7 @@ async function onPrint() {
     <div class="flex max-h-[78vh] flex-col gap-4 overflow-hidden">
       <div class="shrink-0 space-y-4 bg-white">
         <div
-          class="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end"
+          class="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_220px_auto] md:items-end"
         >
           <div class="space-y-2">
             <label class="block text-sm font-medium text-slate-700">{{
@@ -246,6 +259,22 @@ async function onPrint() {
               :placeholder="t('areaPrintOptionsDialog.selectRole')"
               showClear
               class="w-full"
+              :disabled="loading"
+            />
+          </div>
+
+          <div class="space-y-2">
+            <label class="block text-sm font-medium text-slate-700">{{
+              t('common.selectLayout')
+            }}</label>
+            <Select
+              v-model="selectedLayout"
+              :options="layoutOptions"
+              optionLabel="label"
+              optionValue="value"
+              size="small"
+              class="w-full"
+              :placeholder="t('common.selectLayout')"
               :disabled="loading"
             />
           </div>

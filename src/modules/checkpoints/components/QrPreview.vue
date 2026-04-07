@@ -1,28 +1,22 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import Dialog from 'primevue/dialog'
-import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 
 import { useAuthStore } from '@/stores/auth.store'
-import {
-  printSingleCheckpointQr,
-  type CheckpointPrintItem,
-} from '@/services/print/checkpoints.print'
-import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
+import type { CheckpointPrintItem } from '@/services/print/checkpoints.print'
 import { normalizeImageSource } from '@/utils/base64'
+import QrExportLayoutButton from '@/modules/checkpoints/components/QrExportLayoutButton.vue'
 
 const props = defineProps<{
-  value: string // base64 hoặc text
-  size?: number // thumbnail size
+  value: string
+  size?: number
   printItem?: Omit<CheckpointPrintItem, 'qrSrc'> | null
 }>()
 
 const auth = useAuthStore()
-const toast = useToast()
 const visible = ref(false)
-const printing = ref(false)
-const { t, locale } = useI18n()
+const { t } = useI18n()
 
 function normalizeSrc(v: string) {
   return normalizeImageSource(v, { fallbackExt: 'png' })
@@ -31,38 +25,17 @@ function normalizeSrc(v: string) {
 const src = computed(() => normalizeSrc(props.value))
 const thumb = computed(() => props.size ?? 44)
 const canViewQr = computed(() => auth.isAdminUser && !!src.value)
-const canPrint = computed(() => auth.isAdminUser && !!props.printItem && !!src.value)
+const exportItem = computed<CheckpointPrintItem | null>(() => {
+  if (!auth.isAdminUser || !props.printItem || !src.value) return null
+  return {
+    ...props.printItem,
+    qrSrc: src.value,
+  }
+})
 
 function open() {
   if (!canViewQr.value) return
   visible.value = true
-}
-
-async function onPrint() {
-  if (!props.printItem || !src.value) return
-
-  printing.value = true
-  try {
-    await printSingleCheckpointQr({
-      ...props.printItem,
-      qrSrc: src.value,
-    })
-  } catch (e: any) {
-    const msg = String(e?.message ?? '')
-    toast.add({
-      severity: 'error',
-      summary: 'QR PDF Error',
-      detail:
-        msg === 'QR_IMAGE_NOT_FOUND'
-          ? t('qrPreview.error.noQrAvailablie')
-          : msg === 'QR_IMAGE_FORMAT_NOT_SUPPORTED'
-            ? t('qrPreview.error.qrFormatNotSupport')
-            : msg || t('qrPreview.error.exportPdfFailed'),
-      life: 3500,
-    })
-  } finally {
-    printing.value = false
-  }
 }
 </script>
 
@@ -99,17 +72,15 @@ async function onPrint() {
         <div v-else class="text-slate-600">{{ t('qrPreview.noQrImg') }}.</div>
       </div>
 
-      <template v-if="canPrint" #footer>
+      <template v-if="exportItem" #footer>
         <div class="flex justify-end">
-          <BaseIconButton
+          <QrExportLayoutButton
+            :item="exportItem"
             icon="pi pi-file-pdf"
-            size="small"
             :label="t('qrPreview.exportQrPdf')"
             severity="secondary"
             outlined
-            :loading="printing"
-            :disabled="printing"
-            @click="onPrint"
+            :disabled="!exportItem"
           />
         </div>
       </template>

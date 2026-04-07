@@ -45,7 +45,7 @@ const { t, locale } = useI18n()
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('areas.manage'))
 const areaPrintOptions = computed(() =>
   [...store.rows]
-    .sort((a, b) => String(a.area_name ?? '').localeCompare(String(b.area_name ?? '')))
+    .sort((a, b) => Number(a.area_id ?? 0) - Number(b.area_id ?? 0))
     .map((row) => ({
       label: row.area_name || row.area_code || String(row.area_id),
       value: row.area_id,

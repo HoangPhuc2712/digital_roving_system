@@ -2,12 +2,11 @@
 defineOptions({ inheritAttrs: false })
 import { computed, onMounted, ref, watch, useAttrs } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter, RouterLink } from 'vue-router'
+import { useRoute, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { http } from '@/services/http/axios'
 import { endpoints } from '@/services/http/endpoints'
-import BaseBadgeButton from '../common/buttons/BaseBadgeButton.vue'
-import { translateMenuCategoryName, translateRoleName } from '@/utils/dataI18n'
+import { translateMenuCategoryName } from '@/utils/dataI18n'
 
 const props = withDefaults(
   defineProps<{
@@ -26,7 +25,6 @@ const emit = defineEmits<{
 
 const auth = useAuthStore()
 const route = useRoute()
-const router = useRouter()
 const attrs = useAttrs()
 
 const { t } = useI18n()
@@ -179,6 +177,7 @@ watch(
       path === '/ctpat-reports' ||
       path === '/patrol-detail-reports' ||
       path === '/patrol-summary-reports' ||
+      path === '/routes-chart-reports' ||
       path.startsWith('/reports/') ||
       path.startsWith('/incorrect-scan-reports/') ||
       path.startsWith('/ctpat-reports/') ||
@@ -190,13 +189,6 @@ watch(
   },
   { immediate: true },
 )
-
-const userFullName = computed(() => auth.user?.user_name ?? '—')
-const userCode = computed(() => auth.user?.user_code ?? '—')
-const userRoleName = computed(() => {
-  const rawRoleName = String(auth.user?.role?.role_name ?? '').trim()
-  return rawRoleName ? translateRoleName(rawRoleName, t) : '—'
-})
 
 function closeMobile() {
   emit('update:mobileOpen', false)
@@ -242,6 +234,7 @@ function isReportsGroupActive() {
     route.path === '/ctpat-reports' ||
     route.path === '/patrol-detail-reports' ||
     route.path === '/patrol-summary-reports' ||
+    route.path === '/routes-chart-reports' ||
     route.path.startsWith('/reports/') ||
     route.path.startsWith('/incorrect-scan-reports/') ||
     route.path.startsWith('/ctpat-reports/') ||
@@ -252,27 +245,6 @@ function isReportsGroupActive() {
 
 function toggleReports() {
   reportsOpen.value = !reportsOpen.value
-}
-
-function goToPatrolsData() {
-  router.push({ name: 'reports' })
-  closeMobile()
-}
-
-function goToReportsData() {
-  router.push({ name: 'patrol-detail-reports' })
-  closeMobile()
-}
-
-function goToUserInfo() {
-  router.push({ name: 'user-info' })
-  closeMobile()
-}
-
-function logout() {
-  auth.logout?.()
-  router.replace({ name: 'login' })
-  closeMobile()
 }
 </script>
 
@@ -319,38 +291,56 @@ function logout() {
               </button>
 
               <div v-if="reportsOpen" class="mt-1 ml-4 space-y-1">
-                <button
-                  type="button"
-                  :class="
-                    subItemClass(
-                      isActivePath('/reports') ||
-                        isActivePath('/incorrect-scan-reports') ||
-                        isActivePath('/ctpat-reports'),
-                    )
-                  "
-                  @click="goToPatrolsData"
-                >
-                  <span class="flex items-center gap-3">
-                    <i class="pi pi-shield"></i>
-                    <span>{{ t('breadcrumb.patrolsData') }}</span>
-                  </span>
-                </button>
+                <RouterLink :to="{ name: 'reports' }" custom v-slot="{ href, navigate }">
+                  <a
+                    :href="href"
+                    :class="
+                      subItemClass(
+                        isActivePath('/reports') ||
+                          isActivePath('/incorrect-scan-reports') ||
+                          isActivePath('/ctpat-reports'),
+                      )
+                    "
+                    @click="
+                      (event) => {
+                        navigate(event)
+                        closeMobile()
+                      }
+                    "
+                  >
+                    <span class="flex items-center gap-3">
+                      <i class="pi pi-shield"></i>
+                      <span>{{ t('breadcrumb.patrolsData') }}</span>
+                    </span>
+                  </a>
+                </RouterLink>
 
-                <button
-                  type="button"
-                  :class="
-                    subItemClass(
-                      isActivePath('/patrol-detail-reports') ||
-                        isActivePath('/patrol-summary-reports'),
-                    )
-                  "
-                  @click="goToReportsData"
+                <RouterLink
+                  :to="{ name: 'patrol-detail-reports' }"
+                  custom
+                  v-slot="{ href, navigate }"
                 >
-                  <span class="flex items-center gap-3">
-                    <i class="pi pi-file"></i>
-                    <span>{{ t('breadcrumb.reportsData') }}</span>
-                  </span>
-                </button>
+                  <a
+                    :href="href"
+                    :class="
+                      subItemClass(
+                        isActivePath('/patrol-detail-reports') ||
+                          isActivePath('/patrol-summary-reports'),
+                      )
+                    "
+                    @click="
+                      (event) => {
+                        navigate(event)
+                        closeMobile()
+                      }
+                    "
+                  >
+                    <span class="flex items-center gap-3">
+                      <i class="pi pi-file"></i>
+                      <span>{{ t('breadcrumb.reportsData') }}</span>
+                    </span>
+                  </a>
+                </RouterLink>
               </div>
             </template>
 
@@ -367,29 +357,6 @@ function logout() {
           </li>
         </ul>
       </nav>
-
-      <footer class="border-t border-white/10 px-4 py-4">
-        <div class="mb-3">
-          <button
-            type="button"
-            class="text-sm font-semibold flex items-center gap-2 leading-snug text-left hover:text-white transition"
-            @click="goToUserInfo"
-          >
-            <i class="pi pi-user"></i>
-            <span class="hover:underline cursor-pointer">{{ userFullName }}</span>
-          </button>
-          <div class="text-xs text-slate-300 mt-1">User Code: {{ userCode }}</div>
-          <div class="text-xs text-slate-300">Role: {{ userRoleName }}</div>
-        </div>
-
-        <BaseBadgeButton
-          type="button"
-          label="Logout"
-          severity="contrast"
-          class="w-full rounded-lg px-3 py-2 bg-red-500/10 text-red-100 hover:bg-red-500/20 transition"
-          @click="logout"
-        />
-      </footer>
     </div>
   </aside>
 </template>

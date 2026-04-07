@@ -22,6 +22,9 @@ const en = {
     noData: 'No data',
     loading: 'Loading data',
     invalidDateFilter: 'Invalid Date Filter, please Select the correct date From -To',
+    personalInfo: 'Profile',
+    logout: 'Logout',
+    selectLayout: 'Select Layout',
   },
   languageSwitcher: {
     languages: {
@@ -60,6 +63,7 @@ const en = {
     reportsData: 'Reports Data',
     patrolDetailReport: 'Patrol Detail Report',
     patrolSummaryReport: 'Patrol Summary Report',
+    routesChartReport: 'Routes Chart Report',
     users: 'Users',
     roles: 'Roles',
     areas: 'Areas',
@@ -228,6 +232,7 @@ const en = {
   reportDataButtonSwitch: {
     switchPatrolDetailReport: 'Patrol Detail Report',
     switchPatrolSummaryReport: 'Patrol Summary Report',
+    switchRoutesChartReport: 'Routes Chart Report',
   },
   patrolDetailReport: {
     title: 'Patrol Detail Report',
@@ -257,6 +262,16 @@ const en = {
     shiftProblemCount: 'Shift Problem Count',
     abnormalRate: 'Abnormal Rate',
     noReportFound: 'No Reports Found',
+  },
+  routesChartReportList: {
+    title: 'Routes Chart Report',
+    yAxisTitle: 'Minute',
+    actualPatrolTime: 'Actual Patrol Time',
+    minimumMinute: 'Minimum',
+    maximumMinute: 'Maximum',
+    averageMinute: 'Average',
+    patrolTime: 'Patrol Time',
+    noData: 'No data',
   },
   patrolSummaryMissedPatrolDialog: {
     patrolDate: 'Patrol Date',
