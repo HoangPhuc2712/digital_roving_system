@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import Avatar from 'primevue/avatar'
 import AppBreadcrumb from '@/components/app/AppBreadcrumb.vue'
 import AppLanguageSwitcher from '@/components/app/AppLanguageSwitcher.vue'
@@ -14,6 +14,7 @@ defineEmits<{
 
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 const { t } = useI18n()
 
 const HEADER_POPOVER_OPEN_EVENT = 'header-popover-open'
@@ -124,9 +125,7 @@ function handleDocumentPointerDown(event: PointerEvent) {
   if (!target) return
   if (triggerRef.value?.contains(target)) return
   if (popoverRef.value?.contains(target)) return
-  if (!isPinnedOpen.value) {
-    isPopoverOpen.value = false
-  }
+  closePopover()
 }
 
 function handleHeaderPopoverOpen(event: Event) {
@@ -134,6 +133,13 @@ function handleHeaderPopoverOpen(event: Event) {
   if (customEvent.detail?.source === USER_POPOVER_SOURCE) return
   closePopover()
 }
+
+watch(
+  () => route.fullPath,
+  () => {
+    closePopover()
+  },
+)
 
 onMounted(() => {
   document.addEventListener('pointerdown', handleDocumentPointerDown)
