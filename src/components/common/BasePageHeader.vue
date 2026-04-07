@@ -16,6 +16,9 @@ const auth = useAuthStore()
 const router = useRouter()
 const { t } = useI18n()
 
+const HEADER_POPOVER_OPEN_EVENT = 'header-popover-open'
+const USER_POPOVER_SOURCE = 'user-menu'
+
 const triggerRef = ref<HTMLElement | null>(null)
 const popoverRef = ref<HTMLElement | null>(null)
 const isPopoverOpen = ref(false)
@@ -42,8 +45,17 @@ function clearHoverLeaveTimer() {
   }
 }
 
+function notifyOtherHeaderPopovers() {
+  window.dispatchEvent(
+    new CustomEvent(HEADER_POPOVER_OPEN_EVENT, {
+      detail: { source: USER_POPOVER_SOURCE },
+    }),
+  )
+}
+
 function openPopover() {
   clearHoverLeaveTimer()
+  notifyOtherHeaderPopovers()
   isPopoverOpen.value = true
 }
 
@@ -91,6 +103,7 @@ function togglePinnedPopover() {
     return
   }
 
+  notifyOtherHeaderPopovers()
   isPinnedOpen.value = true
   isPopoverOpen.value = true
 }
@@ -116,13 +129,21 @@ function handleDocumentPointerDown(event: PointerEvent) {
   }
 }
 
+function handleHeaderPopoverOpen(event: Event) {
+  const customEvent = event as CustomEvent<{ source?: string }>
+  if (customEvent.detail?.source === USER_POPOVER_SOURCE) return
+  closePopover()
+}
+
 onMounted(() => {
   document.addEventListener('pointerdown', handleDocumentPointerDown)
+  window.addEventListener(HEADER_POPOVER_OPEN_EVENT, handleHeaderPopoverOpen)
 })
 
 onBeforeUnmount(() => {
   clearHoverLeaveTimer()
   document.removeEventListener('pointerdown', handleDocumentPointerDown)
+  window.removeEventListener(HEADER_POPOVER_OPEN_EVENT, handleHeaderPopoverOpen)
 })
 </script>
 
