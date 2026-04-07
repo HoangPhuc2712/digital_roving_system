@@ -161,7 +161,7 @@ function openShiftProblemDetails(row: PatrolSummaryReportRow) {
               <button
                 v-if="canOpenMissedDetails(row)"
                 type="button"
-                class="font-medium text-red-500 hover:text-red-800 hover:cursor-pointer"
+                class="font-medium text-red-500 hover:text-red-800 hover:cursor-pointer focus:outline-none"
                 @click="openMissedDetails(row)"
               >
                 {{ row.missed_count }}
@@ -175,7 +175,7 @@ function openShiftProblemDetails(row: PatrolSummaryReportRow) {
               <button
                 v-if="canOpenSlowTimeProblemDetails(row)"
                 type="button"
-                class="font-medium text-red-500 hover:text-red-800 hover:cursor-pointer"
+                class="font-medium text-red-500 hover:text-red-800 hover:cursor-pointer focus:outline-none"
                 @click="openSlowTimeProblemDetails(row)"
               >
                 {{ row.time_slow_problem_count }}
@@ -189,7 +189,7 @@ function openShiftProblemDetails(row: PatrolSummaryReportRow) {
               <button
                 v-if="canOpenFastTimeProblemDetails(row)"
                 type="button"
-                class="font-medium text-red-500 hover:text-red-800 hover:cursor-pointer"
+                class="font-medium text-red-500 hover:text-red-800 hover:cursor-pointer focus:outline-none"
                 @click="openFastTimeProblemDetails(row)"
               >
                 {{ row.time_fast_problem_count }}
@@ -203,7 +203,7 @@ function openShiftProblemDetails(row: PatrolSummaryReportRow) {
               <button
                 v-if="canOpenInsufficientDetails(row)"
                 type="button"
-                class="font-medium text-red-500 hover:text-red-800 hover:cursor-pointer"
+                class="font-medium text-red-500 hover:text-red-800 hover:cursor-pointer focus:outline-none"
                 @click="openInsufficientDetails(row)"
               >
                 {{ row.insufficient_count }}
@@ -217,7 +217,7 @@ function openShiftProblemDetails(row: PatrolSummaryReportRow) {
               <button
                 v-if="canOpenShiftProblemDetails(row)"
                 type="button"
-                class="font-medium text-red-500 hover:text-red-800 hover:cursor-pointer"
+                class="font-medium text-red-500 hover:text-red-800 hover:cursor-pointer focus:outline-none"
                 @click="openShiftProblemDetails(row)"
               >
                 {{ row.shift_problem_count }}

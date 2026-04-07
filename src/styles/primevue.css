@@ -29,3 +29,15 @@
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   font-size: 15px;
 }
+
+/* Fix 1: Bỏ focus ring trên nút X (close button) của tất cả Dialog */
+.p-dialog-close-button:focus-visible,
+.p-dialog-close-button:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Fix 2: Bỏ focus ring trên button số trong PatrolSummaryTable khi ESC đóng dialog */
+.p-dialog-close-button:focus {
+  outline: none !important;
+}
