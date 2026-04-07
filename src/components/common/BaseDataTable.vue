@@ -41,6 +41,7 @@
       :stateKey="props.stateKey || undefined"
       sortMode="single"
       removableSort
+      showGridlines
       responsiveLayout="scroll"
       :scrollable="scrollable"
       :scrollHeight="scrollable ? scrollHeight : undefined"
@@ -653,12 +654,18 @@ function buildColumnChildren(node: VNode, sortable: boolean, filterMenu?: Column
               type: 'button',
               class: [
                 'inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-700',
-                isFilterActive(resolvedFilterMenu.value) ? 'bg-slate-100 text-slate-700' : '',
               ],
               'aria-label': 'Filter column',
               onClick: (event: MouseEvent) => toggleFilterPopover(resolvedFilterMenu.key, event),
             },
-            [h('i', { class: 'pi pi-filter text-sm' })],
+            [
+              h('i', {
+                class: [
+                  'pi text-sm',
+                  isFilterActive(resolvedFilterMenu.value) ? 'pi-filter-fill' : 'pi-filter',
+                ],
+              }),
+            ],
           ),
           h(
             Popover,

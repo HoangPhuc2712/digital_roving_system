@@ -22,6 +22,8 @@ const zhTW = {
     noData: '無資料',
     loading: '資料載入中',
     invalidDateFilter: '日期篩選無效，請選擇正確的起始日期與結束日期',
+    personalInfo: '個人資料',
+    logout: '登出',
     selectLayout: '選擇版式',
   },
   languageSwitcher: {

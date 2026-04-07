@@ -22,6 +22,8 @@ const en = {
     noData: 'No data',
     loading: 'Loading data',
     invalidDateFilter: 'Invalid Date Filter, please Select the correct date From -To',
+    personalInfo: 'Profile',
+    logout: 'Logout',
     selectLayout: 'Select Layout',
   },
   languageSwitcher: {

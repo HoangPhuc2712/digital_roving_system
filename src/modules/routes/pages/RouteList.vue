@@ -417,7 +417,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
             @click="confirmDeleteSelected"
           />
           <BaseIconButton
-            icon="pi pi-sparkles"
+            icon="pi pi-calendar"
             :label="t('createShifts.button')"
             size="small"
             severity="info"
