@@ -17,3 +17,15 @@ watchEffect(() => {
   document.title = t('breadcrumb.root')
 })
 </script>
+
+<style>
+.p-dialog .p-dialog-header .p-dialog-header-actions button:focus,
+.p-dialog .p-dialog-header .p-dialog-header-actions button:focus-visible,
+.p-dialog .p-dialog-header .p-dialog-header-close:focus,
+.p-dialog .p-dialog-header .p-dialog-header-close:focus-visible,
+.p-dialog .p-dialog-header .p-dialog-header-icon:focus,
+.p-dialog .p-dialog-header .p-dialog-header-icon:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+</style>
