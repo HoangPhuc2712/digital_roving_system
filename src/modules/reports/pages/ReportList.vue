@@ -469,7 +469,8 @@ async function onExport() {
           secondaryOptionValue: 'value',
           secondaryPlaceholder: t('reportList.table.routeName'),
           secondaryFilter: true,
-          secondaryFilterField: 'areaId',
+          secondaryParentField: 'areaId',
+          secondaryFilterField: 'searchText',
         }"
       >
         <template #body="{ data }">

@@ -729,7 +729,7 @@ export async function fetchCtpatAreaOptions(): Promise<{ label: string; value: s
 
 export async function fetchReportRouteFilterOptions(): Promise<{
   areaOptions: { label: string; value: number }[]
-  routeOptions: { label: string; value: string; areaId: number }[]
+  routeOptions: { label: string; value: string; areaId: number; searchText?: string }[]
 }> {
   const res = await http.post(endpoints.routeView.getList, {})
   const list = ensureSuccess<ApiRouteFilterView[] | ApiRouteFilterView>(res.data).data
@@ -738,7 +738,7 @@ export async function fetchReportRouteFilterOptions(): Promise<{
   const areaSeen = new Set<number>()
   const routeSeen = new Set<string>()
   const areaOptions: { label: string; value: number }[] = []
-  const routeOptions: { label: string; value: string; areaId: number }[] = []
+  const routeOptions: { label: string; value: string; areaId: number; searchText?: string }[] = []
 
   for (const route of items) {
     const areaId = Number(route?.areaId ?? 0)
@@ -764,6 +764,7 @@ export async function fetchReportRouteFilterOptions(): Promise<{
       label: routeName,
       value: routeName,
       areaId,
+      searchText: `${routeName}`.toLowerCase(),
     })
   }
 
@@ -775,7 +776,7 @@ export async function fetchReportRouteFilterOptions(): Promise<{
 
 export async function fetchCtpatRouteFilterOptions(): Promise<{
   areaOptions: { label: string; value: string }[]
-  routeOptions: { label: string; value: string; areaName: string }[]
+  routeOptions: { label: string; value: string; areaName: string; searchText?: string }[]
 }> {
   const res = await http.post(endpoints.routeView.getList, {})
   const list = ensureSuccess<ApiRouteFilterView[] | ApiRouteFilterView>(res.data).data
@@ -784,7 +785,7 @@ export async function fetchCtpatRouteFilterOptions(): Promise<{
   const areaSeen = new Set<string>()
   const routeSeen = new Set<string>()
   const areaOptions: { label: string; value: string }[] = []
-  const routeOptions: { label: string; value: string; areaName: string }[] = []
+  const routeOptions: { label: string; value: string; areaName: string; searchText?: string }[] = []
 
   for (const route of items) {
     const areaName = String(route?.areaName ?? '').trim()
@@ -808,6 +809,7 @@ export async function fetchCtpatRouteFilterOptions(): Promise<{
       label: routeName,
       value: routeName,
       areaName,
+      searchText: `${routeName}`.toLowerCase(),
     })
   }
 

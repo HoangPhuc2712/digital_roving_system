@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Dialog from 'primevue/dialog'
 
@@ -23,7 +23,6 @@ const emit = defineEmits<{
   (e: 'submit', payload: ChangePasswordSubmitPayload): void
   (e: 'close'): void
   (e: 'current-password-input', value: string): void
-  (e: 'validate-current-password', value: string): void
 }>()
 
 const submitted = ref(false)
@@ -47,7 +46,6 @@ const currentPasswordMessage = computed(() =>
     : t('changePasswordForm.error.currPasswordRequired'),
 )
 
-let validateCurrentPasswordTimer: ReturnType<typeof setTimeout> | null = null
 const confirmPasswordError = computed(
   () => submitted.value && !String(form.confirmNewPassword ?? '').trim(),
 )
@@ -70,21 +68,6 @@ watch(
   () => form.currentPassword,
   (value) => {
     emit('current-password-input', value)
-
-    if (validateCurrentPasswordTimer) {
-      clearTimeout(validateCurrentPasswordTimer)
-      validateCurrentPasswordTimer = null
-    }
-
-    const trimmed = String(value ?? '').trim()
-    if (!props.visible || !trimmed) {
-      emit('validate-current-password', '')
-      return
-    }
-
-    validateCurrentPasswordTimer = setTimeout(() => {
-      emit('validate-current-password', trimmed)
-    }, 400)
   },
 )
 
@@ -93,11 +76,6 @@ watch(
   (visible) => {
     if (!visible) {
       submitted.value = false
-      if (validateCurrentPasswordTimer) {
-        clearTimeout(validateCurrentPasswordTimer)
-        validateCurrentPasswordTimer = null
-      }
-      emit('validate-current-password', '')
       form.currentPassword = ''
       form.newPassword = ''
       form.confirmNewPassword = ''
@@ -107,11 +85,6 @@ watch(
 
 function close() {
   submitted.value = false
-  if (validateCurrentPasswordTimer) {
-    clearTimeout(validateCurrentPasswordTimer)
-    validateCurrentPasswordTimer = null
-  }
-  emit('validate-current-password', '')
   form.currentPassword = ''
   form.newPassword = ''
   form.confirmNewPassword = ''
@@ -129,17 +102,8 @@ function submit() {
   if (!currentPassword || !newPassword || !confirmNewPassword) return
   if (newPassword !== confirmNewPassword) return
   if (currentPassword === newPassword) return
-  if (props.currentPasswordInvalid) return
-
   emit('submit', { currentPassword, newPassword })
 }
-
-onBeforeUnmount(() => {
-  if (validateCurrentPasswordTimer) {
-    clearTimeout(validateCurrentPasswordTimer)
-    validateCurrentPasswordTimer = null
-  }
-})
 </script>
 
 <template>
