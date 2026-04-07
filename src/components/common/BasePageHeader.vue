@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import Avatar from 'primevue/avatar'
 import AppBreadcrumb from '@/components/app/AppBreadcrumb.vue'
 import AppLanguageSwitcher from '@/components/app/AppLanguageSwitcher.vue'
 import BaseIconButton from './buttons/BaseIconButton.vue'
@@ -21,6 +22,16 @@ const isPopoverOpen = ref(false)
 const isPinnedOpen = ref(false)
 
 const userName = computed(() => String(auth.user?.user_name ?? '').trim() || '—')
+const userAvatarLabel = computed(() => {
+  const normalized = userName.value.trim()
+  if (!normalized || normalized === '—') return 'U'
+
+  const parts = normalized.split(/\s+/).filter(Boolean)
+  const lastWord = parts[parts.length - 1] ?? normalized
+  const firstChar = Array.from(lastWord)[0] ?? 'U'
+
+  return firstChar.toLocaleUpperCase()
+})
 
 let hoverLeaveTimer: number | null = null
 
@@ -136,39 +147,49 @@ onBeforeUnmount(() => {
       <div class="relative shrink-0">
         <div
           ref="triggerRef"
-          class="flex items-center gap-2 text-slate-700 hover:text-slate-900 select-none cursor-pointer"
+          class="flex items-center select-none cursor-pointer"
           @mouseenter="onTriggerMouseEnter"
           @mouseleave="onTriggerMouseLeave"
           @click="togglePinnedPopover"
         >
-          <i class="pi pi-user text-base"></i>
-          <span class="text-md">{{ userName }}</span>
+          <Avatar
+            :label="userAvatarLabel"
+            shape="circle"
+            class="bg-slate-100 text-slate-700 border border-slate-200"
+            aria-label="User menu"
+          />
         </div>
 
         <div
           v-if="isPopoverOpen"
           ref="popoverRef"
-          class="absolute right-0 top-[calc(100%+8px)] z-50 min-w-[180px] rounded-xl border border-slate-200 bg-white py-2 shadow-lg"
+          class="absolute right-0 top-[calc(100%+8px)] z-50 min-w-[220px] rounded-xl border border-slate-200 bg-white py-2 shadow-lg"
           @mouseenter="onPopoverMouseEnter"
           @mouseleave="onPopoverMouseLeave"
         >
-          <BaseIconButton
-            type="button"
-            icon="pi pi-pen-to-square"
-            :label="t('common.personalInfo')"
-            text
-            class="w-full !justify-start !rounded-none !px-4 !py-2 !text-left !text-md !font-normal !text-slate-700 hover:!bg-slate-50 hover:cursor-pointer"
-            @click="goToUserInfo"
-          />
+          <div class="px-4 pb-2 text-md font-medium text-slate-800 border-b border-slate-100">
+            {{ userName }}
+          </div>
 
-          <BaseIconButton
-            type="button"
-            icon="pi pi-sign-out"
-            :label="t('common.logout')"
-            text
-            class="w-full !justify-start !rounded-none !px-4 !py-2 !text-left !text-md !font-normal !text-slate-700 hover:!bg-slate-50 hover:cursor-pointer"
-            @click="logout"
-          />
+          <div class="pt-2">
+            <BaseIconButton
+              type="button"
+              icon="pi pi-pen-to-square"
+              :label="t('common.personalInfo')"
+              text
+              class="w-full !justify-start !rounded-none !px-4 !py-2 !text-left !text-md !font-normal !text-slate-700 hover:!bg-slate-50 hover:cursor-pointer"
+              @click="goToUserInfo"
+            />
+
+            <BaseIconButton
+              type="button"
+              icon="pi pi-sign-out"
+              :label="t('common.logout')"
+              text
+              class="w-full !justify-start !rounded-none !px-4 !py-2 !text-left !text-md !font-normal !text-slate-700 hover:!bg-slate-50 hover:cursor-pointer"
+              @click="logout"
+            />
+          </div>
         </div>
       </div>
     </div>

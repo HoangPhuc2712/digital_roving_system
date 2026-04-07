@@ -316,6 +316,7 @@ function onColumnFilter(payload: { key: string; value: any }) {
           filter: true,
           filterField: 'searchText',
           filterMatchMode: 'contains',
+          placeholder: t('patrolDetailReport.guardName'),
         }"
       />
 
