@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import { setAppLocale, type AppLocale } from '@/plugins/i18n'
 
@@ -13,6 +14,7 @@ const popoverRef = ref<HTMLElement | null>(null)
 const open = ref(false)
 const isPinnedOpen = ref(false)
 const { t, locale } = useI18n()
+const route = useRoute()
 
 type LanguageOption = { code: AppLocale; flagSrc: string }
 
@@ -119,9 +121,7 @@ function onDocumentPointerDown(event: PointerEvent) {
   if (!target) return
   if (triggerRef.value?.contains(target)) return
   if (popoverRef.value?.contains(target)) return
-  if (!isPinnedOpen.value) {
-    open.value = false
-  }
+  closePopover()
 }
 
 function handleExternalPopoverOpen(event: Event) {
@@ -129,6 +129,13 @@ function handleExternalPopoverOpen(event: Event) {
   if (customEvent.detail?.source === HEADER_POPOVER_SOURCE) return
   closePopover()
 }
+
+watch(
+  () => route.fullPath,
+  () => {
+    closePopover()
+  },
+)
 
 onMounted(() => {
   document.addEventListener('pointerdown', onDocumentPointerDown)
