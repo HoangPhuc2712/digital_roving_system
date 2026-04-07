@@ -91,9 +91,8 @@ function formatDateTime(iso: string) {
 
 function onColumnFilter(payload: { key: string; value: any }) {
   if (payload.key === 'routeName') {
-    const value = payload.value && typeof payload.value === 'object' ? payload.value : {}
-    store.filterAreaName = value.primaryValue ?? null
-    store.filterRouteName = value.secondaryValue ?? null
+    store.filterAreaName = payload.value ?? null
+    store.filterRouteName = null
   }
   if (payload.key === 'patrolTime') {
     const value = payload.value && typeof payload.value === 'object' ? payload.value : {}
@@ -183,22 +182,13 @@ async function onExport() {
         sortField="route_name"
         :filterMenu="{
           key: 'routeName',
-          type: 'dual-select',
-          value: {
-            primaryValue: store.filterAreaName,
-            secondaryValue: store.filterRouteName,
-          },
+          type: 'select',
+          value: store.filterAreaName,
           options: store.routeAreaOptions,
           optionLabel: 'label',
           optionValue: 'value',
           placeholder: t('reportList.filters.area'),
           filter: true,
-          secondaryOptions: store.routeOptions,
-          secondaryOptionLabel: 'label',
-          secondaryOptionValue: 'value',
-          secondaryPlaceholder: t('ctpatReportList.routeName'),
-          secondaryFilter: true,
-          secondaryFilterField: 'areaName',
         }"
       />
 

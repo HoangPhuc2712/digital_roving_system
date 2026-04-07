@@ -78,6 +78,7 @@ onMounted(async () => {
   }
 
   await store.load()
+  console.log(store.filteredRows)
 })
 
 onBeforeRouteLeave(() => {
@@ -240,7 +241,8 @@ function onColumnFilter(payload: { key: string; value: any }) {
           secondaryOptionValue: 'value',
           secondaryPlaceholder: t('patrolDetailReport.routeName'),
           secondaryFilter: true,
-          secondaryFilterField: 'areaId',
+          secondaryParentField: 'areaId',
+          secondaryFilterField: 'searchText',
         }"
       />
 

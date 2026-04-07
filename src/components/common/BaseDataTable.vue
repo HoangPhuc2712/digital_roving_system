@@ -126,6 +126,7 @@ type ColumnFilterMenuConfig = {
   secondaryPlaceholder?: string
   secondaryFilter?: boolean
   secondaryFilterField?: string
+  secondaryParentField?: string
   showTime?: boolean
 }
 
@@ -357,7 +358,10 @@ const FilterMenuControl = defineComponent({
 
         const primaryValue = currentValue.primaryValue ?? null
         const secondaryValue = currentValue.secondaryValue ?? null
-        const secondaryFilterField = filterProps.config.secondaryFilterField ?? 'parentValue'
+        const secondaryParentField =
+          filterProps.config.secondaryParentField ??
+          filterProps.config.secondaryFilterField ??
+          'parentValue'
         const allSecondaryOptions = Array.isArray(filterProps.config.secondaryOptions)
           ? filterProps.config.secondaryOptions
           : []
@@ -366,7 +370,7 @@ const FilterMenuControl = defineComponent({
             ? allSecondaryOptions
             : allSecondaryOptions.filter((option) => {
                 if (!option || typeof option !== 'object') return false
-                return option[secondaryFilterField] === primaryValue
+                return option[secondaryParentField] === primaryValue
               })
 
         return h(
@@ -858,6 +862,7 @@ function buildOptionsSignature(
   optionValue?: string,
   optionLabel?: string,
   extraField?: string,
+  extraField2?: string,
 ) {
   return (Array.isArray(options) ? options : [])
     .map((option) => {
@@ -867,7 +872,8 @@ function buildOptionsSignature(
         )
         const labelPart = String(option[optionLabel ?? 'label'] ?? option.label ?? '')
         const extraPart = extraField ? String(option[extraField] ?? '') : ''
-        return `${valuePart}::${labelPart}::${extraPart}`
+        const extraPart2 = extraField2 ? String(option[extraField2] ?? '') : ''
+        return `${valuePart}::${labelPart}::${extraPart}::${extraPart2}`
       }
       return String(option ?? '')
     })
@@ -903,6 +909,7 @@ function buildFilterMenuColumnKey(config: ColumnFilterMenuConfig) {
     config.secondaryOptions,
     config.secondaryOptionValue,
     config.secondaryOptionLabel,
+    config.secondaryParentField,
     config.secondaryFilterField,
   )
   const valueSignature = serializeFilterValue(config.value)
@@ -920,6 +927,7 @@ function buildFilterControlKey(config: ColumnFilterMenuConfig) {
     config.secondaryOptions,
     config.secondaryOptionValue,
     config.secondaryOptionLabel,
+    config.secondaryParentField,
     config.secondaryFilterField,
   )
   const valueSignature = serializeFilterValue(config.value)

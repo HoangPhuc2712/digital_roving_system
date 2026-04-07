@@ -52,13 +52,13 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
       return this.areaOptions
     },
 
-    routeOptions(state): { label: string; value: string; areaName: string }[] {
+    routeOptions(state): { label: string; value: string; areaName: string; searchText?: string }[] {
       if (state.routeFilterOptions.length) {
         return state.routeFilterOptions.slice().sort((a, b) => a.label.localeCompare(b.label))
       }
 
       const seen = new Set<string>()
-      const options: { label: string; value: string; areaName: string }[] = []
+      const options: { label: string; value: string; areaName: string; searchText?: string }[] = []
 
       for (const row of this.rows) {
         const value = String(row.route_name ?? '').trim()
@@ -67,7 +67,7 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
         const key = `${areaName}::${value}`
         if (seen.has(key)) continue
         seen.add(key)
-        options.push({ label: value, value, areaName })
+        options.push({ label: value, value, areaName, searchText: value.toLowerCase() })
       }
 
       return options.sort((a, b) => a.label.localeCompare(b.label))
@@ -108,7 +108,12 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
 
       const routeFilters = await fetchCtpatRouteFilterOptions().catch(() => ({
         areaOptions: [] as { label: string; value: string }[],
-        routeOptions: [] as { label: string; value: string; areaName: string }[],
+        routeOptions: [] as {
+          label: string
+          value: string
+          areaName: string
+          searchText?: string
+        }[],
       }))
 
       if (!this.areaFilterOptions.length) this.areaFilterOptions = routeFilters.areaOptions

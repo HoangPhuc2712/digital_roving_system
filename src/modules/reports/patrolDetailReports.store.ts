@@ -67,13 +67,13 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
       return this.areaOptions
     },
 
-    routeOptions(state): { label: string; value: string; areaId: number }[] {
+    routeOptions(state): { label: string; value: string; areaId: number; searchText?: string }[] {
       if (state.routeFilterOptions.length) {
         return state.routeFilterOptions.slice().sort((a, b) => a.label.localeCompare(b.label))
       }
 
       const seen = new Set<string>()
-      const options: { label: string; value: string; areaId: number }[] = []
+      const options: { label: string; value: string; areaId: number; searchText?: string }[] = []
 
       for (const row of this.rows) {
         const value = String(row.route_name ?? '').trim()
@@ -82,7 +82,7 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
         const key = `${areaId}::${value}`
         if (seen.has(key)) continue
         seen.add(key)
-        options.push({ label: value, value, areaId })
+        options.push({ label: value, value, areaId, searchText: value.toLowerCase() })
       }
 
       return options.sort((a, b) => a.label.localeCompare(b.label))
@@ -178,7 +178,12 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
             })
           : fetchReportRouteFilterOptions().catch(() => ({
               areaOptions: [] as { label: string; value: number }[],
-              routeOptions: [] as { label: string; value: string; areaId: number }[],
+              routeOptions: [] as {
+                label: string
+                value: string
+                areaId: number
+                searchText?: string
+              }[],
             })),
         this.checkPointFilterOptions.length
           ? Promise.resolve(this.checkPointFilterOptions)

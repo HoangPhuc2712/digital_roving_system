@@ -22,7 +22,6 @@ const changingPassword = ref(false)
 const changePasswordVisible = ref(false)
 
 const currentPasswordInvalid = ref(false)
-const validateCurrentPasswordSeq = ref(0)
 const userInfo = ref<{
   user_name: string
   user_code: string
@@ -68,45 +67,21 @@ async function loadUserInfo() {
 }
 
 function resetCurrentPasswordValidation() {
-  validateCurrentPasswordSeq.value += 1
   currentPasswordInvalid.value = false
-}
-
-async function onValidateCurrentPassword(value: string) {
-  const currentPassword = String(value ?? '').trim()
-  resetCurrentPasswordValidation()
-
-  if (!changePasswordVisible.value || !userCode.value || !currentPassword) return
-
-  const seq = validateCurrentPasswordSeq.value
-
-  try {
-    await validateCurrentUserPassword({
-      user_code: userCode.value,
-      current_password: currentPassword,
-    })
-
-    if (seq !== validateCurrentPasswordSeq.value) return
-    currentPasswordInvalid.value = false
-  } catch (e: any) {
-    if (seq !== validateCurrentPasswordSeq.value) return
-
-    const msg = String(e?.message ?? '')
-    const lower = msg.toLowerCase()
-    currentPasswordInvalid.value =
-      lower.includes('mật khẩu') ||
-      lower.includes('password') ||
-      lower.includes('current_password_incorrect')
-  }
 }
 
 async function onSubmitChangePassword(payload: { currentPassword: string; newPassword: string }) {
   if (!userId.value || !userCode.value) return
 
-  if (currentPasswordInvalid.value) return
-
   changingPassword.value = true
+  currentPasswordInvalid.value = false
+
   try {
+    await validateCurrentUserPassword({
+      user_code: userCode.value,
+      current_password: payload.currentPassword,
+    })
+
     const result = await changeCurrentUserPassword({
       user_id: userId.value,
       user_code: userCode.value,
@@ -199,7 +174,6 @@ onMounted(async () => {
       :loading="changingPassword"
       :currentPasswordInvalid="currentPasswordInvalid"
       @current-password-input="resetCurrentPasswordValidation"
-      @validate-current-password="onValidateCurrentPassword"
       @submit="onSubmitChangePassword"
     />
   </div>
