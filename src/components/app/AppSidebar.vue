@@ -173,12 +173,14 @@ watch(
   (path) => {
     if (
       path === '/reports' ||
+      path === '/gps-log-reports' ||
       path === '/incorrect-scan-reports' ||
       path === '/ctpat-reports' ||
       path === '/patrol-detail-reports' ||
       path === '/patrol-summary-reports' ||
       path === '/routes-chart-reports' ||
       path.startsWith('/reports/') ||
+      path.startsWith('/gps-log-reports/') ||
       path.startsWith('/incorrect-scan-reports/') ||
       path.startsWith('/ctpat-reports/') ||
       path.startsWith('/patrol-detail-reports/') ||
@@ -230,12 +232,14 @@ function isNavItemActive(item: NavItem, isActive: boolean) {
 function isReportsGroupActive() {
   return (
     route.path === '/reports' ||
+    route.path === '/gps-log-reports' ||
     route.path === '/incorrect-scan-reports' ||
     route.path === '/ctpat-reports' ||
     route.path === '/patrol-detail-reports' ||
     route.path === '/patrol-summary-reports' ||
     route.path === '/routes-chart-reports' ||
     route.path.startsWith('/reports/') ||
+    route.path.startsWith('/gps-log-reports/') ||
     route.path.startsWith('/incorrect-scan-reports/') ||
     route.path.startsWith('/ctpat-reports/') ||
     route.path.startsWith('/patrol-detail-reports/') ||
@@ -297,6 +301,7 @@ function toggleReports() {
                     :class="
                       subItemClass(
                         isActivePath('/reports') ||
+                          isActivePath('/gps-log-reports') ||
                           isActivePath('/incorrect-scan-reports') ||
                           isActivePath('/ctpat-reports'),
                       )

@@ -113,6 +113,30 @@ export type PatrolDetailReportRow = {
   _q: string
 }
 
+export type GpsLogRow = {
+  row_id: string
+  ps_id: number
+  area_id: number
+  route_id: number
+  route_code: string
+  route_name: string
+  check_point_name: string
+  start_time: string
+  finish_time: string
+  patrol_time: string
+  latitude: number | null
+  longitude: number | null
+  report_name: string
+  pr_id: number
+  pr_status: number
+  pr_has_problem: boolean
+  point_time_problem: boolean
+  shift_key: string
+  shift_color: string
+
+  _q: string
+}
+
 export type PatrolSummaryMissedPatrolDetailRow = {
   row_id: string
   route_name: string

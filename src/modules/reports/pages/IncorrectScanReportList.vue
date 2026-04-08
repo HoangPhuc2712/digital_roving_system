@@ -5,6 +5,7 @@ import { useToast } from 'primevue/usetoast'
 import Column from 'primevue/column'
 import { useI18n } from 'vue-i18n'
 
+import { useAuthStore } from '@/stores/auth.store'
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import BaseButtonGroup from '@/components/common/buttons/BaseButtonGroup.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
@@ -15,6 +16,7 @@ import { usePagination } from '@/composables/usePagination'
 
 const toast = useToast()
 const router = useRouter()
+const auth = useAuthStore()
 const store = useIncorrectScanLogStore()
 const dateReloadTimer = ref<number | null>(null)
 const exporting = ref(false)
@@ -41,6 +43,18 @@ const reportSwitchButtons = computed(() => [
     outlined: false,
     onClick: () => router.push({ name: 'incorrect-scan-reports' }),
   },
+  ...(auth.isAdminUser
+    ? [
+        {
+          label: t('patrolDataButtonSwitch.switchGpsLog'),
+          icon: 'pi pi-map-marker',
+          size: 'small',
+          severity: 'secondary' as const,
+          outlined: true,
+          onClick: () => router.push({ name: 'gps-log-reports' }),
+        },
+      ]
+    : []),
   {
     label: t('patrolDataButtonSwitch.switchCtpatReport'),
     icon: 'pi pi-file',

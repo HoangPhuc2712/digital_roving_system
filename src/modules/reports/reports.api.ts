@@ -5,6 +5,7 @@ import { normalizeImageSource } from '@/utils/base64'
 
 import type {
   CtpatReportRow,
+  GpsLogRow,
   IncorrectScanLogRow,
   PatrolDetailReportRow,
   PatrolSummaryInsufficientPatrolDetailRow,
@@ -135,6 +136,10 @@ type ApiPatrolShiftPointReport = {
   reportAt?: string
   reportName?: string
   timeProblem?: boolean
+  shiftProblem?: boolean
+  rpLat?: number
+  rpLng?: number
+  rpLong?: number
 }
 
 type ApiPatrolShiftReportView = {
@@ -144,6 +149,8 @@ type ApiPatrolShiftReportView = {
   routeName?: string
   areaId?: number
   timeProblem?: boolean
+  timeFastProblem?: boolean
+  timeSlowProblem?: boolean
   pointProblem?: boolean
   reportTimeFrom?: string
   reportTimeTo?: string
@@ -1074,6 +1081,132 @@ export async function fetchPatrolDetailReportRows(): Promise<PatrolDetailReportR
   ).data
   const views = asArray(payload)
   return normalizePatrolDetailRows(views)
+}
+
+function normalizeGpsLogRows(views: ApiPatrolShiftReportView[]): GpsLogRow[] {
+  const shiftColors = ['#ffeeba', '#bee5eb']
+
+  const sortedViews = [...views].sort((a, b) => {
+    const aStart = String(a.reportTimeFrom ?? '')
+    const bStart = String(b.reportTimeFrom ?? '')
+    if (aStart !== bStart) return aStart.localeCompare(bStart)
+
+    const aEnd = String(a.reportTimeTo ?? '')
+    const bEnd = String(b.reportTimeTo ?? '')
+    if (aEnd !== bEnd) return aEnd.localeCompare(bEnd)
+
+    return Number(a.psId ?? 0) - Number(b.psId ?? 0)
+  })
+
+  const shiftColorMap = new Map<string, string>()
+  let nextColorIndex = 0
+
+  const rows = sortedViews.flatMap((view) => {
+    const psId = Number(view.psId ?? 0)
+    const routeId = Number(view.routeId ?? 0)
+    const routeCode = String(view.routeCode ?? '')
+    const routeName = String(view.routeName ?? '')
+    const areaId = Number(view.areaId ?? 0)
+    const startTime = String(view.reportTimeFrom ?? '')
+    const finishTime = String(view.reportTimeTo ?? '')
+    const shiftGuardName = String(view.reportName ?? '')
+    const shiftKey = `${psId}|${routeId}|${startTime}|${finishTime}|${shiftGuardName}`
+
+    const timeSlotKey = `${startTime}|${finishTime}`
+
+    if (!shiftColorMap.has(timeSlotKey)) {
+      shiftColorMap.set(timeSlotKey, shiftColors[nextColorIndex % shiftColors.length] ?? '#ffeeba')
+      nextColorIndex += 1
+    }
+
+    const shiftColor = shiftColorMap.get(timeSlotKey) ?? '#ffeeba'
+    const points = Array.isArray(view.pointReports) ? view.pointReports : []
+
+    const sortedPoints = [...points].sort((a, b) => {
+      const aTime = String(a.reportAt ?? '')
+      const bTime = String(b.reportAt ?? '')
+      if (aTime === bTime) return Number(a.prId ?? 0) - Number(b.prId ?? 0)
+      return aTime.localeCompare(bTime)
+    })
+
+    return sortedPoints.map((point, pointIndex) => {
+      const checkPointName = String(point.cpName ?? '')
+      const reportName = String(point.reportName ?? shiftGuardName)
+      const patrolTime = String(point.reportAt ?? '')
+      const prStatus = Number(point.prStatus ?? 0)
+      const prHasProblem = Boolean(point.prHasProblem)
+      const pointTimeProblem = Boolean(point.timeProblem)
+      const latitudeRaw = Number(point.rpLat ?? NaN)
+      const longitudeRaw = Number(point.rpLng ?? point.rpLong ?? NaN)
+      const latitude = Number.isFinite(latitudeRaw) ? latitudeRaw : null
+      const longitude = Number.isFinite(longitudeRaw) ? longitudeRaw : null
+
+      const q = [
+        routeCode,
+        routeName,
+        checkPointName,
+        reportName,
+        startTime,
+        finishTime,
+        patrolTime,
+        String(areaId),
+        latitude == null ? '' : String(latitude),
+        longitude == null ? '' : String(longitude),
+      ]
+        .join(' ')
+        .toLowerCase()
+
+      return {
+        row_id: `${psId}-${Number(point.prId ?? pointIndex + 1)}-${pointIndex}`,
+        ps_id: psId,
+        area_id: areaId,
+        route_id: routeId,
+        route_code: routeCode,
+        route_name: routeName,
+        check_point_name: checkPointName,
+        start_time: startTime,
+        finish_time: finishTime,
+        patrol_time: patrolTime,
+        latitude,
+        longitude,
+        report_name: reportName,
+        pr_id: Number(point.prId ?? 0),
+        pr_status: prStatus,
+        pr_has_problem: prHasProblem,
+        point_time_problem: pointTimeProblem,
+        shift_key: shiftKey,
+        shift_color: shiftColor,
+        _q: q,
+      }
+    })
+  })
+
+  return rows.sort((a, b) => {
+    const aStart = String(a.start_time ?? '')
+    const bStart = String(b.start_time ?? '')
+    if (aStart !== bStart) return aStart.localeCompare(bStart)
+
+    const aEnd = String(a.finish_time ?? '')
+    const bEnd = String(b.finish_time ?? '')
+    if (aEnd !== bEnd) return aEnd.localeCompare(bEnd)
+
+    const aTime = String(a.patrol_time ?? '')
+    const bTime = String(b.patrol_time ?? '')
+    if (aTime !== bTime) return aTime.localeCompare(bTime)
+
+    if (a.ps_id !== b.ps_id) return Number(a.ps_id ?? 0) - Number(b.ps_id ?? 0)
+    if (a.pr_id !== b.pr_id) return Number(a.pr_id ?? 0) - Number(b.pr_id ?? 0)
+    return String(a.row_id ?? '').localeCompare(String(b.row_id ?? ''))
+  })
+}
+
+export async function fetchGpsLogRows(): Promise<GpsLogRow[]> {
+  const res = await http.post(endpoints.report.patrolDetailReport, {})
+  const payload = ensureSuccess<ApiPatrolShiftReportView[] | ApiPatrolShiftReportView>(
+    res.data,
+  ).data
+  const views = asArray(payload)
+  return normalizeGpsLogRows(views)
 }
 
 function normalizeIncorrectScanLogRow(view: ApiIncorrectScanLogView): IncorrectScanLogRow {

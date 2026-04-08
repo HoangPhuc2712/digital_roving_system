@@ -182,6 +182,7 @@ onBeforeUnmount(() => {
           <Avatar
             :label="userAvatarLabel"
             shape="circle"
+            size="normal"
             class="bg-slate-100 text-slate-700 border border-slate-200"
             aria-label="User menu"
           />
