@@ -4,6 +4,7 @@ import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import Column from 'primevue/column'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
+import type { CSSProperties } from 'vue'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import BaseButtonGroup from '@/components/common/buttons/BaseButtonGroup.vue'
@@ -112,12 +113,14 @@ function resetPageState() {
   store.clearFilters()
 }
 
-function shiftCellStyle(hex: string) {
+function shiftCellStyle(hex: string): CSSProperties {
   return {
     backgroundColor: hex,
-    margin: '-0.5rem -1rem',
-    padding: '0.5rem 1rem',
-    minHeight: 'calc(100% + 1rem)',
+    position: 'absolute',
+    inset: '0',
+    display: 'flex',
+    alignItems: 'center',
+    padding: '0 1rem',
   }
 }
 
@@ -270,6 +273,7 @@ function onColumnFilter(payload: { key: string; value: any }) {
         :header="t('patrolDetailReport.startTime')"
         style="min-width: 12rem"
         sortField="start_time"
+        :pt="{ bodyCell: { style: 'padding: 0; position: relative;' } }"
       >
         <template #body="{ data }">
           <div :style="shiftCellStyle(data.shift_color)">
@@ -282,6 +286,7 @@ function onColumnFilter(payload: { key: string; value: any }) {
         :header="t('patrolDetailReport.finishTime')"
         style="min-width: 12rem"
         sortField="finish_time"
+        :pt="{ bodyCell: { style: 'padding: 0; position: relative;' } }"
       >
         <template #body="{ data }">
           <div :style="shiftCellStyle(data.shift_color)">
