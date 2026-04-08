@@ -1,15 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import ChangePasswordForm from '@/modules/users/components/ChangePasswordForm.vue'
-import {
-  fetchUserById,
-  changeCurrentUserPassword,
-  validateCurrentUserPassword,
-} from '@/modules/users/users.api'
+import { changeCurrentUserPassword, validateCurrentUserPassword } from '@/modules/users/users.api'
 import { useAuthStore } from '@/stores/auth.store'
 import { translateRoleName } from '@/utils/dataI18n'
 
@@ -17,54 +13,23 @@ const auth = useAuthStore()
 const toast = useToast()
 const { t } = useI18n()
 
-const loading = ref(false)
+const loading = computed(() => auth.loading)
 const changingPassword = ref(false)
 const changePasswordVisible = ref(false)
 
 const currentPasswordInvalid = ref(false)
-const userInfo = ref<{
-  user_name: string
-  user_code: string
-  area_name: string
-  role_name: string
-} | null>(null)
+const userInfo = computed(() => ({
+  user_name: String(auth.user?.user_name ?? ''),
+  user_code: String(auth.user?.user_code ?? ''),
+  area_name: String((auth.user as any)?.area_name ?? ''),
+  role_name: String(auth.user?.role?.role_name ?? ''),
+}))
 
 const userId = computed(() => String(auth.user?.user_id ?? ''))
 const userCode = computed(() => String(auth.user?.user_code ?? ''))
 const displayRoleName = computed(() =>
   translateRoleName(String(userInfo.value?.role_name ?? ''), t),
 )
-
-async function loadUserInfo() {
-  if (!userId.value) return
-
-  loading.value = true
-  try {
-    const user = await fetchUserById(userId.value)
-    userInfo.value = user
-      ? {
-          user_name: String(user.user_name ?? ''),
-          user_code: String(user.user_code ?? ''),
-          area_name: String(user.area_name ?? ''),
-          role_name: String(user.role_name ?? ''),
-        }
-      : {
-          user_name: String(auth.user?.user_name ?? ''),
-          user_code: String(auth.user?.user_code ?? ''),
-          area_name: '',
-          role_name: String(auth.user?.role?.role_name ?? ''),
-        }
-  } catch {
-    userInfo.value = {
-      user_name: String(auth.user?.user_name ?? ''),
-      user_code: String(auth.user?.user_code ?? ''),
-      area_name: '',
-      role_name: String(auth.user?.role?.role_name ?? ''),
-    }
-  } finally {
-    loading.value = false
-  }
-}
 
 function resetCurrentPasswordValidation() {
   currentPasswordInvalid.value = false
@@ -120,10 +85,6 @@ async function onSubmitChangePassword(payload: { currentPassword: string; newPas
 
 watch(changePasswordVisible, (visible) => {
   if (!visible) resetCurrentPasswordValidation()
-})
-
-onMounted(async () => {
-  await loadUserInfo()
 })
 </script>
 

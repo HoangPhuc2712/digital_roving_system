@@ -236,14 +236,16 @@ function applyRouteFilters() {
 onMounted(async () => {
   window.addEventListener('beforeunload', handleBeforeUnload)
 
+  suppressDateReload.value = true
+
   const restored = restoreReloadState()
 
   if (!restored) {
     applyRouteFilters()
   }
 
-  suppressDateReload.value = false
   await store.load()
+  suppressDateReload.value = false
 })
 
 onBeforeRouteLeave(() => {

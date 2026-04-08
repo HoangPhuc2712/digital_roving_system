@@ -43,6 +43,8 @@ function toAuthUser(apiUser: any) {
     user_name: apiUser.userName,
     user_code: apiUser.userCode,
     user_role_is_admin: Boolean(apiUser.userRoleIsAdmin),
+    area_name: apiUser.userAreaName ?? apiUser.areaName ?? '',
+    area_code: apiUser.userAreaCode ?? apiUser.areaCode ?? '',
     created_date: apiUser.createdAt ?? now,
     created_by: apiUser.createdBy ?? apiUser.userId,
     updated_date: apiUser.updatedAt ?? now,
