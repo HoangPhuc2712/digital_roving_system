@@ -105,8 +105,27 @@ export const useReportsStore = defineStore('reports', {
       }
 
       return [...seen.entries()]
-        .map(([value, label]) => ({ value, label }))
+        .map(([value, label]) => ({
+          value,
+          label,
+          searchText: String(label).toLowerCase().trim(),
+        }))
         .sort((a, b) => a.label.localeCompare(b.label))
+    },
+
+    guardSearchTextMap(): Record<string, string> {
+      const map: Record<string, string> = {}
+      for (const option of this.guardOptions) {
+        const label = String(option.label ?? '').trim()
+        const value = String(option.value ?? '').trim()
+        const searchText = String(option.searchText ?? label)
+          .trim()
+          .toLowerCase()
+
+        if (label && !map[label]) map[label] = searchText
+        if (value && !map[value]) map[value] = searchText
+      }
+      return map
     },
 
     checkPointOptions(state): { label: string; value: string; searchText?: string }[] {
@@ -174,14 +193,15 @@ export const useReportsStore = defineStore('reports', {
         const guardNameQuery = String(this.filterGuardId ?? '')
           .trim()
           .toLowerCase()
-        if (
-          guardNameQuery &&
-          !String(r.report_name ?? '')
+        if (guardNameQuery) {
+          const reportName = String(r.report_name ?? '').trim()
+          const guardSearchText = String(this.guardSearchTextMap[reportName] ?? reportName)
             .trim()
             .toLowerCase()
-            .includes(guardNameQuery)
-        ) {
-          return false
+
+          if (!guardSearchText.includes(guardNameQuery)) {
+            return false
+          }
         }
 
         if (fromTime != null || toTime != null) {
