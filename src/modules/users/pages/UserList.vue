@@ -217,8 +217,15 @@ function confirmDeleteSelected() {
 }
 
 function onColumnFilter(payload: { key: string; value: any }) {
-  if (payload.key === 'userId') store.filterUserId = payload.value ?? null
-  if (payload.key === 'userCode') store.filterUserCode = String(payload.value ?? '')
+  if (payload.key === 'userId') {
+    const value = String(payload.value ?? '').trim()
+    store.filterUserId = value || null
+  }
+
+  if (payload.key === 'userCode') {
+    store.filterUserCode = String(payload.value ?? '').trim()
+  }
+
   if (payload.key === 'roleId') store.filterRoleId = payload.value ?? null
   if (payload.key === 'areaId') store.filterAreaId = payload.value ?? null
 }
@@ -382,13 +389,9 @@ function onViewPatrolPath(row: UserRow) {
         style="min-width: 14rem"
         :filterMenu="{
           key: 'userId',
-          type: 'select',
+          type: 'text',
           value: store.filterUserId,
-          options: store.userOptions,
           placeholder: t('userList.userName'),
-          filter: true,
-          filterField: 'searchText',
-          filterMatchMode: 'contains',
         }"
       />
       <!--

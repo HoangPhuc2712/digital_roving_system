@@ -120,6 +120,7 @@ type ColumnFilterMenuConfig = {
   disabled?: boolean
   filterField?: string
   filterMatchMode?: 'contains' | 'startsWith' | 'endsWith'
+  customFilterFunction?: (option: FilterOption, query: string) => boolean
   secondaryOptions?: FilterOption[]
   secondaryOptionLabel?: string
   secondaryOptionValue?: string
@@ -268,11 +269,13 @@ const FilterMenuControl = defineComponent({
   setup(filterProps, { emit: filterEmit }) {
     const localValue = ref(cloneFilterValue(filterProps.config.value))
     const dateSelectionRef = ref<any>(null)
+    const filterQuery = ref('')
 
     watch(
       [() => serializeFilterValue(filterProps.config.value), () => filterProps.revision],
       () => {
         localValue.value = cloneFilterValue(filterProps.config.value)
+        filterQuery.value = ''
       },
       { immediate: true },
     )
@@ -282,6 +285,7 @@ const FilterMenuControl = defineComponent({
     }
 
     function applyChanges() {
+      filterQuery.value = ''
       filterEmit('update:modelValue', cloneFilterValue(localValue.value))
       nextTick(() => {
         filterEmit('close')
@@ -290,6 +294,7 @@ const FilterMenuControl = defineComponent({
 
     function cancelChanges() {
       localValue.value = cloneFilterValue(filterProps.config.value)
+      filterQuery.value = ''
       filterEmit('close')
     }
 
@@ -316,6 +321,20 @@ const FilterMenuControl = defineComponent({
     const controlKey = computed(
       () => `${buildFilterControlKey(filterProps.config)}::${filterProps.revision}`,
     )
+
+    const resolvedSelectOptions = computed(() => {
+      const options = Array.isArray(filterProps.config.options) ? filterProps.config.options : []
+      const query = String(filterQuery.value ?? '').trim()
+      const customFilterFunction = filterProps.config.customFilterFunction
+
+      if (!query || typeof customFilterFunction !== 'function') return options
+
+      return options.filter((option) => customFilterFunction(option, query))
+    })
+
+    function handleFilterInput(event: any) {
+      filterQuery.value = String(event?.value ?? '')
+    }
 
     const renderFooter = () =>
       h(
@@ -524,7 +543,7 @@ const FilterMenuControl = defineComponent({
             key: controlKey.value,
             modelValue: localValue.value,
             'onUpdate:modelValue': (value: any) => updateDraft(value),
-            options: filterProps.config.options ?? [],
+            options: resolvedSelectOptions.value,
             optionLabel: filterProps.config.optionLabel ?? 'label',
             optionValue: filterProps.config.optionValue ?? 'value',
             placeholder: filterProps.config.placeholder ?? '',
@@ -534,6 +553,7 @@ const FilterMenuControl = defineComponent({
               ? [filterProps.config.filterField]
               : undefined,
             filterMatchMode: filterProps.config.filterMatchMode ?? 'contains',
+            onFilter: handleFilterInput,
             class: 'app-filter-select w-full',
             size: 'small',
             appendTo: 'self',

@@ -122,7 +122,9 @@ export const useReportsStore = defineStore('reports', {
         options.push({
           label: value,
           value,
-          searchText: String([r.cp_name, r.cp_code].join(' ')).toLowerCase().trim(),
+          searchText: String(r.cp_name ?? '')
+            .toLowerCase()
+            .trim(),
         })
       }
 
@@ -169,9 +171,17 @@ export const useReportsStore = defineStore('reports', {
           if (!r.pr_has_problem) return false
           if (r.pr_status !== this.filterIssueStatus) return false
         }
-        if (this.filterGuardId) {
-          const guardValue = String(r.created_by ?? '').trim() || String(r.report_name ?? '').trim()
-          if (guardValue !== this.filterGuardId) return false
+        const guardNameQuery = String(this.filterGuardId ?? '')
+          .trim()
+          .toLowerCase()
+        if (
+          guardNameQuery &&
+          !String(r.report_name ?? '')
+            .trim()
+            .toLowerCase()
+            .includes(guardNameQuery)
+        ) {
+          return false
         }
 
         if (fromTime != null || toTime != null) {

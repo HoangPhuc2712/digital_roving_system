@@ -310,7 +310,7 @@ function onColumnFilter(payload: { key: string; value: any }) {
   if (payload.key === 'checkPointName') store.filterCheckPointName = payload.value ?? null
   if (payload.key === 'issueStatus') store.filterIssueStatus = payload.value ?? null
   if (payload.key === 'result') store.filterResult = payload.value ?? 'ALL'
-  if (payload.key === 'guardId') store.filterGuardId = payload.value ?? ''
+  if (payload.key === 'guardId') store.filterGuardId = String(payload.value ?? '').trim()
   if (payload.key === 'reportDate') {
     const value = payload.value && typeof payload.value === 'object' ? payload.value : {}
     store.filterDateFrom = value.from ?? null
@@ -571,13 +571,9 @@ async function onExport() {
         :header="t('reportList.table.guardName')"
         :filterMenu="{
           key: 'guardId',
-          type: 'select',
+          type: 'text',
           value: store.filterGuardId,
-          options: store.guardOptions,
           placeholder: t('reportList.filters.guardName'),
-          filter: true,
-          filterField: 'searchText',
-          filterMatchMode: 'contains',
         }"
       />
 

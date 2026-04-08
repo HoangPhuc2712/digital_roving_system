@@ -29,7 +29,18 @@ export const useUsersStore = defineStore('users', {
       return state.rows.filter((r) => {
         if (q && (!r._q || !r._q.includes(q))) return false
 
-        if (state.filterUserId != null && r.user_id !== state.filterUserId) return false
+        const userNameQuery = String(state.filterUserId ?? '')
+          .trim()
+          .toLowerCase()
+        if (
+          userNameQuery &&
+          !String(r.user_keyword ?? '')
+            .toLowerCase()
+            .includes(userNameQuery)
+        ) {
+          return false
+        }
+
         if (
           state.filterUserCode.trim() &&
           !String(r.user_code ?? '')
@@ -64,9 +75,7 @@ export const useUsersStore = defineStore('users', {
                 String(r.user_id),
                 {
                   label: String(r.user_name),
-                  searchText: String(
-                    [r.user_name, r.user_code, r.user_keyword].filter(Boolean).join(' '),
-                  )
+                  searchText: String(r.user_keyword ?? '')
                     .toLowerCase()
                     .trim(),
                 },
