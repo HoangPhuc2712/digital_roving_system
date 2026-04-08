@@ -960,7 +960,12 @@ export async function fetchCtpatReportRows(): Promise<CtpatReportRow[]> {
   const payload = ensureSuccess<ApiCtpatReportView[] | ApiCtpatReportView>(res.data).data
   const views = asArray(payload)
 
-  return views.map(normalizeCtpatView).sort((a, b) => (a.scan_at < b.scan_at ? 1 : -1))
+  return views.map(normalizeCtpatView).sort((a, b) => {
+    if (a.start_at !== b.start_at) return a.start_at.localeCompare(b.start_at)
+    if (a.end_at !== b.end_at) return a.end_at.localeCompare(b.end_at)
+    if (a.scan_at !== b.scan_at) return a.scan_at.localeCompare(b.scan_at)
+    return a.pr_id - b.pr_id
+  })
 }
 
 function normalizePatrolDetailRows(views: ApiPatrolShiftReportView[]): PatrolDetailReportRow[] {
