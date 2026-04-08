@@ -147,7 +147,10 @@ function onColumnFilter(payload: { key: string; value: any }) {
     store.filterRouteName = value.secondaryValue ?? null
   }
   if (payload.key === 'checkPointName') store.filterCheckPointName = payload.value ?? null
-  if (payload.key === 'guardName') store.filterGuardName = payload.value ?? null
+  if (payload.key === 'guardName') {
+    const value = String(payload.value ?? '').trim()
+    store.filterGuardName = value || null
+  }
   if (payload.key === 'patrolTime') {
     const value = payload.value && typeof payload.value === 'object' ? payload.value : {}
     store.filterDateFrom = value.from ?? null
@@ -312,12 +315,8 @@ function onColumnFilter(payload: { key: string; value: any }) {
         sortField="report_name"
         :filterMenu="{
           key: 'guardName',
-          type: 'select',
+          type: 'text',
           value: store.filterGuardName,
-          options: store.guardOptions,
-          filter: true,
-          filterField: 'searchText',
-          filterMatchMode: 'contains',
           placeholder: t('patrolDetailReport.guardName'),
         }"
       />

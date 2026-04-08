@@ -145,7 +145,19 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
         if (this.filterRouteName != null && row.route_name !== this.filterRouteName) return false
         if (this.filterCheckPointName != null && row.check_point_name !== this.filterCheckPointName)
           return false
-        if (this.filterGuardName != null && row.report_name !== this.filterGuardName) return false
+
+        const guardNameQuery = String(this.filterGuardName ?? '')
+          .trim()
+          .toLowerCase()
+        if (
+          guardNameQuery &&
+          !String(row.report_name ?? '')
+            .trim()
+            .toLowerCase()
+            .includes(guardNameQuery)
+        ) {
+          return false
+        }
 
         if (fromTime != null || toTime != null) {
           const t = new Date(row.patrol_time || row.start_time || row.finish_time).getTime()

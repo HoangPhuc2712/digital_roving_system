@@ -29,7 +29,18 @@ export const useUsersStore = defineStore('users', {
       return state.rows.filter((r) => {
         if (q && (!r._q || !r._q.includes(q))) return false
 
-        if (state.filterUserId != null && r.user_id !== state.filterUserId) return false
+        const userNameQuery = String(state.filterUserId ?? '')
+          .trim()
+          .toLowerCase()
+        if (
+          userNameQuery &&
+          !String(r.user_keyword ?? '')
+            .toLowerCase()
+            .includes(userNameQuery)
+        ) {
+          return false
+        }
+
         if (
           state.filterUserCode.trim() &&
           !String(r.user_code ?? '')
