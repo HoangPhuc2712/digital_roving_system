@@ -31,6 +31,7 @@ const props = defineProps<{
   visible: boolean
   mode: AreaFormMode
   model: AreaFormModel | null
+  loading?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -48,7 +49,10 @@ const title = computed(() =>
       : t('areaForm.areaDetail'),
 )
 
+const isSubmitting = computed(() => submitLocked.value || Boolean(props.loading))
+
 const submitted = ref(false)
+const submitLocked = ref(false)
 
 const form = reactive<AreaFormState>({
   area_id: undefined,
@@ -58,6 +62,24 @@ const form = reactive<AreaFormState>({
 
 const areaCodeError = computed(() => submitted.value && !String(form.area_code ?? '').trim())
 const areaNameError = computed(() => submitted.value && !String(form.area_name ?? '').trim())
+
+watch(
+  () => props.loading,
+  (loading) => {
+    if (!loading) {
+      submitLocked.value = false
+    }
+  },
+)
+
+watch(
+  () => props.visible,
+  (visible) => {
+    if (!visible) {
+      submitLocked.value = false
+    }
+  },
+)
 
 watch(
   () => props.model,
@@ -71,19 +93,29 @@ watch(
   { immediate: true },
 )
 
+function handleDialogVisibleChange(nextVisible: boolean) {
+  if (isSubmitting.value) return
+  emit('update:visible', nextVisible)
+}
+
 function close() {
   submitted.value = false
+  submitLocked.value = false
   emit('update:visible', false)
   emit('close')
 }
 
 function submit() {
+  if (isSubmitting.value) return
+
   submitted.value = true
 
   const code = String(form.area_code ?? '').trim()
   const name = String(form.area_name ?? '').trim()
 
   if (!code || !name) return
+
+  submitLocked.value = true
 
   emit('submit', {
     submit: async (actor_id: string) => {
@@ -116,7 +148,9 @@ function submit() {
     :header="title"
     :style="{ width: '860px', maxWidth: '95vw' }"
     :contentStyle="{ maxHeight: '70vh', overflow: 'auto' }"
-    @update:visible="emit('update:visible', $event)"
+    :closable="!isSubmitting"
+    :closeOnEscape="!isSubmitting"
+    @update:visible="handleDialogVisibleChange"
     @hide="close"
   >
     <div v-if="!model" class="text-slate-500">{{ t('areaForm.noData') }}.</div>
@@ -158,6 +192,7 @@ function submit() {
           size="small"
           severity="danger"
           outlined
+          :disabled="isSubmitting"
           @click="close"
         />
         <BaseButton
@@ -165,6 +200,8 @@ function submit() {
           :label="t('common.submit')"
           size="small"
           severity="success"
+          :loading="isSubmitting"
+          :disabled="isSubmitting"
           @click="submit"
         />
       </div>

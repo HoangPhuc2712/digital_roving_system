@@ -95,6 +95,7 @@ const selectedUsers = ref<UserRow[] | null>(null)
 const formVisible = ref(false)
 const formMode = ref<UserFormMode>('view')
 const formModel = ref<UserFormModel | null>(null)
+const formSubmitting = ref(false)
 
 function mapRowToFormModel(row: UserRow): UserFormModel {
   return {
@@ -252,6 +253,10 @@ async function onExport() {
 }
 
 async function handleSubmit(payload: UserFormSubmitPayload) {
+  if (formSubmitting.value) return
+
+  formSubmitting.value = true
+
   try {
     const actor = auth.user?.user_id ?? ''
     const editingUserId = String(formModel.value?.user_id ?? '')
@@ -300,6 +305,8 @@ async function handleSubmit(payload: UserFormSubmitPayload) {
         ? t('userList.error.codeExists')
         : (e?.message ?? t('userList.error.saveFailed'))
     toast.add({ severity: 'error', summary: t('common.error'), detail: msg, life: 3000 })
+  } finally {
+    formSubmitting.value = false
   }
 }
 
@@ -493,6 +500,7 @@ function onViewPatrolPath(row: UserRow) {
       :model="formModel"
       :roleOptions="translatedRoleOptions"
       :areaOptions="store.areaOptions"
+      :loading="formSubmitting"
       @submit="handleSubmit"
       @close="formVisible = false"
     />

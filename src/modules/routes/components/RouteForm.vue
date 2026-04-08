@@ -68,6 +68,7 @@ const props = defineProps<{
   model: RouteFormModel | null
   areaOptions: { label: string; value: number }[]
   roleOptions: { label: string; value: number }[]
+  loading?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -79,6 +80,7 @@ const emit = defineEmits<{
 const initializing = ref(false)
 const submitted = ref(false)
 const addScanPointSubmitted = ref(false)
+const submitLocked = ref(false)
 
 const { t, locale } = useI18n()
 
@@ -90,6 +92,8 @@ const title = computed(() =>
       ? t('routeForm.editRoute')
       : t('routeForm.routeDetail'),
 )
+
+const isSubmitting = computed(() => submitLocked.value || Boolean(props.loading))
 
 const areaLabel = computed(() => {
   return (
@@ -200,6 +204,24 @@ async function loadScanPoints(roleId: number) {
 }
 
 watch(
+  () => props.loading,
+  (loading) => {
+    if (!loading) {
+      submitLocked.value = false
+    }
+  },
+)
+
+watch(
+  () => props.visible,
+  (visible) => {
+    if (!visible) {
+      submitLocked.value = false
+    }
+  },
+)
+
+watch(
   () => props.model,
   async (m) => {
     if (!m) return
@@ -254,8 +276,14 @@ function reindexDetails() {
   }
 }
 
+function handleDialogVisibleChange(nextVisible: boolean) {
+  if (isSubmitting.value) return
+  emit('update:visible', nextVisible)
+}
+
 function close() {
   submitted.value = false
+  submitLocked.value = false
   addScanPointSubmitted.value = false
   emit('update:visible', false)
   emit('close')
@@ -307,6 +335,8 @@ function onRowReorder(e: any) {
 }
 
 function submit() {
+  if (isSubmitting.value) return
+
   submitted.value = true
 
   const name = (form.route_name ?? '').trim()
@@ -315,6 +345,8 @@ function submit() {
 
   if (!name || !areaId || !roleId) return
   if (!form.details.length) return
+
+  submitLocked.value = true
 
   emit('submit', {
     submit: async (actor_id: string) => {
@@ -639,6 +671,7 @@ function submit() {
           size="small"
           severity="danger"
           outlined
+          :disabled="isSubmitting"
           @click="close"
         />
         <BaseButton
@@ -646,6 +679,8 @@ function submit() {
           :label="t('common.submit')"
           size="small"
           severity="success"
+          :loading="isSubmitting"
+          :disabled="isSubmitting"
           @click="submit"
         />
       </div>

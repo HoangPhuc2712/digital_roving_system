@@ -191,6 +191,7 @@ const selectedRows = ref<CheckpointRow[] | null>(null)
 const formVisible = ref(false)
 const formMode = ref<CheckpointFormMode>('view')
 const formModel = ref<CheckpointFormModel | null>(null)
+const formSubmitting = ref(false)
 
 function mapRowToFormModel(row: CheckpointRow): CheckpointFormModel {
   return {
@@ -435,8 +436,12 @@ async function onDeleteSelected() {
 async function handleCheckpointFormSubmit(payload: {
   submit: (actor_id: string) => Promise<void>
 }) {
+  if (formSubmitting.value) return
+
   const actor = auth.user?.user_id ?? ''
   if (!actor) return
+
+  formSubmitting.value = true
 
   try {
     await payload.submit(actor)
@@ -481,6 +486,8 @@ async function handleCheckpointFormSubmit(payload: {
       detail: msg || 'Failed to save check point.',
       life: 3500,
     })
+  } finally {
+    formSubmitting.value = false
   }
 }
 
@@ -750,6 +757,7 @@ async function onExport() {
       :model="formModel"
       :areaOptions="store.areaOptions"
       :roleOptions="translatedRoleOptions"
+      :loading="formSubmitting"
       @submit="handleCheckpointFormSubmit"
       @close="formModel = null"
     />

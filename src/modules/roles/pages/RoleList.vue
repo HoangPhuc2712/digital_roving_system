@@ -95,6 +95,7 @@ const selectedRoles = ref<RoleRow[] | null>(null)
 const formVisible = ref(false)
 const formMode = ref<RoleFormMode>('view')
 const formModel = ref<RoleFormModel | null>(null)
+const formSubmitting = ref(false)
 
 function mapRowToFormModel(row: RoleRow): RoleFormModel {
   return {
@@ -319,6 +320,10 @@ async function onExport() {
 }
 
 async function handleSubmit(payload: RoleFormSubmitPayload) {
+  if (formSubmitting.value) return
+
+  formSubmitting.value = true
+
   try {
     const actor = auth.user?.user_id ?? ''
     await payload.submit(actor)
@@ -342,6 +347,8 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
       detail: e?.message ?? t('roleList.error.saveFailed'),
       life: 3000,
     })
+  } finally {
+    formSubmitting.value = false
   }
 }
 </script>
@@ -502,6 +509,7 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
       :mode="formMode"
       :model="formModel"
       :menuOptions="translatedMenuOptions"
+      :loading="formSubmitting"
       @submit="handleSubmit"
       @close="formVisible = false"
     />

@@ -33,6 +33,7 @@ const props = defineProps<{
   mode: RoleFormMode
   model: RoleFormModel | null
   menuOptions: { label: string; value: number }[]
+  loading?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -50,7 +51,10 @@ const title = computed(() =>
       : t('roleForm.roleDetail'),
 )
 
+const isSubmitting = computed(() => submitLocked.value || Boolean(props.loading))
+
 const submitted = ref(false)
+const submitLocked = ref(false)
 
 const form = reactive<RoleFormModel>({
   role_id: undefined,
@@ -64,6 +68,24 @@ const form = reactive<RoleFormModel>({
 const roleNameError = computed(() => submitted.value && !String(form.role_name ?? '').trim())
 const permissionsError = computed(
   () => submitted.value && (!Array.isArray(form.mc_ids) || form.mc_ids.length === 0),
+)
+
+watch(
+  () => props.loading,
+  (loading) => {
+    if (!loading) {
+      submitLocked.value = false
+    }
+  },
+)
+
+watch(
+  () => props.visible,
+  (visible) => {
+    if (!visible) {
+      submitLocked.value = false
+    }
+  },
 )
 
 watch(
@@ -89,19 +111,29 @@ const permissionLabels = computed(() => {
 
 const translatedRoleName = computed(() => translateRoleName(String(form.role_name ?? ''), t))
 
+function handleDialogVisibleChange(nextVisible: boolean) {
+  if (isSubmitting.value) return
+  emit('update:visible', nextVisible)
+}
+
 function close() {
   submitted.value = false
+  submitLocked.value = false
   emit('update:visible', false)
   emit('close')
 }
 
 function submit() {
+  if (isSubmitting.value) return
+
   submitted.value = true
 
   const name = String(form.role_name ?? '').trim()
   const mcIds = Array.isArray(form.mc_ids) ? form.mc_ids : []
 
   if (!name || !mcIds.length) return
+
+  submitLocked.value = true
 
   emit('submit', {
     submit: async (actor_id: string) => {
@@ -136,7 +168,9 @@ function submit() {
     :header="title"
     :style="{ width: '860px', maxWidth: '95vw' }"
     :contentStyle="{ maxHeight: '70vh', overflow: 'auto' }"
-    @update:visible="emit('update:visible', $event)"
+    :closable="!isSubmitting"
+    :closeOnEscape="!isSubmitting"
+    @update:visible="handleDialogVisibleChange"
     @hide="close"
   >
     <div v-if="!model" class="text-slate-500">{{ t('common.noData') }}.</div>
@@ -229,8 +263,21 @@ function submit() {
       </div>
 
       <div class="flex justify-end gap-2 pt-3 border-t border-slate-200">
-        <BaseButton :label="t('common.cancel')" severity="danger" outlined @click="close" />
-        <BaseButton v-if="!isView" :label="t('common.submit')" severity="success" @click="submit" />
+        <BaseButton
+          :label="t('common.cancel')"
+          severity="danger"
+          outlined
+          :disabled="isSubmitting"
+          @click="close"
+        />
+        <BaseButton
+          v-if="!isView"
+          :label="t('common.submit')"
+          severity="success"
+          :loading="isSubmitting"
+          :disabled="isSubmitting"
+          @click="submit"
+        />
       </div>
     </div>
   </Dialog>

@@ -317,7 +317,7 @@ const en = {
       becauseItContains: 'selected area(s) because they still contain check point(s)',
       areYouSure: 'Are you sure you want to delete area',
       areYouSureMultiple: 'Are you sure you want to delete',
-      selectedAreas: 'selected areas?',
+      selectedAreas: 'selected areas',
       areaDeleteRestricted: `Can't delete because one selected Area has`,
       deleteFailed: 'Failed to delete area',
       noQr: 'No Qr',

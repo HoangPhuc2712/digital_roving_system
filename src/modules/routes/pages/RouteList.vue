@@ -132,6 +132,7 @@ const selectedRoutes = ref<RouteRow[] | null>(null)
 const formVisible = ref(false)
 const formMode = ref<RouteFormMode>('view')
 const formModel = ref<RouteFormModel | null>(null)
+const formSubmitting = ref(false)
 
 function mapRowToFormModel(row: RouteRow): RouteFormModel {
   return {
@@ -350,6 +351,10 @@ async function onExport() {
 }
 
 async function handleSubmit(payload: RouteFormSubmitPayload) {
+  if (formSubmitting.value) return
+
+  formSubmitting.value = true
+
   try {
     const actor = auth.user?.user_id ?? ''
     await payload.submit(actor)
@@ -374,6 +379,8 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
       detail: e?.message ?? t('routeList.error.saveFailed'),
       life: 3000,
     })
+  } finally {
+    formSubmitting.value = false
   }
 }
 </script>
@@ -582,6 +589,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
       :model="formModel"
       :areaOptions="store.areaOptions"
       :roleOptions="translatedRoleOptions"
+      :loading="formSubmitting"
       @submit="handleSubmit"
       @close="formModel = null"
     />
