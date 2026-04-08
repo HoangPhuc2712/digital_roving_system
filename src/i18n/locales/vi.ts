@@ -317,7 +317,7 @@ const vi = {
       becauseItContains: 'khu vực đã chọn vì chúng vẫn chứa điểm kiểm tra',
       areYouSure: 'Bạn có chắc muốn xóa khu vực',
       areYouSureMultiple: 'Bạn có chắc muốn xóa',
-      selectedAreas: 'khu vực đã chọn?',
+      selectedAreas: 'khu vực đã chọn',
       areaDeleteRestricted: 'Không thể xóa vì một khu vực đã chọn có',
       deleteFailed: 'Xóa khu vực thất bại',
       noQr: 'Không có QR',

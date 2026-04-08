@@ -49,6 +49,7 @@ const props = defineProps<{
   model: CheckpointFormModel | null
   areaOptions: { label: string; value: number }[]
   roleOptions: { label: string; value: number }[]
+  loading?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -69,7 +70,10 @@ const title = computed(() =>
       : t('checkpointForm.cpDetail'),
 )
 
+const isSubmitting = computed(() => submitLocked.value || Boolean(props.loading))
+
 const submitted = ref(false)
+const submitLocked = ref(false)
 
 const form = reactive<FormState>({
   cp_id: undefined,
@@ -92,6 +96,24 @@ const priorityError = computed(() => {
   const priority = Number(form.cp_priority ?? 0)
   return !Number.isFinite(priority) || priority < 1
 })
+
+watch(
+  () => props.loading,
+  (loading) => {
+    if (!loading) {
+      submitLocked.value = false
+    }
+  },
+)
+
+watch(
+  () => props.visible,
+  (visible) => {
+    if (!visible) {
+      submitLocked.value = false
+    }
+  },
+)
 
 watch(
   () => props.model,
@@ -123,8 +145,14 @@ const roleLabels = computed(() => {
   return form.role_ids.map((id) => map.get(id) ?? String(id))
 })
 
+function handleDialogVisibleChange(nextVisible: boolean) {
+  if (isSubmitting.value) return
+  emit('update:visible', nextVisible)
+}
+
 function close() {
   submitted.value = false
+  submitLocked.value = false
   emit('update:visible', false)
   emit('close')
 }
@@ -134,6 +162,8 @@ function normalizeQr(src: string) {
 }
 
 function submit() {
+  if (isSubmitting.value) return
+
   submitted.value = true
 
   const name = (form.cp_name ?? '').trim()
@@ -144,6 +174,8 @@ function submit() {
 
   if (!name || !areaId || !roleIds.length) return
   if (!Number.isFinite(priority) || priority < 1) return
+
+  submitLocked.value = true
 
   emit('submit', {
     submit: async (actor_id: string) => {
@@ -182,7 +214,9 @@ function submit() {
     :header="title"
     :style="{ width: '980px', maxWidth: '95vw' }"
     :contentStyle="{ maxHeight: '72vh', overflow: 'auto' }"
-    @update:visible="emit('update:visible', $event)"
+    :closable="!isSubmitting"
+    :closeOnEscape="!isSubmitting"
+    @update:visible="handleDialogVisibleChange"
     @hide="close"
   >
     <div v-if="!model" class="text-slate-500">{{ t('common.noData') }}.</div>
@@ -335,6 +369,7 @@ function submit() {
           size="small"
           severity="danger"
           outlined
+          :disabled="isSubmitting"
           @click="close"
         />
         <BaseButton
@@ -342,6 +377,8 @@ function submit() {
           :label="t('common.submit')"
           size="small"
           severity="success"
+          :loading="isSubmitting"
+          :disabled="isSubmitting"
           @click="submit"
         />
       </div>

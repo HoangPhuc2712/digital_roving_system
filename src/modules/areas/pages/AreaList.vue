@@ -133,6 +133,7 @@ const selectedAreas = ref<AreaRow[] | null>(null)
 const formVisible = ref(false)
 const formMode = ref<AreaFormMode>('view')
 const formModel = ref<AreaFormModel | null>(null)
+const formSubmitting = ref(false)
 
 function mapRowToFormModel(row: AreaRow): AreaFormModel {
   return {
@@ -398,8 +399,12 @@ async function onPrintAreaQr(row: AreaRow) {
 }
 
 async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Promise<void> }) {
+  if (formSubmitting.value) return
+
   const actor = auth.user?.user_id ?? ''
   if (!actor) return
+
+  formSubmitting.value = true
 
   try {
     await payload.submit(actor)
@@ -445,6 +450,8 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
       detail: msg || t('areaList.errors.saveAreaFailed'),
       life: 3500,
     })
+  } finally {
+    formSubmitting.value = false
   }
 }
 </script>
@@ -612,6 +619,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
       v-model:visible="formVisible"
       :mode="formMode"
       :model="formModel"
+      :loading="formSubmitting"
       @submit="handleAreaFormSubmit"
       @close="formModel = null"
     />

@@ -68,6 +68,7 @@ const props = defineProps<{
   model: RouteFormModel | null
   areaOptions: { label: string; value: number }[]
   roleOptions: { label: string; value: number }[]
+  loading?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -79,6 +80,7 @@ const emit = defineEmits<{
 const initializing = ref(false)
 const submitted = ref(false)
 const addScanPointSubmitted = ref(false)
+const submitLocked = ref(false)
 
 const { t, locale } = useI18n()
 
@@ -90,6 +92,8 @@ const title = computed(() =>
       ? t('routeForm.editRoute')
       : t('routeForm.routeDetail'),
 )
+
+const isSubmitting = computed(() => submitLocked.value || Boolean(props.loading))
 
 const areaLabel = computed(() => {
   return (
@@ -147,21 +151,22 @@ const availableScanPointOptions = computed(() => {
 
 const groupedAvailableScanPointOptions = computed<GroupedScanPointOption[]>(() => {
   const areaLabelMap = new Map(props.areaOptions.map((option) => [option.value, option.label]))
-  const groupMap = new Map<string, ScanPointOption[]>()
+  const groupMap = new Map<number, { label: string; items: ScanPointOption[] }>()
 
   for (const option of availableScanPointOptions.value) {
-    const areaLabel = areaLabelMap.get(Number(option.areaId ?? 0)) ?? `Area ${option.areaId}`
-    const list = groupMap.get(areaLabel) ?? []
-    list.push(option)
-    groupMap.set(areaLabel, list)
+    const areaId = Number(option.areaId ?? 0)
+    const areaLabel = areaLabelMap.get(areaId) ?? `Area ${areaId}`
+    const group = groupMap.get(areaId) ?? { label: areaLabel, items: [] }
+    group.items.push(option)
+    groupMap.set(areaId, group)
   }
 
   return Array.from(groupMap.entries())
-    .map(([label, items]) => ({
-      label,
-      items: items.slice().sort((a, b) => String(a.cpCode).localeCompare(String(b.cpCode))),
+    .sort((a, b) => Number(a[0] ?? 0) - Number(b[0] ?? 0))
+    .map(([, group]) => ({
+      label: group.label,
+      items: group.items.slice().sort((a, b) => String(a.cpCode).localeCompare(String(b.cpCode))),
     }))
-    .sort((a, b) => a.label.localeCompare(b.label))
 })
 
 function getDisplayOrder(detail: RouteDetailModel) {
@@ -198,6 +203,24 @@ async function loadScanPoints(roleId: number) {
     scanLoading.value = false
   }
 }
+
+watch(
+  () => props.loading,
+  (loading) => {
+    if (!loading) {
+      submitLocked.value = false
+    }
+  },
+)
+
+watch(
+  () => props.visible,
+  (visible) => {
+    if (!visible) {
+      submitLocked.value = false
+    }
+  },
+)
 
 watch(
   () => props.model,
@@ -254,8 +277,14 @@ function reindexDetails() {
   }
 }
 
+function handleDialogVisibleChange(nextVisible: boolean) {
+  if (isSubmitting.value) return
+  emit('update:visible', nextVisible)
+}
+
 function close() {
   submitted.value = false
+  submitLocked.value = false
   addScanPointSubmitted.value = false
   emit('update:visible', false)
   emit('close')
@@ -307,6 +336,8 @@ function onRowReorder(e: any) {
 }
 
 function submit() {
+  if (isSubmitting.value) return
+
   submitted.value = true
 
   const name = (form.route_name ?? '').trim()
@@ -315,6 +346,8 @@ function submit() {
 
   if (!name || !areaId || !roleId) return
   if (!form.details.length) return
+
+  submitLocked.value = true
 
   emit('submit', {
     submit: async (actor_id: string) => {
@@ -639,6 +672,7 @@ function submit() {
           size="small"
           severity="danger"
           outlined
+          :disabled="isSubmitting"
           @click="close"
         />
         <BaseButton
@@ -646,6 +680,8 @@ function submit() {
           :label="t('common.submit')"
           size="small"
           severity="success"
+          :loading="isSubmitting"
+          :disabled="isSubmitting"
           @click="submit"
         />
       </div>

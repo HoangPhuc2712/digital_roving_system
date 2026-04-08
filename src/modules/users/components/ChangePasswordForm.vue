@@ -26,6 +26,9 @@ const emit = defineEmits<{
 }>()
 
 const submitted = ref(false)
+const submitLocked = ref(false)
+const isSubmitting = computed(() => submitLocked.value || Boolean(props.loading))
+
 const form = reactive({
   currentPassword: '',
   newPassword: '',
@@ -65,6 +68,15 @@ const samePasswordError = computed(
 )
 
 watch(
+  () => props.loading,
+  (loading) => {
+    if (!loading) {
+      submitLocked.value = false
+    }
+  },
+)
+
+watch(
   () => form.currentPassword,
   (value) => {
     emit('current-password-input', value)
@@ -76,6 +88,7 @@ watch(
   (visible) => {
     if (!visible) {
       submitted.value = false
+      submitLocked.value = false
       form.currentPassword = ''
       form.newPassword = ''
       form.confirmNewPassword = ''
@@ -83,8 +96,14 @@ watch(
   },
 )
 
+function handleDialogVisibleChange(nextVisible: boolean) {
+  if (isSubmitting.value) return
+  emit('update:visible', nextVisible)
+}
+
 function close() {
   submitted.value = false
+  submitLocked.value = false
   form.currentPassword = ''
   form.newPassword = ''
   form.confirmNewPassword = ''
@@ -93,6 +112,8 @@ function close() {
 }
 
 function submit() {
+  if (isSubmitting.value) return
+
   submitted.value = true
 
   const currentPassword = String(form.currentPassword ?? '').trim()
@@ -102,6 +123,7 @@ function submit() {
   if (!currentPassword || !newPassword || !confirmNewPassword) return
   if (newPassword !== confirmNewPassword) return
   if (currentPassword === newPassword) return
+  submitLocked.value = true
   emit('submit', { currentPassword, newPassword })
 }
 </script>
@@ -113,7 +135,9 @@ function submit() {
     :header="t('changePasswordForm.title')"
     :style="{ width: '720px', maxWidth: '95vw' }"
     :contentStyle="{ maxHeight: '70vh', overflow: 'auto' }"
-    @update:visible="emit('update:visible', $event)"
+    :closable="!isSubmitting"
+    :closeOnEscape="!isSubmitting"
+    @update:visible="handleDialogVisibleChange"
     @hide="close"
   >
     <div class="space-y-4">
@@ -175,13 +199,15 @@ function submit() {
           size="small"
           severity="danger"
           outlined
+          :disabled="isSubmitting"
           @click="close"
         />
         <BaseButton
           :label="t('common.submit')"
           size="small"
           severity="success"
-          :loading="loading"
+          :loading="isSubmitting"
+          :disabled="isSubmitting"
           @click="submit"
         />
       </div>
