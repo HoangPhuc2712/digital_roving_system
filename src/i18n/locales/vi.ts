@@ -616,6 +616,7 @@ const vi = {
     changePassword: 'Đổi mật khẩu',
     success: {
       password: 'Mật khẩu đã được thay đổi thành công',
+      autoLogout: 'Sẽ đăng xuất sau {seconds} giây',
     },
     error: {
       password: 'Đổi mật khẩu thất bại',

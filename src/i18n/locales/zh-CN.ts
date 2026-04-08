@@ -615,6 +615,7 @@ const zhCN = {
     changePassword: '修改密码',
     success: {
       password: '密码修改成功',
+      autoLogout: '{seconds} 秒后将自动登出',
     },
     error: {
       password: '修改密码失败',

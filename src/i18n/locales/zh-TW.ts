@@ -615,6 +615,7 @@ const zhTW = {
     changePassword: '變更密碼',
     success: {
       password: '密碼已成功變更',
+      autoLogout: '{seconds} 秒後將自動登出',
     },
     error: {
       password: '變更密碼失敗',

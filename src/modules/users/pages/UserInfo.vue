@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import ChangePasswordForm from '@/modules/users/components/ChangePasswordForm.vue'
@@ -11,6 +12,7 @@ import { translateRoleName } from '@/utils/dataI18n'
 
 const auth = useAuthStore()
 const toast = useToast()
+const router = useRouter()
 const { t } = useI18n()
 
 const loading = computed(() => auth.loading)
@@ -27,12 +29,63 @@ const userInfo = computed(() => ({
 
 const userId = computed(() => String(auth.user?.user_id ?? ''))
 const userCode = computed(() => String(auth.user?.user_code ?? ''))
+const PASSWORD_CHANGED_LOGOUT_LIFE = 3000
+const PASSWORD_CHANGED_LOGOUT_SECONDS = Math.max(1, Math.ceil(PASSWORD_CHANGED_LOGOUT_LIFE / 1000))
+
+let passwordChangedLogoutTimer: number | undefined
+let passwordChangedCountdownTimer: number | undefined
 const displayRoleName = computed(() =>
   translateRoleName(String(userInfo.value?.role_name ?? ''), t),
 )
 
 function resetCurrentPasswordValidation() {
   currentPasswordInvalid.value = false
+}
+
+function clearPasswordChangedLogoutCountdown() {
+  if (passwordChangedCountdownTimer != null) {
+    window.clearInterval(passwordChangedCountdownTimer)
+    passwordChangedCountdownTimer = undefined
+  }
+
+  if (passwordChangedLogoutTimer != null) {
+    window.clearTimeout(passwordChangedLogoutTimer)
+    passwordChangedLogoutTimer = undefined
+  }
+}
+
+function startPasswordChangedLogoutCountdown(successMessage: string) {
+  clearPasswordChangedLogoutCountdown()
+
+  const toastMessage = reactive({
+    severity: 'success',
+    summary: successMessage,
+    detail: t('userInfo.success.autoLogout', { seconds: PASSWORD_CHANGED_LOGOUT_SECONDS }),
+    life: PASSWORD_CHANGED_LOGOUT_LIFE,
+  })
+
+  toast.add(toastMessage)
+
+  let remainingSeconds = PASSWORD_CHANGED_LOGOUT_SECONDS
+
+  passwordChangedCountdownTimer = window.setInterval(() => {
+    remainingSeconds -= 1
+    if (remainingSeconds <= 0) {
+      if (passwordChangedCountdownTimer != null) {
+        window.clearInterval(passwordChangedCountdownTimer)
+        passwordChangedCountdownTimer = undefined
+      }
+      return
+    }
+
+    toastMessage.detail = t('userInfo.success.autoLogout', { seconds: remainingSeconds })
+  }, 1000)
+
+  passwordChangedLogoutTimer = window.setTimeout(async () => {
+    clearPasswordChangedLogoutCountdown()
+    auth.logout?.()
+    await router.replace({ name: 'login' })
+  }, PASSWORD_CHANGED_LOGOUT_LIFE)
 }
 
 async function onSubmitChangePassword(payload: { currentPassword: string; newPassword: string }) {
@@ -55,14 +108,8 @@ async function onSubmitChangePassword(payload: { currentPassword: string; newPas
       actor_id: userId.value,
     })
 
-    await auth.fetchMe()
     changePasswordVisible.value = false
-    toast.add({
-      severity: 'success',
-      summary: t('common.save'),
-      detail: String(result?.message ?? t('userInfo.success.password')),
-      life: 2500,
-    })
+    startPasswordChangedLogoutCountdown(String(result?.message ?? t('userInfo.success.password')))
   } catch (e: any) {
     const msg = String(e?.message ?? '')
     const lower = msg.toLowerCase()

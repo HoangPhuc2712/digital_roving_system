@@ -616,6 +616,7 @@ const en = {
     changePassword: 'Change Password',
     success: {
       password: 'Password has been changed successfully',
+      autoLogout: 'You will be logged out in {seconds}s',
     },
     error: {
       password: 'Failed to change password',
