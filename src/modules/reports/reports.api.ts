@@ -225,6 +225,7 @@ type ApiCheckpointViewOption = {
   areaId?: number
   areaCode?: string
   areaName?: string
+  roleIdStr?: string
 }
 
 type ApiUserViewOption = {
@@ -259,6 +260,13 @@ function asArray<T>(value: T | T[] | null | undefined): T[] {
   if (Array.isArray(value)) return value
   if (value == null) return []
   return [value]
+}
+
+function parseRoleIds(roleIdStr?: string): number[] {
+  return String(roleIdStr ?? '')
+    .split(/[;,|\s]+/)
+    .map((value) => Number(value.trim()))
+    .filter((value) => Number.isFinite(value) && value > 0)
 }
 
 function normalizeImageSrc(rawValue: string, extValue?: string) {
@@ -885,14 +893,13 @@ export async function fetchPatrolDetailCheckpointOptions(): Promise<
   const seen = new Set<string>()
 
   return items
+    .filter((cp) => parseRoleIds(cp?.roleIdStr).includes(SECURITY_ROLE_ID))
     .map((cp) => {
       const value = String(cp?.cpName ?? '').trim()
-      const code = String(cp?.cpCode ?? '').trim()
-      const keyword = String(cp?.cpKeyword ?? '').trim()
       return {
         label: value,
         value,
-        searchText: String([value, code, keyword].join(' ')).toLowerCase().trim(),
+        searchText: String(value).toLowerCase().trim(),
       }
     })
     .filter((x) => {

@@ -64,9 +64,7 @@ export const useUsersStore = defineStore('users', {
                 String(r.user_id),
                 {
                   label: String(r.user_name),
-                  searchText: String(
-                    [r.user_name, r.user_code, r.user_keyword].filter(Boolean).join(' '),
-                  )
+                  searchText: String(r.user_keyword ?? '')
                     .toLowerCase()
                     .trim(),
                 },

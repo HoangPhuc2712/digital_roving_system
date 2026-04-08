@@ -90,6 +90,20 @@ function displayRoleName(roleName: string) {
   return translateRoleName(String(roleName ?? ''), t)
 }
 
+function filterUserNameOption(option: { searchText?: string } | null | undefined, query: string) {
+  const keyword = String(option?.searchText ?? '')
+    .toLocaleLowerCase(locale.value)
+    .trim()
+  const normalizedQuery = String(query ?? '')
+    .toLocaleLowerCase(locale.value)
+    .trim()
+
+  if (!normalizedQuery) return true
+  if (!keyword) return false
+
+  return keyword.includes(normalizedQuery)
+}
+
 const selectedUsers = ref<UserRow[] | null>(null)
 
 const formVisible = ref(false)
@@ -389,6 +403,7 @@ function onViewPatrolPath(row: UserRow) {
           filter: true,
           filterField: 'searchText',
           filterMatchMode: 'contains',
+          customFilterFunction: filterUserNameOption,
         }"
       />
       <!--

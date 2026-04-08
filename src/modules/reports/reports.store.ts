@@ -122,7 +122,9 @@ export const useReportsStore = defineStore('reports', {
         options.push({
           label: value,
           value,
-          searchText: String([r.cp_name, r.cp_code].join(' ')).toLowerCase().trim(),
+          searchText: String(r.cp_name ?? '')
+            .toLowerCase()
+            .trim(),
         })
       }
 
