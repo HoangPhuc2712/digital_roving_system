@@ -6,6 +6,12 @@ export const reportsRoutes = [
     meta: { permission: ['reports.view_all', 'reports.view_mine'] },
   },
   {
+    path: 'gps-log-reports',
+    name: 'gps-log-reports',
+    component: () => import('@/modules/reports/pages/GpsLogReportList.vue'),
+    meta: { permission: ['reports.view_all', 'reports.view_mine'], adminOnly: true },
+  },
+  {
     path: 'incorrect-scan-reports',
     name: 'incorrect-scan-reports',
     component: () => import('@/modules/reports/pages/IncorrectScanReportList.vue'),

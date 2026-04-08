@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth.store'
 import { useAreasStore } from '@/modules/areas/areas.store'
 import { useCheckpointsStore } from '@/modules/checkpoints/checkpoints.store'
 import { useCtpatReportsStore } from '@/modules/reports/ctpatReports.store'
+import { useGpsLogReportsStore } from '@/modules/reports/gpsLogReports.store'
 import { useIncorrectScanLogStore } from '@/modules/reports/incorrectScanLog.store'
 import { usePatrolDetailReportsStore } from '@/modules/reports/patrolDetailReports.store'
 import { usePatrolSummaryReportsStore } from '@/modules/reports/patrolSummaryReports.store'
@@ -34,6 +35,9 @@ function clearPageFiltersByRouteName(routeName: string | symbol | null | undefin
       break
     case 'incorrect-scan-reports':
       useIncorrectScanLogStore().clearFilters()
+      break
+    case 'gps-log-reports':
+      useGpsLogReportsStore().clearFilters()
       break
     case 'patrol-detail-reports':
       usePatrolDetailReportsStore().clearFilters()
@@ -77,6 +81,10 @@ router.beforeEach(async (to) => {
 
   const required = to.meta.permission as any
   if (required && !auth.canAccess(required)) {
+    return { name: 'forbidden' }
+  }
+
+  if (to.meta.adminOnly && !auth.isAdminUser) {
     return { name: 'forbidden' }
   }
 

@@ -77,6 +77,18 @@ const reportSwitchButtons = computed(() => [
     outlined: true,
     onClick: () => router.push({ name: 'incorrect-scan-reports' }),
   },
+  ...(auth.isAdminUser
+    ? [
+        {
+          label: t('patrolDataButtonSwitch.switchGpsLog'),
+          icon: 'pi pi-map-marker',
+          size: 'small',
+          severity: 'secondary' as const,
+          outlined: true,
+          onClick: () => router.push({ name: 'gps-log-reports' }),
+        },
+      ]
+    : []),
   {
     label: t('patrolDataButtonSwitch.switchCtpatReport'),
     icon: 'pi pi-file',

@@ -5,19 +5,19 @@ import Column from 'primevue/column'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 
-import { useAuthStore } from '@/stores/auth.store'
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import BaseButtonGroup from '@/components/common/buttons/BaseButtonGroup.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
-import { useCtpatReportsStore } from '@/modules/reports/ctpatReports.store'
-import { exportCtpatReportXlsx } from '@/services/export/ctpatReport.export'
+import { useAuthStore } from '@/stores/auth.store'
+import { useGpsLogReportsStore } from '@/modules/reports/gpsLogReports.store'
+import { exportGpsLogReportXlsx } from '@/services/export/gpsLogReport.export'
 import { useResetFirstOnFilterChange } from '@/composables/useFilters'
 import { usePagination } from '@/composables/usePagination'
 
 const toast = useToast()
 const router = useRouter()
 const auth = useAuthStore()
-const store = useCtpatReportsStore()
+const store = useGpsLogReportsStore()
 const exporting = ref(false)
 const { t, locale } = useI18n()
 const hasInvalidDateFilter = computed(
@@ -48,8 +48,8 @@ const reportSwitchButtons = computed(() => [
           label: t('patrolDataButtonSwitch.switchGpsLog'),
           icon: 'pi pi-map-marker',
           size: 'small',
-          severity: 'secondary' as const,
-          outlined: true,
+          severity: 'info' as const,
+          outlined: false,
           onClick: () => router.push({ name: 'gps-log-reports' }),
         },
       ]
@@ -58,8 +58,8 @@ const reportSwitchButtons = computed(() => [
     label: t('patrolDataButtonSwitch.switchCtpatReport'),
     icon: 'pi pi-file',
     size: 'small',
-    severity: 'info' as const,
-    outlined: false,
+    severity: 'secondary' as const,
+    outlined: true,
     onClick: () => router.push({ name: 'ctpat-reports' }),
   },
 ])
@@ -67,8 +67,10 @@ const reportSwitchButtons = computed(() => [
 useResetFirstOnFilterChange(
   () => [
     store.searchText,
-    store.filterAreaName,
+    store.filterAreaId,
     store.filterRouteName,
+    store.filterCheckPointName,
+    store.filterGuardName,
     store.filterDateFrom,
     store.filterDateTo,
   ],
@@ -103,18 +105,6 @@ function formatDateTime(iso: string) {
   )}:${pad2(d.getSeconds())}`
 }
 
-function onColumnFilter(payload: { key: string; value: any }) {
-  if (payload.key === 'routeName') {
-    store.filterAreaName = payload.value ?? null
-    store.filterRouteName = null
-  }
-  if (payload.key === 'patrolTime') {
-    const value = payload.value && typeof payload.value === 'object' ? payload.value : {}
-    store.filterDateFrom = value.from ?? null
-    store.filterDateTo = value.to ?? null
-  }
-}
-
 function clearAll() {
   store.clearFilters()
 }
@@ -123,22 +113,53 @@ function resetPageState() {
   store.clearFilters()
 }
 
+function shiftCellStyle(hex: string) {
+  return {
+    backgroundColor: hex,
+    margin: '-0.5rem -1rem',
+    padding: '0.5rem 1rem',
+    minHeight: 'calc(100% + 1rem)',
+  }
+}
+
+function formatCoordinate(value: number | null) {
+  return value == null ? '—' : String(value)
+}
+
 async function onExport() {
   exporting.value = true
   try {
-    await exportCtpatReportXlsx({
+    await exportGpsLogReportXlsx({
       rows: tableRows.value,
-      fileName: `ctpat_reports_${new Date().toISOString().slice(0, 10)}.xlsx`,
+      fileName: `gps_log_${new Date().toISOString().slice(0, 10)}.xlsx`,
     })
   } catch (e: any) {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: String(e?.message ?? 'Failed to export C-TPAT report.'),
+      detail: String(e?.message ?? 'Failed to export GPS log.'),
       life: 3000,
     })
   } finally {
     exporting.value = false
+  }
+}
+
+function onColumnFilter(payload: { key: string; value: any }) {
+  if (payload.key === 'routeName') {
+    const value = payload.value && typeof payload.value === 'object' ? payload.value : {}
+    store.filterAreaId = value.primaryValue ?? null
+    store.filterRouteName = value.secondaryValue ?? null
+  }
+  if (payload.key === 'checkPointName') store.filterCheckPointName = payload.value ?? null
+  if (payload.key === 'guardName') {
+    const value = String(payload.value ?? '').trim()
+    store.filterGuardName = value || null
+  }
+  if (payload.key === 'patrolTime') {
+    const value = payload.value && typeof payload.value === 'object' ? payload.value : {}
+    store.filterDateFrom = value.from ?? null
+    store.filterDateTo = value.to ?? null
   }
 }
 </script>
@@ -146,20 +167,21 @@ async function onExport() {
 <template>
   <div class="page-reports space-y-3">
     <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-      <div class="text-[26px] font-semibold text-slate-800">{{ t('ctpatReportList.title') }}</div>
+      <div class="text-[26px] font-semibold text-slate-800">
+        {{ t('gpsLogReport.title') }}
+      </div>
       <BaseButtonGroup :buttons="reportSwitchButtons" />
     </div>
 
     <BaseDataTable
-      :key="`ctpat-report-list-table-${locale}`"
+      :key="`gps-log-report-list-table-${locale}`"
       title=""
       :value="tableRows"
       :loading="store.loading"
-      dataKey="pr_id"
+      dataKey="row_id"
       :rows="store.rowsPerPage"
       :first="store.first"
-      :modelSearch="store.searchText"
-      @update:modelSearch="store.searchText = $event"
+      :showSearch="false"
       @update:columnFilter="onColumnFilter"
       @clear="clearAll"
       @page="onPage"
@@ -182,57 +204,79 @@ async function onExport() {
       <template #empty>
         <div class="p-4 text-slate-600 flex justify-center">
           {{
-            hasInvalidDateFilter
-              ? t('common.invalidDateFilter')
-              : `${t('ctpatReportList.noReports')}.`
+            hasInvalidDateFilter ? t('common.invalidDateFilter') : `${t('gpsLogReport.noReport')}.`
           }}
         </div>
       </template>
 
       <Column
         field="route_name"
-        :header="t('ctpatReportList.routeName')"
-        style="min-width: 12rem"
+        :header="t('gpsLogReport.routeName')"
+        style="min-width: 14rem"
         sortField="route_name"
         :filterMenu="{
           key: 'routeName',
-          type: 'select',
-          value: store.filterAreaName,
+          type: 'dual-select',
+          value: {
+            primaryValue: store.filterAreaId,
+            secondaryValue: store.filterRouteName,
+          },
           options: store.routeAreaOptions,
           optionLabel: 'label',
           optionValue: 'value',
           placeholder: t('reportList.filters.area'),
           filter: true,
+          secondaryOptions: store.routeOptions,
+          secondaryOptionLabel: 'label',
+          secondaryOptionValue: 'value',
+          secondaryPlaceholder: t('gpsLogReport.routeName'),
+          secondaryFilter: true,
+          secondaryParentField: 'areaId',
+          secondaryFilterField: 'searchText',
         }"
       />
 
       <Column
         field="check_point_name"
-        :header="t('ctpatReportList.checkpointName')"
-        style="min-width: 18rem"
+        :header="t('gpsLogReport.checkpointName')"
+        style="min-width: 10rem"
         sortField="check_point_name"
+        :filterMenu="{
+          key: 'checkPointName',
+          type: 'select',
+          value: store.filterCheckPointName,
+          options: store.checkPointOptions,
+          filter: true,
+          filterField: 'searchText',
+          filterMatchMode: 'contains',
+          placeholder: t('gpsLogReport.checkpointName'),
+        }"
       />
 
+      <Column :header="t('gpsLogReport.startTime')" style="min-width: 12rem" sortField="start_time">
+        <template #body="{ data }">
+          <div :style="shiftCellStyle(data.shift_color)">
+            {{ formatDateTime(data.start_time) }}
+          </div>
+        </template>
+      </Column>
+
       <Column
-        :header="t('ctpatReportList.startTime')"
+        :header="t('gpsLogReport.finishTime')"
         style="min-width: 12rem"
-        sortField="start_at"
+        sortField="finish_time"
       >
         <template #body="{ data }">
-          {{ formatDateTime(data.start_at) }}
-        </template>
-      </Column>
-
-      <Column :header="t('ctpatReportList.finishTime')" style="min-width: 12rem" sortField="end_at">
-        <template #body="{ data }">
-          {{ formatDateTime(data.end_at) }}
+          <div :style="shiftCellStyle(data.shift_color)">
+            {{ formatDateTime(data.finish_time) }}
+          </div>
         </template>
       </Column>
 
       <Column
-        :header="t('ctpatReportList.patrolTime')"
+        :header="t('gpsLogReport.patrolTime')"
         style="min-width: 12rem"
-        sortField="scan_at"
+        sortField="patrol_time"
         :filterMenu="{
           key: 'patrolTime',
           type: 'date-range',
@@ -243,22 +287,43 @@ async function onExport() {
         }"
       >
         <template #body="{ data }">
-          {{ formatDateTime(data.scan_at) }}
+          {{ formatDateTime(data.patrol_time) }}
+        </template>
+      </Column>
+
+      <Column
+        field="latitude"
+        :header="t('gpsLogReport.lat')"
+        style="min-width: 10rem"
+        sortField="latitude"
+      >
+        <template #body="{ data }">
+          {{ formatCoordinate(data.latitude) }}
+        </template>
+      </Column>
+
+      <Column
+        field="longitude"
+        :header="t('gpsLogReport.long')"
+        style="min-width: 10rem"
+        sortField="longitude"
+      >
+        <template #body="{ data }">
+          {{ formatCoordinate(data.longitude) }}
         </template>
       </Column>
 
       <Column
         field="report_name"
-        :header="t('ctpatReportList.guardName')"
-        style="min-width: 12rem"
-        sortField="report_name"
-      />
-
-      <Column
-        field="cp_priority"
-        :header="t('ctpatReportList.routeOrder')"
+        :header="t('gpsLogReport.guardName')"
         style="min-width: 10rem"
-        sortField="cp_priority"
+        sortField="report_name"
+        :filterMenu="{
+          key: 'guardName',
+          type: 'text',
+          value: store.filterGuardName,
+          placeholder: t('gpsLogReport.guardName'),
+        }"
       />
     </BaseDataTable>
   </div>
