@@ -151,21 +151,22 @@ const availableScanPointOptions = computed(() => {
 
 const groupedAvailableScanPointOptions = computed<GroupedScanPointOption[]>(() => {
   const areaLabelMap = new Map(props.areaOptions.map((option) => [option.value, option.label]))
-  const groupMap = new Map<string, ScanPointOption[]>()
+  const groupMap = new Map<number, { label: string; items: ScanPointOption[] }>()
 
   for (const option of availableScanPointOptions.value) {
-    const areaLabel = areaLabelMap.get(Number(option.areaId ?? 0)) ?? `Area ${option.areaId}`
-    const list = groupMap.get(areaLabel) ?? []
-    list.push(option)
-    groupMap.set(areaLabel, list)
+    const areaId = Number(option.areaId ?? 0)
+    const areaLabel = areaLabelMap.get(areaId) ?? `Area ${areaId}`
+    const group = groupMap.get(areaId) ?? { label: areaLabel, items: [] }
+    group.items.push(option)
+    groupMap.set(areaId, group)
   }
 
   return Array.from(groupMap.entries())
-    .map(([label, items]) => ({
-      label,
-      items: items.slice().sort((a, b) => String(a.cpCode).localeCompare(String(b.cpCode))),
+    .sort((a, b) => Number(a[0] ?? 0) - Number(b[0] ?? 0))
+    .map(([, group]) => ({
+      label: group.label,
+      items: group.items.slice().sort((a, b) => String(a.cpCode).localeCompare(String(b.cpCode))),
     }))
-    .sort((a, b) => a.label.localeCompare(b.label))
 })
 
 function getDisplayOrder(detail: RouteDetailModel) {
