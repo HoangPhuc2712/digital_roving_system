@@ -128,6 +128,21 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
       return options.sort((a, b) => a.label.localeCompare(b.label))
     },
 
+    guardSearchTextMap(): Record<string, string> {
+      const map: Record<string, string> = {}
+      for (const option of this.guardOptions) {
+        const label = String(option.label ?? '').trim()
+        const value = String(option.value ?? '').trim()
+        const searchText = String(option.searchText ?? label)
+          .trim()
+          .toLowerCase()
+
+        if (label && !map[label]) map[label] = searchText
+        if (value && !map[value]) map[value] = searchText
+      }
+      return map
+    },
+
     filteredRows(): PatrolDetailReportRow[] {
       const q = this.searchText.trim().toLowerCase()
       let fromTime = this.filterDateFrom ? this.filterDateFrom.getTime() : null
@@ -149,14 +164,15 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
         const guardNameQuery = String(this.filterGuardName ?? '')
           .trim()
           .toLowerCase()
-        if (
-          guardNameQuery &&
-          !String(row.report_name ?? '')
+        if (guardNameQuery) {
+          const reportName = String(row.report_name ?? '').trim()
+          const guardSearchText = String(this.guardSearchTextMap[reportName] ?? reportName)
             .trim()
             .toLowerCase()
-            .includes(guardNameQuery)
-        ) {
-          return false
+
+          if (!guardSearchText.includes(guardNameQuery)) {
+            return false
+          }
         }
 
         if (fromTime != null || toTime != null) {
