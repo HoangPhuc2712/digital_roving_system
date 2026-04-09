@@ -6,7 +6,7 @@ import { useRouter } from 'vue-router'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import ChangePasswordForm from '@/modules/users/components/ChangePasswordForm.vue'
-import { changeCurrentUserPassword, validateCurrentUserPassword } from '@/modules/users/users.api'
+import { changeCurrentUserPassword } from '@/modules/users/users.api'
 import { useAuthStore } from '@/stores/auth.store'
 import { translateRoleName } from '@/utils/dataI18n'
 
@@ -95,11 +95,6 @@ async function onSubmitChangePassword(payload: { currentPassword: string; newPas
   currentPasswordInvalid.value = false
 
   try {
-    await validateCurrentUserPassword({
-      user_code: userCode.value,
-      current_password: payload.currentPassword,
-    })
-
     const result = await changeCurrentUserPassword({
       user_id: userId.value,
       user_code: userCode.value,

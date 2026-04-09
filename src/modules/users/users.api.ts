@@ -375,14 +375,11 @@ export async function changeCurrentUserPassword(payload: {
   new_password: string
   actor_id: string
 }) {
-  await validateCurrentUserPassword({
-    user_code: payload.user_code,
-    current_password: payload.current_password,
-  })
-
   try {
     const res = await http.patch(endpoints.user.changePassword(payload.user_id), {
-      userPassword: payload.new_password,
+      oldPassword: payload.current_password,
+      newPassword: payload.new_password,
+      confirmNewPassword: payload.new_password,
       updatedBy: payload.actor_id,
     })
     const env = ensureSuccess<boolean>(res.data)
