@@ -61,6 +61,14 @@ type ReferenceDataset = {
   isActualDataset?: boolean
 }
 
+type ReferenceLineMeta = {
+  label: string
+  value: number
+  borderColor: string
+  borderDash: number[] | undefined
+  borderWidth: number
+}
+
 const chartCanvasRef = ref<HTMLCanvasElement | null>(null)
 let chartInstance: ChartInstance | null = null
 
@@ -141,20 +149,27 @@ const referenceLabelsPlugin: Plugin<'line'> = {
     const yScale = scales.y
     if (!yScale || !chartArea) return
 
-    const labelsToDraw = chart.data.datasets
+    const referenceLines = chart.data.datasets
       .map((dataset) => ({
         label: String((dataset as ReferenceDataset).referenceLabel ?? '').trim(),
         value: Number(Array.isArray(dataset.data) ? (dataset.data[0] ?? NaN) : NaN),
+        borderColor: String((dataset as ReferenceDataset).borderColor ?? '#111827'),
+        borderDash: (dataset as ReferenceDataset).borderDash,
+        borderWidth: Number((dataset as ReferenceDataset).borderWidth ?? 2),
       }))
-      .filter((item) => item.label && Number.isFinite(item.value))
+      .filter(
+        (item): item is ReferenceLineMeta => item.label.length > 0 && Number.isFinite(item.value),
+      )
 
-    if (!labelsToDraw.length) return
+    if (!referenceLines.length) return
 
     ctx.save()
     ctx.font = '600 12px Inter, sans-serif'
     ctx.textBaseline = 'middle'
 
-    for (const item of labelsToDraw) {
+    const shouldManuallyDrawLines = chartLabels.value.length <= 1
+
+    for (const item of referenceLines) {
       const text = item.label
       const y = yScale.getPixelForValue(item.value)
       const paddingX = 10
@@ -163,6 +178,18 @@ const referenceLabelsPlugin: Plugin<'line'> = {
       const boxWidth = textWidth + paddingX * 2
       const x = chartArea.right - boxWidth - 8
       const boxY = y - boxHeight / 2
+
+      if (shouldManuallyDrawLines) {
+        ctx.save()
+        ctx.strokeStyle = item.borderColor
+        ctx.lineWidth = item.borderWidth
+        ctx.setLineDash(item.borderDash ?? [])
+        ctx.beginPath()
+        ctx.moveTo(chartArea.left, y)
+        ctx.lineTo(chartArea.right, y)
+        ctx.stroke()
+        ctx.restore()
+      }
 
       ctx.fillStyle = '#1F2937'
       drawRoundedRect(ctx, x, boxY, boxWidth, boxHeight, 8)
