@@ -202,6 +202,7 @@ watch(
     :header="isExternalEditStatus ? t('reportForm.editIssueStatus') : t('reportForm.reportDetail')"
     :style="{ width: '980px', maxWidth: '95vw' }"
     :contentStyle="{ maxHeight: '78vh', overflow: 'auto' }"
+    :closeOnEscape="!viewerVisible"
     @update:visible="emit('update:visible', $event)"
     @hide="close"
   >

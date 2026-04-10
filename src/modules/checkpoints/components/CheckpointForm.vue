@@ -77,6 +77,7 @@ const isSubmitting = computed(() => submitLocked.value || Boolean(props.loading)
 
 const submitted = ref(false)
 const submitLocked = ref(false)
+const qrPreviewVisible = ref(false)
 
 const form = reactive<FormState>({
   cp_id: undefined,
@@ -114,6 +115,7 @@ watch(
   (visible) => {
     if (!visible) {
       submitLocked.value = false
+      qrPreviewVisible.value = false
     }
   },
 )
@@ -218,7 +220,7 @@ function submit() {
     :style="{ width: '980px', maxWidth: '95vw' }"
     :contentStyle="{ maxHeight: '72vh', overflow: 'auto' }"
     :closable="!isSubmitting"
-    :closeOnEscape="!isSubmitting"
+    :closeOnEscape="!isSubmitting && !qrPreviewVisible"
     @update:visible="handleDialogVisibleChange"
     @hide="close"
   >
@@ -359,6 +361,7 @@ function submit() {
               cpCode: form.cp_code,
               cpPriority: form.cp_priority,
             }"
+            @dialog-visible-change="qrPreviewVisible = $event"
           />
           <div v-else class="text-sm text-slate-500">
             {{ isNew ? t('checkpointForm.qrGenerate') : t('checkpointForm.noQr') }}

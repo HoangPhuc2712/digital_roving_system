@@ -91,20 +91,31 @@ export async function exportCheckpointsXlsx(params: {
   rows: CheckpointRow[]
   fileName: string
   title: string
+  includeQrImage?: boolean
 }) {
+  const includeQrImage = params.includeQrImage ?? true
   const wb = new ExcelJS.Workbook()
   const ws = wb.addWorksheet('Checkpoints')
 
-  ws.columns = [
-    { header: 'Check Point Code', key: 'cp_code', width: 20 },
-    { header: 'Check Point Name', key: 'cp_name', width: 24 },
-    { header: 'QR Image', key: 'cp_qr', width: 14 },
-    { header: 'Area', key: 'area', width: 18 },
-    { header: 'Description', key: 'cp_description', width: 28 },
-    { header: 'Priority', key: 'cp_priority', width: 12 },
-  ]
+  ws.columns = includeQrImage
+    ? [
+        { header: 'Check Point Code', key: 'cp_code', width: 20 },
+        { header: 'Check Point Name', key: 'cp_name', width: 24 },
+        { header: 'QR Image', key: 'cp_qr', width: 14 },
+        { header: 'Area', key: 'area', width: 18 },
+        { header: 'Description', key: 'cp_description', width: 28 },
+        { header: 'Priority', key: 'cp_priority', width: 12 },
+      ]
+    : [
+        { header: 'Check Point Code', key: 'cp_code', width: 20 },
+        { header: 'Check Point Name', key: 'cp_name', width: 24 },
+        { header: 'Area', key: 'area', width: 18 },
+        { header: 'Description', key: 'cp_description', width: 28 },
+        { header: 'Priority', key: 'cp_priority', width: 12 },
+      ]
 
-  ws.mergeCells(1, 1, 1, 6)
+  const totalColumns = includeQrImage ? 6 : 5
+  ws.mergeCells(1, 1, 1, totalColumns)
   const titleCell = ws.getCell(1, 1)
   titleCell.value = params.title
   titleCell.font = { bold: true, size: 14, color: { argb: 'FF0F172A' } }
@@ -112,14 +123,9 @@ export async function exportCheckpointsXlsx(params: {
   ws.getRow(1).height = 24
 
   const headerRowIndex = 2
-  const headerLabels = [
-    'Check Point Code',
-    'Check Point Name',
-    'QR Image',
-    'Area',
-    'Description',
-    'Priority',
-  ]
+  const headerLabels = includeQrImage
+    ? ['Check Point Code', 'Check Point Name', 'QR Image', 'Area', 'Description', 'Priority']
+    : ['Check Point Code', 'Check Point Name', 'Area', 'Description', 'Priority']
 
   for (let c = 1; c <= headerLabels.length; c++) {
     const cell = ws.getCell(headerRowIndex, c)
@@ -137,23 +143,34 @@ export async function exportCheckpointsXlsx(params: {
 
     ws.getCell(currentRow, 1).value = row.cp_code || '-'
     ws.getCell(currentRow, 2).value = row.cp_name || '-'
-    ws.getCell(currentRow, 4).value =
-      `${row.area_code || ''}${row.area_name ? `\n${row.area_name}` : ''}`
-    ws.getCell(currentRow, 5).value = row.cp_description || ''
-    ws.getCell(currentRow, 6).value = Number(row.cp_priority ?? 0)
 
-    for (let c = 1; c <= 6; c++) {
+    if (includeQrImage) {
+      ws.getCell(currentRow, 4).value =
+        `${row.area_code || ''}${row.area_name ? `\n${row.area_name}` : ''}`
+      ws.getCell(currentRow, 5).value = row.cp_description || ''
+      ws.getCell(currentRow, 6).value = Number(row.cp_priority ?? 0)
+    } else {
+      ws.getCell(currentRow, 3).value =
+        `${row.area_code || ''}${row.area_name ? `\n${row.area_name}` : ''}`
+      ws.getCell(currentRow, 4).value = row.cp_description || ''
+      ws.getCell(currentRow, 5).value = Number(row.cp_priority ?? 0)
+    }
+
+    for (let c = 1; c <= totalColumns; c++) {
       const cell = ws.getCell(currentRow, c)
-      cell.alignment =
-        c === 3
-          ? { horizontal: 'center', vertical: 'middle' }
-          : c === 6
-            ? { horizontal: 'center', vertical: 'middle', wrapText: true }
-            : { horizontal: 'left', vertical: 'middle', wrapText: true }
+      const isQrColumn = includeQrImage && c === 3
+      const isPriorityColumn = c === totalColumns
+      cell.alignment = isQrColumn
+        ? { horizontal: 'center', vertical: 'middle' }
+        : isPriorityColumn
+          ? { horizontal: 'center', vertical: 'middle', wrapText: true }
+          : { horizontal: 'left', vertical: 'middle', wrapText: true }
       applyCellBorder(cell)
     }
 
-    await addImageToCell(ws, wb, currentRow, 3, row.cp_qr)
+    if (includeQrImage) {
+      await addImageToCell(ws, wb, currentRow, 3, row.cp_qr)
+    }
 
     currentRow += 1
   }

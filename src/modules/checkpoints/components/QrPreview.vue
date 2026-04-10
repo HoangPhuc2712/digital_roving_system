@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import Dialog from 'primevue/dialog'
 import { useI18n } from 'vue-i18n'
 
@@ -12,6 +12,10 @@ const props = defineProps<{
   value: string
   size?: number
   printItem?: Omit<CheckpointPrintItem, 'qrSrc'> | null
+}>()
+
+const emit = defineEmits<{
+  (e: 'dialog-visible-change', value: boolean): void
 }>()
 
 const auth = useAuthStore()
@@ -37,6 +41,13 @@ function open() {
   if (!canViewQr.value) return
   visible.value = true
 }
+watch(
+  visible,
+  (nextVisible) => {
+    emit('dialog-visible-change', nextVisible)
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
