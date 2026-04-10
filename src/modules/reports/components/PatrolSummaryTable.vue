@@ -116,10 +116,10 @@ function openShiftProblemDetails(row: PatrolSummaryReportRow) {
             {{ t('patrolSummaryReportList.missedPatrolCount') }}
           </th>
           <th class="border border-slate-200 px-4 py-3 text-center font-semibold">
-            {{ t('patrolSummaryReportList.tooShortPatrolCount') }}
+            {{ t('patrolSummaryReportList.tooSlowPatrolCount') }}
           </th>
           <th class="border border-slate-200 px-4 py-3 text-center font-semibold">
-            {{ t('patrolSummaryReportList.tooLongPatrolCount') }}
+            {{ t('patrolSummaryReportList.tooFastPatrolCount') }}
           </th>
           <th class="border border-slate-200 px-4 py-3 text-center font-semibold">
             {{ t('patrolSummaryReportList.insufficientNumberOfPatrol') }}
@@ -170,20 +170,6 @@ function openShiftProblemDetails(row: PatrolSummaryReportRow) {
             </td>
             <td
               class="border border-slate-200 px-4 py-3 text-center"
-              :class="abnormalCountClass(row.time_slow_problem_count)"
-            >
-              <button
-                v-if="canOpenSlowTimeProblemDetails(row)"
-                type="button"
-                class="font-medium text-red-500 hover:text-red-800 hover:cursor-pointer focus:outline-none"
-                @click="openSlowTimeProblemDetails(row)"
-              >
-                {{ row.time_slow_problem_count }}
-              </button>
-              <span v-else>{{ row.time_slow_problem_count }}</span>
-            </td>
-            <td
-              class="border border-slate-200 px-4 py-3 text-center"
               :class="abnormalCountClass(row.time_fast_problem_count)"
             >
               <button
@@ -195,6 +181,20 @@ function openShiftProblemDetails(row: PatrolSummaryReportRow) {
                 {{ row.time_fast_problem_count }}
               </button>
               <span v-else>{{ row.time_fast_problem_count }}</span>
+            </td>
+            <td
+              class="border border-slate-200 px-4 py-3 text-center"
+              :class="abnormalCountClass(row.time_slow_problem_count)"
+            >
+              <button
+                v-if="canOpenSlowTimeProblemDetails(row)"
+                type="button"
+                class="font-medium text-red-500 hover:text-red-800 hover:cursor-pointer focus:outline-none"
+                @click="openSlowTimeProblemDetails(row)"
+              >
+                {{ row.time_slow_problem_count }}
+              </button>
+              <span v-else>{{ row.time_slow_problem_count }}</span>
             </td>
             <td
               class="border border-slate-200 px-4 py-3 text-center"

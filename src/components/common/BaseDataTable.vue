@@ -1,5 +1,8 @@
 <template>
-  <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+  <div
+    ref="tableRootRef"
+    class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+  >
     <div v-if="hasActionRow" class="border-b border-slate-200 bg-white px-3 py-3">
       <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div v-if="hasToolbarStart" class="flex flex-wrap items-center gap-2">
@@ -202,6 +205,7 @@ const emit = defineEmits<{
 const slots = useSlots()
 const instance = getCurrentInstance()
 const { t, locale } = useI18n()
+const tableRootRef = ref<HTMLElement | null>(null)
 const activeFilterKey = ref<string | null>(null)
 const popoverRefs = ref<Record<string, any>>({})
 const filterButtonRefs = ref<Record<string, HTMLElement | null>>({})
@@ -565,9 +569,24 @@ const FilterMenuControl = defineComponent({
   },
 })
 
+function resetTableScrollPosition() {
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      const root = tableRootRef.value
+      if (!root) return
+
+      const scrollContainer = root.querySelector<HTMLElement>('.p-datatable-table-container')
+      if (scrollContainer) {
+        scrollContainer.scrollTop = 0
+      }
+    })
+  })
+}
+
 function onPage(ev: DataTablePageEvent) {
   emit('update:first', ev.first)
   emit('page', ev)
+  resetTableScrollPosition()
 }
 
 function onSort(ev: DataTableSortEvent) {
