@@ -15,7 +15,7 @@ export const reportsRoutes = [
     path: 'incorrect-scan-reports',
     name: 'incorrect-scan-reports',
     component: () => import('@/modules/reports/pages/IncorrectScanReportList.vue'),
-    meta: { permission: ['reports.view_all', 'reports.view_mine'] },
+    meta: { permission: ['reports.view_all', 'reports.view_mine'], adminOnly: true },
   },
   {
     path: 'ctpat-reports',
