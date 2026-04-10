@@ -8,6 +8,7 @@ import InputNumber from 'primevue/inputnumber'
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import BaseInput from '@/components/common/inputs/BaseInput.vue'
 import BaseMessage from '@/components/common/messages/BaseMessage.vue'
+import { useAuthStore } from '@/stores/auth.store'
 
 import QrPreview from '@/modules/checkpoints/components/QrPreview.vue'
 import { normalizeImageSource } from '@/utils/base64'
@@ -58,6 +59,8 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
+const auth = useAuthStore()
+const canManage = computed(() => auth.isAdminUser && auth.canAccess('checkpoints.manage'))
 const { t } = useI18n()
 const isView = computed(() => props.mode === 'view')
 const isNew = computed(() => props.mode === 'new')
@@ -74,6 +77,7 @@ const isSubmitting = computed(() => submitLocked.value || Boolean(props.loading)
 
 const submitted = ref(false)
 const submitLocked = ref(false)
+const qrPreviewVisible = ref(false)
 
 const form = reactive<FormState>({
   cp_id: undefined,
@@ -111,6 +115,7 @@ watch(
   (visible) => {
     if (!visible) {
       submitLocked.value = false
+      qrPreviewVisible.value = false
     }
   },
 )
@@ -215,7 +220,7 @@ function submit() {
     :style="{ width: '980px', maxWidth: '95vw' }"
     :contentStyle="{ maxHeight: '72vh', overflow: 'auto' }"
     :closable="!isSubmitting"
-    :closeOnEscape="!isSubmitting"
+    :closeOnEscape="!isSubmitting && !qrPreviewVisible"
     @update:visible="handleDialogVisibleChange"
     @hide="close"
   >
@@ -342,7 +347,7 @@ function submit() {
         </div>
       </div>
 
-      <div>
+      <div v-if="canManage">
         <label class="block text-sm text-slate-600 mb-2">{{ t('checkpointForm.qrImg') }}</label>
 
         <div class="mb-3">
@@ -356,6 +361,7 @@ function submit() {
               cpCode: form.cp_code,
               cpPriority: form.cp_priority,
             }"
+            @dialog-visible-change="qrPreviewVisible = $event"
           />
           <div v-else class="text-sm text-slate-500">
             {{ isNew ? t('checkpointForm.qrGenerate') : t('checkpointForm.noQr') }}

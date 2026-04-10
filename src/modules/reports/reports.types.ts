@@ -180,14 +180,14 @@ export type PatrolSummaryReportRow = {
   required_count: number
   actual_count: number
   missed_count: number
-  time_slow_problem_count: number
-  time_fast_problem_count: number
+  too_slow_problem_count: number
+  too_fast_problem_count: number
   insufficient_count: number
   shift_problem_count: number
   abnormal_rate: number
   missed_patrol_details: PatrolSummaryMissedPatrolDetailRow[]
-  time_slow_problem_details: PatrolSummaryTimeProblemDetailRow[]
-  time_fast_problem_details: PatrolSummaryTimeProblemDetailRow[]
+  too_slow_problem_details: PatrolSummaryTimeProblemDetailRow[]
+  too_fast_problem_details: PatrolSummaryTimeProblemDetailRow[]
   insufficient_patrol_details: PatrolSummaryInsufficientPatrolDetailRow[]
   shift_problem_details: PatrolSummaryShiftProblemDetailRow[]
 }

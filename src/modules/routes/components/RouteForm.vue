@@ -81,6 +81,7 @@ const initializing = ref(false)
 const submitted = ref(false)
 const addScanPointSubmitted = ref(false)
 const submitLocked = ref(false)
+const qrPreviewVisible = ref(false)
 
 const { t, locale } = useI18n()
 
@@ -218,6 +219,7 @@ watch(
   (visible) => {
     if (!visible) {
       submitLocked.value = false
+      qrPreviewVisible.value = false
     }
   },
 )
@@ -399,6 +401,7 @@ function submit() {
     :header="title"
     :style="{ width: '980px', maxWidth: '96vw' }"
     :contentStyle="{ maxHeight: '78vh', overflow: 'auto' }"
+    :closeOnEscape="!isSubmitting && !qrPreviewVisible"
     @update:visible="emit('update:visible', $event)"
     @hide="close"
   >
@@ -624,6 +627,7 @@ function submit() {
                     cpCode: data.cp_code,
                     cpPriority: data.cp_priority,
                   }"
+                  @dialog-visible-change="qrPreviewVisible = $event"
                 />
               </template>
             </Column>

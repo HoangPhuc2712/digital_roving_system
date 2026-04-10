@@ -135,13 +135,13 @@ const selectedSlowTimeProblemDate = computed(
   () => selectedSlowTimeProblemRow.value?.date_label ?? '',
 )
 const selectedSlowTimeProblemRows = computed(
-  () => selectedSlowTimeProblemRow.value?.time_slow_problem_details ?? [],
+  () => selectedSlowTimeProblemRow.value?.too_slow_problem_details ?? [],
 )
 const selectedFastTimeProblemDate = computed(
   () => selectedFastTimeProblemRow.value?.date_label ?? '',
 )
 const selectedFastTimeProblemRows = computed(
-  () => selectedFastTimeProblemRow.value?.time_fast_problem_details ?? [],
+  () => selectedFastTimeProblemRow.value?.too_fast_problem_details ?? [],
 )
 
 const selectedInsufficientDate = computed(() => selectedInsufficientRow.value?.date_label ?? '')

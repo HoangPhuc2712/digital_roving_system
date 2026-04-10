@@ -34,14 +34,18 @@ const reportSwitchButtons = computed(() => [
     outlined: true,
     onClick: () => router.push({ name: 'reports' }),
   },
-  {
-    label: t('patrolDataButtonSwitch.switchIncorrectScanReports'),
-    icon: 'pi pi-file',
-    size: 'small',
-    severity: 'secondary' as const,
-    outlined: true,
-    onClick: () => router.push({ name: 'incorrect-scan-reports' }),
-  },
+  ...(auth.isAdminUser
+    ? [
+        {
+          label: t('patrolDataButtonSwitch.switchIncorrectScanReports'),
+          icon: 'pi pi-file',
+          size: 'small',
+          severity: 'secondary' as const,
+          outlined: true,
+          onClick: () => router.push({ name: 'incorrect-scan-reports' }),
+        },
+      ]
+    : []),
   ...(auth.isAdminUser
     ? [
         {

@@ -503,6 +503,7 @@ async function onExport() {
       rows: store.filteredRows,
       title: `${areaCode} Checkpoints`,
       fileName: `${areaCode}_checkpoints_${new Date().toISOString().slice(0, 10)}.xlsx`,
+      includeQrImage: canManage.value,
     })
   } catch (e: any) {
     toast.add({

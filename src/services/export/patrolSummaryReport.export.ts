@@ -57,8 +57,8 @@ export async function exportPatrolSummaryReportXlsx(params: {
     { key: 'required_count', width: 22 },
     { key: 'actual_count', width: 18 },
     { key: 'missed_count', width: 18 },
-    { key: 'time_slow_problem_count', width: 20 },
-    { key: 'time_fast_problem_count', width: 20 },
+    { key: 'too_slow_problem_count', width: 20 },
+    { key: 'too_fast_problem_count', width: 20 },
     { key: 'insufficient_count', width: 24 },
     { key: 'shift_problem_count', width: 18 },
     { key: 'abnormal_rate', width: 16 },
@@ -96,8 +96,8 @@ export async function exportPatrolSummaryReportXlsx(params: {
       ws.getCell(currentRow, 3).value = item.required_count
       ws.getCell(currentRow, 4).value = item.actual_count
       ws.getCell(currentRow, 5).value = item.missed_count
-      ws.getCell(currentRow, 6).value = item.time_slow_problem_count
-      ws.getCell(currentRow, 7).value = item.time_fast_problem_count
+      ws.getCell(currentRow, 6).value = item.too_slow_problem_count
+      ws.getCell(currentRow, 7).value = item.too_fast_problem_count
       ws.getCell(currentRow, 8).value = item.insufficient_count
       ws.getCell(currentRow, 9).value = item.shift_problem_count
       ws.getCell(currentRow, 10).value = formatRate(item.abnormal_rate)
@@ -119,10 +119,10 @@ export async function exportPatrolSummaryReportXlsx(params: {
       if (item.missed_count > 0) {
         ws.getCell(currentRow, 5).font = { color: { argb: hexToArgb('#EF4444') } }
       }
-      if (item.time_slow_problem_count > 0) {
+      if (item.too_slow_problem_count > 0) {
         ws.getCell(currentRow, 6).font = { color: { argb: hexToArgb('#EF4444') } }
       }
-      if (item.time_fast_problem_count > 0) {
+      if (item.too_fast_problem_count > 0) {
         ws.getCell(currentRow, 7).font = { color: { argb: hexToArgb('#EF4444') } }
       }
       if (item.insufficient_count > 0) {
