@@ -1473,12 +1473,16 @@ function formatSummaryDuration(hours: number, minutes: number, seconds: number) 
 }
 
 function resolveSummaryAbnormalIssuePriority(view: ApiPlannedPatrolShiftView) {
-  if (Boolean(view.timeFastProblem) || Boolean(view.timeSlowProblem)) {
-    return 'time'
+  if (Boolean(view.timeFastProblem)) {
+    return 'too_fast'
+  }
+
+  if (Boolean(view.timeSlowProblem)) {
+    return 'too_slow'
   }
 
   if (Boolean(view.pointProblem)) {
-    return 'point'
+    return 'insufficient'
   }
 
   if (Boolean(view.shiftProblem)) {
@@ -1500,7 +1504,7 @@ function buildMissedPatrolDetails(
 
 function buildTimeProblemDetails(
   views: ApiPlannedPatrolShiftView[],
-  mode: 'slow' | 'fast',
+  threshold: 'min' | 'max',
 ): PatrolSummaryTimeProblemDetailRow[] {
   return [...views]
     .sort((a, b) => {
@@ -1523,7 +1527,7 @@ function buildTimeProblemDetails(
       return Number(a.psId ?? 0) - Number(b.psId ?? 0)
     })
     .map((item, index) => ({
-      row_id: `${Number(item.psId ?? 0)}-${Number(item.routeId ?? 0)}-${mode}-${index}`,
+      row_id: `${Number(item.psId ?? 0)}-${Number(item.routeId ?? 0)}-${threshold}-${index}`,
       patrol_time:
         [formatShiftDatePrefix(item), extractShiftTimeRange(item)].filter(Boolean).join(' ') || '-',
       actual_patrol_time: formatSummaryDuration(
@@ -1532,7 +1536,7 @@ function buildTimeProblemDetails(
         Number(item.realitySeconds ?? 0),
       ),
       standard_patrol_time:
-        mode === 'slow'
+        threshold === 'min'
           ? formatSummaryDuration(
               Number(item.planMinHours ?? 0),
               Number(item.planMinMinutes ?? 0),
@@ -1909,30 +1913,41 @@ export async function fetchPatrolSummaryRows(
 
       const actualRows = plannedRows.filter(hasActualPatrolData)
       const missedRows = plannedRows.filter((item) => !hasActualPatrolData(item))
-      const fastPatrolProblemRows = actualRows.filter((item) => Boolean(item.timeFastProblem))
-      const slowPatrolProblemRows = actualRows.filter((item) => Boolean(item.timeSlowProblem))
 
       const actualCount = actualRows.length
       const missedCount = missedRows.length
       const missedPatrolDetails = buildMissedPatrolDetails(missedRows)
-      const fastPatrolProblemDetails = buildTimeProblemDetails(fastPatrolProblemRows, 'slow')
-      const fastPatrolProblemCount = fastPatrolProblemRows.length
-      const slowPatrolProblemDetails = buildTimeProblemDetails(slowPatrolProblemRows, 'fast')
-      const slowPatrolProblemCount = slowPatrolProblemRows.length
-      const insufficientRows = actualRows.filter((item) => Boolean(item.pointProblem))
+
+      const tooFastPatrolRows = actualRows.filter(
+        (item) => resolveSummaryAbnormalIssuePriority(item) === 'too_fast',
+      )
+      const tooSlowPatrolRows = actualRows.filter(
+        (item) => resolveSummaryAbnormalIssuePriority(item) === 'too_slow',
+      )
+      const insufficientRows = actualRows.filter(
+        (item) => resolveSummaryAbnormalIssuePriority(item) === 'insufficient',
+      )
+      const shiftProblemRows = actualRows.filter(
+        (item) => resolveSummaryAbnormalIssuePriority(item) === 'shift',
+      )
+
+      const tooFastPatrolCount = tooFastPatrolRows.length
+      const tooSlowPatrolCount = tooSlowPatrolRows.length
       const insufficientCount = insufficientRows.length
+      const shiftProblemCount = shiftProblemRows.length
+
+      const tooFastPatrolDetails = buildTimeProblemDetails(tooFastPatrolRows, 'min')
+      const tooSlowPatrolDetails = buildTimeProblemDetails(tooSlowPatrolRows, 'max')
       const insufficientPatrolDetails = buildInsufficientPatrolDetails(
         `Area ${areaId}`,
         insufficientRows,
         actualViewMap,
       )
-      const shiftProblemRows = actualRows.filter((item) => Boolean(item.shiftProblem))
-      const shiftProblemCount = shiftProblemRows.length
       const shiftProblemDetails = buildShiftProblemDetails(shiftProblemRows, actualViewMap)
-      const prioritizedAbnormalActualCount = actualRows.filter(
-        (item) => resolveSummaryAbnormalIssuePriority(item) !== null,
-      ).length
-      const abnormalTotal = missedCount + prioritizedAbnormalActualCount
+
+      const abnormalActualCount =
+        tooFastPatrolCount + tooSlowPatrolCount + insufficientCount + shiftProblemCount
+      const abnormalTotal = missedCount + abnormalActualCount
       const abnormalRate = requiredCount > 0 ? (abnormalTotal / requiredCount) * 100 : 0
 
       rows.push({
@@ -1943,14 +1958,14 @@ export async function fetchPatrolSummaryRows(
         required_count: requiredCount,
         actual_count: actualCount,
         missed_count: missedCount,
-        time_slow_problem_count: fastPatrolProblemCount,
-        time_fast_problem_count: slowPatrolProblemCount,
+        too_slow_problem_count: tooSlowPatrolCount,
+        too_fast_problem_count: tooFastPatrolCount,
         insufficient_count: insufficientCount,
         shift_problem_count: shiftProblemCount,
         abnormal_rate: Number(abnormalRate.toFixed(2)),
         missed_patrol_details: missedPatrolDetails,
-        time_slow_problem_details: fastPatrolProblemDetails,
-        time_fast_problem_details: slowPatrolProblemDetails,
+        too_slow_problem_details: tooSlowPatrolDetails,
+        too_fast_problem_details: tooFastPatrolDetails,
         insufficient_patrol_details: insufficientPatrolDetails,
         shift_problem_details: shiftProblemDetails,
       })

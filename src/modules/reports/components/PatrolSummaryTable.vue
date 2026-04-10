@@ -44,7 +44,7 @@ function openMissedDetails(row: PatrolSummaryReportRow) {
 }
 
 function canOpenSlowTimeProblemDetails(row: PatrolSummaryReportRow) {
-  return Number(row.time_slow_problem_count ?? 0) > 0
+  return Number(row.too_slow_problem_count ?? 0) > 0
 }
 
 function openSlowTimeProblemDetails(row: PatrolSummaryReportRow) {
@@ -53,7 +53,7 @@ function openSlowTimeProblemDetails(row: PatrolSummaryReportRow) {
 }
 
 function canOpenFastTimeProblemDetails(row: PatrolSummaryReportRow) {
-  return Number(row.time_fast_problem_count ?? 0) > 0
+  return Number(row.too_fast_problem_count ?? 0) > 0
 }
 
 function openFastTimeProblemDetails(row: PatrolSummaryReportRow) {
@@ -170,21 +170,7 @@ function openShiftProblemDetails(row: PatrolSummaryReportRow) {
             </td>
             <td
               class="border border-slate-200 px-4 py-3 text-center"
-              :class="abnormalCountClass(row.time_fast_problem_count)"
-            >
-              <button
-                v-if="canOpenFastTimeProblemDetails(row)"
-                type="button"
-                class="font-medium text-red-500 hover:text-red-800 hover:cursor-pointer focus:outline-none"
-                @click="openFastTimeProblemDetails(row)"
-              >
-                {{ row.time_fast_problem_count }}
-              </button>
-              <span v-else>{{ row.time_fast_problem_count }}</span>
-            </td>
-            <td
-              class="border border-slate-200 px-4 py-3 text-center"
-              :class="abnormalCountClass(row.time_slow_problem_count)"
+              :class="abnormalCountClass(row.too_slow_problem_count)"
             >
               <button
                 v-if="canOpenSlowTimeProblemDetails(row)"
@@ -192,9 +178,23 @@ function openShiftProblemDetails(row: PatrolSummaryReportRow) {
                 class="font-medium text-red-500 hover:text-red-800 hover:cursor-pointer focus:outline-none"
                 @click="openSlowTimeProblemDetails(row)"
               >
-                {{ row.time_slow_problem_count }}
+                {{ row.too_slow_problem_count }}
               </button>
-              <span v-else>{{ row.time_slow_problem_count }}</span>
+              <span v-else>{{ row.too_slow_problem_count }}</span>
+            </td>
+            <td
+              class="border border-slate-200 px-4 py-3 text-center"
+              :class="abnormalCountClass(row.too_fast_problem_count)"
+            >
+              <button
+                v-if="canOpenFastTimeProblemDetails(row)"
+                type="button"
+                class="font-medium text-red-500 hover:text-red-800 hover:cursor-pointer focus:outline-none"
+                @click="openFastTimeProblemDetails(row)"
+              >
+                {{ row.too_fast_problem_count }}
+              </button>
+              <span v-else>{{ row.too_fast_problem_count }}</span>
             </td>
             <td
               class="border border-slate-200 px-4 py-3 text-center"
