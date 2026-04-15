@@ -216,28 +216,31 @@ watch(
               {{ model.cp_name }} - {{ model.cp_code }}
             </div>
             <div>
-              <div class="text-sm text-slate-600">
+              <div class="text-md text-slate-600">
                 {{ t('reportForm.patrolRoute') }}:
                 <span class="text-slate-800 font-semibold">{{ model.route_name }}</span>
+              </div>
+
+              <div class="text-md text-slate-600">
                 <span v-if="shiftText" class="text-slate-600">
-                  - {{ t('reportForm.shift') }}:
+                  {{ t('reportForm.shift') }}:
                   <span class="text-slate-800 font-semibold">{{ shiftText }}</span>
                 </span>
               </div>
 
-              <div class="text-sm text-slate-600">
+              <div class="text-md text-slate-600">
                 {{ t('reportForm.area') }}:
                 <span class="text-slate-800 font-semibold">{{ model.area_name }}</span>
               </div>
 
-              <div class="text-sm text-slate-600">
+              <div class="text-md text-slate-600">
                 {{ t('reportForm.guard') }}:
                 <span class="text-slate-800 font-semibold">{{
                   model.report_name || model.created_by
                 }}</span>
               </div>
 
-              <div class="text-sm text-slate-600">
+              <div class="text-md text-slate-600">
                 {{ t('reportForm.reportDate') }}:
                 <span
                   :class="
