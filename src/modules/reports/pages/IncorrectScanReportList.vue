@@ -41,8 +41,7 @@ const reportSwitchButtons = computed(() => [
           label: t('patrolDataButtonSwitch.switchIncorrectScanReports'),
           icon: 'pi pi-file',
           size: 'small',
-          severity: 'secondary' as const,
-          outlined: true,
+          severity: 'info' as const,
           onClick: () => router.push({ name: 'incorrect-scan-reports' }),
         },
       ]
