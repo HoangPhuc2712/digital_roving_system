@@ -52,7 +52,7 @@ const exporting = ref(false)
 const formVisible = ref(false)
 const formMode = ref<ReportFormMode>('view')
 const formModel = ref<ReportFormModel | null>(null)
-const canEditStatus = computed(() => auth.isAdminUser)
+const canEditStatus = computed(() => auth.canAccess(['reports.view_all', 'reports.view_mine']))
 const dateReloadTimer = ref<number | null>(null)
 const suppressDateReload = ref(false)
 const hasInvalidDateFilter = computed(
