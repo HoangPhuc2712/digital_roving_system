@@ -307,13 +307,20 @@ watch(
               <span class="text-slate-800 font-semibold">{{ model.updated_name || '—' }}</span>
             </div>
 
-            <div class="flex justify-end gap-2">
+            <div class="flex justify-end gap-2 pt-1">
               <BaseButton
                 v-if="inlineStatusEdit"
                 :label="t('common.cancel')"
                 severity="secondary"
+                size="small"
                 outlined
                 @click="cancelInlineEditStatus"
+              />
+              <BaseButton
+                :label="t('common.submit')"
+                size="small"
+                severity="success"
+                @click="submitStatus"
               />
             </div>
           </div>
@@ -383,13 +390,6 @@ watch(
           severity="secondary"
           outlined
           @click="close"
-        />
-        <BaseButton
-          v-if="isEditStatus && model.pr_has_problem"
-          :label="t('common.submit')"
-          size="small"
-          severity="success"
-          @click="submitStatus"
         />
       </div>
     </div>
