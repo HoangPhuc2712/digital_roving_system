@@ -607,7 +607,7 @@ async function onExport() {
               @click="openView(data)"
             />
             <BaseIconButton
-              v-if="canEditStatus && data.pr_has_problem"
+              v-if="data.pr_has_problem"
               icon="pi pi-pencil"
               size="small"
               severity="secondary"

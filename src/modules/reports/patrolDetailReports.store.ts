@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia'
-import { fetchAreaRows } from '@/modules/areas/areas.api'
 import {
   fetchPatrolDetailCheckpointOptions,
   fetchPatrolDetailGuardOptions,
@@ -230,17 +229,14 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
     async load() {
       this.loading = true
       try {
-        const [rows, areaRows] = await Promise.all([
-          fetchPatrolDetailReportRows(),
-          fetchAreaRows().catch(() => []),
-          this.ensureFilterOptionsLoaded(),
-        ])
+        await this.ensureFilterOptionsLoaded()
+        const rows = await fetchPatrolDetailReportRows()
 
         this.rows = rows
         this.areaLabelMap = Object.fromEntries(
-          (areaRows ?? []).map((row: any) => [
-            Number(row.area_id ?? 0),
-            String(row.area_name ?? row.area_code ?? ''),
+          (this.areaFilterOptions ?? []).map((option) => [
+            Number(option.value ?? 0),
+            String(option.label ?? ''),
           ]),
         )
       } finally {
