@@ -208,6 +208,9 @@ const vi = {
     detail: 'Chi tiết',
     noDetailAvailable: 'Không có chi tiết',
     noImages: 'Không có hình ảnh',
+    validation: {
+      selectAnotherStatus: 'Vui lòng chọn trạng thái khác',
+    },
   },
   incorrectScanReportList: {
     title: 'Nhật ký quét sai điểm kiểm tra',

@@ -208,6 +208,9 @@ const en = {
     detail: 'Detail',
     noDetailAvailable: 'No detail available',
     noImages: 'No images',
+    validation: {
+      selectAnotherStatus: 'Please Select another status',
+    },
   },
   incorrectScanReportList: {
     title: 'Incorrect Scan Point Log',

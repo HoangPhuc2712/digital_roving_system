@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onBeforeUnmount } from 'vue'
 import Dialog from 'primevue/dialog'
 import Tag from 'primevue/tag'
 import Select from 'primevue/select'
@@ -45,13 +45,23 @@ const viewerItems = ref<BaseImageItem[]>([])
 const viewerStartIndex = ref(0)
 const statusDraft = ref(0)
 const inlineStatusEdit = ref(false)
+const statusValidationMessage = ref('')
+const statusValidationTimer = ref<number | null>(null)
 const { t } = useI18n()
 
 const formMode = computed<ReportFormMode>(() => props.mode ?? 'view')
 const canEditStatus = computed(() => Boolean(props.canEditStatus))
-const isExternalEditStatus = computed(() => canEditStatus.value && formMode.value === 'edit-status')
+const canEditCurrentStatus = computed(
+  () =>
+    canEditStatus.value &&
+    Boolean(props.model?.pr_has_problem) &&
+    Number(props.model?.pr_status ?? 0) !== 2,
+)
+const isExternalEditStatus = computed(
+  () => canEditCurrentStatus.value && formMode.value === 'edit-status',
+)
 const isEditStatus = computed(
-  () => canEditStatus.value && (isExternalEditStatus.value || inlineStatusEdit.value),
+  () => canEditCurrentStatus.value && (isExternalEditStatus.value || inlineStatusEdit.value),
 )
 const inspectionOk = computed(() => (props.model ? props.model.pr_has_problem === false : true))
 const shiftText = computed(() => String(props.model?.shift_text ?? '').trim())
@@ -60,7 +70,7 @@ const issueStatusOptions = computed(() => [
   { label: t('reportForm.issueStatusOptions.pending'), value: 0 },
   { label: t('reportForm.issueStatusOptions.inProgress'), value: 1 },
   { label: t('reportForm.issueStatusOptions.completed'), value: 2 },
-  { label: t('reportForm.issueStatusOptions.incompleted'), value: 3 },
+  // { label: t('reportForm.issueStatusOptions.incompleted'), value: 3 },
 ])
 
 function close() {
@@ -139,6 +149,27 @@ const standardTimeText = computed(() => {
 
 const actualTimeSeverity = computed(() => (props.model?.time_problem ? 'danger' : 'secondary'))
 
+function clearStatusValidationTimer() {
+  if (statusValidationTimer.value != null) {
+    window.clearTimeout(statusValidationTimer.value)
+    statusValidationTimer.value = null
+  }
+}
+
+function clearStatusValidationMessage() {
+  clearStatusValidationTimer()
+  statusValidationMessage.value = ''
+}
+
+function showSameStatusValidationMessage() {
+  clearStatusValidationTimer()
+  statusValidationMessage.value = t('reportForm.validation.selectAnotherStatus')
+  statusValidationTimer.value = window.setTimeout(() => {
+    statusValidationMessage.value = ''
+    statusValidationTimer.value = null
+  }, 3000)
+}
+
 function openViewer(items: BaseImageItem[], startIndex: number, title: string) {
   if (!items.length) return
 
@@ -151,21 +182,34 @@ function openViewer(items: BaseImageItem[], startIndex: number, title: string) {
 }
 
 function startInlineEditStatus() {
-  if (!canEditStatus.value || !props.model?.pr_has_problem) return
+  if (!canEditCurrentStatus.value) return
+  clearStatusValidationMessage()
   inlineStatusEdit.value = true
-  statusDraft.value = Number(props.model.pr_status ?? 0)
+  statusDraft.value = Number(props.model?.pr_status ?? 0)
 }
 
 function cancelInlineEditStatus() {
+  clearStatusValidationMessage()
   inlineStatusEdit.value = false
   statusDraft.value = props.model?.pr_has_problem ? Number(props.model.pr_status ?? 0) : 0
 }
 
 function submitStatus() {
   if (!props.model?.pr_id) return
+
+  const nextStatus = Number(statusDraft.value ?? 0)
+  const currentStatus = Number(props.model.pr_status ?? 0)
+
+  if (nextStatus === currentStatus) {
+    showSameStatusValidationMessage()
+    return
+  }
+
+  clearStatusValidationMessage()
+
   emit('submit-status', {
     pr_id: props.model.pr_id,
-    pr_status: Number(statusDraft.value ?? 0),
+    pr_status: nextStatus,
   })
 }
 
@@ -176,6 +220,7 @@ watch(
       viewerVisible.value = false
       viewerItems.value = []
       inlineStatusEdit.value = false
+      clearStatusValidationMessage()
     }
   },
 )
@@ -186,13 +231,29 @@ watch(
     if (!props.model) {
       statusDraft.value = 0
       inlineStatusEdit.value = false
+      clearStatusValidationMessage()
       return
     }
     statusDraft.value = props.model.pr_has_problem ? Number(props.model.pr_status ?? 0) : 0
     inlineStatusEdit.value = false
+    clearStatusValidationMessage()
   },
   { immediate: true },
 )
+
+watch(
+  () => statusDraft.value,
+  (nextStatus) => {
+    if (!props.model) return
+    if (Number(nextStatus ?? 0) !== Number(props.model.pr_status ?? 0)) {
+      clearStatusValidationMessage()
+    }
+  },
+)
+
+onBeforeUnmount(() => {
+  clearStatusValidationTimer()
+})
 </script>
 
 <template>
@@ -307,6 +368,10 @@ watch(
               <span class="text-slate-800 font-semibold">{{ model.updated_name || '—' }}</span>
             </div>
 
+            <div v-if="statusValidationMessage" class="text-xs font-medium text-red-600">
+              {{ statusValidationMessage }}
+            </div>
+
             <div class="flex justify-end gap-2 pt-1">
               <BaseButton
                 v-if="inlineStatusEdit"
@@ -333,7 +398,7 @@ watch(
               />
 
               <BaseIconButton
-                v-if="canEditStatus && model.pr_has_problem"
+                v-if="canEditCurrentStatus"
                 icon="pi pi-pencil"
                 size="small"
                 severity="secondary"

@@ -207,6 +207,9 @@ const zhTW = {
     detail: '詳細內容',
     noDetailAvailable: '無詳細內容',
     noImages: '無圖片',
+    validation: {
+      selectAnotherStatus: '請選擇其他狀態',
+    },
   },
   incorrectScanReportList: {
     title: '錯誤掃描檢查點記錄',

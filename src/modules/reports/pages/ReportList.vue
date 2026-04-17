@@ -45,7 +45,7 @@ const issueStatusOptions = computed(() => [
   { label: t('reportList.issueStatusOptions.pending'), value: 0 },
   { label: t('reportList.issueStatusOptions.inProgress'), value: 1 },
   { label: t('reportList.issueStatusOptions.completed'), value: 2 },
-  { label: t('reportList.issueStatusOptions.incompleted'), value: 3 },
+  // { label: t('reportList.issueStatusOptions.incompleted'), value: 3 },
 ])
 
 const exporting = ref(false)
@@ -355,7 +355,7 @@ async function openView(row: ReportRow) {
 }
 
 async function openEditStatus(row: ReportRow) {
-  if (!canEditStatus.value || !row.pr_has_problem) return
+  if (!canEditStatus.value || !row.pr_has_problem || Number(row.pr_status ?? 0) === 2) return
   formMode.value = 'edit-status'
   formModel.value = (await fetchReportRowById(row.pr_id)) ?? row
   formVisible.value = true
@@ -607,7 +607,7 @@ async function onExport() {
               @click="openView(data)"
             />
             <BaseIconButton
-              v-if="data.pr_has_problem"
+              v-if="data.pr_has_problem && Number(data.pr_status ?? 0) !== 2"
               icon="pi pi-pencil"
               size="small"
               severity="secondary"

@@ -207,6 +207,9 @@ const zhCN = {
     detail: '详情',
     noDetailAvailable: '无可用详情',
     noImages: '无图片',
+    validation: {
+      selectAnotherStatus: '请选择其他状态',
+    },
   },
   incorrectScanReportList: {
     title: '错误扫描检查点记录',
