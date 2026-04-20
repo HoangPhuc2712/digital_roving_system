@@ -663,6 +663,8 @@ function toApiDateTimeZ(value: Date) {
 type FetchReportRowsParams = {
   reportAtFrom?: Date | null
   reportAtTo?: Date | null
+  prStatus?: number | null
+  prHasProblem?: boolean | null
 }
 
 export async function fetchReportRows(params: FetchReportRowsParams = {}): Promise<ReportRow[]> {
@@ -674,6 +676,13 @@ export async function fetchReportRows(params: FetchReportRowsParams = {}): Promi
 
   if (params.reportAtTo instanceof Date && Number.isFinite(params.reportAtTo.getTime())) {
     body.reportAtTo = toApiDateTimeZ(params.reportAtTo)
+  }
+
+  if (params.prStatus != null && Number.isFinite(Number(params.prStatus))) {
+    body.prStatus = Number(params.prStatus)
+    body.prHasProblem = true
+  } else if (typeof params.prHasProblem === 'boolean') {
+    body.prHasProblem = params.prHasProblem
   }
 
   const res = await http.post(endpoints.pointReportView.getList, body)

@@ -110,7 +110,7 @@ function clearDateReloadTimer() {
   }
 }
 
-function scheduleReloadByDate() {
+function scheduleReload() {
   if (suppressDateReload.value) return
 
   clearDateReloadTimer()
@@ -146,7 +146,21 @@ watch(
       clearDateReloadTimer()
       return
     }
-    scheduleReloadByDate()
+    scheduleReload()
+  },
+)
+
+watch(
+  () => [store.filterIssueStatus, store.filterResult],
+  (next, prev) => {
+    if (suppressDateReload.value) return
+    if (next[0] === prev?.[0] && next[1] === prev?.[1]) return
+    store.setFirst(0)
+    if (hasInvalidDateFilter.value) {
+      clearDateReloadTimer()
+      return
+    }
+    scheduleReload()
   },
 )
 

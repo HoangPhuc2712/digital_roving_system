@@ -280,9 +280,15 @@ export const useReportsStore = defineStore('reports', {
           to = tmp
         }
 
+        const effectiveResult = this.filterIssueStatus != null ? 'NOT_OK' : this.filterResult
+        const prHasProblem =
+          effectiveResult === 'OK' ? false : effectiveResult === 'NOT_OK' ? true : null
+
         this.rows = await fetchReportRows({
           reportAtFrom: from,
           reportAtTo: to,
+          prStatus: this.filterIssueStatus,
+          prHasProblem,
         })
       } finally {
         this.loading = false
