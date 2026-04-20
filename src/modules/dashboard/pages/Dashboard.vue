@@ -22,7 +22,10 @@ const store = useDashboardStore()
 const router = useRouter()
 const { t } = useI18n()
 
-const canSeeAdminDashboardSummary = computed(() => auth.isAdminUser)
+const canSeeReportDashboardSummary = computed(() =>
+  auth.canAccess(['reports.view_all', 'reports.view_mine']),
+)
+const canSeeDashboardCharts = computed(() => auth.isAdminUser)
 
 function normalizeMenuName(input?: string) {
   return String(input ?? '')
@@ -344,14 +347,14 @@ watch(
     runStatusCardAnimations()
 
     await nextTick()
-    if (canSeeAdminDashboardSummary.value) {
+    if (canSeeDashboardCharts.value) {
       scheduleChartsRender()
     }
   },
   { immediate: false },
 )
 
-watch(canSeeAdminDashboardSummary, async (visible) => {
+watch(canSeeDashboardCharts, async (visible) => {
   if (!visible) {
     chartsReady.value = false
     return
@@ -402,7 +405,7 @@ onMounted(async () => {
       </button>
     </div>
 
-    <div v-if="canSeeAdminDashboardSummary" class="mt-20 flex flex-col gap-3">
+    <div v-if="canSeeReportDashboardSummary" class="mt-20 flex flex-col gap-3">
       <div class="text-xl font-semibold text-slate-800">{{ t('dashboard.reportSummary') }}</div>
       <div
         v-if="pointReportStatusCards.length"
@@ -430,7 +433,7 @@ onMounted(async () => {
       </div>
     </div>
 
-    <div v-if="canSeeAdminDashboardSummary" class="mt-20 grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div v-if="canSeeDashboardCharts" class="mt-20 grid grid-cols-1 lg:grid-cols-3 gap-4">
       <div class="rounded-2xl border border-slate-200 bg-white p-4">
         <div class="text-base font-semibold text-slate-800">
           {{ t('dashboard.totalUsersByRole') }}

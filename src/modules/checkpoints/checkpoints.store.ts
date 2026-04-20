@@ -22,6 +22,11 @@ export const useCheckpointsStore = defineStore('checkpoints', {
     areaOptions: [] as AreaOption[],
     roleOptions: [] as RoleOption[],
 
+    areaOptionsLoading: false,
+    roleOptionsLoading: false,
+    areaOptionsFetched: false,
+    roleOptionsFetched: false,
+
     first: 0,
     rowsPerPage: 25,
   }),
@@ -74,17 +79,51 @@ export const useCheckpointsStore = defineStore('checkpoints', {
   },
 
   actions: {
+    async ensureAreaOptionsLoaded() {
+      if (this.areaOptionsLoading || this.areaOptionsFetched) return
+
+      this.areaOptionsLoading = true
+      try {
+        const areas = await fetchAreaOptions().catch(() => [])
+        if (areas.length) this.areaOptions = areas
+        this.areaOptionsFetched = true
+      } finally {
+        this.areaOptionsLoading = false
+      }
+    },
+
+    async ensureRoleOptionsLoaded() {
+      if (this.roleOptionsLoading || this.roleOptionsFetched) return
+
+      this.roleOptionsLoading = true
+      try {
+        const roles = await fetchRoleOptions().catch(() => [])
+        if (roles.length) this.roleOptions = roles
+        this.roleOptionsFetched = true
+      } finally {
+        this.roleOptionsLoading = false
+      }
+    },
+
     async load() {
       this.loading = true
       try {
-        const [areas, roles] = await Promise.all([
-          fetchAreaOptions().catch(() => []),
-          fetchRoleOptions().catch(() => []),
-        ])
+        const rows = await fetchCheckpointRows()
 
-        this.areaOptions = areas
-        this.roleOptions = roles
-        this.rows = await fetchCheckpointRows(roles)
+        const fallbackAreaOptions = Array.from(
+          new Map(
+            rows
+              .filter((r) => Number(r.area_id) > 0)
+              .map((r) => [Number(r.area_id), String(r.area_name || r.area_code || r.area_id)]),
+          ).entries(),
+        )
+          .map(([value, label]) => ({ value, label }))
+          .sort((a, b) => a.label.localeCompare(b.label))
+
+        this.rows = rows
+        if (!this.areaOptionsFetched && !this.areaOptions.length) {
+          this.areaOptions = fallbackAreaOptions
+        }
       } finally {
         this.loading = false
       }

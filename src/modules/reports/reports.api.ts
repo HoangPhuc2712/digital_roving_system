@@ -8,6 +8,7 @@ import type {
   GpsLogRow,
   IncorrectScanLogRow,
   PatrolDetailReportRow,
+  PatrolSummaryDetailKind,
   PatrolSummaryInsufficientPatrolDetailRow,
   PatrolSummaryMissedPatrolDetailRow,
   PatrolSummaryReportRow,
@@ -208,6 +209,29 @@ type ApiPlannedPatrolShiftView = {
   reportName?: string
   routeDetails?: ApiPlannedPatrolShiftRouteDetail[]
 }
+
+type PatrolSummaryDetailContext = {
+  areaName: string
+  actualViewMap: Map<number, ApiPatrolShiftReportView>
+  missedRows: ApiPlannedPatrolShiftView[]
+  tooSlowRows: ApiPlannedPatrolShiftView[]
+  tooFastRows: ApiPlannedPatrolShiftView[]
+  insufficientRows: ApiPlannedPatrolShiftView[]
+  shiftProblemRows: ApiPlannedPatrolShiftView[]
+  detailRowsCache: Partial<
+    Record<
+      PatrolSummaryDetailKind,
+      | PatrolSummaryMissedPatrolDetailRow[]
+      | PatrolSummaryTimeProblemDetailRow[]
+      | PatrolSummaryInsufficientPatrolDetailRow[]
+      | PatrolSummaryShiftProblemDetailRow[]
+    >
+  >
+}
+
+const plannedPatrolShiftDayCache = new Map<string, ApiPlannedPatrolShiftView[]>()
+const plannedPatrolShiftDayPromiseCache = new Map<string, Promise<ApiPlannedPatrolShiftView[]>>()
+const patrolSummaryDetailContextCache = new Map<string, PatrolSummaryDetailContext>()
 
 type ApiAreaBase = {
   areaId?: number
@@ -1079,8 +1103,34 @@ function normalizePatrolDetailRows(views: ApiPatrolShiftReportView[]): PatrolDet
   })
 }
 
-export async function fetchPatrolDetailReportRows(): Promise<PatrolDetailReportRow[]> {
-  const res = await http.post(endpoints.report.patrolDetailReport, {})
+function buildPatrolDetailReportRequestBody(dateFrom?: Date | null, dateTo?: Date | null) {
+  if (!(dateFrom instanceof Date) || !(dateTo instanceof Date)) return {}
+  if (!Number.isFinite(dateFrom.getTime()) || !Number.isFinite(dateTo.getTime())) return {}
+
+  const from = new Date(dateFrom)
+  const to = new Date(dateTo)
+
+  if (
+    from.getFullYear() !== to.getFullYear() ||
+    from.getMonth() !== to.getMonth() ||
+    from.getDate() !== to.getDate()
+  ) {
+    return {}
+  }
+
+  return {
+    psDay: from.getDate(),
+    psMonth: from.getMonth() + 1,
+    psYear: from.getFullYear(),
+  }
+}
+
+export async function fetchPatrolDetailReportRows(
+  dateFrom?: Date | null,
+  dateTo?: Date | null,
+): Promise<PatrolDetailReportRow[]> {
+  const body = buildPatrolDetailReportRequestBody(dateFrom, dateTo)
+  const res = await http.post(endpoints.report.patrolDetailReport, body)
   const payload = ensureSuccess<ApiPatrolShiftReportView[] | ApiPatrolShiftReportView>(
     res.data,
   ).data
@@ -1205,8 +1255,12 @@ function normalizeGpsLogRows(views: ApiPatrolShiftReportView[]): GpsLogRow[] {
   })
 }
 
-export async function fetchGpsLogRows(): Promise<GpsLogRow[]> {
-  const res = await http.post(endpoints.report.patrolDetailReport, {})
+export async function fetchGpsLogRows(
+  dateFrom?: Date | null,
+  dateTo?: Date | null,
+): Promise<GpsLogRow[]> {
+  const body = buildPatrolDetailReportRequestBody(dateFrom, dateTo)
+  const res = await http.post(endpoints.report.patrolDetailReport, body)
   const payload = ensureSuccess<ApiPatrolShiftReportView[] | ApiPatrolShiftReportView>(
     res.data,
   ).data
@@ -1424,8 +1478,73 @@ function isWithinWindow(value: Date | null, windowStart: Date, windowEnd: Date) 
 //   return asArray(payload)
 // }
 
-async function fetchPatrolShiftReportViews() {
-  const res = await http.post(endpoints.report.patrolDetailReport, {})
+function buildLocalDateCacheKey(date: Date) {
+  return normalizeDateOnly(date)
+}
+
+function getPatrolSummaryDetailCacheKey(dateKey: string, areaId: number) {
+  return `${dateKey}::${areaId}`
+}
+
+function indexActualPatrolShiftViewsByDate(views: ApiPatrolShiftReportView[]) {
+  const map = new Map<string, ApiPatrolShiftReportView[]>()
+
+  for (const view of views) {
+    const dateKey = buildPatrolShiftViewDateKey(view)
+    if (!dateKey) continue
+
+    const current = map.get(dateKey) ?? []
+    current.push(view)
+    map.set(dateKey, current)
+  }
+
+  return map
+}
+
+function clearPatrolSummaryDetailContextCache() {
+  patrolSummaryDetailContextCache.clear()
+}
+
+async function fetchPlannedPatrolShiftByDateCached(date: Date) {
+  const cacheKey = buildLocalDateCacheKey(date)
+  const cached = plannedPatrolShiftDayCache.get(cacheKey)
+  if (cached) return cached
+
+  const existingPromise = plannedPatrolShiftDayPromiseCache.get(cacheKey)
+  if (existingPromise) return existingPromise
+
+  const promise = fetchPlannedPatrolShiftByDate(date)
+    .then((rows) => {
+      plannedPatrolShiftDayCache.set(cacheKey, rows)
+      plannedPatrolShiftDayPromiseCache.delete(cacheKey)
+      return rows
+    })
+    .catch((error) => {
+      plannedPatrolShiftDayPromiseCache.delete(cacheKey)
+      throw error
+    })
+
+  plannedPatrolShiftDayPromiseCache.set(cacheKey, promise)
+  return promise
+}
+
+async function fetchPlannedPatrolShiftRange(dateFrom: Date, dateTo: Date) {
+  const dates = eachDateInclusive(dateFrom, dateTo)
+  const concurrency = 3
+  const results: ApiPlannedPatrolShiftView[] = []
+
+  for (let index = 0; index < dates.length; index += concurrency) {
+    const chunk = dates.slice(index, index + concurrency)
+    const rows = await Promise.all(chunk.map((date) => fetchPlannedPatrolShiftByDateCached(date)))
+    results.push(...rows.flat())
+  }
+
+  return results
+}
+
+async function fetchPatrolShiftReportViews(dateFrom?: Date | null, dateTo?: Date | null) {
+  const body = buildPatrolDetailReportRequestBody(dateFrom, dateTo)
+  const res = await http.post(endpoints.report.patrolDetailReport, body)
   const payload = ensureSuccess<ApiPatrolShiftReportView[] | ApiPatrolShiftReportView>(
     res.data,
   ).data
@@ -1441,11 +1560,6 @@ async function fetchPlannedPatrolShiftByDate(date: Date) {
   }
 
   const res = await http.post(endpoints.patrolShiftView.getList, body)
-
-  console.log('[PatrolSummary] patrolShiftView raw response:', {
-    requestBody: body,
-    response: res.data,
-  }) //Show list of Patrol Shift View
 
   const payload = ensureSuccess<ApiPlannedPatrolShiftView[] | ApiPlannedPatrolShiftView>(
     res.data,
@@ -1872,7 +1986,26 @@ export async function fetchPatrolSummaryRows(
   const days = eachDateInclusive(from, to)
   const now = new Date()
   const rows: PatrolSummaryReportRow[] = []
-  const actualShiftViews = await fetchPatrolShiftReportViews()
+
+  clearPatrolSummaryDetailContextCache()
+
+  const [actualShiftViews, allPlannedViews] = await Promise.all([
+    fetchPatrolShiftReportViews(from, to),
+    fetchPlannedPatrolShiftRange(from, to),
+  ])
+
+  const actualViewsByDate = indexActualPatrolShiftViewsByDate(actualShiftViews)
+  const plannedViewsByDate = new Map<string, ApiPlannedPatrolShiftView[]>()
+
+  for (const view of allPlannedViews) {
+    const shiftStart = buildPlannedShiftStart(view)
+    if (!shiftStart) continue
+
+    const dateKey = normalizeDateOnly(shiftStart)
+    const current = plannedViewsByDate.get(dateKey) ?? []
+    current.push(view)
+    plannedViewsByDate.set(dateKey, current)
+  }
 
   for (const day of days) {
     let windowStart = maxDate(startOfLocalDay(day), from)
@@ -1886,16 +2019,14 @@ export async function fetchPatrolSummaryRows(
       continue
     }
 
-    const plannedViews = await fetchPlannedPatrolShiftByDate(day)
+    const dateLabel = normalizeDateOnly(day)
+    const plannedViews = plannedViewsByDate.get(dateLabel) ?? []
 
     const filteredPlannedViews = plannedViews.filter((item) =>
       isWithinWindow(buildPlannedShiftStart(item), windowStart, windowEnd),
     )
 
-    const dateLabel = normalizeDateOnly(day)
-    const actualViewsForDay = actualShiftViews.filter(
-      (item) => buildPatrolShiftViewDateKey(item) === dateLabel,
-    )
+    const actualViewsForDay = actualViewsByDate.get(dateLabel) ?? []
     const actualViewMap = new Map<number, ApiPatrolShiftReportView>(
       actualViewsForDay.map((item) => [Number(item.psId ?? 0), item]),
     )
@@ -1910,13 +2041,11 @@ export async function fetchPatrolSummaryRows(
       const plannedRows = filteredPlannedViews.filter((item) => Number(item.areaId ?? 0) === areaId)
 
       const requiredCount = plannedRows.length
-
       const actualRows = plannedRows.filter(hasActualPatrolData)
       const missedRows = plannedRows.filter((item) => !hasActualPatrolData(item))
 
       const actualCount = actualRows.length
       const missedCount = missedRows.length
-      const missedPatrolDetails = buildMissedPatrolDetails(missedRows)
 
       const tooFastPatrolRows = actualRows.filter(
         (item) => resolveSummaryAbnormalIssuePriority(item) === 'too_fast',
@@ -1936,25 +2065,29 @@ export async function fetchPatrolSummaryRows(
       const insufficientCount = insufficientRows.length
       const shiftProblemCount = shiftProblemRows.length
 
-      const tooFastPatrolDetails = buildTimeProblemDetails(tooFastPatrolRows, 'min')
-      const tooSlowPatrolDetails = buildTimeProblemDetails(tooSlowPatrolRows, 'max')
-      const insufficientPatrolDetails = buildInsufficientPatrolDetails(
-        `Area ${areaId}`,
-        insufficientRows,
-        actualViewMap,
-      )
-      const shiftProblemDetails = buildShiftProblemDetails(shiftProblemRows, actualViewMap)
-
       const abnormalActualCount =
         tooFastPatrolCount + tooSlowPatrolCount + insufficientCount + shiftProblemCount
       const abnormalTotal = missedCount + abnormalActualCount
       const abnormalRate = requiredCount > 0 ? (abnormalTotal / requiredCount) * 100 : 0
+      const detailCacheKey = getPatrolSummaryDetailCacheKey(dateLabel, areaId)
+      const areaName = `Area ${areaId}`
+
+      patrolSummaryDetailContextCache.set(detailCacheKey, {
+        areaName,
+        actualViewMap,
+        missedRows,
+        tooSlowRows: tooSlowPatrolRows,
+        tooFastRows: tooFastPatrolRows,
+        insufficientRows,
+        shiftProblemRows,
+        detailRowsCache: {},
+      })
 
       rows.push({
         date_key: dateLabel,
         date_label: dateLabel,
         area_id: areaId,
-        area_name: `Area ${areaId}`,
+        area_name: areaName,
         required_count: requiredCount,
         actual_count: actualCount,
         missed_count: missedCount,
@@ -1963,11 +2096,12 @@ export async function fetchPatrolSummaryRows(
         insufficient_count: insufficientCount,
         shift_problem_count: shiftProblemCount,
         abnormal_rate: Number(abnormalRate.toFixed(2)),
-        missed_patrol_details: missedPatrolDetails,
-        too_slow_problem_details: tooSlowPatrolDetails,
-        too_fast_problem_details: tooFastPatrolDetails,
-        insufficient_patrol_details: insufficientPatrolDetails,
-        shift_problem_details: shiftProblemDetails,
+        missed_patrol_details: [],
+        too_slow_problem_details: [],
+        too_fast_problem_details: [],
+        insufficient_patrol_details: [],
+        shift_problem_details: [],
+        detail_cache_key: detailCacheKey,
       })
     }
   }
@@ -1976,4 +2110,59 @@ export async function fetchPatrolSummaryRows(
     if (a.date_key === b.date_key) return a.area_name.localeCompare(b.area_name)
     return a.date_key.localeCompare(b.date_key)
   })
+}
+
+export async function fetchPatrolSummaryDetailRows(
+  row: PatrolSummaryReportRow | null | undefined,
+  detailKind: PatrolSummaryDetailKind,
+): Promise<
+  | PatrolSummaryMissedPatrolDetailRow[]
+  | PatrolSummaryTimeProblemDetailRow[]
+  | PatrolSummaryInsufficientPatrolDetailRow[]
+  | PatrolSummaryShiftProblemDetailRow[]
+> {
+  const cacheKey = String(row?.detail_cache_key ?? '').trim()
+  if (!cacheKey) return []
+
+  const context = patrolSummaryDetailContextCache.get(cacheKey)
+  if (!context) return []
+
+  const cachedRows = context.detailRowsCache[detailKind]
+  if (Array.isArray(cachedRows)) {
+    return cachedRows
+  }
+
+  let rows:
+    | PatrolSummaryMissedPatrolDetailRow[]
+    | PatrolSummaryTimeProblemDetailRow[]
+    | PatrolSummaryInsufficientPatrolDetailRow[]
+    | PatrolSummaryShiftProblemDetailRow[] = []
+
+  switch (detailKind) {
+    case 'missed':
+      rows = buildMissedPatrolDetails(context.missedRows)
+      break
+    case 'too_slow':
+      rows = buildTimeProblemDetails(context.tooSlowRows, 'max')
+      break
+    case 'too_fast':
+      rows = buildTimeProblemDetails(context.tooFastRows, 'min')
+      break
+    case 'insufficient':
+      rows = buildInsufficientPatrolDetails(
+        context.areaName,
+        context.insufficientRows,
+        context.actualViewMap,
+      )
+      break
+    case 'shift':
+      rows = buildShiftProblemDetails(context.shiftProblemRows, context.actualViewMap)
+      break
+    default:
+      rows = []
+      break
+  }
+
+  context.detailRowsCache[detailKind] = rows
+  return rows
 }

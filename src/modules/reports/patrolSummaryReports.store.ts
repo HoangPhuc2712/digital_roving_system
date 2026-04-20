@@ -1,7 +1,14 @@
 import { defineStore } from 'pinia'
-import { fetchAreaRows } from '@/modules/areas/areas.api'
-import { fetchPatrolSummaryRows } from './reports.api'
-import type { PatrolSummaryReportRow } from './reports.types'
+import {
+  fetchPatrolSummaryDetailRows,
+  fetchPatrolSummaryRows,
+  fetchReportRouteFilterOptions,
+} from './reports.api'
+import type {
+  PatrolSummaryDetailKind,
+  PatrolSummaryInsufficientPatrolDetailRow,
+  PatrolSummaryReportRow,
+} from './reports.types'
 
 function startOfToday() {
   const d = new Date()
@@ -79,23 +86,32 @@ export const usePatrolSummaryReportsStore = defineStore('patrolSummaryReports', 
   },
 
   actions: {
+    async ensureAreaLabelMapLoaded() {
+      if (Object.keys(this.areaLabelMap).length) return
+
+      const routeFilters = await fetchReportRouteFilterOptions().catch(() => ({
+        areaOptions: [] as { label: string; value: number }[],
+        routeOptions: [] as { label: string; value: string; areaId: number; searchText?: string }[],
+      }))
+
+      this.areaLabelMap = Object.fromEntries(
+        (routeFilters.areaOptions ?? []).map((option) => [
+          Number(option.value ?? 0),
+          String(option.label ?? ''),
+        ]),
+      )
+    },
+
     async load() {
       this.loading = true
       try {
         const from = this.filterDateFrom ?? startOfToday()
         const to = this.filterDateTo ?? endOfToday()
 
-        const [rows, areaRows] = await Promise.all([
+        const [rows] = await Promise.all([
           fetchPatrolSummaryRows(from, to),
-          fetchAreaRows().catch(() => []),
+          this.ensureAreaLabelMapLoaded(),
         ])
-
-        this.areaLabelMap = Object.fromEntries(
-          (areaRows ?? []).map((row: any) => [
-            Number(row.area_id ?? 0),
-            String(row.area_name ?? row.area_code ?? ''),
-          ]),
-        )
 
         this.rows = rows.map((row) => {
           const resolvedAreaName =
@@ -104,15 +120,26 @@ export const usePatrolSummaryReportsStore = defineStore('patrolSummaryReports', 
           return {
             ...row,
             area_name: resolvedAreaName,
-            insufficient_patrol_details: (row.insufficient_patrol_details ?? []).map((detail) => ({
-              ...detail,
-              area_name: resolvedAreaName,
-            })),
           }
         })
       } finally {
         this.loading = false
       }
+    },
+
+    async getDetailRows(row: PatrolSummaryReportRow | null, detailKind: PatrolSummaryDetailKind) {
+      if (!row) return []
+
+      const detailRows = await fetchPatrolSummaryDetailRows(row, detailKind)
+
+      if (detailKind !== 'insufficient') {
+        return detailRows
+      }
+
+      return (detailRows as PatrolSummaryInsufficientPatrolDetailRow[]).map((detail) => ({
+        ...detail,
+        area_name: row.area_name || detail.area_name,
+      }))
     },
 
     clearFilters() {

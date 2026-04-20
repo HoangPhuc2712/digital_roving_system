@@ -16,7 +16,13 @@ import PatrolSummaryInsufficientPatrolDialog from '@/modules/reports/components/
 import PatrolSummaryShiftProblemDialog from '@/modules/reports/components/PatrolSummaryShiftProblemDialog.vue'
 import { usePatrolSummaryReportsStore } from '@/modules/reports/patrolSummaryReports.store'
 import { parseReportMailDateRange } from '@/modules/reports/reportMailLink'
-import type { PatrolSummaryReportRow } from '@/modules/reports/reports.types'
+import type {
+  PatrolSummaryInsufficientPatrolDetailRow,
+  PatrolSummaryMissedPatrolDetailRow,
+  PatrolSummaryReportRow,
+  PatrolSummaryShiftProblemDetailRow,
+  PatrolSummaryTimeProblemDetailRow,
+} from '@/modules/reports/reports.types'
 import { exportPatrolSummaryReportXlsx } from '@/services/export/patrolSummaryReport.export'
 
 type PatrolSummaryChartExpose = {
@@ -41,6 +47,11 @@ const selectedSlowTimeProblemRow = ref<PatrolSummaryReportRow | null>(null)
 const selectedFastTimeProblemRow = ref<PatrolSummaryReportRow | null>(null)
 const selectedInsufficientRow = ref<PatrolSummaryReportRow | null>(null)
 const selectedShiftProblemRow = ref<PatrolSummaryReportRow | null>(null)
+const selectedMissedDetailRows = ref<PatrolSummaryMissedPatrolDetailRow[]>([])
+const selectedSlowTimeProblemDetailRows = ref<PatrolSummaryTimeProblemDetailRow[]>([])
+const selectedFastTimeProblemDetailRows = ref<PatrolSummaryTimeProblemDetailRow[]>([])
+const selectedInsufficientDetailRows = ref<PatrolSummaryInsufficientPatrolDetailRow[]>([])
+const selectedShiftProblemDetailRows = ref<PatrolSummaryShiftProblemDetailRow[]>([])
 
 let filterLoadTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -124,57 +135,72 @@ function resetPageState() {
   selectedFastTimeProblemRow.value = null
   selectedInsufficientRow.value = null
   selectedShiftProblemRow.value = null
+  selectedMissedDetailRows.value = []
+  selectedSlowTimeProblemDetailRows.value = []
+  selectedFastTimeProblemDetailRows.value = []
+  selectedInsufficientDetailRows.value = []
+  selectedShiftProblemDetailRows.value = []
   store.clearFilters()
 }
 
 const selectedMissedPatrolDate = computed(() => selectedMissedRow.value?.date_label ?? '')
-const selectedMissedPatrolRows = computed(
-  () => selectedMissedRow.value?.missed_patrol_details ?? [],
-)
+const selectedMissedPatrolRows = computed(() => selectedMissedDetailRows.value)
 const selectedSlowTimeProblemDate = computed(
   () => selectedSlowTimeProblemRow.value?.date_label ?? '',
 )
-const selectedSlowTimeProblemRows = computed(
-  () => selectedSlowTimeProblemRow.value?.too_slow_problem_details ?? [],
-)
+const selectedSlowTimeProblemRows = computed(() => selectedSlowTimeProblemDetailRows.value)
 const selectedFastTimeProblemDate = computed(
   () => selectedFastTimeProblemRow.value?.date_label ?? '',
 )
-const selectedFastTimeProblemRows = computed(
-  () => selectedFastTimeProblemRow.value?.too_fast_problem_details ?? [],
-)
+const selectedFastTimeProblemRows = computed(() => selectedFastTimeProblemDetailRows.value)
 
 const selectedInsufficientDate = computed(() => selectedInsufficientRow.value?.date_label ?? '')
-const selectedInsufficientRows = computed(
-  () => selectedInsufficientRow.value?.insufficient_patrol_details ?? [],
-)
+const selectedInsufficientRows = computed(() => selectedInsufficientDetailRows.value)
 const selectedShiftProblemDate = computed(() => selectedShiftProblemRow.value?.date_label ?? '')
-const selectedShiftProblemRows = computed(
-  () => selectedShiftProblemRow.value?.shift_problem_details ?? [],
-)
+const selectedShiftProblemRows = computed(() => selectedShiftProblemDetailRows.value)
 
-function openMissedDetails(row: PatrolSummaryReportRow) {
+async function openMissedDetails(row: PatrolSummaryReportRow) {
   selectedMissedRow.value = row
+  selectedMissedDetailRows.value = (await store.getDetailRows(
+    row,
+    'missed',
+  )) as PatrolSummaryMissedPatrolDetailRow[]
   missedDialogVisible.value = true
 }
 
-function openSlowTimeProblemDetails(row: PatrolSummaryReportRow) {
+async function openSlowTimeProblemDetails(row: PatrolSummaryReportRow) {
   selectedSlowTimeProblemRow.value = row
+  selectedSlowTimeProblemDetailRows.value = (await store.getDetailRows(
+    row,
+    'too_slow',
+  )) as PatrolSummaryTimeProblemDetailRow[]
   slowTimeProblemDialogVisible.value = true
 }
 
-function openFastTimeProblemDetails(row: PatrolSummaryReportRow) {
+async function openFastTimeProblemDetails(row: PatrolSummaryReportRow) {
   selectedFastTimeProblemRow.value = row
+  selectedFastTimeProblemDetailRows.value = (await store.getDetailRows(
+    row,
+    'too_fast',
+  )) as PatrolSummaryTimeProblemDetailRow[]
   fastTimeProblemDialogVisible.value = true
 }
 
-function openInsufficientDetails(row: PatrolSummaryReportRow) {
+async function openInsufficientDetails(row: PatrolSummaryReportRow) {
   selectedInsufficientRow.value = row
+  selectedInsufficientDetailRows.value = (await store.getDetailRows(
+    row,
+    'insufficient',
+  )) as PatrolSummaryInsufficientPatrolDetailRow[]
   insufficientDialogVisible.value = true
 }
 
-function openShiftProblemDetails(row: PatrolSummaryReportRow) {
+async function openShiftProblemDetails(row: PatrolSummaryReportRow) {
   selectedShiftProblemRow.value = row
+  selectedShiftProblemDetailRows.value = (await store.getDetailRows(
+    row,
+    'shift',
+  )) as PatrolSummaryShiftProblemDetailRow[]
   shiftProblemDialogVisible.value = true
 }
 
@@ -182,6 +208,7 @@ function onMissedDialogVisibleChange(value: boolean) {
   missedDialogVisible.value = value
   if (!value) {
     selectedMissedRow.value = null
+    selectedMissedDetailRows.value = []
   }
 }
 
@@ -189,6 +216,7 @@ function onSlowTimeProblemDialogVisibleChange(value: boolean) {
   slowTimeProblemDialogVisible.value = value
   if (!value) {
     selectedSlowTimeProblemRow.value = null
+    selectedSlowTimeProblemDetailRows.value = []
   }
 }
 
@@ -196,6 +224,7 @@ function onFastTimeProblemDialogVisibleChange(value: boolean) {
   fastTimeProblemDialogVisible.value = value
   if (!value) {
     selectedFastTimeProblemRow.value = null
+    selectedFastTimeProblemDetailRows.value = []
   }
 }
 
@@ -203,6 +232,7 @@ function onInsufficientDialogVisibleChange(value: boolean) {
   insufficientDialogVisible.value = value
   if (!value) {
     selectedInsufficientRow.value = null
+    selectedInsufficientDetailRows.value = []
   }
 }
 
@@ -210,6 +240,7 @@ function onShiftProblemDialogVisibleChange(value: boolean) {
   shiftProblemDialogVisible.value = value
   if (!value) {
     selectedShiftProblemRow.value = null
+    selectedShiftProblemDetailRows.value = []
   }
 }
 

@@ -64,6 +64,28 @@ const routeFilterAreaOptions = computed(() => {
     .sort((a, b) => String(a.label).localeCompare(String(b.label)))
 })
 
+const routeFilterRoleOptions = computed(() => {
+  const source = (store.roleOptions ?? []).length
+    ? store.roleOptions
+    : Array.from(
+        new Map(
+          (store.rows ?? [])
+            .filter((row) => Number(row.role_id) > 0)
+            .map((row) => [
+              Number(row.role_id),
+              String(row.role_name || row.role_code || row.role_id),
+            ]),
+        ).entries(),
+      ).map(([value, label]) => ({ value, label }))
+
+  return source
+    .map((option) => ({
+      ...option,
+      label: translateRoleName(String(option.label ?? ''), t),
+    }))
+    .sort((a, b) => String(a.label).localeCompare(String(b.label)))
+})
+
 const routeStatusOptions = computed(() => [
   { label: t('routeList.routeStatusOptions.all'), value: 'ALL' },
   {
@@ -90,7 +112,7 @@ const { searchDraft } = useDebouncedSearchDraft({
 })
 
 useResetFirstOnFilterChange(
-  () => [store.searchText, store.filterAreaId, store.filterStatus],
+  () => [store.searchText, store.filterAreaId, store.filterRoleId, store.filterStatus],
   () => store.setFirst(0),
 )
 
@@ -195,7 +217,9 @@ async function submitCreateShifts(payload: { month: number; year: number }) {
   }
 }
 
-function openNew() {
+async function openNew() {
+  await ensureRouteFormOptionsLoaded()
+
   formMode.value = 'new'
   formModel.value = {
     route_code: '',
@@ -219,6 +243,10 @@ async function hydrateFormModel(row: RouteRow) {
   }
 }
 
+async function ensureRouteFormOptionsLoaded() {
+  await Promise.all([store.ensureAreaOptionsLoaded(), store.ensureRoleOptionsLoaded()])
+}
+
 async function openView(row: RouteRow) {
   formMode.value = 'view'
   formModel.value = await hydrateFormModel(row)
@@ -226,6 +254,7 @@ async function openView(row: RouteRow) {
 }
 
 async function openEdit(row: RouteRow) {
+  await ensureRouteFormOptionsLoaded()
   formMode.value = 'edit'
   formModel.value = await hydrateFormModel(row)
   formVisible.value = true
@@ -316,8 +345,13 @@ function confirmDeleteSelected() {
   )
 }
 
+async function onFilterOpen(payload: { key: string }) {
+  if (payload.key === 'roleId') await store.ensureRoleOptionsLoaded()
+}
+
 function onColumnFilter(payload: { key: string; value: any }) {
   if (payload.key === 'areaId') store.filterAreaId = payload.value ?? null
+  if (payload.key === 'roleId') store.filterRoleId = payload.value ?? null
   if (payload.key === 'status') store.filterStatus = payload.value ?? 'ALL'
 }
 
@@ -400,6 +434,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
       :first="store.first"
       :modelSearch="searchDraft"
       @update:modelSearch="searchDraft = $event"
+      :beforeFilterOpen="onFilterOpen"
       @update:columnFilter="onColumnFilter"
       @clear="clearAll"
       @page="onPage"
@@ -476,7 +511,18 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
         </template>
       </Column>
 
-      <Column :header="t('routeList.role')" style="min-width: 8rem" sortField="role_name">
+      <Column
+        :header="t('routeList.role')"
+        style="min-width: 8rem"
+        sortField="role_name"
+        :filterMenu="{
+          key: 'roleId',
+          type: 'select',
+          value: store.filterRoleId,
+          options: routeFilterRoleOptions,
+          placeholder: t('routeList.role'),
+        }"
+      >
         <template #body="{ data }">
           <div class="text-slate-800">{{ displayRoleName(data.role_name, data.role_code) }}</div>
         </template>
@@ -514,18 +560,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
         </template>
       </Column>
 
-      <Column
-        :header="t('routeList.status')"
-        style="min-width: 12rem"
-        sortField="route_status"
-        :filterMenu="{
-          key: 'status',
-          type: 'select',
-          value: store.filterStatus,
-          options: routeStatusOptions,
-          showClear: false,
-        }"
-      >
+      <Column :header="t('routeList.status')" style="min-width: 12rem" sortField="route_status">
         <template #body="{ data }">
           <Tag
             :value="statusLabel(data.route_status)"

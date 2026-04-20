@@ -54,7 +54,7 @@
     >
       <VNodeRenderer
         v-for="(node, index) in getNormalizedDefaultNodes()"
-        :key="node.key ?? `column-${index}`"
+        :key="`${String(node.key ?? `column-${index}`)}::${slotRenderRevision}`"
         :vnode="node"
       />
 
@@ -160,6 +160,7 @@ const props = withDefaults(
     stateStorage?: 'session' | 'local'
     scrollable?: boolean
     scrollHeight?: string
+    beforeFilterOpen?: (payload: { key: string }) => void | Promise<void>
   }>(),
   {
     loading: false,
@@ -198,6 +199,7 @@ const emit = defineEmits<{
   (e: 'update:modelDateFrom', value: Date | null): void
   (e: 'update:modelDateTo', value: Date | null): void
   (e: 'update:columnFilter', payload: { key: string; value: any }): void
+  (e: 'filter-open', payload: { key: string }): void
   (e: 'clear'): void
   (e: 'page', ev: DataTablePageEvent): void
 }>()
@@ -207,10 +209,12 @@ const instance = getCurrentInstance()
 const { t, locale } = useI18n()
 const tableRootRef = ref<HTMLElement | null>(null)
 const activeFilterKey = ref<string | null>(null)
+const openingFilterKey = ref<string | null>(null)
 const popoverRefs = ref<Record<string, any>>({})
 const filterButtonRefs = ref<Record<string, HTMLElement | null>>({})
 const filterContentRefs = ref<Record<string, HTMLElement | null>>({})
 const filterMenuRevision = ref<Record<string, number>>({})
+const slotRenderRevision = ref(0)
 const sortFieldState = ref<string>('')
 const sortOrderState = ref<number>(0)
 const currentPageReportTemplate = computed(
@@ -697,15 +701,21 @@ function buildColumnChildren(node: VNode, sortable: boolean, filterMenu?: Column
               type: 'button',
               class: [
                 'inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-700',
+                openingFilterKey.value === resolvedFilterMenu.key ? 'cursor-wait opacity-70' : '',
               ],
               'aria-label': 'Filter column',
+              'aria-busy': openingFilterKey.value === resolvedFilterMenu.key ? 'true' : 'false',
               onClick: (event: MouseEvent) => toggleFilterPopover(resolvedFilterMenu.key, event),
             },
             [
               h('i', {
                 class: [
                   'pi text-sm',
-                  isFilterActive(resolvedFilterMenu.value) ? 'pi-filter-fill' : 'pi-filter',
+                  openingFilterKey.value === resolvedFilterMenu.key
+                    ? 'pi-spinner pi-spin'
+                    : isFilterActive(resolvedFilterMenu.value)
+                      ? 'pi-filter-fill'
+                      : 'pi-filter',
                 ],
               }),
             ],
@@ -823,25 +833,67 @@ function bumpFilterMenuRevision(key: string) {
   }
 }
 
-function toggleFilterPopover(key: string, event: MouseEvent) {
+function bumpSlotRenderRevision() {
+  slotRenderRevision.value += 1
+}
+
+async function toggleFilterPopover(key: string, event: MouseEvent) {
   event.preventDefault()
   event.stopPropagation()
 
-  const current = popoverRefs.value[key]
-  if (!current) return
+  if (openingFilterKey.value === key) {
+    return
+  }
 
   if (activeFilterKey.value === key) {
     hideFilterPopover(key)
     return
   }
 
+  if (openingFilterKey.value && openingFilterKey.value !== key) {
+    return
+  }
+
+  const buttonEl = filterButtonRefs.value[key] ?? (event.currentTarget as HTMLElement | null)
+
   if (activeFilterKey.value && activeFilterKey.value !== key) {
     const previous = popoverRefs.value[activeFilterKey.value]
     previous?.hide?.()
   }
 
+  openingFilterKey.value = key
+
+  try {
+    await props.beforeFilterOpen?.({ key })
+    bumpFilterMenuRevision(key)
+    bumpSlotRenderRevision()
+  } catch {
+    // ignore lazy-load errors so the filter can still open with current options
+  }
+
+  await nextTick()
+  await new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
+
+  const current = popoverRefs.value[key]
+  const anchor = filterButtonRefs.value[key] ?? buttonEl
+
+  if (!current || !anchor) {
+    openingFilterKey.value = null
+    return
+  }
+
   activeFilterKey.value = key
-  current.show?.(event)
+  openingFilterKey.value = null
+
+  const anchorEvent = {
+    currentTarget: anchor,
+    target: anchor,
+    preventDefault() {},
+    stopPropagation() {},
+  } as unknown as MouseEvent
+
+  current.show?.(anchorEvent)
+  emit('filter-open', { key })
 }
 
 function hideFilterPopover(key: string) {
@@ -939,39 +991,40 @@ function serializeFilterValue(value: any): string {
 }
 
 function buildFilterMenuColumnKey(config: ColumnFilterMenuConfig) {
-  const optionSignature = buildOptionsSignature(
-    config.options,
-    config.optionValue,
-    config.optionLabel,
-  )
-  const secondaryOptionSignature = buildOptionsSignature(
-    config.secondaryOptions,
-    config.secondaryOptionValue,
-    config.secondaryOptionLabel,
-    config.secondaryParentField,
-    config.secondaryFilterField,
-  )
-  const valueSignature = serializeFilterValue(config.value)
-
-  return `${config.key}::${config.type ?? 'select'}::${valueSignature}::${optionSignature}::${secondaryOptionSignature}`
+  return `${config.key}::${config.type ?? 'select'}::${serializeFilterValue(config.value)}`
 }
 
 function buildFilterControlKey(config: ColumnFilterMenuConfig) {
-  const optionSignature = buildOptionsSignature(
-    config.options,
-    config.optionValue,
-    config.optionLabel,
-  )
-  const secondaryOptionSignature = buildOptionsSignature(
-    config.secondaryOptions,
-    config.secondaryOptionValue,
-    config.secondaryOptionLabel,
-    config.secondaryParentField,
-    config.secondaryFilterField,
-  )
   const valueSignature = serializeFilterValue(config.value)
+  const type = config.type ?? 'select'
 
-  return `${config.key}::${config.type ?? 'select'}::${valueSignature}::${optionSignature}::${secondaryOptionSignature}`
+  if (type === 'dual-select') {
+    const primaryOptionsSignature = buildOptionsSignature(
+      config.options,
+      config.optionValue,
+      config.optionLabel,
+    )
+    const secondaryOptionsSignature = buildOptionsSignature(
+      config.secondaryOptions,
+      config.secondaryOptionValue,
+      config.secondaryOptionLabel,
+      config.secondaryParentField ?? config.secondaryFilterField ?? 'parentValue',
+    )
+
+    return `${config.key}::${type}::${valueSignature}::${primaryOptionsSignature}::${secondaryOptionsSignature}`
+  }
+
+  if (type === 'select' || type === 'multiselect') {
+    const optionsSignature = buildOptionsSignature(
+      config.options,
+      config.optionValue,
+      config.optionLabel,
+    )
+
+    return `${config.key}::${type}::${valueSignature}::${optionsSignature}`
+  }
+
+  return `${config.key}::${type}::${valueSignature}`
 }
 
 onMounted(() => {

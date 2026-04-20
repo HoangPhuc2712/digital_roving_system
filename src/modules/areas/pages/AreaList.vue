@@ -177,7 +177,7 @@ async function openEdit(row: AreaRow) {
 }
 
 function getAreaDeleteBlockedCount(row: AreaRow) {
-  return Number(row.checkpoint_count ?? 0)
+  return Number(row.total_checkpoints ?? 0)
 }
 
 function logAreaDeleteDryRun(row: AreaRow) {
@@ -533,7 +533,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
       <Column :header="t('areaList.areaCheckPoints')">
         <template #body="{ data }">
           <BaseButton
-            :label="`${t('common.view')} (${data.checkpoint_count})`"
+            :label="`${t('common.view')} (${data.total_checkpoints ?? 0})`"
             severity="secondary"
             outlined
             @click="goToAreaCheckPoints(data)"
@@ -541,17 +541,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
         </template>
       </Column>
 
-      <Column
-        :header="t('areaList.status')"
-        sortField="area_status"
-        :filterMenu="{
-          key: 'status',
-          type: 'select',
-          value: store.filterStatus,
-          options: areaStatusOptions,
-          showClear: false,
-        }"
-      >
+      <Column :header="t('areaList.status')" sortField="area_status">
         <template #body="{ data }">
           <Tag
             :value="statusLabel(data.area_status)"

@@ -26,9 +26,6 @@ export const endpoints = {
     getList: '/roleview/getlist',
     getOne: (roleId: number | string) => `/roleview/getone/${roleId}`,
   },
-  roleMenuCategoryView: {
-    getList: '/rolemenucategoryview/getlist',
-  },
   area: {
     create: '/area/create',
     update: (areaId: number | string) => `/area/update/${areaId}`,

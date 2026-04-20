@@ -108,7 +108,13 @@ function mapRowToFormModel(row: UserRow): UserFormModel {
   }
 }
 
-function openNew() {
+async function ensureUserFormOptionsLoaded() {
+  await Promise.all([store.ensureRoleOptionsLoaded(), store.ensureAreaOptionsLoaded()])
+}
+
+async function openNew() {
+  await ensureUserFormOptionsLoaded()
+
   formMode.value = 'new'
   formModel.value = {
     user_name: '',
@@ -121,6 +127,8 @@ function openNew() {
 }
 
 async function openView(row: UserRow) {
+  await ensureUserFormOptionsLoaded()
+
   formMode.value = 'view'
   const detail = (await fetchUserById(row.user_id)) ?? row
   formModel.value = mapRowToFormModel(detail as UserRow)
@@ -128,6 +136,8 @@ async function openView(row: UserRow) {
 }
 
 async function openEdit(row: UserRow) {
+  await ensureUserFormOptionsLoaded()
+
   formMode.value = 'edit'
   const detail = (await fetchUserById(row.user_id)) ?? row
   formModel.value = mapRowToFormModel(detail as UserRow)
@@ -228,6 +238,16 @@ function onColumnFilter(payload: { key: string; value: any }) {
 
   if (payload.key === 'roleId') store.filterRoleId = payload.value ?? null
   if (payload.key === 'areaId') store.filterAreaId = payload.value ?? null
+}
+
+async function onBeforeFilterOptionsOpen(payload: { key: string }) {
+  if (payload.key === 'areaId') {
+    await store.ensureAreaOptionsLoaded()
+  }
+
+  if (payload.key === 'roleId') {
+    await store.ensureRoleOptionsLoaded()
+  }
 }
 
 function clearAll() {
@@ -336,6 +356,7 @@ function onViewPatrolPath(row: UserRow) {
       :first="store.first"
       :modelSearch="searchDraft"
       @update:modelSearch="searchDraft = $event"
+      :beforeFilterOpen="onBeforeFilterOptionsOpen"
       @update:columnFilter="onColumnFilter"
       @clear="clearAll"
       @page="onPage"

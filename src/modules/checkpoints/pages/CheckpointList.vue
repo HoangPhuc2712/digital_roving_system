@@ -126,7 +126,14 @@ const { searchDraft } = useDebouncedSearchDraft({
 })
 
 useResetFirstOnFilterChange(
-  () => [store.searchText, store.filterCheckPointName, store.filterStatus, lockedAreaId.value],
+  () => [
+    store.searchText,
+    store.filterAreaId,
+    store.filterCheckPointName,
+    store.filterStatus,
+    JSON.stringify(store.filterRoleIds),
+    lockedAreaId.value,
+  ],
   () => store.setFirst(0),
 )
 
@@ -151,8 +158,12 @@ onMounted(async () => {
   applyLockedAreaFilter()
   await store.load()
   applyLockedAreaFilter()
-  console.log(store.filteredRows)
 })
+
+async function onFilterOpen(payload: { key: string }) {
+  if (payload.key === 'areaId') await store.ensureAreaOptionsLoaded()
+  if (payload.key === 'roleIds') await store.ensureRoleOptionsLoaded()
+}
 
 function onColumnFilter(payload: { key: string; value: any }) {
   if (payload.key === 'areaId') store.filterAreaId = payload.value ?? null
@@ -207,7 +218,8 @@ function mapRowToFormModel(row: CheckpointRow): CheckpointFormModel {
   }
 }
 
-function openNew() {
+async function openNew() {
+  await Promise.all([store.ensureAreaOptionsLoaded(), store.ensureRoleOptionsLoaded()])
   formMode.value = 'new'
   formModel.value = {
     cp_code: '',
@@ -223,6 +235,7 @@ function openNew() {
 }
 
 async function openView(row: CheckpointRow) {
+  await Promise.all([store.ensureAreaOptionsLoaded(), store.ensureRoleOptionsLoaded()])
   formMode.value = 'view'
   try {
     const detail = await fetchCheckpointById(row.cp_id, store.roleOptions)
@@ -244,6 +257,7 @@ async function openView(row: CheckpointRow) {
 }
 
 async function openEdit(row: CheckpointRow) {
+  await Promise.all([store.ensureAreaOptionsLoaded(), store.ensureRoleOptionsLoaded()])
   formMode.value = 'edit'
   try {
     const detail = await fetchCheckpointById(row.cp_id, store.roleOptions)
@@ -534,6 +548,7 @@ async function onExport() {
       v-model:selection="selectedRows"
       @update:modelSearch="searchDraft = $event"
       @update:columnFilter="onColumnFilter"
+      :beforeFilterOpen="onFilterOpen"
       @clear="clearAll"
       @page="onPage"
     >

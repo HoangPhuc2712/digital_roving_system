@@ -17,6 +17,12 @@ type ApiRoleBase = {
   roleName?: string
 }
 
+type ApiAreaView = {
+  areaId: number
+  areaCode?: string
+  areaName?: string
+}
+
 type ApiRouteDetail = {
   rdId?: number
   routeId: number
@@ -104,10 +110,30 @@ function toMinutes(value?: number, fallbackSeconds?: number) {
   return 0
 }
 
+let checkpointViewListCache: ApiCheckPointView[] | null = null
+let checkpointViewListPromise: Promise<ApiCheckPointView[]> | null = null
+
+async function fetchCheckpointViewListCached(): Promise<ApiCheckPointView[]> {
+  if (checkpointViewListCache) return checkpointViewListCache
+  if (checkpointViewListPromise) return checkpointViewListPromise
+
+  checkpointViewListPromise = http
+    .post(endpoints.checkPointView.getList, {})
+    .then((res) => {
+      const env = ensureSuccess<ApiCheckPointView[] | ApiCheckPointView>(res.data)
+      const list = Array.isArray(env.data) ? env.data : [env.data]
+      checkpointViewListCache = list
+      return list
+    })
+    .finally(() => {
+      checkpointViewListPromise = null
+    })
+
+  return checkpointViewListPromise
+}
+
 async function fetchCheckpointMetaMap() {
-  const res = await http.post(endpoints.checkPointView.getList, {})
-  const env = ensureSuccess<ApiCheckPointView[] | ApiCheckPointView>(res.data)
-  const list = Array.isArray(env.data) ? env.data : [env.data]
+  const list = await fetchCheckpointViewListCached()
 
   const map = new Map<number, { cp_priority?: number; cp_qr: string }>()
   for (const cp of list) {
@@ -194,13 +220,14 @@ export function sumSeconds(details: RouteDetailModel[]) {
 }
 
 export async function fetchAreaOptions(): Promise<AreaOption[]> {
-  const res = await http.post(endpoints.area.getBaseList, {})
-  const env = ensureSuccess<any[]>(res.data)
-  const list = env.data ?? []
+  const res = await http.post(endpoints.areaView.getList, {})
+  const env = ensureSuccess<ApiAreaView[] | ApiAreaView>(res.data)
+  const payload = env.data ?? []
+  const list = Array.isArray(payload) ? payload : [payload]
 
   return list
-    .map((a: any) => ({
-      label: a.areaName ?? a.areaCode ?? String(a.areaId),
+    .map((a) => ({
+      label: String(a.areaName ?? a.areaCode ?? a.areaId),
       value: Number(a.areaId ?? 0),
     }))
     .filter((x: AreaOption) => !!x.value)
@@ -227,9 +254,7 @@ export async function fetchScanPointsByArea(
 ): Promise<ScanPointOption[]> {
   if (!roleId) return []
 
-  const res = await http.post(endpoints.checkPointView.getList, {})
-  const env = ensureSuccess<ApiCheckPointView[]>(res.data)
-  const list = env.data ?? []
+  const list = await fetchCheckpointViewListCached()
 
   return list
     .filter((cp) => {

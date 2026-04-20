@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import Column from 'primevue/column'
 import { useToast } from 'primevue/usetoast'
@@ -21,6 +21,8 @@ const route = useRoute()
 const store = usePatrolDetailReportsStore()
 const exporting = ref(false)
 const { t, locale } = useI18n()
+const autoLoadEnabled = ref(false)
+let filterLoadTimer: ReturnType<typeof setTimeout> | null = null
 const hasInvalidDateFilter = computed(
   () => (store.filterDateFrom == null) !== (store.filterDateTo == null),
 )
@@ -79,8 +81,35 @@ onMounted(async () => {
   }
 
   await store.load()
-  console.log(store.filteredRows)
+  autoLoadEnabled.value = true
 })
+
+async function onFilterOpen(payload: { key: string }) {
+  if (payload.key === 'routeName') await store.ensureRouteFilterOptionsLoaded()
+  if (payload.key === 'checkPointName') await store.ensureCheckPointFilterOptionsLoaded()
+  if (payload.key === 'guardName') await store.ensureGuardFilterOptionsLoaded()
+}
+
+watch(
+  () => [store.filterDateFrom?.getTime() ?? null, store.filterDateTo?.getTime() ?? null],
+  () => {
+    if (!autoLoadEnabled.value) return
+    if (!store.filterDateFrom || !store.filterDateTo) return
+    if (hasInvalidDateFilter.value) return
+
+    clearFilterLoadTimer()
+    filterLoadTimer = setTimeout(async () => {
+      await store.load()
+    }, 250)
+  },
+)
+
+function clearFilterLoadTimer() {
+  if (filterLoadTimer) {
+    clearTimeout(filterLoadTimer)
+    filterLoadTimer = null
+  }
+}
 
 onBeforeRouteLeave(() => {
   resetPageState()
@@ -110,6 +139,8 @@ function clearAll() {
 }
 
 function resetPageState() {
+  autoLoadEnabled.value = false
+  clearFilterLoadTimer()
   store.clearFilters()
 }
 
@@ -181,6 +212,7 @@ function onColumnFilter(payload: { key: string; value: any }) {
       :first="store.first"
       :showSearch="false"
       @update:columnFilter="onColumnFilter"
+      :beforeFilterOpen="onFilterOpen"
       @clear="clearAll"
       @page="onPage"
     >

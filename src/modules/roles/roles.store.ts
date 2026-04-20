@@ -9,9 +9,9 @@ export const useRolesStore = defineStore('roles', {
 
     searchText: '' as string,
     filterStatus: 'ALL' as RoleStatusFilter,
-    filterMenuId: null as number | null,
 
     menuOptions: [] as MenuCategoryOption[],
+    menuOptionsLoading: false,
 
     first: 0,
     rowsPerPage: 25,
@@ -27,8 +27,6 @@ export const useRolesStore = defineStore('roles', {
         if (state.filterStatus === 'ACTIVE' && r.role_status !== 1) return false
         if (state.filterStatus === 'INACTIVE' && r.role_status !== 0) return false
 
-        if (state.filterMenuId != null && !r.menu_ids.includes(state.filterMenuId)) return false
-
         return true
       })
     },
@@ -38,18 +36,27 @@ export const useRolesStore = defineStore('roles', {
     async load() {
       this.loading = true
       try {
-        const [menus, rows] = await Promise.all([fetchMenuCategoryOptions(), fetchRoleRows()])
-        this.menuOptions = menus
-        this.rows = rows
+        this.rows = await fetchRoleRows()
       } finally {
         this.loading = false
+      }
+    },
+
+    async ensureMenuOptionsLoaded(force = false) {
+      if (this.menuOptionsLoading) return
+      if (!force && this.menuOptions.length > 0) return
+
+      this.menuOptionsLoading = true
+      try {
+        this.menuOptions = await fetchMenuCategoryOptions()
+      } finally {
+        this.menuOptionsLoading = false
       }
     },
 
     clearFilters() {
       this.searchText = ''
       this.filterStatus = 'ALL'
-      this.filterMenuId = null
       this.first = 0
     },
 

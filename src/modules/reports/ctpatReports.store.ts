@@ -29,6 +29,7 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
     rowsPerPage: 25,
     areaFilterOptions: [] as { label: string; value: string }[],
     routeFilterOptions: [] as { label: string; value: string; areaName: string }[],
+    routeFilterOptionsLoading: false,
   }),
 
   getters: {
@@ -103,28 +104,33 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
   },
 
   actions: {
-    async ensureFilterOptionsLoaded() {
+    async ensureRouteFilterOptionsLoaded() {
       if (this.areaFilterOptions.length && this.routeFilterOptions.length) return
+      if (this.routeFilterOptionsLoading) return
 
-      const routeFilters = await fetchCtpatRouteFilterOptions().catch(() => ({
-        areaOptions: [] as { label: string; value: string }[],
-        routeOptions: [] as {
-          label: string
-          value: string
-          areaName: string
-          searchText?: string
-        }[],
-      }))
+      this.routeFilterOptionsLoading = true
+      try {
+        const routeFilters = await fetchCtpatRouteFilterOptions().catch(() => ({
+          areaOptions: [] as { label: string; value: string }[],
+          routeOptions: [] as {
+            label: string
+            value: string
+            areaName: string
+            searchText?: string
+          }[],
+        }))
 
-      if (!this.areaFilterOptions.length) this.areaFilterOptions = routeFilters.areaOptions
-      if (!this.routeFilterOptions.length) this.routeFilterOptions = routeFilters.routeOptions
+        if (!this.areaFilterOptions.length) this.areaFilterOptions = routeFilters.areaOptions
+        if (!this.routeFilterOptions.length) this.routeFilterOptions = routeFilters.routeOptions
+      } finally {
+        this.routeFilterOptionsLoading = false
+      }
     },
 
     async load() {
       this.loading = true
       try {
-        const [rows] = await Promise.all([fetchCtpatReportRows(), this.ensureFilterOptionsLoaded()])
-        this.rows = rows
+        this.rows = await fetchCtpatReportRows()
       } finally {
         this.loading = false
       }

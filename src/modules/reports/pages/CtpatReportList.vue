@@ -88,6 +88,10 @@ onMounted(async () => {
   await store.load()
 })
 
+async function onFilterOpen(payload: { key: string }) {
+  if (payload.key === 'routeName') await store.ensureRouteFilterOptionsLoaded()
+}
+
 onBeforeRouteLeave(() => {
   resetPageState()
 })
@@ -165,6 +169,7 @@ async function onExport() {
       :modelSearch="store.searchText"
       @update:modelSearch="store.searchText = $event"
       @update:columnFilter="onColumnFilter"
+      :beforeFilterOpen="onFilterOpen"
       @clear="clearAll"
       @page="onPage"
     >

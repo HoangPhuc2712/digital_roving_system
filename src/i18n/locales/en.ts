@@ -208,6 +208,9 @@ const en = {
     detail: 'Detail',
     noDetailAvailable: 'No detail available',
     noImages: 'No images',
+    validation: {
+      selectAnotherStatus: 'Please Select another status',
+    },
   },
   incorrectScanReportList: {
     title: 'Incorrect Scan Point Log',
@@ -272,8 +275,8 @@ const en = {
     timeProblemCount: 'Time Problem Count',
     tooFastPatrolCount: 'Too Fast Patrol Count',
     tooSlowPatrolCount: 'Too Slow Patrol Count',
-    insufficientNumberOfPatrol: 'Insufficient Number of Patrols',
-    shiftProblemCount: 'Shift Problem Count',
+    insufficientNumberOfPatrol: 'Insufficient Number of Patrol Points',
+    shiftProblemCount: 'Number of Patrols Not Following the Route',
     abnormalRate: 'Abnormal Rate',
     noReportFound: 'No Reports Found',
   },

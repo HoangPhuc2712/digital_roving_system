@@ -45,14 +45,14 @@ const issueStatusOptions = computed(() => [
   { label: t('reportList.issueStatusOptions.pending'), value: 0 },
   { label: t('reportList.issueStatusOptions.inProgress'), value: 1 },
   { label: t('reportList.issueStatusOptions.completed'), value: 2 },
-  { label: t('reportList.issueStatusOptions.incompleted'), value: 3 },
+  // { label: t('reportList.issueStatusOptions.incompleted'), value: 3 },
 ])
 
 const exporting = ref(false)
 const formVisible = ref(false)
 const formMode = ref<ReportFormMode>('view')
 const formModel = ref<ReportFormModel | null>(null)
-const canEditStatus = computed(() => auth.isAdminUser)
+const canEditStatus = computed(() => auth.canAccess(['reports.view_all', 'reports.view_mine']))
 const dateReloadTimer = ref<number | null>(null)
 const suppressDateReload = ref(false)
 const hasInvalidDateFilter = computed(
@@ -319,6 +319,12 @@ function displayReportNote(note: string) {
   return translateReportNote(String(note ?? ''), t)
 }
 
+async function onFilterOpen(payload: { key: string }) {
+  if (payload.key === 'routeName') await store.ensureRouteFilterOptionsLoaded()
+  if (payload.key === 'checkPointName') await store.ensureCheckPointFilterOptionsLoaded()
+  if (payload.key === 'guardId') await store.ensureGuardFilterOptionsLoaded()
+}
+
 function onColumnFilter(payload: { key: string; value: any }) {
   if (payload.key === 'routeName') {
     const value = payload.value && typeof payload.value === 'object' ? payload.value : {}
@@ -355,7 +361,7 @@ async function openView(row: ReportRow) {
 }
 
 async function openEditStatus(row: ReportRow) {
-  if (!canEditStatus.value || !row.pr_has_problem) return
+  if (!canEditStatus.value || !row.pr_has_problem || Number(row.pr_status ?? 0) === 2) return
   formMode.value = 'edit-status'
   formModel.value = (await fetchReportRowById(row.pr_id)) ?? row
   formVisible.value = true
@@ -441,6 +447,7 @@ async function onExport() {
       :modelSearch="store.searchText"
       @update:modelSearch="store.searchText = $event"
       @update:columnFilter="onColumnFilter"
+      :beforeFilterOpen="onFilterOpen"
       @clear="clearAll"
       @page="onPage"
     >
@@ -607,7 +614,7 @@ async function onExport() {
               @click="openView(data)"
             />
             <BaseIconButton
-              v-if="canEditStatus && data.pr_has_problem"
+              v-if="data.pr_has_problem && Number(data.pr_status ?? 0) !== 2"
               icon="pi pi-pencil"
               size="small"
               severity="secondary"
