@@ -7,6 +7,7 @@ type ApiEnvelope<T> = { data: T; success: boolean; message: string }
 
 type ApiCheckPointView = {
   cpId: number
+  cpStatus?: number
   cpKeyword?: string
   cpCode: string
   cpName: string
@@ -21,22 +22,8 @@ type ApiCheckPointView = {
   areaCode?: string
   areaName?: string
   roleIdStr?: string
-}
-
-type ApiCheckPointEntity = {
-  cpId: number
-  cpStatus?: number
-  cpKeyword?: string
-  cpCode: string
-  cpName: string
-  cpQr?: string
-  cpDescription?: string
-  cpPriority: number
-  areaId: number
-  createdAt?: string
-  createdBy?: string
-  updatedAt?: string
-  updatedBy?: string
+  roleNames?: string[]
+  roleNameStr?: string
 }
 
 type ApiRoleBase = {
@@ -88,6 +75,30 @@ function buildRoleNames(roleIds: number[], roleOptions: RoleOption[]) {
   return roleIds.map((id) => map.get(id) ?? String(id))
 }
 
+function extractRoleNames(
+  view: Pick<ApiCheckPointView, 'roleNames' | 'roleNameStr' | 'roleIdStr'>,
+  roleOptions: RoleOption[],
+) {
+  if (Array.isArray(view.roleNames) && view.roleNames.length > 0) {
+    return view.roleNames.map((name) => String(name ?? '').trim()).filter(Boolean)
+  }
+
+  const roleNameStr = String(view.roleNameStr ?? '').trim()
+  if (roleNameStr) {
+    return roleNameStr
+      .split(/[;,|]+/)
+      .map((name) => String(name ?? '').trim())
+      .filter(Boolean)
+  }
+
+  const roleIds = parseRoleIds(view.roleIdStr)
+  if (roleOptions.length > 0) {
+    return buildRoleNames(roleIds, roleOptions)
+  }
+
+  return roleIds.map((id) => String(id))
+}
+
 export async function fetchAreaOptions(): Promise<AreaOption[]> {
   const res = await http.post(endpoints.area.getBaseList, {})
   const env = ensureSuccess<any[]>(res.data)
@@ -118,35 +129,18 @@ export async function fetchRoleOptions(): Promise<RoleOption[]> {
 export async function fetchCheckpointRows(
   roleOptions: RoleOption[] = [],
 ): Promise<CheckpointRow[]> {
-  const [viewRes, entityRes] = await Promise.all([
-    http.post(endpoints.checkPointView.getList, {}),
-    http.post(endpoints.checkPoint.getList, {}).catch(() => null as any),
-  ])
-
+  const viewRes = await http.post(endpoints.checkPointView.getList, {})
   const views = ensureSuccess<ApiCheckPointView[]>(viewRes.data).data ?? []
-
-  const statusMap = new Map<number, number>()
-  if (entityRes?.data) {
-    try {
-      const entities = ensureSuccess<ApiCheckPointEntity[]>(entityRes.data).data ?? []
-      for (const e of entities) {
-        if (!e?.cpId) continue
-        if (typeof e.cpStatus === 'number') statusMap.set(e.cpId, apiStatusToUi(e.cpStatus))
-      }
-    } catch {
-      // ignore nếu backend getlist không trả đúng shape
-    }
-  }
 
   return views
     .map((v) => {
-      const status = statusMap.get(v.cpId) ?? 1
+      const status = apiStatusToUi(v.cpStatus)
       const keyword = String(v.cpKeyword ?? '')
       const areaCode = String(v.areaCode ?? '')
       const areaName = String(v.areaName ?? '')
       const roleIdStr = String(v.roleIdStr ?? '').trim()
       const roleIds = parseRoleIds(roleIdStr)
-      const roleNames = buildRoleNames(roleIds, roleOptions)
+      const roleNames = extractRoleNames(v, roleOptions)
 
       return {
         cp_id: v.cpId,
@@ -184,7 +178,7 @@ export async function fetchCheckpointById(cp_id: number, roleOptions: RoleOption
   const v = ensureSuccess<ApiCheckPointView>(res.data).data
   const roleIdStr = String(v.roleIdStr ?? '').trim()
   const roleIds = parseRoleIds(roleIdStr)
-  const roleNames = buildRoleNames(roleIds, roleOptions)
+  const roleNames = extractRoleNames(v, roleOptions)
 
   return {
     cp_id: v.cpId,

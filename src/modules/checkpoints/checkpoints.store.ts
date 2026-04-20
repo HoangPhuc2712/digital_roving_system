@@ -108,8 +108,7 @@ export const useCheckpointsStore = defineStore('checkpoints', {
     async load() {
       this.loading = true
       try {
-        const roles = await fetchRoleOptions().catch(() => [])
-        const rows = await fetchCheckpointRows(roles)
+        const rows = await fetchCheckpointRows()
 
         const fallbackAreaOptions = Array.from(
           new Map(
@@ -122,8 +121,6 @@ export const useCheckpointsStore = defineStore('checkpoints', {
           .sort((a, b) => a.label.localeCompare(b.label))
 
         this.rows = rows
-        this.roleOptions = roles
-        this.roleOptionsFetched = true
         if (!this.areaOptionsFetched && !this.areaOptions.length) {
           this.areaOptions = fallbackAreaOptions
         }

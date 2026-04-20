@@ -9,10 +9,16 @@ export const useRoutesStore = defineStore('routes', {
 
     searchText: '' as string,
     filterAreaId: null as number | null,
+    filterRoleId: null as number | null,
     filterStatus: 'ALL' as RouteStatusFilter,
 
     areaOptions: [] as AreaOption[],
     roleOptions: [] as RoleOption[],
+
+    areaOptionsLoading: false,
+    roleOptionsLoading: false,
+    areaOptionsFetched: false,
+    roleOptionsFetched: false,
 
     first: 0,
     rowsPerPage: 25,
@@ -26,6 +32,7 @@ export const useRoutesStore = defineStore('routes', {
         if (q && (!r._q || !r._q.includes(q))) return false
 
         if (state.filterAreaId != null && r.area_id !== state.filterAreaId) return false
+        if (state.filterRoleId != null && r.role_id !== state.filterRoleId) return false
 
         if (state.filterStatus === 'ACTIVE' && r.route_status !== 1) return false
         if (state.filterStatus === 'INACTIVE' && r.route_status !== 0) return false
@@ -36,14 +43,36 @@ export const useRoutesStore = defineStore('routes', {
   },
 
   actions: {
+    async ensureAreaOptionsLoaded() {
+      if (this.areaOptionsLoading || this.areaOptionsFetched) return
+
+      this.areaOptionsLoading = true
+      try {
+        const areas = await fetchAreaOptions().catch(() => [])
+        if (areas.length) this.areaOptions = areas
+        this.areaOptionsFetched = true
+      } finally {
+        this.areaOptionsLoading = false
+      }
+    },
+
+    async ensureRoleOptionsLoaded() {
+      if (this.roleOptionsLoading || this.roleOptionsFetched) return
+
+      this.roleOptionsLoading = true
+      try {
+        const roles = await fetchRoleOptions().catch(() => [])
+        if (roles.length) this.roleOptions = roles
+        this.roleOptionsFetched = true
+      } finally {
+        this.roleOptionsLoading = false
+      }
+    },
+
     async load() {
       this.loading = true
       try {
-        const roles = await fetchRoleOptions().catch(() => [])
-        const [areas, rows] = await Promise.all([
-          fetchAreaOptions().catch(() => []),
-          fetchRouteRows(roles),
-        ])
+        const rows = await fetchRouteRows()
 
         const fallbackAreaOptions = Array.from(
           new Map(
@@ -66,8 +95,12 @@ export const useRoutesStore = defineStore('routes', {
           .sort((a, b) => a.label.localeCompare(b.label))
 
         this.rows = rows
-        this.areaOptions = areas.length ? areas : fallbackAreaOptions
-        this.roleOptions = roles.length ? roles : fallbackRoleOptions
+        if (!this.areaOptionsFetched && !this.areaOptions.length) {
+          this.areaOptions = fallbackAreaOptions
+        }
+        if (!this.roleOptionsFetched && !this.roleOptions.length) {
+          this.roleOptions = fallbackRoleOptions
+        }
       } finally {
         this.loading = false
       }
@@ -76,6 +109,7 @@ export const useRoutesStore = defineStore('routes', {
     clearFilters() {
       this.searchText = ''
       this.filterAreaId = null
+      this.filterRoleId = null
       this.filterStatus = 'ALL'
       this.first = 0
     },

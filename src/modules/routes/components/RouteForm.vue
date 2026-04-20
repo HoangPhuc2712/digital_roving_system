@@ -244,6 +244,14 @@ watch(
     form.details = Array.isArray(m.details) ? m.details.map((d) => ({ ...d })) : []
     form.selected_cp_ids = []
 
+    if (isView.value) {
+      scanPointOptions.value = []
+      reindexDetails()
+      applyDetailMetadata()
+      initializing.value = false
+      return
+    }
+
     await loadScanPoints(form.role_id)
     reindexDetails()
     applyDetailMetadata()
