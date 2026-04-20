@@ -2,6 +2,9 @@ import { defineStore } from 'pinia'
 import type { UserRow } from './users.types'
 import { fetchAreaOptions, fetchRoleOptions, fetchUserRows } from './users.api'
 
+let roleOptionsPromise: Promise<{ label: string; value: number }[]> | null = null
+let areaOptionsPromise: Promise<{ label: string; value: number }[]> | null = null
+
 export const useUsersStore = defineStore('users', {
   state: () => ({
     rows: [] as UserRow[],
@@ -17,6 +20,8 @@ export const useUsersStore = defineStore('users', {
     userCodeOptions: [] as { label: string; value: string }[],
     roleOptions: [] as { label: string; value: number }[],
     areaOptions: [] as { label: string; value: number }[],
+    roleOptionsLoaded: false,
+    areaOptionsLoaded: false,
 
     first: 0,
     rowsPerPage: 25,
@@ -61,11 +66,7 @@ export const useUsersStore = defineStore('users', {
     async load() {
       this.loading = true
       try {
-        const [rows, roles, areas] = await Promise.all([
-          fetchUserRows(),
-          fetchRoleOptions().catch(() => []),
-          fetchAreaOptions().catch(() => []),
-        ])
+        const rows = await fetchUserRows()
 
         const fallbackUserOptions = Array.from(
           new Map(
@@ -91,37 +92,9 @@ export const useUsersStore = defineStore('users', {
           .map((value) => ({ value, label: value }))
           .sort((a, b) => a.label.localeCompare(b.label))
 
-        const fallbackRoleOptions = Array.from(
-          new Map(
-            rows
-              .filter((r) => Number(r.user_role_id) > 0)
-              .map((r) => [
-                Number(r.user_role_id),
-                String(r.role_name || r.role_code || r.user_role_id),
-              ]),
-          ).entries(),
-        )
-          .map(([value, label]) => ({ value, label }))
-          .sort((a, b) => a.label.localeCompare(b.label))
-
-        const fallbackAreaOptions = Array.from(
-          new Map(
-            rows
-              .filter((r) => Number(r.user_area_id) > 0)
-              .map((r) => [
-                Number(r.user_area_id),
-                String(r.area_name || r.area_code || r.user_area_id),
-              ]),
-          ).entries(),
-        )
-          .map(([value, label]) => ({ value, label }))
-          .sort((a, b) => a.label.localeCompare(b.label))
-
         this.rows = rows
         this.userOptions = fallbackUserOptions
         this.userCodeOptions = fallbackUserCodeOptions
-        this.roleOptions = roles.length ? roles : fallbackRoleOptions
-        this.areaOptions = areas.length ? areas : fallbackAreaOptions
       } finally {
         this.loading = false
       }
@@ -134,6 +107,104 @@ export const useUsersStore = defineStore('users', {
       this.filterRoleId = null
       this.filterAreaId = null
       this.first = 0
+    },
+
+    async ensureRoleOptionsLoaded() {
+      console.log('[UsersStore] ensureRoleOptionsLoaded:start', {
+        loaded: this.roleOptionsLoaded,
+        currentLength: this.roleOptions.length,
+      })
+
+      if (this.roleOptionsLoaded && this.roleOptions.length) {
+        console.log('[UsersStore] ensureRoleOptionsLoaded:use-cache', {
+          length: this.roleOptions.length,
+          options: this.roleOptions,
+        })
+        return
+      }
+      if (roleOptionsPromise) {
+        console.log('[UsersStore] ensureRoleOptionsLoaded:await-existing-promise')
+        await roleOptionsPromise
+        console.log('[UsersStore] ensureRoleOptionsLoaded:after-existing-promise', {
+          length: this.roleOptions.length,
+          options: this.roleOptions,
+        })
+        return
+      }
+
+      roleOptionsPromise = fetchRoleOptions()
+        .then((options) => {
+          console.log('[UsersStore] ensureRoleOptionsLoaded:fetched', {
+            length: options.length,
+            options,
+          })
+          this.roleOptions = options
+          this.roleOptionsLoaded = true
+          return options
+        })
+        .catch((error) => {
+          console.error('[UsersStore] ensureRoleOptionsLoaded:error', error)
+          this.roleOptionsLoaded = false
+          return []
+        })
+        .finally(() => {
+          roleOptionsPromise = null
+        })
+
+      await roleOptionsPromise
+      console.log('[UsersStore] ensureRoleOptionsLoaded:done', {
+        length: this.roleOptions.length,
+        options: this.roleOptions,
+      })
+    },
+
+    async ensureAreaOptionsLoaded() {
+      console.log('[UsersStore] ensureAreaOptionsLoaded:start', {
+        loaded: this.areaOptionsLoaded,
+        currentLength: this.areaOptions.length,
+      })
+
+      if (this.areaOptionsLoaded && this.areaOptions.length) {
+        console.log('[UsersStore] ensureAreaOptionsLoaded:use-cache', {
+          length: this.areaOptions.length,
+          options: this.areaOptions,
+        })
+        return
+      }
+      if (areaOptionsPromise) {
+        console.log('[UsersStore] ensureAreaOptionsLoaded:await-existing-promise')
+        await areaOptionsPromise
+        console.log('[UsersStore] ensureAreaOptionsLoaded:after-existing-promise', {
+          length: this.areaOptions.length,
+          options: this.areaOptions,
+        })
+        return
+      }
+
+      areaOptionsPromise = fetchAreaOptions()
+        .then((options) => {
+          console.log('[UsersStore] ensureAreaOptionsLoaded:fetched', {
+            length: options.length,
+            options,
+          })
+          this.areaOptions = options
+          this.areaOptionsLoaded = true
+          return options
+        })
+        .catch((error) => {
+          console.error('[UsersStore] ensureAreaOptionsLoaded:error', error)
+          this.areaOptionsLoaded = false
+          return []
+        })
+        .finally(() => {
+          areaOptionsPromise = null
+        })
+
+      await areaOptionsPromise
+      console.log('[UsersStore] ensureAreaOptionsLoaded:done', {
+        length: this.areaOptions.length,
+        options: this.areaOptions,
+      })
     },
 
     setFirst(first: number) {

@@ -541,17 +541,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
         </template>
       </Column>
 
-      <Column
-        :header="t('areaList.status')"
-        sortField="area_status"
-        :filterMenu="{
-          key: 'status',
-          type: 'select',
-          value: store.filterStatus,
-          options: areaStatusOptions,
-          showClear: false,
-        }"
-      >
+      <Column :header="t('areaList.status')" sortField="area_status">
         <template #body="{ data }">
           <Tag
             :value="statusLabel(data.area_status)"

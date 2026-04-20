@@ -10,7 +10,7 @@ import BaseInput from '@/components/common/inputs/BaseInput.vue'
 import BaseMessage from '@/components/common/messages/BaseMessage.vue'
 
 import { createRole, updateRole } from '@/modules/roles/roles.api'
-import { translateRoleName } from '@/utils/dataI18n'
+import { translateMenuCategoryName, translateRoleName } from '@/utils/dataI18n'
 
 export type RoleFormMode = 'new' | 'view' | 'edit'
 
@@ -21,6 +21,7 @@ export type RoleFormModel = {
   role_hour_report: boolean
   role_is_admin: boolean
   mc_ids: number[]
+  menu_names?: string[]
 }
 
 export type RoleFormSubmitPayload = {
@@ -34,12 +35,14 @@ const props = defineProps<{
   model: RoleFormModel | null
   menuOptions: { label: string; value: number }[]
   loading?: boolean
+  menuOptionsLoading?: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'update:visible', v: boolean): void
   (e: 'submit', payload: RoleFormSubmitPayload): void
   (e: 'close'): void
+  (e: 'permission-dropdown-show'): void
 }>()
 
 const isView = computed(() => props.mode === 'view')
@@ -63,6 +66,7 @@ const form = reactive<RoleFormModel>({
   role_hour_report: false,
   role_is_admin: false,
   mc_ids: [],
+  menu_names: [],
 })
 
 const roleNameError = computed(() => submitted.value && !String(form.role_name ?? '').trim())
@@ -100,13 +104,43 @@ watch(
     form.role_hour_report = Boolean(m.role_hour_report)
     form.role_is_admin = Boolean(m.role_is_admin)
     form.mc_ids = Array.isArray(m.mc_ids) ? [...m.mc_ids] : []
+    form.menu_names = Array.isArray(m.menu_names) ? [...m.menu_names] : []
   },
   { immediate: true },
 )
 
+const resolvedMenuOptions = computed(() => {
+  const baseOptions = Array.isArray(props.menuOptions) ? [...props.menuOptions] : []
+  const optionMap = new Map<number, { label: string; value: number }>()
+
+  for (const option of baseOptions) {
+    const value = Number(option?.value)
+    if (!Number.isFinite(value)) continue
+    optionMap.set(value, option)
+  }
+
+  ;(form.mc_ids ?? []).forEach((id, index) => {
+    const numericId = Number(id)
+    if (!Number.isFinite(numericId) || optionMap.has(numericId)) return
+
+    const rawName = Array.isArray(form.menu_names) ? form.menu_names[index] : ''
+    const label = rawName ? translateMenuCategoryName(String(rawName), t) : String(numericId)
+
+    optionMap.set(numericId, { value: numericId, label })
+  })
+
+  return Array.from(optionMap.values())
+})
+
 const permissionLabels = computed(() => {
+  if (isView.value) {
+    return (form.menu_names ?? [])
+      .filter(Boolean)
+      .map((name) => translateMenuCategoryName(String(name), t))
+  }
+
   const ids = new Set<number>((form.mc_ids ?? []).map((x) => Number(x)))
-  return (props.menuOptions ?? []).filter((x) => ids.has(Number(x.value))).map((x) => x.label)
+  return resolvedMenuOptions.value.filter((x) => ids.has(Number(x.value))).map((x) => x.label)
 })
 
 const translatedRoleName = computed(() => translateRoleName(String(form.role_name ?? ''), t))
@@ -228,12 +262,14 @@ function submit() {
             v-model="form.mc_ids"
             class="w-full"
             :class="{ 'p-invalid': permissionsError }"
-            :options="menuOptions"
+            :options="resolvedMenuOptions"
             optionLabel="label"
             size="small"
             optionValue="value"
             :placeholder="t('roleForm.selectPermission')"
             display="chip"
+            :loading="Boolean(menuOptionsLoading)"
+            @show="emit('permission-dropdown-show')"
           />
           <BaseMessage
             style="margin: 8px 0px"

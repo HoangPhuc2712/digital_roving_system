@@ -514,18 +514,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
         </template>
       </Column>
 
-      <Column
-        :header="t('routeList.status')"
-        style="min-width: 12rem"
-        sortField="route_status"
-        :filterMenu="{
-          key: 'status',
-          type: 'select',
-          value: store.filterStatus,
-          options: routeStatusOptions,
-          showClear: false,
-        }"
-      >
+      <Column :header="t('routeList.status')" style="min-width: 12rem" sortField="route_status">
         <template #body="{ data }">
           <Tag
             :value="statusLabel(data.route_status)"

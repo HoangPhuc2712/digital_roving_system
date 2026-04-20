@@ -66,7 +66,7 @@ const { searchDraft } = useDebouncedSearchDraft({
 })
 
 useResetFirstOnFilterChange(
-  () => [store.searchText, store.filterStatus, store.filterMenuId],
+  () => [store.searchText, store.filterStatus],
   () => store.setFirst(0),
 )
 
@@ -78,10 +78,6 @@ const { onPage } = usePagination({
 onMounted(async () => {
   await store.load()
 })
-
-async function onFilterOpen(payload: { key: string }) {
-  if (payload.key === 'menuId') await store.ensureMenuOptionsLoaded()
-}
 
 function statusLabel(s: number) {
   return s === 1 ? t('roleList.roleStatusOptions.active') : t('roleList.roleStatusOptions.inactive')
@@ -109,11 +105,11 @@ function mapRowToFormModel(row: RoleRow): RoleFormModel {
     role_hour_report: Boolean(row.role_hour_report),
     role_is_admin: Boolean(row.role_is_admin),
     mc_ids: Array.isArray(row.menu_ids) ? [...row.menu_ids] : [],
+    menu_names: Array.isArray(row.menu_names) ? [...row.menu_names] : [],
   }
 }
 
-async function openNew() {
-  await store.ensureFormOptionsLoaded()
+function openNew() {
   formMode.value = 'new'
   formModel.value = {
     role_code: '',
@@ -121,12 +117,12 @@ async function openNew() {
     role_hour_report: false,
     role_is_admin: false,
     mc_ids: [],
+    menu_names: [],
   }
   formVisible.value = true
 }
 
 async function openView(row: RoleRow) {
-  await store.ensureFormOptionsLoaded()
   formMode.value = 'view'
   const detail = (await fetchRoleById(row.role_id)) ?? row
   formModel.value = mapRowToFormModel(detail as RoleRow)
@@ -134,7 +130,6 @@ async function openView(row: RoleRow) {
 }
 
 async function openEdit(row: RoleRow) {
-  await store.ensureFormOptionsLoaded()
   formMode.value = 'edit'
   const detail = (await fetchRoleById(row.role_id)) ?? row
   formModel.value = mapRowToFormModel(detail as RoleRow)
@@ -294,7 +289,10 @@ async function confirmDeleteSelected() {
 
 function onColumnFilter(payload: { key: string; value: any }) {
   if (payload.key === 'status') store.filterStatus = payload.value ?? 'ALL'
-  if (payload.key === 'menuId') store.filterMenuId = payload.value ?? null
+}
+
+async function ensurePermissionOptionsLoaded() {
+  await store.ensureMenuOptionsLoaded()
 }
 
 function clearAll() {
@@ -376,7 +374,6 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
       :modelSearch="searchDraft"
       @update:modelSearch="searchDraft = $event"
       @update:columnFilter="onColumnFilter"
-      @filter-open="onFilterOpen"
       @clear="clearAll"
       @page="onPage"
     >
@@ -434,13 +431,6 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
         :header="t('roleList.accessPermission')"
         style="min-width: 16rem"
         sortField="menu_count"
-        :filterMenu="{
-          key: 'menuId',
-          type: 'select',
-          value: store.filterMenuId,
-          options: translatedMenuOptions,
-          placeholder: t('roleList.accessPermission'),
-        }"
       >
         <template #body="{ data }">
           <div class="text-slate-800">
@@ -449,18 +439,7 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
         </template>
       </Column>
 
-      <Column
-        :header="t('roleList.status')"
-        style="min-width: 10rem"
-        sortField="role_status"
-        :filterMenu="{
-          key: 'status',
-          type: 'select',
-          value: store.filterStatus,
-          options: roleStatusOptions,
-          showClear: false,
-        }"
-      >
+      <Column :header="t('roleList.status')" style="min-width: 10rem" sortField="role_status">
         <template #body="{ data }">
           <Tag
             :value="statusLabel(data.role_status)"
@@ -517,7 +496,9 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
       :mode="formMode"
       :model="formModel"
       :menuOptions="translatedMenuOptions"
+      :menuOptionsLoading="store.menuOptionsLoading"
       :loading="formSubmitting"
+      @permission-dropdown-show="ensurePermissionOptionsLoaded"
       @submit="handleSubmit"
       @close="formVisible = false"
     />

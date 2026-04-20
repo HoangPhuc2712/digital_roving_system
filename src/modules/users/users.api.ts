@@ -2,7 +2,6 @@ import type { AxiosError } from 'axios'
 import { http } from '@/services/http/axios'
 import { endpoints } from '@/services/http/endpoints'
 import type { UserRow } from './users.types'
-import { appConfig } from '@/config/app'
 
 type ApiEnvelope<T> = {
   data: T
@@ -10,23 +9,9 @@ type ApiEnvelope<T> = {
   message: string
 }
 
-type ApiUserEntity = {
-  userId: string
-  userStatus?: number
-  userName: string
-  userKeyword?: string
-  userCode: string
-  userPassword?: string
-  userRoleId: number
-  userAreaId?: number
-  createdAt?: string
-  createdBy?: string
-  updatedAt?: string
-  updatedBy?: string
-}
-
 type ApiUserView = {
   userId: string
+  userStatus?: number
   userKeyword?: string
   userName?: string
   userCode?: string
@@ -53,8 +38,6 @@ type ApiUserView = {
 }
 
 type ApiRoleBase = { roleId: number; roleCode?: string; roleName?: string }
-
-type ApiAreaBase = { areaId: number; areaCode?: string; areaName?: string }
 
 function nowIso() {
   return new Date().toISOString()
@@ -96,51 +79,8 @@ function apiStatusToUi(status?: number) {
   return 0
 }
 
-async function safeGetUserEntity(userId: string): Promise<ApiUserEntity | null> {
-  try {
-    const res = await http.get(endpoints.user.getOne(userId))
-    const payload = res?.data
-    const env = ensureSuccess<ApiUserEntity>(payload)
-    return env.data ?? null
-  } catch {
-    return null
-  }
-}
-
-async function fetchUserStatusMap() {
-  try {
-    const entityRes = await http.post(endpoints.user.getList, {})
-    const entities = ensureSuccess<ApiUserEntity[] | ApiUserEntity>(entityRes.data).data ?? []
-    const list = Array.isArray(entities) ? entities : [entities]
-
-    const statusMap = new Map<string, number>()
-    for (const e of list) {
-      const id = String(e?.userId ?? '').trim()
-      if (!id) continue
-      statusMap.set(id, apiStatusToUi(e.userStatus))
-    }
-    return statusMap
-  } catch {
-    return new Map<string, number>()
-  }
-}
-
-async function resolveUserAreaId(userId: string): Promise<number> {
-  const fromApi = await safeGetUserEntity(userId)
-  const apiAreaId = fromApi?.userAreaId
-  if (typeof apiAreaId === 'number' && apiAreaId > 0) return apiAreaId
-
-  const fallback = Number(appConfig.defaultAreaId ?? 0)
-  if (fallback > 0) return fallback
-
-  return 1
-}
-
 export async function fetchUserRows(): Promise<UserRow[]> {
-  const [statusMap, viewRes] = await Promise.all([
-    fetchUserStatusMap(),
-    http.post(endpoints.userView.getList, {}),
-  ])
+  const viewRes = await http.post(endpoints.userView.getList, {})
 
   const payload = ensureSuccess<ApiUserView[] | ApiUserView>(viewRes.data).data ?? []
   const views = Array.isArray(payload) ? payload : [payload]
@@ -160,7 +100,7 @@ export async function fetchUserRows(): Promise<UserRow[]> {
       const areaName = String(v.userAreaName ?? '')
       const areaCode = String(v.userAreaCode ?? '')
 
-      const status = statusMap.get(userId) ?? 1
+      const status = apiStatusToUi((v as any)?.userStatus ?? (v as any)?.user_status)
 
       return {
         user_id: userId,
@@ -195,47 +135,25 @@ export async function fetchUserRows(): Promise<UserRow[]> {
 }
 
 export async function fetchUserById(user_id: string) {
-  const [entity, view] = await Promise.all([
-    safeGetUserEntity(user_id),
-    (async () => {
-      try {
-        const res = await http.get(endpoints.userView.getOne(user_id))
-        const env = ensureSuccess<ApiUserView>(res.data)
-        return env.data ?? null
-      } catch {
-        return null
-      }
-    })(),
-  ])
-
-  if (!view && !entity) return null
-
-  const name = view?.userName ?? entity?.userName ?? ''
-  const code = view?.userCode ?? entity?.userCode ?? ''
-  const roleId = view?.userRoleId ?? entity?.userRoleId ?? 0
+  const res = await http.get(endpoints.userView.getOne(user_id))
+  const view = ensureSuccess<ApiUserView>(res.data).data
 
   return {
     user_id,
-    user_name: String(view?.userName ?? entity?.userName ?? ''),
-    user_code: String(view?.userCode ?? entity?.userCode ?? ''),
-    user_role_id: Number(view?.userRoleId ?? entity?.userRoleId ?? 0),
+    user_name: String(view?.userName ?? ''),
+    user_code: String(view?.userCode ?? ''),
+    user_role_id: Number(view?.userRoleId ?? 0),
 
-    role_name: String(
-      (view as any)?.userRoleName ??
-        (view as any)?.roleName ??
-        (view as any)?.userRoleCode ??
-        (view as any)?.roleCode ??
-        '',
-    ),
-    role_code: String((view as any)?.userRoleCode ?? (view as any)?.roleCode ?? ''),
+    role_name: String(view?.userRoleName ?? view?.userRoleCode ?? ''),
+    role_code: String(view?.userRoleCode ?? ''),
 
-    user_area_id: Number((view as any)?.userAreaId ?? entity?.userAreaId ?? 0),
-    area_name: String((view as any)?.userAreaName ?? (view as any)?.areaName ?? ''),
-    area_code: String((view as any)?.userAreaCode ?? (view as any)?.areaCode ?? ''),
+    user_area_id: Number(view?.userAreaId ?? 0),
+    area_name: String(view?.userAreaName ?? ''),
+    area_code: String(view?.userAreaCode ?? ''),
 
-    user_status: apiStatusToUi(entity?.userStatus),
-    created_date: view?.createdAt ?? entity?.createdAt ?? nowIso(),
-    updated_date: view?.updatedAt ?? entity?.updatedAt ?? nowIso(),
+    user_status: apiStatusToUi((view as any)?.userStatus ?? (view as any)?.user_status),
+    created_date: view?.createdAt ?? nowIso(),
+    updated_date: view?.updatedAt ?? nowIso(),
   }
 }
 
@@ -247,8 +165,6 @@ export async function createUserMock(payload: {
   user_area_id: number
   actor_id: string
 }) {
-  const areaId = await resolveUserAreaId(payload.actor_id)
-
   const body: any = {
     userName: payload.user_name.trim(),
     userCode: payload.user_code.trim(),
@@ -280,12 +196,6 @@ export async function updateUserMock(payload: {
   user_area_id: number
   actor_id: string
 }) {
-  const currentEntity = await safeGetUserEntity(payload.user_id)
-  const areaId =
-    typeof currentEntity?.userAreaId === 'number' && currentEntity.userAreaId > 0
-      ? currentEntity.userAreaId
-      : await resolveUserAreaId(payload.actor_id)
-
   const body: any = {
     userName: payload.user_name.trim(),
     userCode: payload.user_code.trim(),
@@ -337,11 +247,14 @@ export async function fetchRoleOptions() {
     .sort((a, b) => a.label.localeCompare(b.label))
 }
 
-export async function fetchAreaOptions() {
-  const res = await http.post(endpoints.area.getBaseList, {})
-  const list = ensureSuccess<ApiAreaBase[]>(res.data).data ?? []
+type ApiAreaViewOption = { areaId?: number; areaCode?: string; areaName?: string }
 
-  return list
+export async function fetchAreaOptions() {
+  const res = await http.post(endpoints.areaView.getList, {})
+  const list = ensureSuccess<ApiAreaViewOption[] | ApiAreaViewOption>(res.data).data ?? []
+  const views = Array.isArray(list) ? list : [list]
+
+  return views
     .map((a) => ({
       value: Number(a.areaId ?? 0),
       label: String(a.areaName ?? a.areaCode ?? a.areaId),

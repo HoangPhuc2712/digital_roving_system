@@ -29,17 +29,14 @@ type ApiRoleView = {
   updatedBy?: string
   updatedName?: string
   roleMenus?: ApiRoleMenu[]
+  totalPermission?: number
 }
 
-type ApiRmcViewRow = {
-  rmcId: number
-  roleId: number
-  roleCode: string
-  roleName: string
+type ApiMenuCategoryView = {
   mcId: number
   mcCode: string
   mcName: string
-  mcActive: boolean
+  mcActive?: boolean
   mcPriority: number
 }
 
@@ -70,23 +67,18 @@ function unwrapList<T>(payload: any): T[] {
 }
 
 export async function fetchMenuCategoryOptions(): Promise<MenuCategoryOption[]> {
-  const res = await http.post(endpoints.roleMenuCategoryView.getList, {})
-  const rows = unwrapList<ApiRmcViewRow>(res.data)
+  const res = await http.post(endpoints.menuCategoryView.getList, {})
+  const rows = unwrapList<ApiMenuCategoryView>(res.data)
 
-  const map = new Map<number, MenuCategoryOption>()
-  for (const r of rows) {
-    if (!r?.mcId) continue
-    if (!map.has(r.mcId)) {
-      map.set(r.mcId, {
-        value: r.mcId,
-        label: r.mcName,
-        code: r.mcCode,
-        priority: Number(r.mcPriority ?? 0),
-      })
-    }
-  }
-
-  return Array.from(map.values()).sort((a, b) => (a.priority || 0) - (b.priority || 0))
+  return (rows ?? [])
+    .filter((r) => Number(r?.mcId ?? 0) > 0)
+    .map((r) => ({
+      value: r.mcId,
+      label: r.mcName,
+      code: r.mcCode,
+      priority: Number(r.mcPriority ?? 0),
+    }))
+    .sort((a, b) => (a.priority || 0) - (b.priority || 0))
 }
 
 export async function fetchRoleRows(): Promise<RoleRow[]> {
@@ -112,7 +104,7 @@ export async function fetchRoleRows(): Promise<RoleRow[]> {
         updated_date: v.updatedAt ?? nowIso(),
         menu_ids: menuIds,
         menu_names: menuNames,
-        menu_count: menuIds.length,
+        menu_count: Number(v.totalPermission ?? menuIds.length),
         _q: q,
       }
     })
@@ -132,6 +124,7 @@ export async function fetchRoleById(role_id: number) {
     role_is_admin: Boolean(data.roleIsAdmin),
     role_status: apiStatusToUi(data.roleStatus),
     menu_ids: menus.map((m) => m.mcId),
+    menu_names: menus.map((m) => m.mcName).filter(Boolean),
   }
 }
 
