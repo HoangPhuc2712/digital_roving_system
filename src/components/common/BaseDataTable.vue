@@ -198,6 +198,7 @@ const emit = defineEmits<{
   (e: 'update:modelDateFrom', value: Date | null): void
   (e: 'update:modelDateTo', value: Date | null): void
   (e: 'update:columnFilter', payload: { key: string; value: any }): void
+  (e: 'filter-open', payload: { key: string }): void
   (e: 'clear'): void
   (e: 'page', ev: DataTablePageEvent): void
 }>()
@@ -841,6 +842,7 @@ function toggleFilterPopover(key: string, event: MouseEvent) {
   }
 
   activeFilterKey.value = key
+  emit('filter-open', { key })
   current.show?.(event)
 }
 

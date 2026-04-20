@@ -37,6 +37,10 @@ export const useGpsLogReportsStore = defineStore('gpsLogReports', {
     checkPointFilterOptions: [] as { label: string; value: string; searchText?: string }[],
     guardFilterOptions: [] as { label: string; value: string; searchText?: string }[],
 
+    routeFilterOptionsLoading: false,
+    checkPointFilterOptionsLoading: false,
+    guardFilterOptionsLoading: false,
+
     first: 0,
     rowsPerPage: 25,
   }),
@@ -186,50 +190,57 @@ export const useGpsLogReportsStore = defineStore('gpsLogReports', {
   },
 
   actions: {
-    async ensureFilterOptionsLoaded() {
-      if (
-        this.areaFilterOptions.length &&
-        this.routeFilterOptions.length &&
-        this.checkPointFilterOptions.length &&
-        this.guardFilterOptions.length
-      ) {
-        return
+    async ensureRouteFilterOptionsLoaded() {
+      if (this.areaFilterOptions.length && this.routeFilterOptions.length) return
+      if (this.routeFilterOptionsLoading) return
+
+      this.routeFilterOptionsLoading = true
+      try {
+        const routeFilters = await fetchReportRouteFilterOptions().catch(() => ({
+          areaOptions: [] as { label: string; value: number }[],
+          routeOptions: [] as {
+            label: string
+            value: string
+            areaId: number
+            searchText?: string
+          }[],
+        }))
+
+        if (!this.areaFilterOptions.length) this.areaFilterOptions = routeFilters.areaOptions
+        if (!this.routeFilterOptions.length) this.routeFilterOptions = routeFilters.routeOptions
+      } finally {
+        this.routeFilterOptionsLoading = false
       }
+    },
 
-      const [routeFilters, checkpoints, guards] = await Promise.all([
-        this.areaFilterOptions.length && this.routeFilterOptions.length
-          ? Promise.resolve({
-              areaOptions: this.areaFilterOptions,
-              routeOptions: this.routeFilterOptions,
-            })
-          : fetchReportRouteFilterOptions().catch(() => ({
-              areaOptions: [] as { label: string; value: number }[],
-              routeOptions: [] as {
-                label: string
-                value: string
-                areaId: number
-                searchText?: string
-              }[],
-            })),
-        this.checkPointFilterOptions.length
-          ? Promise.resolve(this.checkPointFilterOptions)
-          : fetchPatrolDetailCheckpointOptions().catch(() => []),
-        this.guardFilterOptions.length
-          ? Promise.resolve(this.guardFilterOptions)
-          : fetchPatrolDetailGuardOptions().catch(() => []),
-      ])
+    async ensureCheckPointFilterOptionsLoaded() {
+      if (this.checkPointFilterOptions.length) return
+      if (this.checkPointFilterOptionsLoading) return
 
-      if (!this.areaFilterOptions.length) this.areaFilterOptions = routeFilters.areaOptions
-      if (!this.routeFilterOptions.length) this.routeFilterOptions = routeFilters.routeOptions
-      if (!this.checkPointFilterOptions.length) this.checkPointFilterOptions = checkpoints
-      if (!this.guardFilterOptions.length) this.guardFilterOptions = guards
+      this.checkPointFilterOptionsLoading = true
+      try {
+        this.checkPointFilterOptions = await fetchPatrolDetailCheckpointOptions().catch(() => [])
+      } finally {
+        this.checkPointFilterOptionsLoading = false
+      }
+    },
+
+    async ensureGuardFilterOptionsLoaded() {
+      if (this.guardFilterOptions.length) return
+      if (this.guardFilterOptionsLoading) return
+
+      this.guardFilterOptionsLoading = true
+      try {
+        this.guardFilterOptions = await fetchPatrolDetailGuardOptions().catch(() => [])
+      } finally {
+        this.guardFilterOptionsLoading = false
+      }
     },
 
     async load() {
       this.loading = true
       try {
-        const [rows] = await Promise.all([fetchGpsLogRows(), this.ensureFilterOptionsLoaded()])
-        this.rows = rows
+        this.rows = await fetchGpsLogRows()
       } finally {
         this.loading = false
       }

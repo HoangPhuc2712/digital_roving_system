@@ -43,6 +43,10 @@ export const useReportsStore = defineStore('reports', {
     routeFilterOptions: [] as { label: string; value: string; areaId: number }[],
     checkPointFilterOptions: [] as { label: string; value: string; searchText?: string }[],
     guardFilterOptions: [] as { label: string; value: string; searchText?: string }[],
+
+    routeFilterOptionsLoading: false,
+    checkPointFilterOptionsLoading: false,
+    guardFilterOptionsLoading: false,
   }),
 
   getters: {
@@ -217,42 +221,51 @@ export const useReportsStore = defineStore('reports', {
   },
 
   actions: {
-    async ensureFilterOptionsLoaded() {
-      if (
-        this.areaFilterOptions.length &&
-        this.routeFilterOptions.length &&
-        this.checkPointFilterOptions.length &&
-        this.guardFilterOptions.length
-      )
-        return
+    async ensureRouteFilterOptionsLoaded() {
+      if (this.areaFilterOptions.length && this.routeFilterOptions.length) return
+      if (this.routeFilterOptionsLoading) return
 
-      const [routeFilters, checkpoints, guards] = await Promise.all([
-        this.areaFilterOptions.length && this.routeFilterOptions.length
-          ? Promise.resolve({
-              areaOptions: this.areaFilterOptions,
-              routeOptions: this.routeFilterOptions,
-            })
-          : fetchReportRouteFilterOptions().catch(async () => ({
-              areaOptions: await fetchReportAreaOptions().catch(() => []),
-              routeOptions: [] as {
-                label: string
-                value: string
-                areaId: number
-                searchText?: string
-              }[],
-            })),
-        this.checkPointFilterOptions.length
-          ? Promise.resolve(this.checkPointFilterOptions)
-          : fetchPatrolDetailCheckpointOptions().catch(() => []),
-        this.guardFilterOptions.length
-          ? Promise.resolve(this.guardFilterOptions)
-          : fetchReportGuardOptions().catch(() => []),
-      ])
+      this.routeFilterOptionsLoading = true
+      try {
+        const routeFilters = await fetchReportRouteFilterOptions().catch(async () => ({
+          areaOptions: await fetchReportAreaOptions().catch(() => []),
+          routeOptions: [] as {
+            label: string
+            value: string
+            areaId: number
+            searchText?: string
+          }[],
+        }))
 
-      if (!this.areaFilterOptions.length) this.areaFilterOptions = routeFilters.areaOptions
-      if (!this.routeFilterOptions.length) this.routeFilterOptions = routeFilters.routeOptions
-      if (!this.checkPointFilterOptions.length) this.checkPointFilterOptions = checkpoints
-      if (!this.guardFilterOptions.length) this.guardFilterOptions = guards
+        if (!this.areaFilterOptions.length) this.areaFilterOptions = routeFilters.areaOptions
+        if (!this.routeFilterOptions.length) this.routeFilterOptions = routeFilters.routeOptions
+      } finally {
+        this.routeFilterOptionsLoading = false
+      }
+    },
+
+    async ensureCheckPointFilterOptionsLoaded() {
+      if (this.checkPointFilterOptions.length) return
+      if (this.checkPointFilterOptionsLoading) return
+
+      this.checkPointFilterOptionsLoading = true
+      try {
+        this.checkPointFilterOptions = await fetchPatrolDetailCheckpointOptions().catch(() => [])
+      } finally {
+        this.checkPointFilterOptionsLoading = false
+      }
+    },
+
+    async ensureGuardFilterOptionsLoaded() {
+      if (this.guardFilterOptions.length) return
+      if (this.guardFilterOptionsLoading) return
+
+      this.guardFilterOptionsLoading = true
+      try {
+        this.guardFilterOptions = await fetchReportGuardOptions().catch(() => [])
+      } finally {
+        this.guardFilterOptionsLoading = false
+      }
     },
 
     async load() {
@@ -267,15 +280,10 @@ export const useReportsStore = defineStore('reports', {
           to = tmp
         }
 
-        const [rows] = await Promise.all([
-          fetchReportRows({
-            reportAtFrom: from,
-            reportAtTo: to,
-          }),
-          this.ensureFilterOptionsLoaded(),
-        ])
-
-        this.rows = rows
+        this.rows = await fetchReportRows({
+          reportAtFrom: from,
+          reportAtTo: to,
+        })
       } finally {
         this.loading = false
       }

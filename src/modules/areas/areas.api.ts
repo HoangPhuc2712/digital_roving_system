@@ -28,7 +28,7 @@ type ApiAreaView = {
   updatedBy?: string
   createdName?: string
   updatedName?: string
-  checkPoints?: ApiCheckPointLite[]
+  totalCheckPoint: number
 }
 
 function nowIso() {
@@ -54,7 +54,6 @@ export async function fetchAreaRows(): Promise<AreaRow[]> {
 
   return views
     .map((v) => {
-      const cps = Array.isArray(v.checkPoints) ? v.checkPoints : []
       const q = String(v.areaKeyword ?? `${v.areaCode} ${v.areaName}`).toLowerCase()
 
       return {
@@ -62,7 +61,7 @@ export async function fetchAreaRows(): Promise<AreaRow[]> {
         area_code: v.areaCode,
         area_name: v.areaName,
         area_status: apiStatusToUi(v.areaStatus),
-        checkpoint_count: cps.length,
+        total_checkpoints: v.totalCheckPoint,
         created_date: v.createdAt ?? nowIso(),
         updated_date: v.updatedAt ?? nowIso(),
         _q: q,
@@ -75,13 +74,12 @@ export async function fetchAreaById(area_id: number) {
   const res = await http.get(endpoints.areaView.getOne(area_id))
   const view = ensureSuccess<ApiAreaView>(res.data).data
 
-  const cps = Array.isArray(view.checkPoints) ? view.checkPoints : []
   return {
     area_id: view.areaId,
     area_code: view.areaCode,
     area_name: view.areaName,
     area_status: apiStatusToUi(view.areaStatus),
-    checkpoint_count: cps.length,
+    total_checkpoints: view.totalCheckPoint,
     created_date: view.createdAt ?? nowIso(),
     updated_date: view.updatedAt ?? nowIso(),
     _q: String(view.areaKeyword ?? `${view.areaCode} ${view.areaName}`).toLowerCase(),

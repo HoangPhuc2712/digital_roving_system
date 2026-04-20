@@ -38,6 +38,10 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
     checkPointFilterOptions: [] as { label: string; value: string; searchText?: string }[],
     guardFilterOptions: [] as { label: string; value: string; searchText?: string }[],
 
+    routeFilterOptionsLoading: false,
+    checkPointFilterOptionsLoading: false,
+    guardFilterOptionsLoading: false,
+
     first: 0,
     rowsPerPage: 25,
   }),
@@ -187,58 +191,65 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
   },
 
   actions: {
-    async ensureFilterOptionsLoaded() {
-      if (
-        this.areaFilterOptions.length &&
-        this.routeFilterOptions.length &&
-        this.checkPointFilterOptions.length &&
-        this.guardFilterOptions.length
-      ) {
-        return
+    async ensureRouteFilterOptionsLoaded() {
+      if (this.areaFilterOptions.length && this.routeFilterOptions.length) return
+      if (this.routeFilterOptionsLoading) return
+
+      this.routeFilterOptionsLoading = true
+      try {
+        const routeFilters = await fetchReportRouteFilterOptions().catch(() => ({
+          areaOptions: [] as { label: string; value: number }[],
+          routeOptions: [] as {
+            label: string
+            value: string
+            areaId: number
+            searchText?: string
+          }[],
+        }))
+
+        if (!this.areaFilterOptions.length) this.areaFilterOptions = routeFilters.areaOptions
+        if (!this.routeFilterOptions.length) this.routeFilterOptions = routeFilters.routeOptions
+        if (!Object.keys(this.areaLabelMap).length) {
+          this.areaLabelMap = Object.fromEntries(
+            (routeFilters.areaOptions ?? []).map((option) => [
+              Number(option.value ?? 0),
+              String(option.label ?? ''),
+            ]),
+          )
+        }
+      } finally {
+        this.routeFilterOptionsLoading = false
       }
+    },
 
-      const [routeFilters, checkpoints, guards] = await Promise.all([
-        this.areaFilterOptions.length && this.routeFilterOptions.length
-          ? Promise.resolve({
-              areaOptions: this.areaFilterOptions,
-              routeOptions: this.routeFilterOptions,
-            })
-          : fetchReportRouteFilterOptions().catch(() => ({
-              areaOptions: [] as { label: string; value: number }[],
-              routeOptions: [] as {
-                label: string
-                value: string
-                areaId: number
-                searchText?: string
-              }[],
-            })),
-        this.checkPointFilterOptions.length
-          ? Promise.resolve(this.checkPointFilterOptions)
-          : fetchPatrolDetailCheckpointOptions().catch(() => []),
-        this.guardFilterOptions.length
-          ? Promise.resolve(this.guardFilterOptions)
-          : fetchPatrolDetailGuardOptions().catch(() => []),
-      ])
+    async ensureCheckPointFilterOptionsLoaded() {
+      if (this.checkPointFilterOptions.length) return
+      if (this.checkPointFilterOptionsLoading) return
 
-      if (!this.areaFilterOptions.length) this.areaFilterOptions = routeFilters.areaOptions
-      if (!this.routeFilterOptions.length) this.routeFilterOptions = routeFilters.routeOptions
-      if (!this.checkPointFilterOptions.length) this.checkPointFilterOptions = checkpoints
-      if (!this.guardFilterOptions.length) this.guardFilterOptions = guards
+      this.checkPointFilterOptionsLoading = true
+      try {
+        this.checkPointFilterOptions = await fetchPatrolDetailCheckpointOptions().catch(() => [])
+      } finally {
+        this.checkPointFilterOptionsLoading = false
+      }
+    },
+
+    async ensureGuardFilterOptionsLoaded() {
+      if (this.guardFilterOptions.length) return
+      if (this.guardFilterOptionsLoading) return
+
+      this.guardFilterOptionsLoading = true
+      try {
+        this.guardFilterOptions = await fetchPatrolDetailGuardOptions().catch(() => [])
+      } finally {
+        this.guardFilterOptionsLoading = false
+      }
     },
 
     async load() {
       this.loading = true
       try {
-        await this.ensureFilterOptionsLoaded()
-        const rows = await fetchPatrolDetailReportRows()
-
-        this.rows = rows
-        this.areaLabelMap = Object.fromEntries(
-          (this.areaFilterOptions ?? []).map((option) => [
-            Number(option.value ?? 0),
-            String(option.label ?? ''),
-          ]),
-        )
+        this.rows = await fetchPatrolDetailReportRows()
       } finally {
         this.loading = false
       }

@@ -79,8 +79,13 @@ onMounted(async () => {
   }
 
   await store.load()
-  console.log(store.filteredRows)
 })
+
+async function onFilterOpen(payload: { key: string }) {
+  if (payload.key === 'routeName') await store.ensureRouteFilterOptionsLoaded()
+  if (payload.key === 'checkPointName') await store.ensureCheckPointFilterOptionsLoaded()
+  if (payload.key === 'guardName') await store.ensureGuardFilterOptionsLoaded()
+}
 
 onBeforeRouteLeave(() => {
   resetPageState()
@@ -181,6 +186,7 @@ function onColumnFilter(payload: { key: string; value: any }) {
       :first="store.first"
       :showSearch="false"
       @update:columnFilter="onColumnFilter"
+      @filter-open="onFilterOpen"
       @clear="clearAll"
       @page="onPage"
     >

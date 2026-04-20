@@ -319,6 +319,12 @@ function displayReportNote(note: string) {
   return translateReportNote(String(note ?? ''), t)
 }
 
+async function onFilterOpen(payload: { key: string }) {
+  if (payload.key === 'routeName') await store.ensureRouteFilterOptionsLoaded()
+  if (payload.key === 'checkPointName') await store.ensureCheckPointFilterOptionsLoaded()
+  if (payload.key === 'guardId') await store.ensureGuardFilterOptionsLoaded()
+}
+
 function onColumnFilter(payload: { key: string; value: any }) {
   if (payload.key === 'routeName') {
     const value = payload.value && typeof payload.value === 'object' ? payload.value : {}
@@ -441,6 +447,7 @@ async function onExport() {
       :modelSearch="store.searchText"
       @update:modelSearch="store.searchText = $event"
       @update:columnFilter="onColumnFilter"
+      @filter-open="onFilterOpen"
       @clear="clearAll"
       @page="onPage"
     >

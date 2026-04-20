@@ -151,8 +151,11 @@ onMounted(async () => {
   applyLockedAreaFilter()
   await store.load()
   applyLockedAreaFilter()
-  console.log(store.filteredRows)
 })
+
+async function onFilterOpen(payload: { key: string }) {
+  if (payload.key === 'areaId') await store.ensureAreaOptionsLoaded()
+}
 
 function onColumnFilter(payload: { key: string; value: any }) {
   if (payload.key === 'areaId') store.filterAreaId = payload.value ?? null
@@ -207,7 +210,8 @@ function mapRowToFormModel(row: CheckpointRow): CheckpointFormModel {
   }
 }
 
-function openNew() {
+async function openNew() {
+  await store.ensureAreaOptionsLoaded()
   formMode.value = 'new'
   formModel.value = {
     cp_code: '',
@@ -223,6 +227,7 @@ function openNew() {
 }
 
 async function openView(row: CheckpointRow) {
+  await store.ensureAreaOptionsLoaded()
   formMode.value = 'view'
   try {
     const detail = await fetchCheckpointById(row.cp_id, store.roleOptions)
@@ -244,6 +249,7 @@ async function openView(row: CheckpointRow) {
 }
 
 async function openEdit(row: CheckpointRow) {
+  await store.ensureAreaOptionsLoaded()
   formMode.value = 'edit'
   try {
     const detail = await fetchCheckpointById(row.cp_id, store.roleOptions)
@@ -534,6 +540,7 @@ async function onExport() {
       v-model:selection="selectedRows"
       @update:modelSearch="searchDraft = $event"
       @update:columnFilter="onColumnFilter"
+      @filter-open="onFilterOpen"
       @clear="clearAll"
       @page="onPage"
     >

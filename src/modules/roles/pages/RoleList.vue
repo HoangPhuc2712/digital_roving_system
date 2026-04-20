@@ -79,6 +79,10 @@ onMounted(async () => {
   await store.load()
 })
 
+async function onFilterOpen(payload: { key: string }) {
+  if (payload.key === 'menuId') await store.ensureMenuOptionsLoaded()
+}
+
 function statusLabel(s: number) {
   return s === 1 ? t('roleList.roleStatusOptions.active') : t('roleList.roleStatusOptions.inactive')
 }
@@ -108,7 +112,8 @@ function mapRowToFormModel(row: RoleRow): RoleFormModel {
   }
 }
 
-function openNew() {
+async function openNew() {
+  await store.ensureFormOptionsLoaded()
   formMode.value = 'new'
   formModel.value = {
     role_code: '',
@@ -121,6 +126,7 @@ function openNew() {
 }
 
 async function openView(row: RoleRow) {
+  await store.ensureFormOptionsLoaded()
   formMode.value = 'view'
   const detail = (await fetchRoleById(row.role_id)) ?? row
   formModel.value = mapRowToFormModel(detail as RoleRow)
@@ -128,6 +134,7 @@ async function openView(row: RoleRow) {
 }
 
 async function openEdit(row: RoleRow) {
+  await store.ensureFormOptionsLoaded()
   formMode.value = 'edit'
   const detail = (await fetchRoleById(row.role_id)) ?? row
   formModel.value = mapRowToFormModel(detail as RoleRow)
@@ -369,6 +376,7 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
       :modelSearch="searchDraft"
       @update:modelSearch="searchDraft = $event"
       @update:columnFilter="onColumnFilter"
+      @filter-open="onFilterOpen"
       @clear="clearAll"
       @page="onPage"
     >

@@ -12,6 +12,8 @@ export const useRolesStore = defineStore('roles', {
     filterMenuId: null as number | null,
 
     menuOptions: [] as MenuCategoryOption[],
+    menuOptionsLoading: false,
+    menuOptionsFetched: false,
 
     first: 0,
     rowsPerPage: 25,
@@ -35,12 +37,48 @@ export const useRolesStore = defineStore('roles', {
   },
 
   actions: {
+    async ensureMenuOptionsLoaded() {
+      if (this.menuOptionsLoading || this.menuOptionsFetched) return
+
+      this.menuOptionsLoading = true
+      try {
+        const menus = await fetchMenuCategoryOptions().catch(() => [])
+        if (menus.length) this.menuOptions = menus
+        this.menuOptionsFetched = true
+      } finally {
+        this.menuOptionsLoading = false
+      }
+    },
+
+    async ensureFormOptionsLoaded() {
+      await this.ensureMenuOptionsLoaded()
+    },
+
     async load() {
       this.loading = true
       try {
-        const [menus, rows] = await Promise.all([fetchMenuCategoryOptions(), fetchRoleRows()])
-        this.menuOptions = menus
+        const rows = await fetchRoleRows()
+
+        const fallbackMenus = Array.from(
+          new Map(
+            rows.flatMap((row) =>
+              (row.menu_ids ?? []).map((menuId, index) => [
+                Number(menuId),
+                {
+                  value: Number(menuId),
+                  label: String(row.menu_names?.[index] ?? menuId),
+                  code: '',
+                  priority: index,
+                },
+              ]),
+            ),
+          ).values(),
+        ).sort((a, b) => (a.priority || 0) - (b.priority || 0))
+
         this.rows = rows
+        if (!this.menuOptionsFetched && !this.menuOptions.length) {
+          this.menuOptions = fallbackMenus
+        }
       } finally {
         this.loading = false
       }
