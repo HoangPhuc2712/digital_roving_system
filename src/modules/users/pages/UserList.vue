@@ -241,26 +241,12 @@ function onColumnFilter(payload: { key: string; value: any }) {
 }
 
 async function onBeforeFilterOptionsOpen(payload: { key: string }) {
-  console.log('[UserList] beforeFilterOpen:start', {
-    key: payload.key,
-    areaLength: store.areaOptions.length,
-    roleLength: store.roleOptions.length,
-  })
-
   if (payload.key === 'areaId') {
     await store.ensureAreaOptionsLoaded()
-    console.log('[UserList] beforeFilterOpen:after-area', {
-      areaLength: store.areaOptions.length,
-      areaOptions: store.areaOptions,
-    })
   }
 
   if (payload.key === 'roleId') {
     await store.ensureRoleOptionsLoaded()
-    console.log('[UserList] beforeFilterOpen:after-role', {
-      roleLength: store.roleOptions.length,
-      roleOptions: store.roleOptions,
-    })
   }
 }
 

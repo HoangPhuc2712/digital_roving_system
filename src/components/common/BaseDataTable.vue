@@ -701,15 +701,21 @@ function buildColumnChildren(node: VNode, sortable: boolean, filterMenu?: Column
               type: 'button',
               class: [
                 'inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-700',
+                openingFilterKey.value === resolvedFilterMenu.key ? 'cursor-wait opacity-70' : '',
               ],
               'aria-label': 'Filter column',
+              'aria-busy': openingFilterKey.value === resolvedFilterMenu.key ? 'true' : 'false',
               onClick: (event: MouseEvent) => toggleFilterPopover(resolvedFilterMenu.key, event),
             },
             [
               h('i', {
                 class: [
                   'pi text-sm',
-                  isFilterActive(resolvedFilterMenu.value) ? 'pi-filter-fill' : 'pi-filter',
+                  openingFilterKey.value === resolvedFilterMenu.key
+                    ? 'pi-spinner pi-spin'
+                    : isFilterActive(resolvedFilterMenu.value)
+                      ? 'pi-filter-fill'
+                      : 'pi-filter',
                 ],
               }),
             ],
@@ -985,7 +991,7 @@ function serializeFilterValue(value: any): string {
 }
 
 function buildFilterMenuColumnKey(config: ColumnFilterMenuConfig) {
-  return `${config.key}::${config.type ?? 'select'}`
+  return `${config.key}::${config.type ?? 'select'}::${serializeFilterValue(config.value)}`
 }
 
 function buildFilterControlKey(config: ColumnFilterMenuConfig) {

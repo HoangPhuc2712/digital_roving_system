@@ -196,7 +196,7 @@ function onColumnFilter(payload: { key: string; value: any }) {
       :first="store.first"
       :showSearch="false"
       @update:columnFilter="onColumnFilter"
-      @filter-open="onFilterOpen"
+      :beforeFilterOpen="onFilterOpen"
       @clear="clearAll"
       @page="onPage"
     >

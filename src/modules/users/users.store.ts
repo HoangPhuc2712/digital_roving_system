@@ -110,34 +110,16 @@ export const useUsersStore = defineStore('users', {
     },
 
     async ensureRoleOptionsLoaded() {
-      console.log('[UsersStore] ensureRoleOptionsLoaded:start', {
-        loaded: this.roleOptionsLoaded,
-        currentLength: this.roleOptions.length,
-      })
-
       if (this.roleOptionsLoaded && this.roleOptions.length) {
-        console.log('[UsersStore] ensureRoleOptionsLoaded:use-cache', {
-          length: this.roleOptions.length,
-          options: this.roleOptions,
-        })
         return
       }
       if (roleOptionsPromise) {
-        console.log('[UsersStore] ensureRoleOptionsLoaded:await-existing-promise')
         await roleOptionsPromise
-        console.log('[UsersStore] ensureRoleOptionsLoaded:after-existing-promise', {
-          length: this.roleOptions.length,
-          options: this.roleOptions,
-        })
         return
       }
 
       roleOptionsPromise = fetchRoleOptions()
         .then((options) => {
-          console.log('[UsersStore] ensureRoleOptionsLoaded:fetched', {
-            length: options.length,
-            options,
-          })
           this.roleOptions = options
           this.roleOptionsLoaded = true
           return options
@@ -152,41 +134,19 @@ export const useUsersStore = defineStore('users', {
         })
 
       await roleOptionsPromise
-      console.log('[UsersStore] ensureRoleOptionsLoaded:done', {
-        length: this.roleOptions.length,
-        options: this.roleOptions,
-      })
     },
 
     async ensureAreaOptionsLoaded() {
-      console.log('[UsersStore] ensureAreaOptionsLoaded:start', {
-        loaded: this.areaOptionsLoaded,
-        currentLength: this.areaOptions.length,
-      })
-
       if (this.areaOptionsLoaded && this.areaOptions.length) {
-        console.log('[UsersStore] ensureAreaOptionsLoaded:use-cache', {
-          length: this.areaOptions.length,
-          options: this.areaOptions,
-        })
         return
       }
       if (areaOptionsPromise) {
-        console.log('[UsersStore] ensureAreaOptionsLoaded:await-existing-promise')
         await areaOptionsPromise
-        console.log('[UsersStore] ensureAreaOptionsLoaded:after-existing-promise', {
-          length: this.areaOptions.length,
-          options: this.areaOptions,
-        })
         return
       }
 
       areaOptionsPromise = fetchAreaOptions()
         .then((options) => {
-          console.log('[UsersStore] ensureAreaOptionsLoaded:fetched', {
-            length: options.length,
-            options,
-          })
           this.areaOptions = options
           this.areaOptionsLoaded = true
           return options
@@ -201,10 +161,6 @@ export const useUsersStore = defineStore('users', {
         })
 
       await areaOptionsPromise
-      console.log('[UsersStore] ensureAreaOptionsLoaded:done', {
-        length: this.areaOptions.length,
-        options: this.areaOptions,
-      })
     },
 
     setFirst(first: number) {

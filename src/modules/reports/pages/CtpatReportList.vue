@@ -169,7 +169,7 @@ async function onExport() {
       :modelSearch="store.searchText"
       @update:modelSearch="store.searchText = $event"
       @update:columnFilter="onColumnFilter"
-      @filter-open="onFilterOpen"
+      :beforeFilterOpen="onFilterOpen"
       @clear="clearAll"
       @page="onPage"
     >
