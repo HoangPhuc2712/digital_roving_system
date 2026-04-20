@@ -87,6 +87,8 @@ type ApiPointReportView = {
   psYear?: number
   psHourFrom?: number
   psHourTo?: number
+  psShift?: string
+  rpShiftStr?: string
   reportAt?: string
   reportBy?: string
   reportName?: string
@@ -177,6 +179,8 @@ type ApiPlannedPatrolShiftView = {
   psYear?: number
   psHourFrom?: number
   psHourTo?: number
+  psShift?: string
+  rpShiftStr?: string
   psFrom?: string | number
   psTo?: string | number
   psStartAt?: string | null
@@ -612,7 +616,7 @@ function normalizeView(v: ApiPointReportView): ReportRow {
     pr_second: actualSecond,
     route_id: Number(v.routeId ?? 0),
     route_name: routeName,
-    shift_text: '',
+    shift_text: String(v.rpShiftStr ?? v.psShift ?? '').trim(),
     rd_id: Number(v.rdId ?? 0),
     rd_second: planSecond,
 
@@ -685,8 +689,7 @@ export async function fetchReportRowById(pr_id: number): Promise<ReportRow | nul
     const payload = ensureSuccess<ApiPointReportView>(res.data).data
     if (!payload) return null
 
-    const normalized = normalizeView(payload)
-    return await enrichReportRowShift(normalized)
+    return normalizeView(payload)
   } catch {
     return null
   }
