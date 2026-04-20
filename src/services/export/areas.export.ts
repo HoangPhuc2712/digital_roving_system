@@ -46,7 +46,7 @@ export async function exportAreasXlsx(params: { rows: AreaRow[]; fileName: strin
     ws.addRow({
       area_code: row.area_code || '-',
       area_name: row.area_name || '-',
-      checkpoint_count: Number(row.checkpoint_count ?? 0),
+      checkpoint_count: Number(row.total_checkpoints ?? 0),
     })
   }
 
