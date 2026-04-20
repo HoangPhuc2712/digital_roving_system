@@ -249,7 +249,7 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
     async load() {
       this.loading = true
       try {
-        this.rows = await fetchPatrolDetailReportRows()
+        this.rows = await fetchPatrolDetailReportRows(this.filterDateFrom, this.filterDateTo)
       } finally {
         this.loading = false
       }

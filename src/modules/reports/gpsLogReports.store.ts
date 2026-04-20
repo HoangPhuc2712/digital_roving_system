@@ -240,7 +240,7 @@ export const useGpsLogReportsStore = defineStore('gpsLogReports', {
     async load() {
       this.loading = true
       try {
-        this.rows = await fetchGpsLogRows()
+        this.rows = await fetchGpsLogRows(this.filterDateFrom, this.filterDateTo)
       } finally {
         this.loading = false
       }

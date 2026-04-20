@@ -1,6 +1,14 @@
 import { defineStore } from 'pinia'
-import { fetchPatrolSummaryRows, fetchReportRouteFilterOptions } from './reports.api'
-import type { PatrolSummaryReportRow } from './reports.types'
+import {
+  fetchPatrolSummaryDetailRows,
+  fetchPatrolSummaryRows,
+  fetchReportRouteFilterOptions,
+} from './reports.api'
+import type {
+  PatrolSummaryDetailKind,
+  PatrolSummaryInsufficientPatrolDetailRow,
+  PatrolSummaryReportRow,
+} from './reports.types'
 
 function startOfToday() {
   const d = new Date()
@@ -112,15 +120,26 @@ export const usePatrolSummaryReportsStore = defineStore('patrolSummaryReports', 
           return {
             ...row,
             area_name: resolvedAreaName,
-            insufficient_patrol_details: (row.insufficient_patrol_details ?? []).map((detail) => ({
-              ...detail,
-              area_name: resolvedAreaName,
-            })),
           }
         })
       } finally {
         this.loading = false
       }
+    },
+
+    async getDetailRows(row: PatrolSummaryReportRow | null, detailKind: PatrolSummaryDetailKind) {
+      if (!row) return []
+
+      const detailRows = await fetchPatrolSummaryDetailRows(row, detailKind)
+
+      if (detailKind !== 'insufficient') {
+        return detailRows
+      }
+
+      return (detailRows as PatrolSummaryInsufficientPatrolDetailRow[]).map((detail) => ({
+        ...detail,
+        area_name: row.area_name || detail.area_name,
+      }))
     },
 
     clearFilters() {

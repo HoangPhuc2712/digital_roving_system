@@ -172,6 +172,8 @@ export type PatrolSummaryShiftProblemDetailRow = {
   shift_color: string
 }
 
+export type PatrolSummaryDetailKind = 'missed' | 'too_slow' | 'too_fast' | 'insufficient' | 'shift'
+
 export type PatrolSummaryReportRow = {
   date_key: string
   date_label: string
@@ -190,6 +192,7 @@ export type PatrolSummaryReportRow = {
   too_fast_problem_details: PatrolSummaryTimeProblemDetailRow[]
   insufficient_patrol_details: PatrolSummaryInsufficientPatrolDetailRow[]
   shift_problem_details: PatrolSummaryShiftProblemDetailRow[]
+  detail_cache_key?: string
 }
 
 export type IncorrectScanLogRow = {

@@ -347,7 +347,7 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="space-y-3">
-          <div class="text-sm font-semibold text-slate-800">{{ t('reportForm.issueStatus') }}</div>
+          <div class="text-md font-semibold text-slate-800">{{ t('reportForm.issueStatus') }}</div>
 
           <div v-if="isEditStatus && model.pr_has_problem" class="space-y-3">
             <div>
