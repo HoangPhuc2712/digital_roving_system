@@ -19,6 +19,30 @@ function endOfToday() {
   return d
 }
 
+function applyVisibleShiftColors<
+  T extends { shift_key: string; shift_color: string; start_time: string; finish_time: string },
+>(rows: T[]): T[] {
+  const shiftColors = ['#ffeeba', '#bee5eb']
+  const shiftColorMap = new Map<string, string>()
+  let nextColorIndex = 0
+
+  return rows.map((row) => {
+    const timeSlotKey = `${String(row.start_time ?? '').trim()}|${String(row.finish_time ?? '').trim()}`
+    const shiftKey = String(row.shift_key ?? '').trim()
+    const colorKey = timeSlotKey || shiftKey
+    if (!colorKey) return row
+
+    if (!shiftColorMap.has(colorKey)) {
+      shiftColorMap.set(colorKey, shiftColors[nextColorIndex % shiftColors.length] ?? '#ffeeba')
+      nextColorIndex += 1
+    }
+
+    const nextShiftColor = shiftColorMap.get(colorKey) ?? '#ffeeba'
+    if (row.shift_color === nextShiftColor) return row
+    return { ...row, shift_color: nextShiftColor }
+  })
+}
+
 export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
   state: () => ({
     rows: [] as PatrolDetailReportRow[],
@@ -157,7 +181,7 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
         toTime = tmp
       }
 
-      return this.rows.filter((row) => {
+      const visibleRows = this.rows.filter((row) => {
         if (q && !row._q.includes(q)) return false
         if (this.filterAreaId != null && row.area_id !== this.filterAreaId) return false
         if (this.filterRouteName != null && row.route_name !== this.filterRouteName) return false
@@ -187,6 +211,8 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
 
         return true
       })
+
+      return applyVisibleShiftColors(visibleRows)
     },
   },
 
