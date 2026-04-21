@@ -25,6 +25,7 @@ const zhCN = {
     personalInfo: '个人资料',
     logout: '登出',
     selectLayout: '选择版式',
+    undefined: '未定义',
   },
   languageSwitcher: {
     languages: {

@@ -25,6 +25,7 @@ const en = {
     personalInfo: 'Profile',
     logout: 'Logout',
     selectLayout: 'Select Layout',
+    undefined: 'Undefined',
   },
   languageSwitcher: {
     languages: {

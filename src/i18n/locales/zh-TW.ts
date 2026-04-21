@@ -25,6 +25,7 @@ const zhTW = {
     personalInfo: '個人資料',
     logout: '登出',
     selectLayout: '選擇版式',
+    undefined: '未定義',
   },
   languageSwitcher: {
     languages: {

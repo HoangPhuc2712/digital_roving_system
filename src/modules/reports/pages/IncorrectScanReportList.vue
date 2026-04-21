@@ -268,7 +268,9 @@ async function onExport() {
       >
         <template #body="{ data }">
           <div class="flex flex-col">
-            <div class="text-red-600 font-semibold">{{ data.wrong_cp_name || '-' }}</div>
+            <div class="text-red-600 font-semibold">
+              {{ data.wrong_cp_name || t('common.undefined') }}
+            </div>
             <div class="text-red-500 text-xs">{{ data.wrong_cp_code || '-' }}</div>
           </div>
         </template>

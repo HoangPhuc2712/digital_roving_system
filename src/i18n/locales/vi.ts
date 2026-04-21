@@ -25,6 +25,7 @@ const vi = {
     personalInfo: 'Trang cá nhân',
     logout: 'Đăng xuất',
     selectLayout: 'Chọn bố cục',
+    undefined: 'Không xác định',
   },
   languageSwitcher: {
     languages: {
