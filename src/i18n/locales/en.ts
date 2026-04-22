@@ -26,6 +26,8 @@ const en = {
     logout: 'Logout',
     selectLayout: 'Select Layout',
     undefined: 'Undefined',
+    goToDashboard: 'Go to Dashboard',
+    goToLogin: 'Go to Login',
   },
   languageSwitcher: {
     languages: {

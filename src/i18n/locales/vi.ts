@@ -26,6 +26,8 @@ const vi = {
     logout: 'Đăng xuất',
     selectLayout: 'Chọn bố cục',
     undefined: 'Không xác định',
+    goToDashboard: 'Đi đến Bảng điều khiển',
+    goToLogin: 'Đi đến trang đăng nhập',
   },
   languageSwitcher: {
     languages: {

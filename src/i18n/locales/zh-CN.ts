@@ -26,6 +26,8 @@ const zhCN = {
     logout: '登出',
     selectLayout: '选择版式',
     undefined: '未定义',
+    goToDashboard: '前往仪表板',
+    goToLogin: '前往登录页面',
   },
   languageSwitcher: {
     languages: {

@@ -26,6 +26,8 @@ const zhTW = {
     logout: '登出',
     selectLayout: '選擇版式',
     undefined: '未定義',
+    goToDashboard: '前往儀表板',
+    goToLogin: '前往登入頁面',
   },
   languageSwitcher: {
     languages: {
