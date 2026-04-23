@@ -211,6 +211,20 @@ const vi = {
     detail: 'Chi tiết',
     noDetailAvailable: 'Không có chi tiết',
     noImages: 'Không có hình ảnh',
+    imageViewer: {
+      photos: 'Hình ảnh',
+      photoPosition: 'Hình {current} trên {total}',
+      noImagesToDisplay: 'Không có hình ảnh để hiển thị.',
+      imageAlt: 'Hình ảnh',
+    },
+    detailNotes: {
+      validatedImage: 'Xác thực hình ảnh',
+      securityIssues: 'Sự cố an ninh',
+      electricalIssues: 'Sự cố cơ điện',
+      constructionIssues: 'Sự cố công trình',
+      administrativeIssues: 'Sự cố hành chánh',
+      otherIssues: 'Sự cố khác...',
+    },
     validation: {
       selectAnotherStatus: 'Vui lòng chọn trạng thái khác',
     },

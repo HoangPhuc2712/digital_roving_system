@@ -211,6 +211,20 @@ const en = {
     detail: 'Detail',
     noDetailAvailable: 'No detail available',
     noImages: 'No images',
+    imageViewer: {
+      photos: 'Photos',
+      photoPosition: 'Photo {current} of {total}',
+      noImagesToDisplay: 'No images to display.',
+      imageAlt: 'Image',
+    },
+    detailNotes: {
+      validatedImage: 'Validated Image',
+      securityIssues: 'Security Issues',
+      electricalIssues: 'Electrical Issues',
+      constructionIssues: 'Construction Issues',
+      administrativeIssues: 'Administrative Issues',
+      otherIssues: 'Other Issues...',
+    },
     validation: {
       selectAnotherStatus: 'Please Select another status',
     },

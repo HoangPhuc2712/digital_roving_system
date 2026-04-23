@@ -210,6 +210,20 @@ const zhTW = {
     detail: '詳細內容',
     noDetailAvailable: '無詳細內容',
     noImages: '無圖片',
+    imageViewer: {
+      photos: '照片',
+      photoPosition: '照片 {current} / {total}',
+      noImagesToDisplay: '沒有可顯示的照片。',
+      imageAlt: '照片',
+    },
+    detailNotes: {
+      validatedImage: '圖片驗證',
+      securityIssues: '安保異常',
+      electricalIssues: '機電異常',
+      constructionIssues: '工程異常',
+      administrativeIssues: '行政異常',
+      otherIssues: '其他異常...',
+    },
     validation: {
       selectAnotherStatus: '請選擇其他狀態',
     },

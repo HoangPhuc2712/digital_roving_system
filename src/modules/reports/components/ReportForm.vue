@@ -121,20 +121,54 @@ function issueStatusSeverity(s: number, hasProblem = true) {
   }
 }
 
+function normalizeNoteKey(value: string) {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+}
+
+function translateDetailNote(prGroup: number, note: string) {
+  if (Number(prGroup ?? 0) === 1) {
+    return t('reportForm.detailNotes.validatedImage')
+  }
+
+  switch (normalizeNoteKey(note)) {
+    case normalizeNoteKey('Sự cố an ninh'):
+      return t('reportForm.detailNotes.securityIssues')
+    case normalizeNoteKey('Sự cố cơ điện'):
+      return t('reportForm.detailNotes.electricalIssues')
+    case normalizeNoteKey('Sự cố công trình'):
+      return t('reportForm.detailNotes.constructionIssues')
+    case normalizeNoteKey('Sự cố hành chánh'):
+      return t('reportForm.detailNotes.administrativeIssues')
+    case normalizeNoteKey('Sự cố khác...'):
+    case normalizeNoteKey('Sự cố khác'):
+      return t('reportForm.detailNotes.otherIssues')
+    default:
+      return String(note ?? '').trim() || '—'
+  }
+}
+
 const detailGroups = computed(() => {
   const groups = props.model?.note_groups ?? []
-  return groups.map((group, groupIndex) => ({
-    id: `${group.pr_group}-${groupIndex}`,
-    note: group.pri_image_note || '—',
-    items: (group.report_images ?? [])
-      .map((img: ReportImage, idx) => ({
-        id: img.pri_id || `${group.pr_group}-${idx + 1}`,
-        src: img.pri_image,
-        title: group.pri_image_note || t('reportForm.photo'),
-        alt: `${group.pri_image_note || t('reportForm.photo')} ${idx + 1}`,
-      }))
-      .filter((x) => !!(x.src ?? '').trim()),
-  }))
+  return groups.map((group, groupIndex) => {
+    const noteLabel = translateDetailNote(group.pr_group, group.pri_image_note)
+
+    return {
+      id: `${group.pr_group}-${groupIndex}`,
+      note: noteLabel,
+      items: (group.report_images ?? [])
+        .map((img: ReportImage, idx) => ({
+          id: img.pri_id || `${group.pr_group}-${idx + 1}`,
+          src: img.pri_image,
+          title: noteLabel || t('reportForm.photo'),
+          alt: `${noteLabel || t('reportForm.photo')} ${idx + 1}`,
+        }))
+        .filter((x) => !!(x.src ?? '').trim()),
+    }
+  })
 })
 
 const actualTimeText = computed(() => {
@@ -431,7 +465,9 @@ onBeforeUnmount(() => {
           >
             <div class="text-sm font-semibold text-slate-800 mb-2">{{ group.note }}</div>
 
-            <div v-if="group.items.length === 0" class="text-sm text-slate-500">No images.</div>
+            <div v-if="group.items.length === 0" class="text-sm text-slate-500">
+              {{ t('reportForm.noImages') }}.
+            </div>
 
             <div v-else class="flex items-center gap-3 flex-wrap">
               <button

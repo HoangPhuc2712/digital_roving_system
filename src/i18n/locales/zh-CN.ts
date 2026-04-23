@@ -210,6 +210,20 @@ const zhCN = {
     detail: '详情',
     noDetailAvailable: '无可用详情',
     noImages: '无图片',
+    imageViewer: {
+      photos: '图片',
+      photoPosition: '图片 {current} / {total}',
+      noImagesToDisplay: '没有可显示的图片。',
+      imageAlt: '图片',
+    },
+    detailNotes: {
+      validatedImage: '图片验证',
+      securityIssues: '安保异常',
+      electricalIssues: '机电异常',
+      constructionIssues: '工程异常',
+      administrativeIssues: '行政异常',
+      otherIssues: '其他异常...',
+    },
     validation: {
       selectAnotherStatus: '请选择其他状态',
     },

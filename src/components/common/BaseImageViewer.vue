@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Dialog from 'primevue/dialog'
 import Galleria from 'primevue/galleria'
 
@@ -22,6 +23,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void
 }>()
+
+const { t } = useI18n()
 
 const activeIndex = ref(0)
 
@@ -52,7 +55,7 @@ const galleryItems = computed(() =>
         id: x.id,
         itemImageSrc: finalSrc,
         thumbnailImageSrc: finalSrc,
-        alt: x.alt || `Image ${idx + 1}`,
+        alt: x.alt || `${t('reportForm.imageViewer.imageAlt')} ${idx + 1}`,
         title: x.title || '',
       }
     })
@@ -61,11 +64,14 @@ const galleryItems = computed(() =>
 
 const dialogTitle = computed(() => {
   const total = galleryItems.value.length
-  if (!total) return props.title || 'Photos'
+  if (!total) return props.title || t('reportForm.imageViewer.photos')
 
   const current = galleryItems.value[activeIndex.value]
   const note = String(current?.title ?? props.title ?? '').trim()
-  const position = `Photo ${activeIndex.value + 1} of ${total}`
+  const position = t('reportForm.imageViewer.photoPosition', {
+    current: activeIndex.value + 1,
+    total,
+  })
 
   return note ? `${note} - ${position}` : position
 })
@@ -99,7 +105,9 @@ watch(
     @update:visible="emit('update:visible', $event)"
     @hide="close"
   >
-    <div v-if="galleryItems.length === 0" class="text-slate-600">No images to display.</div>
+    <div v-if="galleryItems.length === 0" class="text-slate-600">
+      {{ t('reportForm.imageViewer.noImagesToDisplay') }}
+    </div>
 
     <div v-else class="viewer-shell">
       <Galleria
