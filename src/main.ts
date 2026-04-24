@@ -18,6 +18,10 @@ import {
 } from '@/components/common/buttons'
 import { BaseInput, BasePasswordInput } from '@/components/common/inputs'
 import { BaseMessage } from '@/components/common/messages'
+import '@fontsource/inter/400.css'
+import '@fontsource/inter/500.css'
+import '@fontsource/inter/600.css'
+import '@fontsource/inter/700.css'
 
 const { origin, pathname, search, hash } = window.location
 

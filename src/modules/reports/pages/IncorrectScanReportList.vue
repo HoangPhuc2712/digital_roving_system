@@ -232,7 +232,7 @@ async function onExport() {
 
       <Column
         :header="t('incorrectScanReportList.startTime')"
-        style="min-width: 12rem"
+        style="min-width: 14rem"
         sortField="ps_start_at"
       >
         <template #body="{ data }">
@@ -242,7 +242,7 @@ async function onExport() {
 
       <Column
         :header="t('incorrectScanReportList.finishTime')"
-        style="min-width: 12rem"
+        style="min-width: 14rem"
         sortField="ps_end_at"
       >
         <template #body="{ data }">
@@ -252,7 +252,7 @@ async function onExport() {
 
       <Column
         :header="t('incorrectScanReportList.patrolTime')"
-        style="min-width: 12rem"
+        style="min-width: 14rem"
         sortField="created_at"
         :filterMenu="{
           key: 'patrolTime',

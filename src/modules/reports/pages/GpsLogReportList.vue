@@ -314,7 +314,7 @@ function onColumnFilter(payload: { key: string; value: any }) {
 
       <Column
         :header="t('gpsLogReport.startTime')"
-        style="min-width: 12rem"
+        style="min-width: 14rem"
         sortField="start_time"
         :pt="{ bodyCell: { style: 'padding: 0; position: relative;' } }"
       >
@@ -327,7 +327,7 @@ function onColumnFilter(payload: { key: string; value: any }) {
 
       <Column
         :header="t('gpsLogReport.finishTime')"
-        style="min-width: 12rem"
+        style="min-width: 14rem"
         sortField="finish_time"
         :pt="{ bodyCell: { style: 'padding: 0; position: relative;' } }"
       >
@@ -340,7 +340,7 @@ function onColumnFilter(payload: { key: string; value: any }) {
 
       <Column
         :header="t('gpsLogReport.patrolTime')"
-        style="min-width: 12rem"
+        style="min-width: 14rem"
         sortField="patrol_time"
         :filterMenu="{
           key: 'patrolTime',

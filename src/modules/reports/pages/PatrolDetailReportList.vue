@@ -322,7 +322,7 @@ function onColumnFilter(payload: { key: string; value: any }) {
 
       <Column
         :header="t('patrolDetailReport.startTime')"
-        style="min-width: 12rem"
+        style="min-width: 14rem"
         sortField="start_time"
         :pt="{ bodyCell: { style: 'padding: 0; position: relative;' } }"
       >
@@ -335,7 +335,7 @@ function onColumnFilter(payload: { key: string; value: any }) {
 
       <Column
         :header="t('patrolDetailReport.finishTime')"
-        style="min-width: 12rem"
+        style="min-width: 14rem"
         sortField="finish_time"
         :pt="{ bodyCell: { style: 'padding: 0; position: relative;' } }"
       >
@@ -348,7 +348,7 @@ function onColumnFilter(payload: { key: string; value: any }) {
 
       <Column
         :header="t('patrolDetailReport.patrolTime')"
-        style="min-width: 12rem"
+        style="min-width: 14rem"
         sortField="patrol_time"
         :filterMenu="{
           key: 'patrolTime',
@@ -380,7 +380,7 @@ function onColumnFilter(payload: { key: string; value: any }) {
       <Column
         field="event_zh"
         :header="t('patrolDetailReport.eventInfoZh')"
-        style="min-width: 10rem"
+        style="min-width: 8rem"
         sortField="event_zh"
       >
         <template #body="{ data }">
@@ -391,7 +391,7 @@ function onColumnFilter(payload: { key: string; value: any }) {
       <Column
         field="event_vi"
         :header="t('patrolDetailReport.eventInfoVi')"
-        style="min-width: 10rem"
+        style="min-width: 8rem"
         sortField="event_vi"
       >
         <template #body="{ data }">
