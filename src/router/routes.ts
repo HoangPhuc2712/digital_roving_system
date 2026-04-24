@@ -24,7 +24,7 @@ export const routes = [
       ...areasRoutes,
       ...checkpointsRoutes,
       ...routesRoutes,
-      ...organizationsRoutes,
+      // ...organizationsRoutes,
       {
         path: 'tutorial',
         name: 'tutorial',
