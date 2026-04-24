@@ -160,6 +160,9 @@ const props = withDefaults(
     stateStorage?: 'session' | 'local'
     scrollable?: boolean
     scrollHeight?: string
+    scrollMinHeight?: string
+    scrollMaxHeight?: string
+    scrollViewportOffset?: string
     beforeFilterOpen?: (payload: { key: string }) => void | Promise<void>
   }>(),
   {
@@ -185,12 +188,19 @@ const props = withDefaults(
     stateKey: '',
     stateStorage: 'session',
     scrollable: true,
-    scrollHeight: '600px',
+    scrollHeight: '',
+    scrollMinHeight: '320px',
+    scrollMaxHeight: '600px',
+    scrollViewportOffset: '290px',
   },
 )
 
 const scrollable = computed(() => props.scrollable !== false)
-const scrollHeight = computed(() => props.scrollHeight || '600px')
+const scrollHeight = computed(() => {
+  if (props.scrollHeight) return props.scrollHeight
+
+  return `clamp(${props.scrollMinHeight}, calc(100vh - ${props.scrollViewportOffset}), ${props.scrollMaxHeight})`
+})
 
 const emit = defineEmits<{
   (e: 'update:selection', value: AnyRow[] | null): void
