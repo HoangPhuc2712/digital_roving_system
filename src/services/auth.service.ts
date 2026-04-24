@@ -2,6 +2,7 @@ import { users, roles } from '@/mocks/db'
 import { http } from '@/services/http/axios'
 import { endpoints } from '@/services/http/endpoints'
 import { appConfig } from '@/config/app'
+import type { AuthTokens, ParsedLoginResult } from '@/types/auth'
 
 function omitPassword(u: any) {
   const { user_password, ...safe } = u
@@ -31,6 +32,65 @@ function mapRoleCode(roleName?: string, roleCode?: string) {
   if (code === '02') return 'IT'
 
   return name || code
+}
+
+function toPositiveNumber(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) return value
+  if (typeof value === 'string') {
+    const parsed = Number(value)
+    if (Number.isFinite(parsed) && parsed > 0) return parsed
+  }
+  return null
+}
+
+function resolveExpiresAt(expiresIn: number | null, rawExpiresAt: unknown): string | null {
+  if (typeof rawExpiresAt === 'string' && rawExpiresAt.trim()) return rawExpiresAt
+  if (!expiresIn) return null
+  return new Date(Date.now() + expiresIn * 1000).toISOString()
+}
+
+function extractTokenPayload(source: any): any {
+  if (!source || typeof source !== 'object') return {}
+
+  return source.tokens ?? source.tokenData ?? source.auth ?? source.authentication ?? source
+}
+
+function buildAuthTokens(payload: any, fallbackAccessToken = ''): AuthTokens {
+  const tokenPayload = extractTokenPayload(payload)
+
+  const accessToken = String(
+    tokenPayload.accessToken ??
+      tokenPayload.access_token ??
+      tokenPayload.bearerToken ??
+      tokenPayload.jwt ??
+      tokenPayload.token ??
+      fallbackAccessToken ??
+      '',
+  ).trim()
+
+  const refreshToken = String(
+    tokenPayload.refreshToken ?? tokenPayload.refresh_token ?? tokenPayload.refresh ?? '',
+  ).trim()
+
+  const tokenType = String(
+    tokenPayload.tokenType ?? tokenPayload.token_type ?? tokenPayload.scheme ?? 'Bearer',
+  ).trim()
+
+  const expiresIn = toPositiveNumber(
+    tokenPayload.expiresIn ?? tokenPayload.expires_in ?? tokenPayload.ttlSeconds,
+  )
+  const expiresAt = resolveExpiresAt(
+    expiresIn,
+    tokenPayload.expiresAt ?? tokenPayload.expires_at ?? tokenPayload.expiredAt,
+  )
+
+  return {
+    accessToken,
+    refreshToken: refreshToken || undefined,
+    tokenType: tokenType || 'Bearer',
+    expiresIn,
+    expiresAt,
+  }
 }
 
 function toAuthUser(apiUser: any) {
@@ -74,7 +134,10 @@ function toAuthUser(apiUser: any) {
   return { ...omitPassword(user), role, allow_views }
 }
 
-export async function mockLogin(user_code: string, user_password: string) {
+export async function mockLogin(
+  user_code: string,
+  user_password: string,
+): Promise<ParsedLoginResult<any>> {
   if (isApiEnabled()) {
     const res = await http.post(endpoints.user.validate, {
       userCode: user_code,
@@ -101,8 +164,9 @@ export async function mockLogin(user_code: string, user_password: string) {
       throw new Error('USER_INACTIVE')
     }
 
-    const token = `api-token-${apiUser.userId}`
-    return { token, user: toAuthUser(apiUser) }
+    const fallbackAccessToken = `api-token-${apiUser.userId}`
+    const tokens = buildAuthTokens(payload, fallbackAccessToken)
+    return { tokens, user: toAuthUser(apiUser), raw: payload }
   }
 
   // Fallback mock cũ
@@ -116,8 +180,8 @@ export async function mockLogin(user_code: string, user_password: string) {
   }
 
   const role = roles.find((r) => r.role_id === user.user_role_id && r.role_status >= 0)
-  const token = `mock-token-${user.user_id}`
-  return { token, user: { ...omitPassword(user), role } }
+  const tokens = buildAuthTokens({}, `mock-token-${user.user_id}`)
+  return { tokens, user: { ...omitPassword(user), role } }
 }
 
 export async function mockMe(token: string) {
