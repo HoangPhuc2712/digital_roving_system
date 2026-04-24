@@ -72,7 +72,7 @@
       :dataKey="dataKey"
       v-model:selection="selectionProxy"
       :paginator="paginator"
-      :rows="rows"
+      :rows="currentRows"
       :first="first"
       :rowsPerPageOptions="rowsPerPageOptions"
       :paginatorTemplate="paginatorTemplate"
@@ -333,13 +333,28 @@ const hasToolbarEnd = computed(() => {
 
 const showClearAction = computed(() => Boolean(instance?.vnode.props?.onClear))
 
+const currentRowsState = ref<number>(Number(props.rows ?? 25))
+
+watch(
+  () => props.rows,
+  (value) => {
+    const nextRows = Number(value ?? 0)
+    if (Number.isFinite(nextRows) && nextRows > 0) {
+      currentRowsState.value = Math.floor(nextRows)
+    }
+  },
+  { immediate: true },
+)
+
+const currentRows = computed(() => currentRowsState.value)
+
 const skeletonRowCount = computed(() => {
   const explicitRows = Number(props.skeletonRows ?? 0)
   if (Number.isFinite(explicitRows) && explicitRows > 0) {
     return Math.floor(explicitRows)
   }
 
-  const tableRows = Number(props.rows ?? 0)
+  const tableRows = Number(currentRows.value ?? 0)
   if (Number.isFinite(tableRows) && tableRows > 0) {
     return Math.min(Math.max(Math.floor(tableRows), 6), 12)
   }
@@ -717,6 +732,11 @@ function resetTableScrollPosition() {
 }
 
 function onPage(ev: DataTablePageEvent) {
+  const nextRows = Number(ev.rows ?? 0)
+  if (Number.isFinite(nextRows) && nextRows > 0) {
+    currentRowsState.value = Math.floor(nextRows)
+  }
+
   emit('update:first', ev.first)
   emit('page', ev)
   resetTableScrollPosition()
