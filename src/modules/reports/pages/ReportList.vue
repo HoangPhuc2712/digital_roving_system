@@ -22,7 +22,7 @@ import { exportPatrolReportXlsx } from '@/services/export/patrolReport.export'
 import { changeReportStatus, fetchReportRowById } from '@/modules/reports/reports.api'
 import { useResetFirstOnFilterChange } from '@/composables/useFilters'
 import { usePagination } from '@/composables/usePagination'
-import { translateReportNote } from '@/utils/dataI18n'
+import { translateReportNote, translateRouteName } from '@/utils/dataI18n'
 
 const toast = useToast()
 const auth = useAuthStore()
@@ -30,6 +30,10 @@ const store = useReportsStore()
 const route = useRoute()
 const router = useRouter()
 const { t, locale } = useI18n()
+
+function translatedRouteName(value: string | null | undefined) {
+  return translateRouteName(String(value ?? ''), t)
+}
 
 const resultOptions = computed(
   () =>
@@ -59,6 +63,14 @@ const hasInvalidDateFilter = computed(
   () => (store.filterDateFrom == null) !== (store.filterDateTo == null),
 )
 const tableRows = computed(() => (hasInvalidDateFilter.value ? [] : store.filteredRows))
+const translatedRouteOptions = computed(() =>
+  store.routeOptions.map((option) => ({
+    ...option,
+    label: translatedRouteName(String(option.label ?? '')),
+    searchText:
+      `${String(option.searchText ?? '').trim()} ${translatedRouteName(String(option.label ?? '')).toLowerCase()}`.trim(),
+  })),
+)
 
 const reportSwitchButtons = computed(() => [
   {
@@ -503,7 +515,7 @@ async function onExport() {
           optionValue: 'value',
           placeholder: t('reportList.filters.area'),
           filter: true,
-          secondaryOptions: store.routeOptions,
+          secondaryOptions: translatedRouteOptions,
           secondaryOptionLabel: 'label',
           secondaryOptionValue: 'value',
           secondaryPlaceholder: t('reportList.table.routeName'),
@@ -514,7 +526,7 @@ async function onExport() {
       >
         <template #body="{ data }">
           <div class="text-slate-800 font-semibold">
-            {{ data.route_name || '-' }}
+            {{ translatedRouteName(data.route_name) || '-' }}
           </div>
         </template>
       </Column>

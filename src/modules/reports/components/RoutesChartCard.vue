@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { translateRouteName } from '@/utils/dataI18n'
 import BaseChartLine from '@/components/common/charts/BaseChartLine.vue'
 
 const props = defineProps<{
@@ -14,6 +15,10 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+
+function translatedRouteName(value: string | null | undefined) {
+  return translateRouteName(String(value ?? ''), t)
+}
 </script>
 
 <template>
@@ -24,7 +29,7 @@ const { t } = useI18n()
       </div>
       <div class="min-w-0">
         <div class="truncate text-xl font-semibold text-slate-800">
-          {{ props.routeName }}
+          {{ translatedRouteName(props.routeName) }}
         </div>
       </div>
     </div>

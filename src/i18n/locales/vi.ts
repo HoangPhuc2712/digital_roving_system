@@ -728,6 +728,9 @@ const vi = {
       expat: 'Nhân sự nước ngoài',
       it: 'IT',
     },
+    route: {
+      routeNumber: 'Lộ trình tuần tra số',
+    },
     reportNote: {
       noIssue: 'Không có vấn đề phát sinh',
       hasIssue: 'Có vấn đề phát sinh',

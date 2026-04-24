@@ -727,6 +727,9 @@ const zhCN = {
       expat: '外派人员',
       it: 'IT',
     },
+    route: {
+      routeNumber: '巡逻路线编号',
+    },
     reportNote: {
       noIssue: '未发生异常',
       hasIssue: '发生异常',

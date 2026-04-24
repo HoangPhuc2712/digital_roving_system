@@ -727,6 +727,9 @@ const zhTW = {
       expat: '外派人員',
       it: 'IT',
     },
+    route: {
+      routeNumber: '巡邏路線編號',
+    },
     reportNote: {
       noIssue: '未發生異常',
       hasIssue: '發生異常',

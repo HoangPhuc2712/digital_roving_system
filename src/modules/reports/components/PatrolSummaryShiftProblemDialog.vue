@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
 import { useI18n } from 'vue-i18n'
+import { translateRouteName } from '@/utils/dataI18n'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import type { PatrolSummaryShiftProblemDetailRow } from '@/modules/reports/reports.types'
@@ -18,6 +19,10 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+function translatedRouteName(value: string | null | undefined) {
+  return translateRouteName(String(value ?? ''), t)
+}
 
 const visibleProxy = computed({
   get: () => props.visible,
@@ -67,7 +72,7 @@ function shiftCellStyle(hex: string) {
         style="min-width: 14rem"
       >
         <template #body="{ data }">
-          <div :class="rowCellClass(data)">{{ data.route_name || '-' }}</div>
+          <div :class="rowCellClass(data)">{{ translatedRouteName(data.route_name) || '-' }}</div>
         </template>
       </Column>
 

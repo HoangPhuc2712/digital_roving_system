@@ -13,6 +13,7 @@ import { useIncorrectScanLogStore } from '@/modules/reports/incorrectScanLog.sto
 import { exportIncorrectScanLogXlsx } from '@/services/export/incorrectScanLog.export'
 import { useResetFirstOnFilterChange } from '@/composables/useFilters'
 import { usePagination } from '@/composables/usePagination'
+import { translateRouteName } from '@/utils/dataI18n'
 
 const toast = useToast()
 const router = useRouter()
@@ -21,6 +22,10 @@ const store = useIncorrectScanLogStore()
 const dateReloadTimer = ref<number | null>(null)
 const exporting = ref(false)
 const { t, locale } = useI18n()
+
+function translatedRouteName(value: string | null | undefined) {
+  return translateRouteName(String(value ?? ''), t)
+}
 const hasInvalidDateFilter = computed(
   () => (store.filterDateFrom == null) !== (store.filterDateTo == null),
 )
@@ -219,7 +224,9 @@ async function onExport() {
         sortField="route_name"
       >
         <template #body="{ data }">
-          <div class="text-slate-800 font-semibold">{{ data.route_name || '-' }}</div>
+          <div class="text-slate-800 font-semibold">
+            {{ translatedRouteName(data.route_name) || '-' }}
+          </div>
         </template>
       </Column>
 

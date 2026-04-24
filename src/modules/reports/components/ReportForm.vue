@@ -4,6 +4,7 @@ import Dialog from 'primevue/dialog'
 import Tag from 'primevue/tag'
 import Select from 'primevue/select'
 import { useI18n } from 'vue-i18n'
+import { translateRouteName } from '@/utils/dataI18n'
 
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
@@ -48,6 +49,10 @@ const inlineStatusEdit = ref(false)
 const statusValidationMessage = ref('')
 const statusValidationTimer = ref<number | null>(null)
 const { t } = useI18n()
+
+function translatedRouteName(value: string | null | undefined) {
+  return translateRouteName(String(value ?? ''), t)
+}
 
 const formMode = computed<ReportFormMode>(() => props.mode ?? 'view')
 const canEditStatus = computed(() => Boolean(props.canEditStatus))
@@ -313,7 +318,9 @@ onBeforeUnmount(() => {
             <div>
               <div class="text-md text-slate-600">
                 {{ t('reportForm.patrolRoute') }}:
-                <span class="text-slate-800 font-semibold">{{ model.route_name }}</span>
+                <span class="text-slate-800 font-semibold">{{
+                  translatedRouteName(model.route_name)
+                }}</span>
               </div>
 
               <div class="text-md text-slate-600">

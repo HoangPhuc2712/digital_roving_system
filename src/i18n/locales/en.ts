@@ -728,6 +728,9 @@ const en = {
       expat: 'Expat',
       it: 'IT',
     },
+    route: {
+      routeNumber: 'Route Number',
+    },
     reportNote: {
       noIssue: 'No issue occurred',
       hasIssue: 'Issue occurred',

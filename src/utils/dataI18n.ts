@@ -81,3 +81,25 @@ export function translateIssueStatusName(rawValue: string, t: TranslateFn) {
       return String(rawValue ?? '')
   }
 }
+
+export function translateRouteName(rawValue: string, t: TranslateFn) {
+  const original = String(rawValue ?? '')
+  const trimmed = original.trim()
+  if (!trimmed) return original
+
+  const patterns = [
+    /^(.*?)(\s+)Lộ trình tuần tra số(\s+)(\d+)\s*$/iu,
+    /^(.*?)(\s+)Lo trinh tuan tra so(\s+)(\d+)\s*$/iu,
+  ]
+
+  for (const pattern of patterns) {
+    const match = trimmed.match(pattern)
+    if (!match) continue
+    const prefix = String(match[1] ?? '').trimEnd()
+    const number = String(match[4] ?? '').trim()
+    const translatedPhrase = t('dataTranslation.route.routeNumber')
+    return prefix ? `${prefix} ${translatedPhrase} ${number}` : `${translatedPhrase} ${number}`
+  }
+
+  return original
+}
