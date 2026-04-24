@@ -117,7 +117,7 @@ const zhCN = {
       inspectionResult: '检查结果',
       note: '备注',
       reportDate: '报告日期',
-      issueStatus: '异常状态',
+      issueStatus: '处理状态',
       guardName: '警卫姓名',
       action: '操作',
     },
@@ -126,7 +126,7 @@ const zhCN = {
       notOk: '异常',
     },
     issueStatusTag: {
-      noIssue: '无异常',
+      noIssue: '无需处理',
       pending: '待处理',
       inProgress: '处理中',
       completed: '已完成',
@@ -165,21 +165,21 @@ const zhCN = {
   dashboard: {
     title: '仪表板',
     clickToView: '点击查看',
-    reportSummary: '报告摘要',
+    issueStatusSummary: '处理状态摘要',
     totalUsersByRole: '按角色统计的用户总数',
     totalUsersByArea: '按区域统计的用户总数',
     totalCheckpointsByArea: '按区域统计的检查点总数',
   },
   reportForm: {
     issueStatusOptions: {
-      noIssue: '无异常',
+      noIssue: '无需处理',
       pending: '待处理',
       inProgress: '处理中',
       completed: '已完成',
       incompleted: '未完成',
     },
     issueStatusTag: {
-      noIssue: '无异常',
+      noIssue: '无需处理',
       pending: '待处理',
       inProgress: '处理中',
       completed: '已完成',

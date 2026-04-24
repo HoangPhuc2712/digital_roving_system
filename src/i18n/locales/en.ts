@@ -117,7 +117,7 @@ const en = {
       inspectionResult: 'Inspection Result',
       note: 'Note',
       reportDate: 'Report Date',
-      issueStatus: 'Issue Status',
+      issueStatus: 'Processing Status',
       guardName: 'Guard Name',
       action: 'Action',
     },
@@ -126,7 +126,7 @@ const en = {
       notOk: 'Not OK',
     },
     issueStatusTag: {
-      noIssue: 'No Issue',
+      noIssue: 'No Action Needed',
       pending: 'Pending',
       inProgress: 'In Progress',
       completed: 'Completed',
@@ -166,21 +166,21 @@ const en = {
   dashboard: {
     title: 'Dashboard',
     clickToView: 'Click to View',
-    reportSummary: 'Report Summary',
+    issueStatusSummary: 'Processing Status Summary',
     totalUsersByRole: 'Total Users By Role',
     totalUsersByArea: 'Total Users By Area',
     totalCheckpointsByArea: 'Total Check Points By Area',
   },
   reportForm: {
     issueStatusOptions: {
-      noIssue: 'No Issue',
+      noIssue: 'No Action Needed',
       pending: 'Pending',
       inProgress: 'In Progress',
       completed: 'Completed',
       incompleted: 'Incompleted',
     },
     issueStatusTag: {
-      noIssue: 'No Issue',
+      noIssue: 'No Action Needed',
       pending: 'Pending',
       inProgress: 'In Progress',
       completed: 'Completed',

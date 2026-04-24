@@ -117,7 +117,7 @@ const vi = {
       inspectionResult: 'Kết quả kiểm tra',
       note: 'Ghi chú',
       reportDate: 'Ngày báo cáo',
-      issueStatus: 'Trạng thái bất thường',
+      issueStatus: 'Trạng thái xử lý',
       guardName: 'Tên bảo vệ',
       action: 'Thao tác',
     },
@@ -126,7 +126,7 @@ const vi = {
       notOk: 'Bất thường',
     },
     issueStatusTag: {
-      noIssue: 'Không có bất thường',
+      noIssue: 'Không cần xử lý',
       pending: 'Chờ xử lý',
       inProgress: 'Đang xử lý',
       completed: 'Đã hoàn thành',
@@ -166,21 +166,21 @@ const vi = {
   dashboard: {
     title: 'Bảng điều khiển',
     clickToView: 'Nhấn để xem',
-    reportSummary: 'Tóm tắt báo cáo',
+    issueStatusSummary: 'Tóm tắt Trạng thái Xử lý',
     totalUsersByRole: 'Tổng số người dùng theo vai trò',
     totalUsersByArea: 'Tổng số người dùng theo khu vực',
     totalCheckpointsByArea: 'Tổng số điểm kiểm tra theo khu vực',
   },
   reportForm: {
     issueStatusOptions: {
-      noIssue: 'Không có bất thường',
+      noIssue: 'Không cần xử lý',
       pending: 'Chờ xử lý',
       inProgress: 'Đang xử lý',
       completed: 'Đã hoàn thành',
       incompleted: 'Chưa hoàn thành',
     },
     issueStatusTag: {
-      noIssue: 'Không có bất thường',
+      noIssue: 'Không cần xử lý',
       pending: 'Chờ xử lý',
       inProgress: 'Đang xử lý',
       completed: 'Đã hoàn thành',

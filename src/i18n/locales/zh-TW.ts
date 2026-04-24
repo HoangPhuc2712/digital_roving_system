@@ -117,7 +117,7 @@ const zhTW = {
       inspectionResult: '檢查結果',
       note: '備註',
       reportDate: '報告日期',
-      issueStatus: '異常狀態',
+      issueStatus: '處理狀態',
       guardName: '警衛姓名',
       action: '操作',
     },
@@ -126,7 +126,7 @@ const zhTW = {
       notOk: '異常',
     },
     issueStatusTag: {
-      noIssue: '無異常',
+      noIssue: '無需處理',
       pending: '待處理',
       inProgress: '進行中',
       completed: '已完成',
@@ -165,21 +165,21 @@ const zhTW = {
   dashboard: {
     title: '儀表板',
     clickToView: '點擊查看',
-    reportSummary: '報告摘要',
+    issueStatusSummary: '處理狀態摘要',
     totalUsersByRole: '依角色統計的使用者總數',
     totalUsersByArea: '依區域統計的使用者總數',
     totalCheckpointsByArea: '依區域統計的檢查點總數',
   },
   reportForm: {
     issueStatusOptions: {
-      noIssue: '無異常',
+      noIssue: '無需處理',
       pending: '待處理',
       inProgress: '進行中',
       completed: '已完成',
       incompleted: '未完成',
     },
     issueStatusTag: {
-      noIssue: '無異常',
+      noIssue: '無需處理',
       pending: '待處理',
       inProgress: '進行中',
       completed: '已完成',
