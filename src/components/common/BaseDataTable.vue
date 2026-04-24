@@ -27,11 +27,48 @@
       </div>
     </div>
 
+    <div
+      v-if="loading"
+      class="app-datatable-skeleton overflow-auto"
+      :style="skeletonContainerStyle"
+    >
+      <table class="w-full min-w-full border-separate border-spacing-0">
+        <thead class="sticky top-0 z-[1] bg-slate-50">
+          <tr>
+            <th
+              v-for="column in skeletonColumns"
+              :key="column.key"
+              class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600"
+            >
+              <div class="flex items-center gap-2">
+                <span>{{ column.header }}</span>
+              </div>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="rowIndex in skeletonRowCount"
+            :key="`skeleton-row-${rowIndex}`"
+            class="bg-white"
+          >
+            <td
+              v-for="(column, columnIndex) in skeletonColumns"
+              :key="`${column.key}-${rowIndex}`"
+              class="border-b border-slate-200 px-4 py-3 align-middle"
+            >
+              <Skeleton :width="getSkeletonWidth(columnIndex)" height="1rem" borderRadius="8px" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
     <DataTable
+      v-else
       :key="`base-list-table-${locale}`"
       ref="dt"
       :value="value"
-      :loading="loading"
       :dataKey="dataKey"
       v-model:selection="selectionProxy"
       :paginator="paginator"
@@ -92,6 +129,7 @@ import MultiSelect from 'primevue/multiselect'
 import Popover from 'primevue/popover'
 import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
+import Skeleton from 'primevue/skeleton'
 
 import BaseDateSelection from '@/components/common/filters/BaseDateSelection.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
@@ -164,6 +202,7 @@ const props = withDefaults(
     scrollMaxHeight?: string
     scrollViewportOffset?: string
     beforeFilterOpen?: (payload: { key: string }) => void | Promise<void>
+    skeletonRows?: number
   }>(),
   {
     loading: false,
@@ -192,6 +231,7 @@ const props = withDefaults(
     scrollMinHeight: '320px',
     scrollMaxHeight: '600px',
     scrollViewportOffset: '290px',
+    skeletonRows: 8,
   },
 )
 
@@ -250,9 +290,35 @@ const selectionProxy = computed({
   set: (v) => emit('update:selection', v),
 })
 
+function getRawDefaultNodes() {
+  return flattenVNodeArray(slots.default?.() ?? [])
+}
+
 function getNormalizedDefaultNodes() {
-  const nodes = slots.default?.() ?? []
-  return nodes.map(transformNode).filter((node): node is VNode => isVNode(node))
+  return getRawDefaultNodes()
+    .map(transformNode)
+    .filter((node): node is VNode => isVNode(node))
+}
+
+function flattenVNodeArray(nodes: any[]): VNode[] {
+  const result: VNode[] = []
+
+  for (const node of nodes) {
+    if (!isVNode(node)) continue
+    if (node.type === Comment) continue
+
+    if (node.type === Fragment) {
+      const children = Array.isArray(node.children) ? node.children : []
+      result.push(...flattenVNodeArray(children as any[]))
+      continue
+    }
+
+    if (node.type === Text) continue
+
+    result.push(node)
+  }
+
+  return result
 }
 
 const hasToolbarStart = computed(() => {
@@ -266,6 +332,59 @@ const hasToolbarEnd = computed(() => {
 })
 
 const showClearAction = computed(() => Boolean(instance?.vnode.props?.onClear))
+
+const skeletonRowCount = computed(() => {
+  const explicitRows = Number(props.skeletonRows ?? 0)
+  if (Number.isFinite(explicitRows) && explicitRows > 0) {
+    return Math.floor(explicitRows)
+  }
+
+  const tableRows = Number(props.rows ?? 0)
+  if (Number.isFinite(tableRows) && tableRows > 0) {
+    return Math.min(Math.max(Math.floor(tableRows), 6), 12)
+  }
+
+  return 8
+})
+
+const skeletonContainerStyle = computed(() => {
+  if (!scrollable.value) return undefined
+
+  return {
+    maxHeight: scrollHeight.value,
+    minHeight: scrollHeight.value,
+  }
+})
+
+const skeletonColumns = computed(() => {
+  const nodes = getRawDefaultNodes()
+
+  if (!nodes.length) {
+    return [{ key: 'skeleton-column', header: '' }]
+  }
+
+  return nodes.map((node, index) => {
+    const currentProps = { ...(node.props ?? {}) } as Record<string, any>
+    const key = String(
+      node.key ??
+        currentProps.field ??
+        currentProps.sortField ??
+        currentProps.header ??
+        `column-${index}`,
+    )
+    const header = String(currentProps.header ?? '')
+
+    return {
+      key,
+      header,
+    }
+  })
+})
+
+function getSkeletonWidth(index: number) {
+  const widths = ['88%', '72%', '64%', '82%', '58%', '76%']
+  return widths[index % widths.length]
+}
 
 const hasActionRow = computed(() => {
   return hasToolbarStart.value || hasToolbarEnd.value || showClearAction.value
