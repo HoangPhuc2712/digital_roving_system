@@ -330,7 +330,7 @@ async function onExport() {
       :visible="slowTimeProblemDialogVisible"
       :patrolDate="selectedSlowTimeProblemDate"
       :rows="selectedSlowTimeProblemRows"
-      :standardTimeLabel="t('PatrolSummaryTimeProblemDialog.minimumTime')"
+      :standardTimeLabel="t('PatrolSummaryTimeProblemDialog.maximumTime')"
       @update:visible="onSlowTimeProblemDialogVisibleChange"
     />
 
@@ -338,7 +338,7 @@ async function onExport() {
       :visible="fastTimeProblemDialogVisible"
       :patrolDate="selectedFastTimeProblemDate"
       :rows="selectedFastTimeProblemRows"
-      :standardTimeLabel="t('PatrolSummaryTimeProblemDialog.maximumTime')"
+      :standardTimeLabel="t('PatrolSummaryTimeProblemDialog.minimumTime')"
       @update:visible="onFastTimeProblemDialogVisibleChange"
     />
 

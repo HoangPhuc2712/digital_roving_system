@@ -25,6 +25,9 @@ const en = {
     personalInfo: 'Profile',
     logout: 'Logout',
     selectLayout: 'Select Layout',
+    undefined: 'Undefined',
+    goToDashboard: 'Go to Dashboard',
+    goToLogin: 'Go to Login',
   },
   languageSwitcher: {
     languages: {
@@ -114,7 +117,7 @@ const en = {
       inspectionResult: 'Inspection Result',
       note: 'Note',
       reportDate: 'Report Date',
-      issueStatus: 'Issue Status',
+      issueStatus: 'Processing Status',
       guardName: 'Guard Name',
       action: 'Action',
     },
@@ -123,7 +126,7 @@ const en = {
       notOk: 'Not OK',
     },
     issueStatusTag: {
-      noIssue: 'No Issue',
+      noIssue: 'No Action Needed',
       pending: 'Pending',
       inProgress: 'In Progress',
       completed: 'Completed',
@@ -163,21 +166,21 @@ const en = {
   dashboard: {
     title: 'Dashboard',
     clickToView: 'Click to View',
-    reportSummary: 'Report Summary',
+    issueStatusSummary: 'Processing Status Summary',
     totalUsersByRole: 'Total Users By Role',
     totalUsersByArea: 'Total Users By Area',
     totalCheckpointsByArea: 'Total Check Points By Area',
   },
   reportForm: {
     issueStatusOptions: {
-      noIssue: 'No Issue',
+      noIssue: 'No Action Needed',
       pending: 'Pending',
       inProgress: 'In Progress',
       completed: 'Completed',
       incompleted: 'Incompleted',
     },
     issueStatusTag: {
-      noIssue: 'No Issue',
+      noIssue: 'No Action Needed',
       pending: 'Pending',
       inProgress: 'In Progress',
       completed: 'Completed',
@@ -208,6 +211,20 @@ const en = {
     detail: 'Detail',
     noDetailAvailable: 'No detail available',
     noImages: 'No images',
+    imageViewer: {
+      photos: 'Photos',
+      photoPosition: 'Photo {current} of {total}',
+      noImagesToDisplay: 'No images to display.',
+      imageAlt: 'Image',
+    },
+    detailNotes: {
+      validatedImage: 'Validated Image',
+      securityIssues: 'Security Issues',
+      electricalIssues: 'Electrical Issues',
+      constructionIssues: 'Construction Issues',
+      administrativeIssues: 'Administrative Issues',
+      otherIssues: 'Other Issues...',
+    },
     validation: {
       selectAnotherStatus: 'Please Select another status',
     },
@@ -710,6 +727,9 @@ const en = {
       guard: 'Security',
       expat: 'Expat',
       it: 'IT',
+    },
+    route: {
+      routeNumber: 'Route Number',
     },
     reportNote: {
       noIssue: 'No issue occurred',

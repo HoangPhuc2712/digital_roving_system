@@ -3,11 +3,16 @@ import { computed } from 'vue'
 import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
 import { useI18n } from 'vue-i18n'
+import { translateRouteName } from '@/utils/dataI18n'
 
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import type { PatrolSummaryMissedPatrolDetailRow } from '@/modules/reports/reports.types'
 
 const { t, locale } = useI18n()
+
+function translatedRouteName(value: string | null | undefined) {
+  return translateRouteName(String(value ?? ''), t)
+}
 const props = defineProps<{
   visible: boolean
   patrolDate: string
@@ -64,7 +69,9 @@ const tableRows = computed(() =>
         style="min-width: 15rem"
       >
         <template #body="{ data }">
-          <div class="text-slate-800 font-medium">{{ data.route_name || '-' }}</div>
+          <div class="text-slate-800 font-medium">
+            {{ translatedRouteName(data.route_name) || '-' }}
+          </div>
         </template>
       </Column>
 

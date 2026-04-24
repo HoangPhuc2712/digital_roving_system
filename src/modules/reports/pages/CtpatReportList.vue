@@ -13,6 +13,7 @@ import { useCtpatReportsStore } from '@/modules/reports/ctpatReports.store'
 import { exportCtpatReportXlsx } from '@/services/export/ctpatReport.export'
 import { useResetFirstOnFilterChange } from '@/composables/useFilters'
 import { usePagination } from '@/composables/usePagination'
+import { translateRouteName } from '@/utils/dataI18n'
 
 const toast = useToast()
 const router = useRouter()
@@ -20,6 +21,12 @@ const auth = useAuthStore()
 const store = useCtpatReportsStore()
 const exporting = ref(false)
 const { t, locale } = useI18n()
+
+function translatedRouteName(value: string | null | undefined) {
+  const raw = String(value ?? '')
+  if (locale.value === 'vi') return raw
+  return translateRouteName(raw, t)
+}
 const hasInvalidDateFilter = computed(
   () => (store.filterDateFrom == null) !== (store.filterDateTo == null),
 )
@@ -213,7 +220,13 @@ async function onExport() {
           placeholder: t('reportList.filters.area'),
           filter: true,
         }"
-      />
+      >
+        <template #body="{ data }">
+          <div class="text-slate-800">
+            {{ translatedRouteName(data.route_name) || '-' }}
+          </div>
+        </template>
+      </Column>
 
       <Column
         field="check_point_name"

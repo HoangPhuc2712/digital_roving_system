@@ -15,6 +15,7 @@ export const useAuthStore = defineStore('auth', {
     user: null as AuthUser | null,
     permissions: new Set<PermissionKey>(),
     loading: false,
+    sessionSyncedOnce: false,
   }),
   getters: {
     isAuthenticated: (s) => !!s.token && !!s.user,
@@ -36,6 +37,7 @@ export const useAuthStore = defineStore('auth', {
       localStorage.setItem('user', JSON.stringify(payload.user))
       localStorage.setItem('role_allow_view', allow ?? '')
       localStorage.setItem('allow_views', JSON.stringify(payload.user.allow_views ?? []))
+      this.sessionSyncedOnce = true
     },
 
     clearSession() {
@@ -47,6 +49,7 @@ export const useAuthStore = defineStore('auth', {
       localStorage.removeItem('user')
       localStorage.removeItem('role_allow_view')
       localStorage.removeItem('allow_views')
+      this.sessionSyncedOnce = false
     },
 
     logout() {
@@ -68,6 +71,7 @@ export const useAuthStore = defineStore('auth', {
       const allowViews = allowViewsRaw ? JSON.parse(allowViewsRaw) : user.allow_views
 
       this.permissions = derivePermissionsFromAllowViews(allowViews, allow)
+      this.sessionSyncedOnce = false
     },
 
     async login(user_code: string, user_password: string) {
@@ -94,6 +98,7 @@ export const useAuthStore = defineStore('auth', {
       localStorage.setItem('user', JSON.stringify(res.user))
       localStorage.setItem('role_allow_view', allow)
       localStorage.setItem('allow_views', JSON.stringify(allowViews ?? []))
+      this.sessionSyncedOnce = true
     },
 
     async syncSessionWithServer() {

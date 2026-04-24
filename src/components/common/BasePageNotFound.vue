@@ -21,7 +21,7 @@ function goDashboard() {
 
       <div class="mt-6 flex justify-start">
         <BaseButton
-          label="Go to Dashboard"
+          :label="t('common.goToDashboard')"
           severity="secondary"
           size="large"
           outlined

@@ -14,6 +14,7 @@ import { useGpsLogReportsStore } from '@/modules/reports/gpsLogReports.store'
 import { exportGpsLogReportXlsx } from '@/services/export/gpsLogReport.export'
 import { useResetFirstOnFilterChange } from '@/composables/useFilters'
 import { usePagination } from '@/composables/usePagination'
+import { translateRouteName } from '@/utils/dataI18n'
 
 const toast = useToast()
 const router = useRouter()
@@ -21,12 +22,24 @@ const auth = useAuthStore()
 const store = useGpsLogReportsStore()
 const exporting = ref(false)
 const { t, locale } = useI18n()
+
+function translatedRouteName(value: string | null | undefined) {
+  return translateRouteName(String(value ?? ''), t)
+}
 const autoLoadEnabled = ref(false)
 let filterLoadTimer: ReturnType<typeof setTimeout> | null = null
 const hasInvalidDateFilter = computed(
   () => (store.filterDateFrom == null) !== (store.filterDateTo == null),
 )
 const tableRows = computed(() => (hasInvalidDateFilter.value ? [] : store.filteredRows))
+const translatedRouteOptions = computed(() =>
+  store.routeOptions.map((option) => ({
+    ...option,
+    label: translatedRouteName(String(option.label ?? '')),
+    searchText:
+      `${String(option.searchText ?? '').trim()} ${translatedRouteName(String(option.label ?? '')).toLowerCase()}`.trim(),
+  })),
+)
 
 const reportSwitchButtons = computed(() => [
   {
@@ -266,7 +279,7 @@ function onColumnFilter(payload: { key: string; value: any }) {
           optionValue: 'value',
           placeholder: t('reportList.filters.area'),
           filter: true,
-          secondaryOptions: store.routeOptions,
+          secondaryOptions: translatedRouteOptions,
           secondaryOptionLabel: 'label',
           secondaryOptionValue: 'value',
           secondaryPlaceholder: t('gpsLogReport.routeName'),
@@ -274,7 +287,13 @@ function onColumnFilter(payload: { key: string; value: any }) {
           secondaryParentField: 'areaId',
           secondaryFilterField: 'searchText',
         }"
-      />
+      >
+        <template #body="{ data }">
+          <div class="text-slate-800">
+            {{ translatedRouteName(data.route_name) || '-' }}
+          </div>
+        </template>
+      </Column>
 
       <Column
         field="check_point_name"

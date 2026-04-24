@@ -73,9 +73,11 @@ router.beforeEach(async (to) => {
       return { name: 'login' }
     }
 
-    const ok = await auth.syncSessionWithServer()
-    if (!ok || !auth.isAuthenticated) {
-      return { name: 'login' }
+    if (!auth.sessionSyncedOnce) {
+      const ok = await auth.syncSessionWithServer()
+      if (!ok || !auth.isAuthenticated) {
+        return { name: 'login' }
+      }
     }
   }
 

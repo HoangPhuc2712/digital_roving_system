@@ -40,7 +40,7 @@ function goLogin() {
       <div class="mt-2 text-slate-600">{{ messageText }}</div>
 
       <div v-if="showLogin" class="mt-6 flex justify-end">
-        <BaseButton label="Go to Login" severity="secondary" outlined @click="goLogin" />
+        <BaseButton :label="t('common.goToLogin')" severity="secondary" outlined @click="goLogin" />
       </div>
     </div>
   </div>

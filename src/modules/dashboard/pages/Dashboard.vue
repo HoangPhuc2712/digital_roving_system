@@ -406,7 +406,9 @@ onMounted(async () => {
     </div>
 
     <div v-if="canSeeReportDashboardSummary" class="mt-20 flex flex-col gap-3">
-      <div class="text-xl font-semibold text-slate-800">{{ t('dashboard.reportSummary') }}</div>
+      <div class="text-xl font-semibold text-slate-800">
+        {{ t('dashboard.issueStatusSummary') }}
+      </div>
       <div
         v-if="pointReportStatusCards.length"
         class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"

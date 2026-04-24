@@ -34,7 +34,7 @@ import RouteForm, {
   type RouteFormModel,
   type RouteFormSubmitPayload,
 } from '../components/RouteForm.vue'
-import { translateRoleName } from '@/utils/dataI18n'
+import { translateRoleName, translateRouteName } from '@/utils/dataI18n'
 
 const toast = useToast()
 const store = useRoutesStore()
@@ -492,7 +492,13 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
       />
 
       <!-- <Column field="route_code" :header="t('routeList.routeCode')" style="min-width: 8rem" /> -->
-      <Column field="route_name" :header="t('routeList.routeName')" style="min-width: 16rem" />
+      <Column field="route_name" :header="t('routeList.routeName')" style="min-width: 16rem">
+        <template #body="{ data }">
+          <div class="text-slate-800">
+            {{ translateRouteName(String(data.route_name ?? ''), t) }}
+          </div>
+        </template>
+      </Column>
 
       <Column
         :header="t('routeList.area')"

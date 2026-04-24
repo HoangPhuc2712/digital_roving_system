@@ -25,6 +25,9 @@ const vi = {
     personalInfo: 'Trang cá nhân',
     logout: 'Đăng xuất',
     selectLayout: 'Chọn bố cục',
+    undefined: 'Không xác định',
+    goToDashboard: 'Đi đến Bảng điều khiển',
+    goToLogin: 'Đi đến trang đăng nhập',
   },
   languageSwitcher: {
     languages: {
@@ -114,7 +117,7 @@ const vi = {
       inspectionResult: 'Kết quả kiểm tra',
       note: 'Ghi chú',
       reportDate: 'Ngày báo cáo',
-      issueStatus: 'Trạng thái bất thường',
+      issueStatus: 'Trạng thái xử lý',
       guardName: 'Tên bảo vệ',
       action: 'Thao tác',
     },
@@ -123,7 +126,7 @@ const vi = {
       notOk: 'Bất thường',
     },
     issueStatusTag: {
-      noIssue: 'Không có bất thường',
+      noIssue: 'Không cần xử lý',
       pending: 'Chờ xử lý',
       inProgress: 'Đang xử lý',
       completed: 'Đã hoàn thành',
@@ -163,21 +166,21 @@ const vi = {
   dashboard: {
     title: 'Bảng điều khiển',
     clickToView: 'Nhấn để xem',
-    reportSummary: 'Tóm tắt báo cáo',
+    issueStatusSummary: 'Tóm tắt Trạng thái Xử lý',
     totalUsersByRole: 'Tổng số người dùng theo vai trò',
     totalUsersByArea: 'Tổng số người dùng theo khu vực',
     totalCheckpointsByArea: 'Tổng số điểm kiểm tra theo khu vực',
   },
   reportForm: {
     issueStatusOptions: {
-      noIssue: 'Không có bất thường',
+      noIssue: 'Không cần xử lý',
       pending: 'Chờ xử lý',
       inProgress: 'Đang xử lý',
       completed: 'Đã hoàn thành',
       incompleted: 'Chưa hoàn thành',
     },
     issueStatusTag: {
-      noIssue: 'Không có bất thường',
+      noIssue: 'Không cần xử lý',
       pending: 'Chờ xử lý',
       inProgress: 'Đang xử lý',
       completed: 'Đã hoàn thành',
@@ -208,6 +211,20 @@ const vi = {
     detail: 'Chi tiết',
     noDetailAvailable: 'Không có chi tiết',
     noImages: 'Không có hình ảnh',
+    imageViewer: {
+      photos: 'Hình ảnh',
+      photoPosition: 'Hình {current} trên {total}',
+      noImagesToDisplay: 'Không có hình ảnh để hiển thị.',
+      imageAlt: 'Hình ảnh',
+    },
+    detailNotes: {
+      validatedImage: 'Xác thực hình ảnh',
+      securityIssues: 'Sự cố an ninh',
+      electricalIssues: 'Sự cố cơ điện',
+      constructionIssues: 'Sự cố công trình',
+      administrativeIssues: 'Sự cố hành chánh',
+      otherIssues: 'Sự cố khác...',
+    },
     validation: {
       selectAnotherStatus: 'Vui lòng chọn trạng thái khác',
     },
@@ -710,6 +727,9 @@ const vi = {
       guard: 'Bảo vệ',
       expat: 'Nhân sự nước ngoài',
       it: 'IT',
+    },
+    route: {
+      routeNumber: 'Lộ trình tuần tra số',
     },
     reportNote: {
       noIssue: 'Không có vấn đề phát sinh',

@@ -25,6 +25,9 @@ const zhTW = {
     personalInfo: '個人資料',
     logout: '登出',
     selectLayout: '選擇版式',
+    undefined: '未定義',
+    goToDashboard: '前往儀表板',
+    goToLogin: '前往登入頁面',
   },
   languageSwitcher: {
     languages: {
@@ -114,7 +117,7 @@ const zhTW = {
       inspectionResult: '檢查結果',
       note: '備註',
       reportDate: '報告日期',
-      issueStatus: '異常狀態',
+      issueStatus: '處理狀態',
       guardName: '警衛姓名',
       action: '操作',
     },
@@ -123,7 +126,7 @@ const zhTW = {
       notOk: '異常',
     },
     issueStatusTag: {
-      noIssue: '無異常',
+      noIssue: '無需處理',
       pending: '待處理',
       inProgress: '進行中',
       completed: '已完成',
@@ -162,21 +165,21 @@ const zhTW = {
   dashboard: {
     title: '儀表板',
     clickToView: '點擊查看',
-    reportSummary: '報告摘要',
+    issueStatusSummary: '處理狀態摘要',
     totalUsersByRole: '依角色統計的使用者總數',
     totalUsersByArea: '依區域統計的使用者總數',
     totalCheckpointsByArea: '依區域統計的檢查點總數',
   },
   reportForm: {
     issueStatusOptions: {
-      noIssue: '無異常',
+      noIssue: '無需處理',
       pending: '待處理',
       inProgress: '進行中',
       completed: '已完成',
       incompleted: '未完成',
     },
     issueStatusTag: {
-      noIssue: '無異常',
+      noIssue: '無需處理',
       pending: '待處理',
       inProgress: '進行中',
       completed: '已完成',
@@ -207,6 +210,20 @@ const zhTW = {
     detail: '詳細內容',
     noDetailAvailable: '無詳細內容',
     noImages: '無圖片',
+    imageViewer: {
+      photos: '照片',
+      photoPosition: '照片 {current} / {total}',
+      noImagesToDisplay: '沒有可顯示的照片。',
+      imageAlt: '照片',
+    },
+    detailNotes: {
+      validatedImage: '圖片驗證',
+      securityIssues: '安保異常',
+      electricalIssues: '機電異常',
+      constructionIssues: '工程異常',
+      administrativeIssues: '行政異常',
+      otherIssues: '其他異常...',
+    },
     validation: {
       selectAnotherStatus: '請選擇其他狀態',
     },
@@ -709,6 +726,9 @@ const zhTW = {
       guard: '保全',
       expat: '外派人員',
       it: 'IT',
+    },
+    route: {
+      routeNumber: '巡邏路線編號',
     },
     reportNote: {
       noIssue: '未發生異常',

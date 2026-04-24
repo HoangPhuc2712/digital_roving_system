@@ -22,7 +22,7 @@ import {
   fetchScanPointsByArea,
 } from '@/modules/routes/routes.api'
 import { useI18n } from 'vue-i18n'
-import { translateRoleName } from '@/utils/dataI18n'
+import { translateRoleName, translateRouteName } from '@/utils/dataI18n'
 
 export type RouteFormMode = 'new' | 'view' | 'edit'
 
@@ -108,6 +108,11 @@ const roleLabel = computed(() => {
 
   const rawRoleName = String(props.model?.role_name ?? form.role_name ?? '').trim()
   return rawRoleName ? translateRoleName(rawRoleName, t) : '—'
+})
+
+const routeNameLabel = computed(() => {
+  const rawRouteName = String(form.route_name ?? '').trim()
+  return rawRouteName ? translateRouteName(rawRouteName, t) : '—'
 })
 
 const scanPointOptions = ref<ScanPointOption[]>([])
@@ -424,7 +429,7 @@ function submit() {
 
         <div>
           <label class="block text-sm text-slate-600 mb-1">{{ t('routeForm.routeName') }}</label>
-          <div v-if="isView" class="text-slate-800 font-semibold">{{ form.route_name }}</div>
+          <div v-if="isView" class="text-slate-800 font-semibold">{{ routeNameLabel }}</div>
           <BaseInput
             v-else
             v-model="form.route_name"

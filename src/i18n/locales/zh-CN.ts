@@ -25,6 +25,9 @@ const zhCN = {
     personalInfo: '个人资料',
     logout: '登出',
     selectLayout: '选择版式',
+    undefined: '未定义',
+    goToDashboard: '前往仪表板',
+    goToLogin: '前往登录页面',
   },
   languageSwitcher: {
     languages: {
@@ -114,7 +117,7 @@ const zhCN = {
       inspectionResult: '检查结果',
       note: '备注',
       reportDate: '报告日期',
-      issueStatus: '异常状态',
+      issueStatus: '处理状态',
       guardName: '警卫姓名',
       action: '操作',
     },
@@ -123,7 +126,7 @@ const zhCN = {
       notOk: '异常',
     },
     issueStatusTag: {
-      noIssue: '无异常',
+      noIssue: '无需处理',
       pending: '待处理',
       inProgress: '处理中',
       completed: '已完成',
@@ -162,21 +165,21 @@ const zhCN = {
   dashboard: {
     title: '仪表板',
     clickToView: '点击查看',
-    reportSummary: '报告摘要',
+    issueStatusSummary: '处理状态摘要',
     totalUsersByRole: '按角色统计的用户总数',
     totalUsersByArea: '按区域统计的用户总数',
     totalCheckpointsByArea: '按区域统计的检查点总数',
   },
   reportForm: {
     issueStatusOptions: {
-      noIssue: '无异常',
+      noIssue: '无需处理',
       pending: '待处理',
       inProgress: '处理中',
       completed: '已完成',
       incompleted: '未完成',
     },
     issueStatusTag: {
-      noIssue: '无异常',
+      noIssue: '无需处理',
       pending: '待处理',
       inProgress: '处理中',
       completed: '已完成',
@@ -207,6 +210,20 @@ const zhCN = {
     detail: '详情',
     noDetailAvailable: '无可用详情',
     noImages: '无图片',
+    imageViewer: {
+      photos: '图片',
+      photoPosition: '图片 {current} / {total}',
+      noImagesToDisplay: '没有可显示的图片。',
+      imageAlt: '图片',
+    },
+    detailNotes: {
+      validatedImage: '图片验证',
+      securityIssues: '安保异常',
+      electricalIssues: '机电异常',
+      constructionIssues: '工程异常',
+      administrativeIssues: '行政异常',
+      otherIssues: '其他异常...',
+    },
     validation: {
       selectAnotherStatus: '请选择其他状态',
     },
@@ -709,6 +726,9 @@ const zhCN = {
       guard: '保安',
       expat: '外派人员',
       it: 'IT',
+    },
+    route: {
+      routeNumber: '巡逻路线编号',
     },
     reportNote: {
       noIssue: '未发生异常',
