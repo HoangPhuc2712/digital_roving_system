@@ -728,7 +728,7 @@ const zhTW = {
       it: 'IT',
     },
     route: {
-      routeNumber: '巡邏路線編號',
+      routeNumber: '巡檢路線',
     },
     reportNote: {
       noIssue: '未發生異常',
