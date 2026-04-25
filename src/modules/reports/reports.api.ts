@@ -233,6 +233,11 @@ type PatrolSummaryDetailContext = {
   >
 }
 
+type FetchCtpatReportRowsParams = {
+  reportAtFrom?: Date | null
+  reportAtTo?: Date | null
+}
+
 const plannedPatrolShiftDayCache = new Map<string, ApiPlannedPatrolShiftView[]>()
 const plannedPatrolShiftDayPromiseCache = new Map<string, Promise<ApiPlannedPatrolShiftView[]>>()
 const patrolSummaryDetailContextCache = new Map<string, PatrolSummaryDetailContext>()
@@ -991,8 +996,20 @@ function normalizeCtpatView(v: ApiCtpatReportView): CtpatReportRow {
   }
 }
 
-export async function fetchCtpatReportRows(): Promise<CtpatReportRow[]> {
-  const res = await http.post(endpoints.report.ctpatReport, {})
+export async function fetchCtpatReportRows(
+  params: FetchCtpatReportRowsParams = {},
+): Promise<CtpatReportRow[]> {
+  const body: Record<string, any> = {}
+
+  if (params.reportAtFrom instanceof Date && Number.isFinite(params.reportAtFrom.getTime())) {
+    body.reportAtFrom = toApiDateTimeZ(params.reportAtFrom)
+  }
+
+  if (params.reportAtTo instanceof Date && Number.isFinite(params.reportAtTo.getTime())) {
+    body.reportAtTo = toApiDateTimeZ(params.reportAtTo)
+  }
+
+  const res = await http.post(endpoints.report.ctpatReport, body)
   const payload = ensureSuccess<ApiCtpatReportView[] | ApiCtpatReportView>(res.data).data
   const views = asArray(payload)
 
@@ -1115,38 +1132,82 @@ function normalizePatrolDetailRows(views: ApiPatrolShiftReportView[]): PatrolDet
   })
 }
 
-function buildPatrolDetailReportRequestBody(dateFrom?: Date | null, dateTo?: Date | null) {
-  if (!(dateFrom instanceof Date) || !(dateTo instanceof Date)) return {}
-  if (!Number.isFinite(dateFrom.getTime()) || !Number.isFinite(dateTo.getTime())) return {}
+function isFiniteDate(value: unknown): value is Date {
+  return value instanceof Date && Number.isFinite(value.getTime())
+}
+
+function buildPatrolDetailReportDayBody(date: Date) {
+  return {
+    psDay: date.getDate(),
+    psMonth: date.getMonth() + 1,
+    psYear: date.getFullYear(),
+  }
+}
+
+function normalizeDateRange(dateFrom?: Date | null, dateTo?: Date | null) {
+  if (!isFiniteDate(dateFrom) || !isFiniteDate(dateTo)) return null
 
   const from = new Date(dateFrom)
   const to = new Date(dateTo)
 
-  if (
-    from.getFullYear() !== to.getFullYear() ||
-    from.getMonth() !== to.getMonth() ||
-    from.getDate() !== to.getDate()
-  ) {
-    return {}
+  if (from.getTime() > to.getTime()) {
+    const tmp = new Date(from)
+    from.setTime(to.getTime())
+    to.setTime(tmp.getTime())
   }
 
+  return { from, to }
+}
+
+function buildPatrolRangeBody(dateFrom?: Date | null, dateTo?: Date | null) {
+  const range = normalizeDateRange(dateFrom, dateTo)
+  if (!range) return {}
+
   return {
-    psDay: from.getDate(),
-    psMonth: from.getMonth() + 1,
-    psYear: from.getFullYear(),
+    psStartAtFrom: toApiDateTimeZ(range.from),
+    psEndAtTo: toApiDateTimeZ(range.to),
   }
+}
+
+function buildPatrolDetailReportRequestBody(dateFrom?: Date | null, dateTo?: Date | null) {
+  return buildPatrolRangeBody(dateFrom, dateTo)
+}
+
+function dedupePatrolShiftReportViews(views: ApiPatrolShiftReportView[]) {
+  const map = new Map<string, ApiPatrolShiftReportView>()
+
+  for (const view of views) {
+    const psId = Number(view.psId ?? 0)
+    const routeId = Number(view.routeId ?? 0)
+    const startTime = String(view.reportTimeFrom ?? '').trim()
+    const finishTime = String(view.reportTimeTo ?? '').trim()
+    const reportName = String(view.reportName ?? '').trim()
+    const key = psId > 0 ? `ps:${psId}` : `${routeId}|${startTime}|${finishTime}|${reportName}`
+
+    if (!map.has(key)) {
+      map.set(key, view)
+    }
+  }
+
+  return [...map.values()]
+}
+
+async function fetchPatrolShiftReportViewsByDay(date: Date) {
+  const res = await http.post(
+    endpoints.report.patrolDetailReport,
+    buildPatrolDetailReportDayBody(date),
+  )
+  const payload = ensureSuccess<ApiPatrolShiftReportView[] | ApiPatrolShiftReportView>(
+    res.data,
+  ).data
+  return asArray(payload)
 }
 
 export async function fetchPatrolDetailReportRows(
   dateFrom?: Date | null,
   dateTo?: Date | null,
 ): Promise<PatrolDetailReportRow[]> {
-  const body = buildPatrolDetailReportRequestBody(dateFrom, dateTo)
-  const res = await http.post(endpoints.report.patrolDetailReport, body)
-  const payload = ensureSuccess<ApiPatrolShiftReportView[] | ApiPatrolShiftReportView>(
-    res.data,
-  ).data
-  const views = asArray(payload)
+  const views = await fetchPatrolShiftReportViews(dateFrom, dateTo)
   return normalizePatrolDetailRows(views)
 }
 
@@ -1271,12 +1332,7 @@ export async function fetchGpsLogRows(
   dateFrom?: Date | null,
   dateTo?: Date | null,
 ): Promise<GpsLogRow[]> {
-  const body = buildPatrolDetailReportRequestBody(dateFrom, dateTo)
-  const res = await http.post(endpoints.report.patrolDetailReport, body)
-  const payload = ensureSuccess<ApiPatrolShiftReportView[] | ApiPatrolShiftReportView>(
-    res.data,
-  ).data
-  const views = asArray(payload)
+  const views = await fetchPatrolShiftReportViews(dateFrom, dateTo)
   return normalizeGpsLogRows(views)
 }
 
@@ -1541,26 +1597,65 @@ async function fetchPlannedPatrolShiftByDateCached(date: Date) {
 }
 
 async function fetchPlannedPatrolShiftRange(dateFrom: Date, dateTo: Date) {
-  const dates = eachDateInclusive(dateFrom, dateTo)
-  const concurrency = 3
-  const results: ApiPlannedPatrolShiftView[] = []
-
-  for (let index = 0; index < dates.length; index += concurrency) {
-    const chunk = dates.slice(index, index + concurrency)
-    const rows = await Promise.all(chunk.map((date) => fetchPlannedPatrolShiftByDateCached(date)))
-    results.push(...rows.flat())
+  const body = {
+    ...buildPatrolRangeBody(dateFrom, dateTo),
+    roleId: SECURITY_ROLE_ID,
   }
 
-  return results
+  try {
+    const res = await http.post(endpoints.patrolShiftView.getList, body)
+    const payload = ensureSuccess<ApiPlannedPatrolShiftView[] | ApiPlannedPatrolShiftView>(
+      res.data,
+    ).data
+    return asArray(payload)
+  } catch (error) {
+    const dates = eachDateInclusive(dateFrom, dateTo)
+    const concurrency = 3
+    const results: ApiPlannedPatrolShiftView[] = []
+
+    for (let index = 0; index < dates.length; index += concurrency) {
+      const chunk = dates.slice(index, index + concurrency)
+      const rows = await Promise.all(chunk.map((date) => fetchPlannedPatrolShiftByDateCached(date)))
+      results.push(...rows.flat())
+    }
+
+    return results
+  }
 }
 
 async function fetchPatrolShiftReportViews(dateFrom?: Date | null, dateTo?: Date | null) {
   const body = buildPatrolDetailReportRequestBody(dateFrom, dateTo)
-  const res = await http.post(endpoints.report.patrolDetailReport, body)
+
+  if (Object.keys(body).length > 0) {
+    try {
+      const res = await http.post(endpoints.report.patrolDetailReport, body)
+      const payload = ensureSuccess<ApiPatrolShiftReportView[] | ApiPatrolShiftReportView>(
+        res.data,
+      ).data
+      return dedupePatrolShiftReportViews(asArray(payload))
+    } catch (error) {
+      const range = normalizeDateRange(dateFrom, dateTo)
+      if (!range) throw error
+
+      const dates = eachDateInclusive(range.from, range.to)
+      const concurrency = 3
+      const results: ApiPatrolShiftReportView[] = []
+
+      for (let index = 0; index < dates.length; index += concurrency) {
+        const chunk = dates.slice(index, index + concurrency)
+        const rows = await Promise.all(chunk.map((date) => fetchPatrolShiftReportViewsByDay(date)))
+        results.push(...rows.flat())
+      }
+
+      return dedupePatrolShiftReportViews(results)
+    }
+  }
+
+  const res = await http.post(endpoints.report.patrolDetailReport, {})
   const payload = ensureSuccess<ApiPatrolShiftReportView[] | ApiPatrolShiftReportView>(
     res.data,
   ).data
-  return asArray(payload)
+  return dedupePatrolShiftReportViews(asArray(payload))
 }
 
 async function fetchPlannedPatrolShiftByDate(date: Date) {
@@ -1943,10 +2038,7 @@ export async function fetchRoutesChartShiftNodes(
 
   const windowStart = new Date(from)
   const windowEnd = resolveRoutesChartWindowEnd(windowStart, new Date(to))
-  const dates = eachDateInclusive(windowStart, windowEnd)
-  const views = (
-    await Promise.all(dates.map((date: Date) => fetchPlannedPatrolShiftByDate(date)))
-  ).flat() as ApiPlannedPatrolShiftView[]
+  const views = await fetchPlannedPatrolShiftRange(windowStart, windowEnd)
 
   return views
     .filter((view: ApiPlannedPatrolShiftView) => hasActualPatrolData(view))
