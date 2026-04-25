@@ -729,7 +729,7 @@ const en = {
       it: 'IT',
     },
     route: {
-      routeNumber: 'Route No. ',
+      routeNumber: 'Route No.',
     },
     reportNote: {
       noIssue: 'No issue occurred',
