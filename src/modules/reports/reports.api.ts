@@ -1596,6 +1596,42 @@ async function fetchPlannedPatrolShiftByDateCached(date: Date) {
   return promise
 }
 
+function dedupePlannedPatrolShiftViews(views: ApiPlannedPatrolShiftView[]) {
+  const map = new Map<string, ApiPlannedPatrolShiftView>()
+
+  for (const view of views) {
+    const psId = Number(view.psId ?? 0)
+    const routeId = Number(view.routeId ?? 0)
+    const areaId = Number(view.areaId ?? 0)
+    const dateKey = formatShiftDatePrefix(view)
+    const hourFrom = Number(view.psHourFrom ?? 0)
+    const hourTo = Number(view.psHourTo ?? 0)
+    const routeName = String(view.routeName ?? '').trim()
+    const key =
+      psId > 0 ? `ps:${psId}` : `${dateKey}|${areaId}|${routeId}|${routeName}|${hourFrom}|${hourTo}`
+
+    if (!map.has(key)) {
+      map.set(key, view)
+    }
+  }
+
+  return [...map.values()]
+}
+
+async function fetchPlannedPatrolShiftByDateRangeCached(dateFrom: Date, dateTo: Date) {
+  const dates = eachDateInclusive(dateFrom, dateTo)
+  const concurrency = 3
+  const results: ApiPlannedPatrolShiftView[] = []
+
+  for (let index = 0; index < dates.length; index += concurrency) {
+    const chunk = dates.slice(index, index + concurrency)
+    const rows = await Promise.all(chunk.map((date) => fetchPlannedPatrolShiftByDateCached(date)))
+    results.push(...rows.flat())
+  }
+
+  return dedupePlannedPatrolShiftViews(results)
+}
+
 async function fetchPlannedPatrolShiftRange(dateFrom: Date, dateTo: Date) {
   const body = {
     ...buildPatrolRangeBody(dateFrom, dateTo),
@@ -1607,19 +1643,9 @@ async function fetchPlannedPatrolShiftRange(dateFrom: Date, dateTo: Date) {
     const payload = ensureSuccess<ApiPlannedPatrolShiftView[] | ApiPlannedPatrolShiftView>(
       res.data,
     ).data
-    return asArray(payload)
+    return dedupePlannedPatrolShiftViews(asArray(payload))
   } catch (error) {
-    const dates = eachDateInclusive(dateFrom, dateTo)
-    const concurrency = 3
-    const results: ApiPlannedPatrolShiftView[] = []
-
-    for (let index = 0; index < dates.length; index += concurrency) {
-      const chunk = dates.slice(index, index + concurrency)
-      const rows = await Promise.all(chunk.map((date) => fetchPlannedPatrolShiftByDateCached(date)))
-      results.push(...rows.flat())
-    }
-
-    return results
+    return fetchPlannedPatrolShiftByDateRangeCached(dateFrom, dateTo)
   }
 }
 
@@ -2095,7 +2121,7 @@ export async function fetchPatrolSummaryRows(
 
   const [actualShiftViews, allPlannedViews] = await Promise.all([
     fetchPatrolShiftReportViews(from, to),
-    fetchPlannedPatrolShiftRange(from, to),
+    fetchPlannedPatrolShiftByDateRangeCached(from, to),
   ])
 
   const actualViewsByDate = indexActualPatrolShiftViewsByDate(actualShiftViews)
