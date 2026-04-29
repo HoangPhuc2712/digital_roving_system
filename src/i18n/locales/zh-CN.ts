@@ -728,7 +728,7 @@ const zhCN = {
       it: 'IT',
     },
     route: {
-      routeNumber: '巡逻路线编号',
+      routeNumber: '巡检路线',
     },
     reportNote: {
       noIssue: '未发生异常',

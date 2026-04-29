@@ -130,7 +130,10 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
     async load() {
       this.loading = true
       try {
-        this.rows = await fetchCtpatReportRows()
+        this.rows = await fetchCtpatReportRows({
+          reportAtFrom: this.filterDateFrom,
+          reportAtTo: this.filterDateTo,
+        })
       } finally {
         this.loading = false
       }

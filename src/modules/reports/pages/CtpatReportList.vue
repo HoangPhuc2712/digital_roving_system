@@ -237,7 +237,7 @@ async function onExport() {
 
       <Column
         :header="t('ctpatReportList.startTime')"
-        style="min-width: 12rem"
+        style="min-width: 14rem"
         sortField="start_at"
       >
         <template #body="{ data }">
@@ -245,7 +245,7 @@ async function onExport() {
         </template>
       </Column>
 
-      <Column :header="t('ctpatReportList.finishTime')" style="min-width: 12rem" sortField="end_at">
+      <Column :header="t('ctpatReportList.finishTime')" style="min-width: 14rem" sortField="end_at">
         <template #body="{ data }">
           {{ formatDateTime(data.end_at) }}
         </template>
@@ -253,7 +253,7 @@ async function onExport() {
 
       <Column
         :header="t('ctpatReportList.patrolTime')"
-        style="min-width: 12rem"
+        style="min-width: 14rem"
         sortField="scan_at"
         :filterMenu="{
           key: 'patrolTime',
