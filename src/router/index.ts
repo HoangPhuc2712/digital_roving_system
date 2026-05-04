@@ -73,6 +73,11 @@ router.beforeEach(async (to) => {
       return { name: 'login' }
     }
 
+    if (auth.isTokenExpired()) {
+      await auth.expireSession()
+      return { name: 'login' }
+    }
+
     if (!auth.sessionSyncedOnce) {
       const ok = await auth.syncSessionWithServer()
       if (!ok || !auth.isAuthenticated) {

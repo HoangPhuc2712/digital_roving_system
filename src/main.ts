@@ -7,7 +7,7 @@ import { router } from './router'
 import { setupPrimeVue } from './plugins/primevue'
 import { i18n, initializeAppLocale } from './plugins/i18n'
 import { registerUnauthorizedHandler } from '@/services/http/axios'
-import { useAuthStore } from '@/stores/auth.store'
+import { registerSessionExpiredHandler, useAuthStore } from '@/stores/auth.store'
 import './styles/tailwind.css'
 import './styles/primevue.css'
 import {
@@ -51,10 +51,21 @@ app.component('BaseInput', BaseInput)
 app.component('BasePasswordInput', BasePasswordInput)
 app.component('BaseMessage', BaseMessage)
 
+registerSessionExpiredHandler(async (message) => {
+  window.alert(message)
+
+  if (router.currentRoute.value.name !== 'login') {
+    await router.replace({ name: 'login' })
+  }
+})
+
 registerUnauthorizedHandler(async () => {
   const auth = useAuthStore(pinia)
-  if (auth.isAuthenticated) {
-    auth.clearSession()
+  if (!auth.token) auth.restoreSession()
+
+  if (auth.isAuthenticated || auth.token) {
+    await auth.expireSession()
+    return
   }
 
   if (router.currentRoute.value.name !== 'login') {

@@ -5,12 +5,53 @@ import {
   type PermissionKey,
 } from '@/utils/permission'
 import type { User, Role } from '@/mocks/db'
-import { mockLogin, mockMe } from '@/services/auth.service'
+import { mockLogin, mockMe, logoutUser } from '@/services/auth.service'
 import type { AuthTokens, PersistedAuthSession } from '@/types/auth'
 
 type AuthUser = User & { role?: Role; allow_views?: any[] }
 
+type SessionExpiredHandler = (message: string) => void | Promise<void>
+
 const AUTH_SESSION_STORAGE_KEY = 'auth_session'
+const ACCESS_TOKEN_LIFETIME_MS = 60 * 60 * 1000
+const SESSION_EXPIRED_MESSAGE = 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại'
+
+let sessionExpiryTimer: ReturnType<typeof setTimeout> | null = null
+let sessionExpiredHandler: SessionExpiredHandler | null = null
+
+export function registerSessionExpiredHandler(handler: SessionExpiredHandler | null) {
+  sessionExpiredHandler = handler
+}
+
+function clearSessionExpiryTimer() {
+  if (sessionExpiryTimer) {
+    clearTimeout(sessionExpiryTimer)
+    sessionExpiryTimer = null
+  }
+}
+
+function isLegacyUserIdToken(token: string) {
+  return token.startsWith('api-token-') || token.startsWith('mock-token-')
+}
+
+function getExpiryTime(expiresAt?: string | null) {
+  const value = String(expiresAt ?? '').trim()
+  if (!value) return 0
+
+  const time = new Date(value).getTime()
+  return Number.isFinite(time) ? time : 0
+}
+
+function isExpired(expiresAt?: string | null) {
+  const expiryTime = getExpiryTime(expiresAt)
+  return expiryTime > 0 && expiryTime <= Date.now()
+}
+
+function resolveTokenExpiresAt(expiresAt?: string | null) {
+  const expiryTime = getExpiryTime(expiresAt)
+  if (expiryTime > 0) return new Date(expiryTime).toISOString()
+  return new Date(Date.now() + ACCESS_TOKEN_LIFETIME_MS).toISOString()
+}
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -30,6 +71,29 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     canAccess(required?: PermissionKey | PermissionKey[]) {
       return hasPermission(this.permissions, required)
+    },
+
+    isTokenExpired() {
+      return isExpired(this.tokenExpiresAt)
+    },
+
+    scheduleSessionExpiry() {
+      clearSessionExpiryTimer()
+
+      if (!this.token || !this.user) return
+
+      const expiryTime = getExpiryTime(this.tokenExpiresAt)
+      if (!expiryTime) return
+
+      const delay = expiryTime - Date.now()
+      if (delay <= 0) {
+        void this.expireSession()
+        return
+      }
+
+      sessionExpiryTimer = setTimeout(() => {
+        void this.expireSession()
+      }, delay)
     },
 
     persistSession() {
@@ -60,17 +124,33 @@ export const useAuthStore = defineStore('auth', {
       this.token = accessToken
       this.refreshToken = payload.tokens?.refreshToken ?? ''
       this.tokenType = payload.tokens?.tokenType ?? 'Bearer'
-      this.tokenExpiresAt = payload.tokens?.expiresAt ?? ''
+      this.tokenExpiresAt = resolveTokenExpiresAt(payload.tokens?.expiresAt)
       this.user = payload.user
 
       const allow = payload.user.role?.role_allow_view
       this.permissions = derivePermissionsFromAllowViews(payload.user.allow_views, allow)
 
       this.persistSession()
+      this.scheduleSessionExpiry()
       this.sessionSyncedOnce = true
     },
 
+    updateTokens(tokens: AuthTokens) {
+      const accessToken = String(tokens.accessToken ?? '').trim()
+      if (!accessToken) return
+
+      this.token = accessToken
+      this.refreshToken = tokens.refreshToken ?? this.refreshToken
+      this.tokenType = tokens.tokenType ?? this.tokenType ?? 'Bearer'
+      this.tokenExpiresAt = resolveTokenExpiresAt(tokens.expiresAt)
+
+      this.persistSession()
+      this.scheduleSessionExpiry()
+    },
+
     clearSession() {
+      clearSessionExpiryTimer()
+
       this.token = ''
       this.refreshToken = ''
       this.tokenType = 'Bearer'
@@ -86,8 +166,23 @@ export const useAuthStore = defineStore('auth', {
       this.sessionSyncedOnce = false
     },
 
-    logout() {
+    async expireSession() {
+      if (!this.token && !this.user) return
+
       this.clearSession()
+      await sessionExpiredHandler?.(SESSION_EXPIRED_MESSAGE)
+    },
+
+    logout() {
+      const userId = String((this.user as any)?.user_id ?? '').trim()
+      const accessToken = this.token
+      const tokenType = this.tokenType || 'Bearer'
+
+      this.clearSession()
+
+      if (userId) {
+        void logoutUser(userId, accessToken, tokenType)
+      }
     },
 
     restoreSession() {
@@ -98,10 +193,16 @@ export const useAuthStore = defineStore('auth', {
         const user = persisted?.user ?? null
 
         if (accessToken && user) {
+          if (isExpired(persisted.tokens?.expiresAt)) {
+            this.clearSession()
+            void sessionExpiredHandler?.(SESSION_EXPIRED_MESSAGE)
+            return
+          }
+
           this.token = accessToken
           this.refreshToken = persisted.tokens?.refreshToken ?? ''
           this.tokenType = persisted.tokens?.tokenType ?? 'Bearer'
-          this.tokenExpiresAt = persisted.tokens?.expiresAt ?? ''
+          this.tokenExpiresAt = resolveTokenExpiresAt(persisted.tokens?.expiresAt)
           this.user = user
 
           const allow = localStorage.getItem('role_allow_view') ?? user.role?.role_allow_view ?? ''
@@ -110,6 +211,7 @@ export const useAuthStore = defineStore('auth', {
 
           this.permissions = derivePermissionsFromAllowViews(allowViews, allow)
           this.sessionSyncedOnce = false
+          this.scheduleSessionExpiry()
           return
         }
       }
@@ -123,7 +225,7 @@ export const useAuthStore = defineStore('auth', {
       this.token = token
       this.refreshToken = ''
       this.tokenType = 'Bearer'
-      this.tokenExpiresAt = ''
+      this.tokenExpiresAt = resolveTokenExpiresAt()
       this.user = user
 
       const allow = localStorage.getItem('role_allow_view') ?? user.role?.role_allow_view ?? ''
@@ -132,6 +234,8 @@ export const useAuthStore = defineStore('auth', {
 
       this.permissions = derivePermissionsFromAllowViews(allowViews, allow)
       this.sessionSyncedOnce = false
+      this.persistSession()
+      this.scheduleSessionExpiry()
     },
 
     async login(user_code: string, user_password: string) {
@@ -147,6 +251,16 @@ export const useAuthStore = defineStore('auth', {
 
     async fetchMe() {
       if (!this.token) return
+
+      if (this.isTokenExpired()) {
+        await this.expireSession()
+        return
+      }
+
+      if (this.user && !isLegacyUserIdToken(this.token)) {
+        this.sessionSyncedOnce = true
+        return
+      }
       const res = await mockMe(this.token)
 
       this.user = res.user as AuthUser
@@ -156,11 +270,17 @@ export const useAuthStore = defineStore('auth', {
       this.permissions = derivePermissionsFromAllowViews(allowViews, allow)
 
       this.persistSession()
+      this.scheduleSessionExpiry()
       this.sessionSyncedOnce = true
     },
 
     async syncSessionWithServer() {
       if (!this.token) return false
+
+      if (this.isTokenExpired()) {
+        await this.expireSession()
+        return false
+      }
 
       try {
         await this.fetchMe()

@@ -3,6 +3,8 @@ export const endpoints = {
     getList: '/user/getlist',
     getOne: (userId: string) => `/user/getone/${userId}`,
     validate: '/user/validate',
+    refresh: '/user/refresh',
+    logout: '/user/logout',
     create: '/user/create',
     update: (userId: string) => `/user/update/${userId}`,
     changePassword: (userId: string) => `/user/changepassword/${userId}`,
