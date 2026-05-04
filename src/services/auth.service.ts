@@ -9,9 +9,32 @@ function omitPassword(u: any) {
   return safe
 }
 
+const ACCESS_TOKEN_LIFETIME_SECONDS = 60 * 60
+
 function isApiEnabled() {
   const baseURL = appConfig.apiBaseUrl || ''
   return !!baseURL
+}
+
+function decodeJwtPayload(token: string): Record<string, any> | null {
+  try {
+    const [, payload] = String(token ?? '').split('.')
+    if (!payload) return null
+
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=')
+    const decoded = atob(padded)
+    return JSON.parse(decoded)
+  } catch {
+    return null
+  }
+}
+
+function resolveJwtExpiresAt(accessToken: string): string | null {
+  const payload = decodeJwtPayload(accessToken)
+  const exp = Number(payload?.exp ?? 0)
+  if (!Number.isFinite(exp) || exp <= 0) return null
+  return new Date(exp * 1000).toISOString()
 }
 
 function mapRoleCode(roleName?: string, roleCode?: string) {
@@ -43,10 +66,18 @@ function toPositiveNumber(value: unknown): number | null {
   return null
 }
 
-function resolveExpiresAt(expiresIn: number | null, rawExpiresAt: unknown): string | null {
+function resolveExpiresAt(
+  accessToken: string,
+  expiresIn: number | null,
+  rawExpiresAt: unknown,
+): string | null {
   if (typeof rawExpiresAt === 'string' && rawExpiresAt.trim()) return rawExpiresAt
-  if (!expiresIn) return null
-  return new Date(Date.now() + expiresIn * 1000).toISOString()
+
+  const jwtExpiresAt = resolveJwtExpiresAt(accessToken)
+  if (jwtExpiresAt) return jwtExpiresAt
+
+  const seconds = expiresIn || ACCESS_TOKEN_LIFETIME_SECONDS
+  return new Date(Date.now() + seconds * 1000).toISOString()
 }
 
 function extractTokenPayload(source: any): any {
@@ -76,10 +107,12 @@ function buildAuthTokens(payload: any, fallbackAccessToken = ''): AuthTokens {
     tokenPayload.tokenType ?? tokenPayload.token_type ?? tokenPayload.scheme ?? 'Bearer',
   ).trim()
 
-  const expiresIn = toPositiveNumber(
-    tokenPayload.expiresIn ?? tokenPayload.expires_in ?? tokenPayload.ttlSeconds,
-  )
+  const expiresIn =
+    toPositiveNumber(
+      tokenPayload.expiresIn ?? tokenPayload.expires_in ?? tokenPayload.ttlSeconds,
+    ) ?? ACCESS_TOKEN_LIFETIME_SECONDS
   const expiresAt = resolveExpiresAt(
+    accessToken,
     expiresIn,
     tokenPayload.expiresAt ?? tokenPayload.expires_at ?? tokenPayload.expiredAt,
   )
@@ -164,8 +197,11 @@ export async function mockLogin(
       throw new Error('USER_INACTIVE')
     }
 
-    const fallbackAccessToken = `api-token-${apiUser.userId}`
-    const tokens = buildAuthTokens(payload, fallbackAccessToken)
+    const tokens = buildAuthTokens(apiUser)
+    if (!tokens.accessToken) {
+      throw new Error('LOGIN_FAILED')
+    }
+
     return { tokens, user: toAuthUser(apiUser), raw: payload }
   }
 
@@ -182,6 +218,34 @@ export async function mockLogin(
   const role = roles.find((r) => r.role_id === user.user_role_id && r.role_status >= 0)
   const tokens = buildAuthTokens({}, `mock-token-${user.user_id}`)
   return { tokens, user: { ...omitPassword(user), role } }
+}
+
+export async function logoutUser(
+  userId: string,
+  accessToken?: string,
+  tokenType = 'Bearer',
+): Promise<void> {
+  const id = String(userId ?? '').trim()
+  if (!id || !isApiEnabled()) return
+
+  const token = String(accessToken ?? '').trim()
+  const headers = token ? { Authorization: `${tokenType || 'Bearer'} ${token}` } : undefined
+
+  try {
+    const res = await http.post(
+      endpoints.user.logout,
+      {
+        userId: id,
+      },
+      headers ? { headers } : undefined,
+    )
+    const payload = res?.data
+    if (payload && payload.success === false) {
+      throw new Error(String(payload.message ?? 'LOGOUT_FAILED'))
+    }
+  } catch {
+    // Logout must still clear the local session even if the server call fails.
+  }
 }
 
 export async function mockMe(token: string) {

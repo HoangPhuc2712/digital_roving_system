@@ -28,6 +28,9 @@ const vi = {
     undefined: 'Không xác định',
     goToDashboard: 'Đi đến Bảng điều khiển',
     goToLogin: 'Đi đến trang đăng nhập',
+    sessionExpired: 'Phiên đăng nhập đã hết hạn, đăng xuất sau',
+    second: 'giây',
+    loginRequired: 'Vui lòng đăng nhập lại để tiếp tục sử dụng hệ thống.',
   },
   languageSwitcher: {
     languages: {

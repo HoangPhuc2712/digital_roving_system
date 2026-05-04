@@ -28,6 +28,9 @@ const en = {
     undefined: 'Undefined',
     goToDashboard: 'Go to Dashboard',
     goToLogin: 'Go to Login',
+    sessionExpired: 'Your login session has expired. Logging out in',
+    second: 'seconds',
+    loginRequired: 'Please log in again to continue using the system.',
   },
   languageSwitcher: {
     languages: {

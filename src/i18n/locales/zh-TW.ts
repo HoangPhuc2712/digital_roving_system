@@ -28,6 +28,9 @@ const zhTW = {
     undefined: '未定義',
     goToDashboard: '前往儀表板',
     goToLogin: '前往登入頁面',
+    sessionExpired: '登入階段已過期，將於',
+    second: '秒後登出',
+    loginRequired: '請重新登入以繼續使用系統。',
   },
   languageSwitcher: {
     languages: {
