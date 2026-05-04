@@ -7,6 +7,7 @@ import { router } from './router'
 import { setupPrimeVue } from './plugins/primevue'
 import { i18n, initializeAppLocale } from './plugins/i18n'
 import { registerUnauthorizedHandler } from '@/services/http/axios'
+import { showSessionExpiredDialog } from '@/services/sessionExpiredDialog'
 import { registerSessionExpiredHandler, useAuthStore } from '@/stores/auth.store'
 import './styles/tailwind.css'
 import './styles/primevue.css'
@@ -51,12 +52,15 @@ app.component('BaseInput', BaseInput)
 app.component('BasePasswordInput', BasePasswordInput)
 app.component('BaseMessage', BaseMessage)
 
-registerSessionExpiredHandler(async (message) => {
-  window.alert(message)
-
-  if (router.currentRoute.value.name !== 'login') {
-    await router.replace({ name: 'login' })
-  }
+registerSessionExpiredHandler(async () => {
+  showSessionExpiredDialog({
+    seconds: 3,
+    onConfirm: async () => {
+      if (router.currentRoute.value.name !== 'login') {
+        await router.replace({ name: 'login' })
+      }
+    },
+  })
 })
 
 registerUnauthorizedHandler(async () => {

@@ -115,8 +115,8 @@ async function goToUserInfo() {
 }
 
 async function logout() {
-  auth.logout?.()
   closePopover()
+  await auth.logout?.()
   await router.replace({ name: 'login' })
 }
 

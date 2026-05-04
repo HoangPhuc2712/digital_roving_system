@@ -2,6 +2,7 @@
   <RouterView />
   <Toast />
   <ConfirmDialog />
+  <AppSessionExpiredDialog />
 </template>
 
 <script setup lang="ts">
@@ -9,6 +10,7 @@ import { watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Toast from 'primevue/toast'
 import ConfirmDialog from 'primevue/confirmdialog'
+import AppSessionExpiredDialog from '@/components/app/AppSessionExpiredDialog.vue'
 
 const { t, locale } = useI18n()
 

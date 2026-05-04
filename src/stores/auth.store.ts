@@ -173,7 +173,7 @@ export const useAuthStore = defineStore('auth', {
       await sessionExpiredHandler?.(SESSION_EXPIRED_MESSAGE)
     },
 
-    logout() {
+    async logout() {
       const userId = String((this.user as any)?.user_id ?? '').trim()
       const accessToken = this.token
       const tokenType = this.tokenType || 'Bearer'
@@ -181,7 +181,7 @@ export const useAuthStore = defineStore('auth', {
       this.clearSession()
 
       if (userId) {
-        void logoutUser(userId, accessToken, tokenType)
+        await logoutUser(userId, accessToken, tokenType)
       }
     },
 

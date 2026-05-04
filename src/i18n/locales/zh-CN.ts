@@ -28,6 +28,9 @@ const zhCN = {
     undefined: '未定义',
     goToDashboard: '前往仪表板',
     goToLogin: '前往登录页面',
+    sessionExpired: '登录会话已过期，将在',
+    second: '秒后登出',
+    loginRequired: '请重新登录以继续使用系统。',
   },
   languageSwitcher: {
     languages: {
