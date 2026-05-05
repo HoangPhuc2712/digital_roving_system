@@ -63,6 +63,7 @@ export const http = Axios.create({
   timeout: 20000,
 })
 
+// Access Token API request interceptor to automatically attach token and handle expiry
 http.interceptors.request.use(async (config) => {
   const authToken = readPersistedAuthToken()
 
