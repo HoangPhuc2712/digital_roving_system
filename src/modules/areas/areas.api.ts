@@ -1,6 +1,12 @@
 import type { AxiosError } from 'axios'
 import { http } from '@/services/http/axios'
 import { endpoints } from '@/services/http/endpoints'
+import {
+  appendPageParams,
+  normalizePagedData,
+  type ApiPageParams,
+  type ApiPagedResult,
+} from '@/utils/pagination'
 import type { AreaRow } from './areas.types'
 
 type ApiEnvelope<T> = {
@@ -48,26 +54,42 @@ function apiStatusToUi(status?: number) {
   return status === 0 ? 1 : 0
 }
 
+function mapAreaView(v: ApiAreaView): AreaRow {
+  const q = String(v.areaKeyword ?? `${v.areaCode} ${v.areaName}`).toLowerCase()
+
+  return {
+    area_id: v.areaId,
+    area_code: v.areaCode,
+    area_name: v.areaName,
+    area_status: apiStatusToUi(v.areaStatus),
+    total_checkpoints: v.totalCheckPoint,
+    created_date: v.createdAt ?? nowIso(),
+    updated_date: v.updatedAt ?? nowIso(),
+    _q: q,
+  }
+}
+
+export async function fetchAreaRowsPaged(
+  params: ApiPageParams = {},
+): Promise<ApiPagedResult<AreaRow>> {
+  const body: Record<string, any> = {}
+  appendPageParams(body, params)
+
+  const res = await http.post(endpoints.areaView.getList, body)
+  const payload = ensureSuccess<any>(res.data).data
+  const paged = normalizePagedData<ApiAreaView>(payload)
+
+  return {
+    ...paged,
+    items: paged.items
+      .map(mapAreaView)
+      .sort((a, b) => Number(a.area_id ?? 0) - Number(b.area_id ?? 0)),
+  }
+}
+
 export async function fetchAreaRows(): Promise<AreaRow[]> {
-  const res = await http.post(endpoints.areaView.getList, {})
-  const views = ensureSuccess<ApiAreaView[]>(res.data).data ?? []
-
-  return views
-    .map((v) => {
-      const q = String(v.areaKeyword ?? `${v.areaCode} ${v.areaName}`).toLowerCase()
-
-      return {
-        area_id: v.areaId,
-        area_code: v.areaCode,
-        area_name: v.areaName,
-        area_status: apiStatusToUi(v.areaStatus),
-        total_checkpoints: v.totalCheckPoint,
-        created_date: v.createdAt ?? nowIso(),
-        updated_date: v.updatedAt ?? nowIso(),
-        _q: q,
-      }
-    })
-    .sort((a, b) => Number(a.area_id ?? 0) - Number(b.area_id ?? 0))
+  const result = await fetchAreaRowsPaged()
+  return result.items
 }
 
 export async function fetchAreaById(area_id: number) {

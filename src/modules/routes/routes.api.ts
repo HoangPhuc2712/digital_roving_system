@@ -1,6 +1,12 @@
 import type { AxiosError } from 'axios'
 import { http } from '@/services/http/axios'
 import { endpoints } from '@/services/http/endpoints'
+import {
+  appendPageParams,
+  normalizePagedData,
+  type ApiPageParams,
+  type ApiPagedResult,
+} from '@/utils/pagination'
 import type {
   AreaOption,
   RoleOption,
@@ -274,28 +280,44 @@ export async function fetchScanPointsByArea(
     .sort((a, b) => a.cpCode.localeCompare(b.cpCode))
 }
 
-export async function fetchRouteRows(roleOptions: RoleOption[] = []): Promise<RouteRow[]> {
+function sortRouteRows(rows: RouteRow[]) {
+  return rows.sort((a, b) => {
+    const areaCompare = Number(a.area_id ?? 0) - Number(b.area_id ?? 0)
+    if (areaCompare !== 0) return areaCompare
+
+    const priorityCompare = Number(a.route_priority ?? 0) - Number(b.route_priority ?? 0)
+    if (priorityCompare !== 0) return priorityCompare
+
+    return String(a.route_code ?? '').localeCompare(String(b.route_code ?? ''))
+  })
+}
+
+export async function fetchRouteRowsPaged(
+  roleOptions: RoleOption[] = [],
+  params: ApiPageParams = {},
+): Promise<ApiPagedResult<RouteRow>> {
+  const body: Record<string, any> = {}
+  appendPageParams(body, params)
+
   const [checkpointMetaMap, res] = await Promise.all([
     fetchCheckpointMetaMap().catch(
       () => new Map<number, { cp_priority?: number; cp_qr: string }>(),
     ),
-    http.post(endpoints.routeView.getList, {}),
+    http.post(endpoints.routeView.getList, body),
   ])
 
-  const payload = ensureSuccess<ApiRouteView[] | ApiRouteView>(res.data).data ?? []
-  const views = Array.isArray(payload) ? payload : [payload]
+  const payload = ensureSuccess<any>(res.data).data
+  const paged = normalizePagedData<ApiRouteView>(payload)
 
-  return views
-    .map((v) => mapRouteView(v, roleOptions, checkpointMetaMap))
-    .sort((a, b) => {
-      const areaCompare = Number(a.area_id ?? 0) - Number(b.area_id ?? 0)
-      if (areaCompare !== 0) return areaCompare
+  return {
+    ...paged,
+    items: sortRouteRows(paged.items.map((v) => mapRouteView(v, roleOptions, checkpointMetaMap))),
+  }
+}
 
-      const priorityCompare = Number(a.route_priority ?? 0) - Number(b.route_priority ?? 0)
-      if (priorityCompare !== 0) return priorityCompare
-
-      return String(a.route_code ?? '').localeCompare(String(b.route_code ?? ''))
-    })
+export async function fetchRouteRows(roleOptions: RoleOption[] = []): Promise<RouteRow[]> {
+  const result = await fetchRouteRowsPaged(roleOptions)
+  return result.items
 }
 
 export async function fetchRouteById(routeId: number, roleOptions: RoleOption[] = []) {

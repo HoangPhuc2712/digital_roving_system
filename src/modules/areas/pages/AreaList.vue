@@ -84,6 +84,7 @@ useResetFirstOnFilterChange(
 const { onPage } = usePagination({
   load: () => store.load(),
   setFirst: (first) => store.setFirst(first),
+  setPage: (first, rows) => store.setPage(first, rows),
 })
 
 onMounted(async () => {
@@ -469,6 +470,8 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
       v-model:selection="selectedAreas"
       :rows="store.rowsPerPage"
       :first="store.first"
+      lazy
+      :totalRecords="store.totalRecords"
       :modelSearch="searchDraft"
       @update:modelSearch="searchDraft = $event"
       @update:columnFilter="onColumnFilter"

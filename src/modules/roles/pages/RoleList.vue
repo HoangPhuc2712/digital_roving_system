@@ -73,6 +73,7 @@ useResetFirstOnFilterChange(
 const { onPage } = usePagination({
   load: () => store.load(),
   setFirst: (first) => store.setFirst(first),
+  setPage: (first, rows) => store.setPage(first, rows),
 })
 
 onMounted(async () => {
@@ -371,6 +372,8 @@ async function handleSubmit(payload: RoleFormSubmitPayload) {
       v-model:selection="selectedRoles"
       :rows="store.rowsPerPage"
       :first="store.first"
+      lazy
+      :totalRecords="store.totalRecords"
       :modelSearch="searchDraft"
       @update:modelSearch="searchDraft = $event"
       @update:columnFilter="onColumnFilter"

@@ -1,6 +1,12 @@
 import type { AxiosError } from 'axios'
 import { http } from '@/services/http/axios'
 import { endpoints } from '@/services/http/endpoints'
+import {
+  appendPageParams,
+  normalizePagedData,
+  type ApiPageParams,
+  type ApiPagedResult,
+} from '@/utils/pagination'
 import type { MenuCategoryOption, RoleRow } from './roles.types'
 
 type ApiEnvelope<T> = { data: T; success: boolean; message: string }
@@ -81,34 +87,48 @@ export async function fetchMenuCategoryOptions(): Promise<MenuCategoryOption[]> 
     .sort((a, b) => (a.priority || 0) - (b.priority || 0))
 }
 
+function mapRoleView(v: ApiRoleView): RoleRow {
+  const menus = v.roleMenus ?? []
+  const menuIds = menus.map((m) => m.mcId).filter((x) => typeof x === 'number')
+  const menuNames = menus.map((m) => m.mcName).filter(Boolean)
+
+  const q = String(v.roleKeyword ?? `${v.roleCode} ${v.roleName}`).toLowerCase()
+
+  return {
+    role_id: v.roleId,
+    role_code: v.roleCode,
+    role_name: v.roleName,
+    role_hour_report: Boolean(v.roleHourReport),
+    role_is_admin: Boolean(v.roleIsAdmin),
+    role_status: apiStatusToUi(v.roleStatus),
+    created_date: v.createdAt ?? nowIso(),
+    updated_date: v.updatedAt ?? nowIso(),
+    menu_ids: menuIds,
+    menu_names: menuNames,
+    menu_count: Number(v.totalPermission ?? menuIds.length),
+    _q: q,
+  }
+}
+
+export async function fetchRoleRowsPaged(
+  params: ApiPageParams = {},
+): Promise<ApiPagedResult<RoleRow>> {
+  const body: Record<string, any> = {}
+  appendPageParams(body, params)
+
+  const res = await http.post(endpoints.roleView.getList, body)
+  const payload = unwrapEnvelope<any>(res.data)
+  const paged = normalizePagedData<ApiRoleView>(payload)
+
+  return {
+    ...paged,
+    items: paged.items.map(mapRoleView).sort((a, b) => a.role_name.localeCompare(b.role_name)),
+  }
+}
+
 export async function fetchRoleRows(): Promise<RoleRow[]> {
-  const res = await http.post(endpoints.roleView.getList, {})
-  const views = unwrapList<ApiRoleView>(res.data)
-
-  return (views ?? [])
-    .map((v) => {
-      const menus = v.roleMenus ?? []
-      const menuIds = menus.map((m) => m.mcId).filter((x) => typeof x === 'number')
-      const menuNames = menus.map((m) => m.mcName).filter(Boolean)
-
-      const q = String(v.roleKeyword ?? `${v.roleCode} ${v.roleName}`).toLowerCase()
-
-      return {
-        role_id: v.roleId,
-        role_code: v.roleCode,
-        role_name: v.roleName,
-        role_hour_report: Boolean(v.roleHourReport),
-        role_is_admin: Boolean(v.roleIsAdmin),
-        role_status: apiStatusToUi(v.roleStatus),
-        created_date: v.createdAt ?? nowIso(),
-        updated_date: v.updatedAt ?? nowIso(),
-        menu_ids: menuIds,
-        menu_names: menuNames,
-        menu_count: Number(v.totalPermission ?? menuIds.length),
-        _q: q,
-      }
-    })
-    .sort((a, b) => a.role_name.localeCompare(b.role_name))
+  const result = await fetchRoleRowsPaged()
+  return result.items
 }
 
 export async function fetchRoleById(role_id: number) {
