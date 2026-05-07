@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { toApiPage } from '@/utils/pagination'
 import type { CtpatReportRow } from './reports.types'
 import { fetchCtpatReportRows, fetchCtpatRouteFilterOptions } from './reports.api'
 
@@ -27,6 +28,7 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
 
     first: 0,
     rowsPerPage: 25,
+    totalRecords: 0,
     areaFilterOptions: [] as { label: string; value: string }[],
     routeFilterOptions: [] as { label: string; value: string; areaName: string }[],
     routeFilterOptionsLoading: false,
@@ -130,10 +132,15 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
     async load() {
       this.loading = true
       try {
-        this.rows = await fetchCtpatReportRows({
+        const result = await fetchCtpatReportRows({
           reportAtFrom: this.filterDateFrom,
           reportAtTo: this.filterDateTo,
+          page: toApiPage(this.first, this.rowsPerPage),
+          pageSize: this.rowsPerPage,
         })
+
+        this.rows = result.items
+        this.totalRecords = result.totalCount
       } finally {
         this.loading = false
       }
@@ -146,10 +153,16 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
       this.filterDateFrom = startOfToday()
       this.filterDateTo = endOfToday()
       this.first = 0
+      this.totalRecords = 0
     },
 
     setFirst(first: number) {
       this.first = first
+    },
+
+    setPage(first: number, rowsPerPage: number) {
+      this.first = first
+      this.rowsPerPage = rowsPerPage
     },
   },
 })

@@ -89,6 +89,7 @@ useResetFirstOnFilterChange(
 const { onPage } = usePagination({
   load: () => (hasInvalidDateFilter.value ? Promise.resolve() : store.load()),
   setFirst: (first) => store.setFirst(first),
+  setPage: (first, rows) => store.setPage(first, rows),
 })
 
 onMounted(async () => {
@@ -173,6 +174,8 @@ async function onExport() {
       dataKey="pr_id"
       :rows="store.rowsPerPage"
       :first="store.first"
+      lazy
+      :totalRecords="hasInvalidDateFilter ? 0 : store.totalRecords"
       :modelSearch="store.searchText"
       @update:modelSearch="store.searchText = $event"
       @update:columnFilter="onColumnFilter"

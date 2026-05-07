@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { toApiPage } from '@/utils/pagination'
 import {
   fetchPatrolDetailCheckpointOptions,
   fetchPatrolDetailGuardOptions,
@@ -68,6 +69,7 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
 
     first: 0,
     rowsPerPage: 25,
+    totalRecords: 0,
   }),
 
   getters: {
@@ -275,7 +277,13 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
     async load() {
       this.loading = true
       try {
-        this.rows = await fetchPatrolDetailReportRows(this.filterDateFrom, this.filterDateTo)
+        const result = await fetchPatrolDetailReportRows(this.filterDateFrom, this.filterDateTo, {
+          page: toApiPage(this.first, this.rowsPerPage),
+          pageSize: this.rowsPerPage,
+        })
+
+        this.rows = result.items
+        this.totalRecords = result.totalCount
       } finally {
         this.loading = false
       }
@@ -290,10 +298,16 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
       this.filterDateFrom = startOfToday()
       this.filterDateTo = endOfToday()
       this.first = 0
+      this.totalRecords = 0
     },
 
     setFirst(first: number) {
       this.first = first
+    },
+
+    setPage(first: number, rowsPerPage: number) {
+      this.first = first
+      this.rowsPerPage = rowsPerPage
     },
   },
 })

@@ -84,6 +84,7 @@ useResetFirstOnFilterChange(
 const { onPage } = usePagination({
   load: () => (hasInvalidDateFilter.value ? Promise.resolve() : store.load()),
   setFirst: (first) => store.setFirst(first),
+  setPage: (first, rows) => store.setPage(first, rows),
 })
 
 onMounted(async () => {
@@ -223,6 +224,8 @@ function onColumnFilter(payload: { key: string; value: any }) {
       dataKey="row_id"
       :rows="store.rowsPerPage"
       :first="store.first"
+      lazy
+      :totalRecords="hasInvalidDateFilter ? 0 : store.totalRecords"
       :showSearch="false"
       @update:columnFilter="onColumnFilter"
       :beforeFilterOpen="onFilterOpen"

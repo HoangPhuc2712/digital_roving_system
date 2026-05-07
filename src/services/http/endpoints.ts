@@ -25,7 +25,7 @@ export const endpoints = {
     delete: (roleId: number | string) => `/role/delete/${roleId}`,
   },
   roleView: {
-    getList: '/roleview/getlist',
+    getList: '/roleview/getqueryresult',
     getOne: (roleId: number | string) => `/roleview/getone/${roleId}`,
   },
   area: {
@@ -35,7 +35,7 @@ export const endpoints = {
     getBaseList: '/area/getbaselist',
   },
   areaView: {
-    getList: '/areaview/getlist',
+    getList: '/areaview/getqueryresult',
     getOne: (areaId: number | string) => `/areaview/getone/${areaId}`,
   },
   checkPoint: {
@@ -56,7 +56,7 @@ export const endpoints = {
     delete: (routeId: number | string) => `/route/delete/${routeId}`,
   },
   routeView: {
-    getList: '/routeview/getlist',
+    getList: '/routeview/getqueryresult',
     getOne: (routeId: number | string) => `/routeview/getone/${routeId}`,
   },
   pointReportView: {

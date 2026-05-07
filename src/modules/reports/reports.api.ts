@@ -233,7 +233,32 @@ type PatrolSummaryDetailContext = {
   >
 }
 
-type FetchCtpatReportRowsParams = {
+type ApiPageParams = {
+  page?: number
+  pageSize?: number
+}
+
+type ApiQueryResultData<T> = {
+  items?: T[]
+  totalCount?: number
+  page?: number
+  pageSize?: number
+  totalPage?: number
+  hasNextPage?: boolean
+  hasPreviousPage?: boolean
+}
+
+type ApiPagedResult<T> = {
+  items: T[]
+  totalCount: number
+  page: number
+  pageSize: number
+  totalPage: number
+  hasNextPage: boolean
+  hasPreviousPage: boolean
+}
+
+type FetchCtpatReportRowsParams = ApiPageParams & {
   reportAtFrom?: Date | null
   reportAtTo?: Date | null
 }
@@ -300,6 +325,53 @@ function asArray<T>(value: T | T[] | null | undefined): T[] {
   if (Array.isArray(value)) return value
   if (value == null) return []
   return [value]
+}
+
+function normalizePagedData<T>(
+  value: T | T[] | ApiQueryResultData<T> | null | undefined,
+): ApiPagedResult<T> {
+  if (value && typeof value === 'object' && !Array.isArray(value) && 'items' in value) {
+    const data = value as ApiQueryResultData<T>
+    const items = asArray(data.items ?? [])
+    const totalCount = Number(data.totalCount ?? items.length)
+    const page = Number(data.page ?? 0)
+    const pageSize = Number(data.pageSize ?? items.length)
+    const totalPage = Number(
+      data.totalPage ?? (pageSize > 0 ? Math.ceil(totalCount / pageSize) : 1),
+    )
+
+    return {
+      items,
+      totalCount: Number.isFinite(totalCount) ? totalCount : items.length,
+      page: Number.isFinite(page) ? page : 0,
+      pageSize: Number.isFinite(pageSize) ? pageSize : items.length,
+      totalPage: Number.isFinite(totalPage) ? totalPage : 1,
+      hasNextPage: Boolean(data.hasNextPage),
+      hasPreviousPage: Boolean(data.hasPreviousPage),
+    }
+  }
+
+  const items = asArray(value as T | T[] | null | undefined)
+
+  return {
+    items,
+    totalCount: items.length,
+    page: 0,
+    pageSize: items.length,
+    totalPage: 1,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  }
+}
+
+function appendPageParams(body: Record<string, any>, params: ApiPageParams = {}) {
+  if (params.page != null && Number.isFinite(Number(params.page))) {
+    body.page = Number(params.page)
+  }
+
+  if (params.pageSize != null && Number.isFinite(Number(params.pageSize))) {
+    body.pageSize = Number(params.pageSize)
+  }
 }
 
 function parseRoleIds(roleIdStr?: string): number[] {
@@ -998,8 +1070,9 @@ function normalizeCtpatView(v: ApiCtpatReportView): CtpatReportRow {
 
 export async function fetchCtpatReportRows(
   params: FetchCtpatReportRowsParams = {},
-): Promise<CtpatReportRow[]> {
+): Promise<ApiPagedResult<CtpatReportRow>> {
   const body: Record<string, any> = {}
+  appendPageParams(body, params)
 
   if (params.reportAtFrom instanceof Date && Number.isFinite(params.reportAtFrom.getTime())) {
     body.reportAtFrom = toApiDateTimeZ(params.reportAtFrom)
@@ -1010,15 +1083,21 @@ export async function fetchCtpatReportRows(
   }
 
   const res = await http.post(endpoints.report.ctpatReport, body)
-  const payload = ensureSuccess<ApiCtpatReportView[] | ApiCtpatReportView>(res.data).data
-  const views = asArray(payload)
-
-  return views.map(normalizeCtpatView).sort((a, b) => {
+  const payload = ensureSuccess<
+    ApiQueryResultData<ApiCtpatReportView> | ApiCtpatReportView[] | ApiCtpatReportView
+  >(res.data).data
+  const paged = normalizePagedData<ApiCtpatReportView>(payload)
+  const rows = paged.items.map(normalizeCtpatView).sort((a, b) => {
     if (a.start_at !== b.start_at) return a.start_at.localeCompare(b.start_at)
     if (a.end_at !== b.end_at) return a.end_at.localeCompare(b.end_at)
     if (a.scan_at !== b.scan_at) return a.scan_at.localeCompare(b.scan_at)
     return a.pr_id - b.pr_id
   })
+
+  return {
+    ...paged,
+    items: rows,
+  }
 }
 
 function normalizePatrolDetailRows(views: ApiPatrolShiftReportView[]): PatrolDetailReportRow[] {
@@ -1197,18 +1276,27 @@ async function fetchPatrolShiftReportViewsByDay(date: Date) {
     endpoints.report.patrolDetailReport,
     buildPatrolDetailReportDayBody(date),
   )
-  const payload = ensureSuccess<ApiPatrolShiftReportView[] | ApiPatrolShiftReportView>(
-    res.data,
-  ).data
-  return asArray(payload)
+  const payload = ensureSuccess<
+    | ApiQueryResultData<ApiPatrolShiftReportView>
+    | ApiPatrolShiftReportView[]
+    | ApiPatrolShiftReportView
+  >(res.data).data
+  return normalizePagedData<ApiPatrolShiftReportView>(payload).items
 }
+
+type FetchPatrolShiftReportRowsParams = ApiPageParams
 
 export async function fetchPatrolDetailReportRows(
   dateFrom?: Date | null,
   dateTo?: Date | null,
-): Promise<PatrolDetailReportRow[]> {
-  const views = await fetchPatrolShiftReportViews(dateFrom, dateTo)
-  return normalizePatrolDetailRows(views)
+  params: FetchPatrolShiftReportRowsParams = {},
+): Promise<ApiPagedResult<PatrolDetailReportRow>> {
+  const paged = await fetchPatrolShiftReportViewPage(dateFrom, dateTo, params)
+
+  return {
+    ...paged,
+    items: normalizePatrolDetailRows(paged.items),
+  }
 }
 
 function normalizeGpsLogRows(views: ApiPatrolShiftReportView[]): GpsLogRow[] {
@@ -1331,9 +1419,14 @@ function normalizeGpsLogRows(views: ApiPatrolShiftReportView[]): GpsLogRow[] {
 export async function fetchGpsLogRows(
   dateFrom?: Date | null,
   dateTo?: Date | null,
-): Promise<GpsLogRow[]> {
-  const views = await fetchPatrolShiftReportViews(dateFrom, dateTo)
-  return normalizeGpsLogRows(views)
+  params: FetchPatrolShiftReportRowsParams = {},
+): Promise<ApiPagedResult<GpsLogRow>> {
+  const paged = await fetchPatrolShiftReportViewPage(dateFrom, dateTo, params)
+
+  return {
+    ...paged,
+    items: normalizeGpsLogRows(paged.items),
+  }
 }
 
 function normalizeIncorrectScanLogRow(view: ApiIncorrectScanLogView): IncorrectScanLogRow {
@@ -1377,15 +1470,16 @@ function normalizeIncorrectScanLogRow(view: ApiIncorrectScanLogView): IncorrectS
   }
 }
 
-type FetchIncorrectScanLogRowsParams = {
+type FetchIncorrectScanLogRowsParams = ApiPageParams & {
   createdAtFrom?: Date | null
   createdAtTo?: Date | null
 }
 
 export async function fetchIncorrectScanLogRows(
   params: FetchIncorrectScanLogRowsParams = {},
-): Promise<IncorrectScanLogRow[]> {
+): Promise<ApiPagedResult<IncorrectScanLogRow>> {
   const body: Record<string, any> = {}
+  appendPageParams(body, params)
 
   if (params.createdAtFrom instanceof Date && Number.isFinite(params.createdAtFrom.getTime())) {
     body.createdAtFrom = toApiDateTimeZ(params.createdAtFrom)
@@ -1396,12 +1490,20 @@ export async function fetchIncorrectScanLogRows(
   }
 
   const res = await http.post(endpoints.report.scanCpQrLog, body)
-  const payload = ensureSuccess<ApiIncorrectScanLogView[] | ApiIncorrectScanLogView>(res.data).data
-  const views = asArray(payload)
-
-  return views
+  const payload = ensureSuccess<
+    | ApiQueryResultData<ApiIncorrectScanLogView>
+    | ApiIncorrectScanLogView[]
+    | ApiIncorrectScanLogView
+  >(res.data).data
+  const paged = normalizePagedData<ApiIncorrectScanLogView>(payload)
+  const rows = paged.items
     .map(normalizeIncorrectScanLogRow)
     .sort((a, b) => String(b.created_at ?? '').localeCompare(String(a.created_at ?? '')))
+
+  return {
+    ...paged,
+    items: rows,
+  }
 }
 
 const SECURITY_ROLE_ID = 4
@@ -1640,12 +1742,38 @@ async function fetchPlannedPatrolShiftRange(dateFrom: Date, dateTo: Date) {
 
   try {
     const res = await http.post(endpoints.patrolShiftView.getList, body)
-    const payload = ensureSuccess<ApiPlannedPatrolShiftView[] | ApiPlannedPatrolShiftView>(
-      res.data,
-    ).data
-    return dedupePlannedPatrolShiftViews(asArray(payload))
+    const payload = ensureSuccess<
+      | ApiQueryResultData<ApiPlannedPatrolShiftView>
+      | ApiPlannedPatrolShiftView[]
+      | ApiPlannedPatrolShiftView
+    >(res.data).data
+    return dedupePlannedPatrolShiftViews(
+      normalizePagedData<ApiPlannedPatrolShiftView>(payload).items,
+    )
   } catch (error) {
     return fetchPlannedPatrolShiftByDateRangeCached(dateFrom, dateTo)
+  }
+}
+
+async function fetchPatrolShiftReportViewPage(
+  dateFrom?: Date | null,
+  dateTo?: Date | null,
+  params: ApiPageParams = {},
+): Promise<ApiPagedResult<ApiPatrolShiftReportView>> {
+  const body = buildPatrolDetailReportRequestBody(dateFrom, dateTo)
+  appendPageParams(body, params)
+
+  const res = await http.post(endpoints.report.patrolDetailReport, body)
+  const payload = ensureSuccess<
+    | ApiQueryResultData<ApiPatrolShiftReportView>
+    | ApiPatrolShiftReportView[]
+    | ApiPatrolShiftReportView
+  >(res.data).data
+  const paged = normalizePagedData<ApiPatrolShiftReportView>(payload)
+
+  return {
+    ...paged,
+    items: dedupePatrolShiftReportViews(paged.items),
   }
 }
 
@@ -1655,10 +1783,14 @@ async function fetchPatrolShiftReportViews(dateFrom?: Date | null, dateTo?: Date
   if (Object.keys(body).length > 0) {
     try {
       const res = await http.post(endpoints.report.patrolDetailReport, body)
-      const payload = ensureSuccess<ApiPatrolShiftReportView[] | ApiPatrolShiftReportView>(
-        res.data,
-      ).data
-      return dedupePatrolShiftReportViews(asArray(payload))
+      const payload = ensureSuccess<
+        | ApiQueryResultData<ApiPatrolShiftReportView>
+        | ApiPatrolShiftReportView[]
+        | ApiPatrolShiftReportView
+      >(res.data).data
+      return dedupePatrolShiftReportViews(
+        normalizePagedData<ApiPatrolShiftReportView>(payload).items,
+      )
     } catch (error) {
       const range = normalizeDateRange(dateFrom, dateTo)
       if (!range) throw error
@@ -1678,10 +1810,12 @@ async function fetchPatrolShiftReportViews(dateFrom?: Date | null, dateTo?: Date
   }
 
   const res = await http.post(endpoints.report.patrolDetailReport, {})
-  const payload = ensureSuccess<ApiPatrolShiftReportView[] | ApiPatrolShiftReportView>(
-    res.data,
-  ).data
-  return dedupePatrolShiftReportViews(asArray(payload))
+  const payload = ensureSuccess<
+    | ApiQueryResultData<ApiPatrolShiftReportView>
+    | ApiPatrolShiftReportView[]
+    | ApiPatrolShiftReportView
+  >(res.data).data
+  return dedupePatrolShiftReportViews(normalizePagedData<ApiPatrolShiftReportView>(payload).items)
 }
 
 async function fetchPlannedPatrolShiftByDate(date: Date) {
@@ -1694,10 +1828,12 @@ async function fetchPlannedPatrolShiftByDate(date: Date) {
 
   const res = await http.post(endpoints.patrolShiftView.getList, body)
 
-  const payload = ensureSuccess<ApiPlannedPatrolShiftView[] | ApiPlannedPatrolShiftView>(
-    res.data,
-  ).data
-  return asArray(payload)
+  const payload = ensureSuccess<
+    | ApiQueryResultData<ApiPlannedPatrolShiftView>
+    | ApiPlannedPatrolShiftView[]
+    | ApiPlannedPatrolShiftView
+  >(res.data).data
+  return normalizePagedData<ApiPlannedPatrolShiftView>(payload).items
 }
 
 function hasActualPatrolData(view: ApiPlannedPatrolShiftView) {
