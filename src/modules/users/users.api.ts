@@ -1,6 +1,12 @@
 import type { AxiosError } from 'axios'
 import { http } from '@/services/http/axios'
 import { endpoints } from '@/services/http/endpoints'
+import {
+  appendPageParams,
+  normalizePagedData,
+  type ApiPageParams,
+  type ApiPagedResult,
+} from '@/utils/pagination'
 import type { UserRow } from './users.types'
 
 type ApiEnvelope<T> = {
@@ -79,59 +85,103 @@ function apiStatusToUi(status?: number) {
   return 0
 }
 
-export async function fetchUserRows(): Promise<UserRow[]> {
-  const viewRes = await http.post(endpoints.userView.getList, {})
+type FetchUserRowsParams = ApiPageParams & {
+  userKeyword?: string | null
+  userCode?: string | null
+  userRoleId?: number | null
+  userAreaId?: number | null
+}
 
-  const payload = ensureSuccess<ApiUserView[] | ApiUserView>(viewRes.data).data ?? []
-  const views = Array.isArray(payload) ? payload : [payload]
+function normalizeUserView(v: ApiUserView): UserRow {
+  const userId = String(v.userId ?? '')
+  const userName = String(v.userName ?? '')
+  const userCode = String(v.userCode ?? '')
+  const userKeyword = String(v.userKeyword ?? '')
 
-  return views
-    .map((v) => {
-      const userId = String(v.userId ?? '')
-      const userName = String(v.userName ?? '')
-      const userCode = String(v.userCode ?? '')
-      const userKeyword = String(v.userKeyword ?? '')
+  const roleId = Number(v.userRoleId ?? 0)
+  const roleName = String(v.userRoleName ?? '')
+  const roleCode = String(v.userRoleCode ?? '')
 
-      const roleId = Number(v.userRoleId ?? 0)
-      const roleName = String(v.userRoleName ?? '')
-      const roleCode = String(v.userRoleCode ?? '')
+  const areaId = Number(v.userAreaId ?? 0)
+  const areaName = String(v.userAreaName ?? '')
+  const areaCode = String(v.userAreaCode ?? '')
 
-      const areaId = Number(v.userAreaId ?? 0)
-      const areaName = String(v.userAreaName ?? '')
-      const areaCode = String(v.userAreaCode ?? '')
+  const status = apiStatusToUi((v as any)?.userStatus ?? (v as any)?.user_status)
 
-      const status = apiStatusToUi((v as any)?.userStatus ?? (v as any)?.user_status)
+  return {
+    user_id: userId,
+    user_name: userName,
+    user_code: userCode,
+    user_keyword: userKeyword,
 
-      return {
-        user_id: userId,
-        user_name: userName,
-        user_code: userCode,
-        user_keyword: userKeyword,
+    user_role_id: roleId,
+    role_name: roleName,
+    role_code: roleCode,
 
-        user_role_id: roleId,
-        role_name: roleName,
-        role_code: roleCode,
+    user_area_id: areaId,
+    area_name: areaName,
+    area_code: areaCode,
 
-        user_area_id: areaId,
-        area_name: areaName,
-        area_code: areaCode,
+    user_status: status,
+    created_date: v.createdAt ?? nowIso(),
+    updated_date: v.updatedAt ?? nowIso(),
 
-        user_status: status,
-        created_date: v.createdAt ?? nowIso(),
-        updated_date: v.updatedAt ?? nowIso(),
+    _q: normalizeSearch({
+      user_name: userName,
+      user_code: userCode,
+      user_keyword: userKeyword,
+      role_name: roleName,
+      role_code: roleCode,
+      area_name: areaName,
+      area_code: areaCode,
+    }),
+  }
+}
 
-        _q: normalizeSearch({
-          user_name: userName,
-          user_code: userCode,
-          user_keyword: userKeyword,
-          role_name: roleName,
-          role_code: roleCode,
-          area_name: areaName,
-          area_code: areaCode,
-        }),
+export async function fetchUserRows(
+  params: FetchUserRowsParams = {},
+): Promise<ApiPagedResult<UserRow>> {
+  const body: Record<string, any> = {}
+  appendPageParams(body, params)
+
+  const userKeyword = String(params.userKeyword ?? '').trim()
+  const userCode = String(params.userCode ?? '').trim()
+
+  if (userKeyword) body.userKeyword = userKeyword
+  if (userCode) body.userCode = userCode
+
+  if (params.userRoleId != null && Number.isFinite(Number(params.userRoleId))) {
+    body.userRoleId = Number(params.userRoleId)
+  }
+
+  if (params.userAreaId != null && Number.isFinite(Number(params.userAreaId))) {
+    body.userAreaId = Number(params.userAreaId)
+  }
+
+  const viewRes = await http.post(endpoints.userView.getList, body)
+
+  const payload = ensureSuccess<
+    | ApiUserView[]
+    | ApiUserView
+    | {
+        items?: ApiUserView[]
+        totalCount?: number
+        page?: number
+        pageSize?: number
+        totalPage?: number
+        hasNextPage?: boolean
+        hasPreviousPage?: boolean
       }
-    })
+  >(viewRes.data).data
+  const paged = normalizePagedData<ApiUserView>(payload)
+  const rows = paged.items
+    .map(normalizeUserView)
     .sort((a, b) => a.user_name.localeCompare(b.user_name))
+
+  return {
+    ...paged,
+    items: rows,
+  }
 }
 
 export async function fetchUserById(user_id: string) {
@@ -250,9 +300,11 @@ export async function fetchRoleOptions() {
 type ApiAreaViewOption = { areaId?: number; areaCode?: string; areaName?: string }
 
 export async function fetchAreaOptions() {
-  const res = await http.post(endpoints.areaView.getList, {})
-  const list = ensureSuccess<ApiAreaViewOption[] | ApiAreaViewOption>(res.data).data ?? []
-  const views = Array.isArray(list) ? list : [list]
+  const res = await http.post(endpoints.areaView.getList, { page: 1, pageSize: 100000 })
+  const list = ensureSuccess<
+    ApiAreaViewOption[] | ApiAreaViewOption | { items?: ApiAreaViewOption[] }
+  >(res.data).data
+  const views = normalizePagedData<ApiAreaViewOption>(list).items
 
   return views
     .map((a) => ({

@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { toApiPage } from '@/utils/pagination'
 import {
   fetchPatrolDetailCheckpointOptions,
   fetchReportAreaOptions,
@@ -23,6 +24,7 @@ function endOfToday() {
 export const useReportsStore = defineStore('reports', {
   state: () => ({
     rows: [] as ReportRow[],
+    totalRecords: 0,
     loading: false,
 
     searchText: '' as string,
@@ -284,12 +286,19 @@ export const useReportsStore = defineStore('reports', {
         const prHasProblem =
           effectiveResult === 'OK' ? false : effectiveResult === 'NOT_OK' ? true : null
 
-        this.rows = await fetchReportRows({
+        const result = await fetchReportRows({
+          page: toApiPage(this.first, this.rowsPerPage),
+          pageSize: this.rowsPerPage,
           reportAtFrom: from,
           reportAtTo: to,
           prStatus: this.filterIssueStatus,
           prHasProblem,
+          areaId: this.filterAreaId,
+          cpName: this.filterCheckPointName,
         })
+
+        this.rows = result.items
+        this.totalRecords = result.totalCount
       } finally {
         this.loading = false
       }
@@ -306,10 +315,16 @@ export const useReportsStore = defineStore('reports', {
       this.filterDateFrom = startOfToday()
       this.filterDateTo = endOfToday()
       this.first = 0
+      this.totalRecords = 0
     },
 
     setFirst(first: number) {
       this.first = first
+    },
+
+    setPage(first: number, rowsPerPage: number) {
+      this.first = first
+      this.rowsPerPage = rowsPerPage
     },
 
     deleteLocal(pr_id: number) {

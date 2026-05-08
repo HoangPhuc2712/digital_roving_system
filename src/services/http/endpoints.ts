@@ -15,7 +15,7 @@ export const endpoints = {
     getOne: (userId: string) => `/userbaseview/getone/${userId}`,
   },
   userView: {
-    getList: '/userview/getlist',
+    getList: '/userview/getqueryresult',
     getOne: (userId: string) => `/userview/getone/${userId}`,
   },
   role: {
@@ -47,7 +47,7 @@ export const endpoints = {
     getBaseList: '/checkpoint/getbaselist',
   },
   checkPointView: {
-    getList: '/checkpointview/getlist',
+    getList: '/checkpointview/getqueryresult',
     getOne: (cpwId: number | string) => `/checkpointview/getone/${cpwId}`,
   },
   route: {
@@ -60,7 +60,7 @@ export const endpoints = {
     getOne: (routeId: number | string) => `/routeview/getone/${routeId}`,
   },
   pointReportView: {
-    getList: '/pointreportview/getlist',
+    getList: '/pointreportview/getqueryresult',
     getOne: (prId: number | string) => `/pointreportview/getone/${prId}`,
   },
   patrolShiftView: {

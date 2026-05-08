@@ -737,15 +737,20 @@ function toApiDateTimeZ(value: Date) {
   return `${y}-${m}-${d}T${hh}:${mm}:${ss}.${ms}Z`
 }
 
-type FetchReportRowsParams = {
+type FetchReportRowsParams = ApiPageParams & {
   reportAtFrom?: Date | null
   reportAtTo?: Date | null
   prStatus?: number | null
   prHasProblem?: boolean | null
+  areaId?: number | null
+  cpName?: string | null
 }
 
-export async function fetchReportRows(params: FetchReportRowsParams = {}): Promise<ReportRow[]> {
+export async function fetchReportRows(
+  params: FetchReportRowsParams = {},
+): Promise<ApiPagedResult<ReportRow>> {
   const body: Record<string, any> = {}
+  appendPageParams(body, params)
 
   if (params.reportAtFrom instanceof Date && Number.isFinite(params.reportAtFrom.getTime())) {
     body.reportAtFrom = toApiDateTimeZ(params.reportAtFrom)
@@ -762,11 +767,24 @@ export async function fetchReportRows(params: FetchReportRowsParams = {}): Promi
     body.prHasProblem = params.prHasProblem
   }
 
-  const res = await http.post(endpoints.pointReportView.getList, body)
-  const payload = ensureSuccess<ApiPointReportView[] | ApiPointReportView>(res.data).data
-  const views = asArray(payload)
+  if (params.areaId != null && Number.isFinite(Number(params.areaId))) {
+    body.areaId = Number(params.areaId)
+  }
 
-  return views.map(normalizeView).sort((a, b) => (a.report_at < b.report_at ? 1 : -1))
+  const cpName = String(params.cpName ?? '').trim()
+  if (cpName) body.cpName = cpName
+
+  const res = await http.post(endpoints.pointReportView.getList, body)
+  const payload = ensureSuccess<
+    ApiQueryResultData<ApiPointReportView> | ApiPointReportView[] | ApiPointReportView
+  >(res.data).data
+  const paged = normalizePagedData<ApiPointReportView>(payload)
+  const rows = paged.items.map(normalizeView).sort((a, b) => (a.report_at < b.report_at ? 1 : -1))
+
+  return {
+    ...paged,
+    items: rows,
+  }
 }
 
 export async function fetchReportRowById(pr_id: number): Promise<ReportRow | null> {
@@ -859,9 +877,11 @@ export async function fetchReportRouteFilterOptions(): Promise<{
   areaOptions: { label: string; value: number }[]
   routeOptions: { label: string; value: string; areaId: number; searchText?: string }[]
 }> {
-  const res = await http.post(endpoints.routeView.getList, {})
-  const list = ensureSuccess<ApiRouteFilterView[] | ApiRouteFilterView>(res.data).data
-  const items = asArray(list)
+  const res = await http.post(endpoints.routeView.getList, { page: 1, pageSize: 100000 })
+  const list = ensureSuccess<
+    ApiQueryResultData<ApiRouteFilterView> | ApiRouteFilterView[] | ApiRouteFilterView
+  >(res.data).data
+  const items = normalizePagedData<ApiRouteFilterView>(list).items
 
   const areaSeen = new Set<number>()
   const routeSeen = new Set<string>()
@@ -906,9 +926,11 @@ export async function fetchCtpatRouteFilterOptions(): Promise<{
   areaOptions: { label: string; value: string }[]
   routeOptions: { label: string; value: string; areaName: string; searchText?: string }[]
 }> {
-  const res = await http.post(endpoints.routeView.getList, {})
-  const list = ensureSuccess<ApiRouteFilterView[] | ApiRouteFilterView>(res.data).data
-  const items = asArray(list)
+  const res = await http.post(endpoints.routeView.getList, { page: 1, pageSize: 100000 })
+  const list = ensureSuccess<
+    ApiQueryResultData<ApiRouteFilterView> | ApiRouteFilterView[] | ApiRouteFilterView
+  >(res.data).data
+  const items = normalizePagedData<ApiRouteFilterView>(list).items
 
   const areaSeen = new Set<string>()
   const routeSeen = new Set<string>()
@@ -950,9 +972,11 @@ export async function fetchCtpatRouteFilterOptions(): Promise<{
 export async function fetchReportGuardOptions(): Promise<
   { label: string; value: string; searchText?: string }[]
 > {
-  const res = await http.post(endpoints.userView.getList, {})
-  const list = ensureSuccess<ApiUserViewOption[] | ApiUserViewOption>(res.data).data
-  const items = asArray(list)
+  const res = await http.post(endpoints.userView.getList, { page: 1, pageSize: 100000 })
+  const list = ensureSuccess<
+    ApiQueryResultData<ApiUserViewOption> | ApiUserViewOption[] | ApiUserViewOption
+  >(res.data).data
+  const items = normalizePagedData<ApiUserViewOption>(list).items
   const seen = new Set<string>()
 
   return items
@@ -977,9 +1001,11 @@ export async function fetchReportGuardOptions(): Promise<
 export async function fetchPatrolDetailGuardOptions(): Promise<
   { label: string; value: string; searchText?: string }[]
 > {
-  const res = await http.post(endpoints.userView.getList, {})
-  const list = ensureSuccess<ApiUserViewOption[] | ApiUserViewOption>(res.data).data
-  const items = asArray(list)
+  const res = await http.post(endpoints.userView.getList, { page: 1, pageSize: 100000 })
+  const list = ensureSuccess<
+    ApiQueryResultData<ApiUserViewOption> | ApiUserViewOption[] | ApiUserViewOption
+  >(res.data).data
+  const items = normalizePagedData<ApiUserViewOption>(list).items
   const seen = new Set<string>()
 
   return items
@@ -1007,9 +1033,13 @@ export async function fetchPatrolDetailGuardOptions(): Promise<
 export async function fetchPatrolDetailCheckpointOptions(): Promise<
   { label: string; value: string; searchText?: string }[]
 > {
-  const res = await http.post(endpoints.checkPointView.getList, {})
-  const list = ensureSuccess<ApiCheckpointViewOption[] | ApiCheckpointViewOption>(res.data).data
-  const items = asArray(list)
+  const res = await http.post(endpoints.checkPointView.getList, { page: 1, pageSize: 100000 })
+  const list = ensureSuccess<
+    | ApiQueryResultData<ApiCheckpointViewOption>
+    | ApiCheckpointViewOption[]
+    | ApiCheckpointViewOption
+  >(res.data).data
+  const items = normalizePagedData<ApiCheckpointViewOption>(list).items
   const seen = new Set<string>()
 
   return items

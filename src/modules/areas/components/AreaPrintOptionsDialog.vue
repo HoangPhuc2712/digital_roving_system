@@ -148,7 +148,7 @@ async function ensureLoaded() {
   try {
     const roles = await fetchRoleOptions().catch(() => [])
     roleOptions.value = roles
-    checkpoints.value = await fetchCheckpointRows(roles)
+    checkpoints.value = (await fetchCheckpointRows(roles, { page: 1, pageSize: 100000 })).items
     initialized.value = true
   } catch (e: any) {
     toast.add({

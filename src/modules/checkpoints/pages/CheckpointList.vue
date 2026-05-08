@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { useRoute } from 'vue-router'
 import { exportCheckpointsXlsx } from '@/services/export/checkpoints.export'
@@ -41,6 +41,24 @@ const toast = useToast()
 const store = useCheckpointsStore()
 const auth = useAuthStore()
 const exporting = ref(false)
+const filterReloadTimer = ref<number | null>(null)
+
+function clearFilterReloadTimer() {
+  if (filterReloadTimer.value != null) {
+    window.clearTimeout(filterReloadTimer.value)
+    filterReloadTimer.value = null
+  }
+}
+
+function scheduleFilterReload() {
+  clearFilterReloadTimer()
+  filterReloadTimer.value = window.setTimeout(async () => {
+    applyLockedAreaFilter()
+    await store.load()
+    applyLockedAreaFilter()
+  }, 250)
+}
+
 const DELETE_CHECKPOINT_API_DRY_RUN = false
 const { t, locale } = useI18n()
 
@@ -137,6 +155,14 @@ useResetFirstOnFilterChange(
   () => store.setFirst(0),
 )
 
+watch(
+  () => [store.filterAreaId, JSON.stringify(store.filterRoleIds), lockedAreaId.value],
+  () => {
+    store.setFirst(0)
+    scheduleFilterReload()
+  },
+)
+
 const { onPage } = usePagination({
   load: async () => {
     applyLockedAreaFilter()
@@ -144,6 +170,7 @@ const { onPage } = usePagination({
     applyLockedAreaFilter()
   },
   setFirst: (first) => store.setFirst(first),
+  setPage: (first, rows) => store.setPage(first, rows),
 })
 
 watch(
@@ -158,6 +185,10 @@ onMounted(async () => {
   applyLockedAreaFilter()
   await store.load()
   applyLockedAreaFilter()
+})
+
+onBeforeUnmount(() => {
+  clearFilterReloadTimer()
 })
 
 async function onFilterOpen(payload: { key: string }) {
@@ -541,6 +572,8 @@ async function onExport() {
       :title="pageTitle"
       :value="store.filteredRows"
       :loading="store.loading"
+      lazy
+      :totalRecords="store.totalRecords"
       dataKey="cp_id"
       :rows="store.rowsPerPage"
       :first="store.first"

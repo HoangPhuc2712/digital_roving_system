@@ -1,6 +1,12 @@
 import type { AxiosError } from 'axios'
 import { http } from '@/services/http/axios'
 import { endpoints } from '@/services/http/endpoints'
+import {
+  appendPageParams,
+  normalizePagedData,
+  type ApiPageParams,
+  type ApiPagedResult,
+} from '@/utils/pagination'
 import type { CheckpointRow, AreaOption, RoleOption } from './checkpoints.types'
 
 type ApiEnvelope<T> = { data: T; success: boolean; message: string }
@@ -126,51 +132,90 @@ export async function fetchRoleOptions(): Promise<RoleOption[]> {
     .sort((a, b) => a.label.localeCompare(b.label))
 }
 
+type FetchCheckpointRowsParams = ApiPageParams & {
+  areaId?: number | null
+  roleIds?: number[] | null
+}
+
+function normalizeCheckpointView(
+  v: ApiCheckPointView,
+  roleOptions: RoleOption[] = [],
+): CheckpointRow {
+  const status = apiStatusToUi(v.cpStatus)
+  const keyword = String(v.cpKeyword ?? '')
+  const areaCode = String(v.areaCode ?? '')
+  const areaName = String(v.areaName ?? '')
+  const roleIdStr = String(v.roleIdStr ?? '').trim()
+  const roleIds = parseRoleIds(roleIdStr)
+  const roleNames = extractRoleNames(v, roleOptions)
+
+  return {
+    cp_id: v.cpId,
+    cp_code: v.cpCode,
+    cp_name: v.cpName,
+    cp_keyword: keyword,
+    cp_qr: String(v.cpQr ?? ''),
+    cp_description: String(v.cpDescription ?? ''),
+    cp_priority: Number(v.cpPriority ?? 1),
+    cp_status: status,
+    area_id: Number(v.areaId ?? 0),
+    area_code: areaCode,
+    area_name: areaName,
+    role_id_str: roleIdStr,
+    role_ids: roleIds,
+    role_names: roleNames,
+    created_at: v.createdAt ?? nowIso(),
+    updated_at: v.updatedAt ?? nowIso(),
+    _q: normalizeSearch({
+      cp_keyword: keyword,
+      cp_code: v.cpCode,
+      cp_name: v.cpName,
+      cp_description: String(v.cpDescription ?? ''),
+      area_code: areaCode,
+      area_name: areaName,
+      role_names: roleNames,
+    }),
+  }
+}
+
 export async function fetchCheckpointRows(
   roleOptions: RoleOption[] = [],
-): Promise<CheckpointRow[]> {
-  const viewRes = await http.post(endpoints.checkPointView.getList, {})
-  const views = ensureSuccess<ApiCheckPointView[]>(viewRes.data).data ?? []
+  params: FetchCheckpointRowsParams = {},
+): Promise<ApiPagedResult<CheckpointRow>> {
+  const body: Record<string, any> = {}
+  appendPageParams(body, params)
 
-  return views
-    .map((v) => {
-      const status = apiStatusToUi(v.cpStatus)
-      const keyword = String(v.cpKeyword ?? '')
-      const areaCode = String(v.areaCode ?? '')
-      const areaName = String(v.areaName ?? '')
-      const roleIdStr = String(v.roleIdStr ?? '').trim()
-      const roleIds = parseRoleIds(roleIdStr)
-      const roleNames = extractRoleNames(v, roleOptions)
+  if (params.areaId != null && Number.isFinite(Number(params.areaId))) {
+    body.areaId = Number(params.areaId)
+  }
 
-      return {
-        cp_id: v.cpId,
-        cp_code: v.cpCode,
-        cp_name: v.cpName,
-        cp_keyword: keyword,
-        cp_qr: String(v.cpQr ?? ''),
-        cp_description: String(v.cpDescription ?? ''),
-        cp_priority: Number(v.cpPriority ?? 1),
-        cp_status: status,
-        area_id: Number(v.areaId ?? 0),
-        area_code: areaCode,
-        area_name: areaName,
-        role_id_str: roleIdStr,
-        role_ids: roleIds,
-        role_names: roleNames,
-        created_at: v.createdAt ?? nowIso(),
-        updated_at: v.updatedAt ?? nowIso(),
-        _q: normalizeSearch({
-          cp_keyword: keyword,
-          cp_code: v.cpCode,
-          cp_name: v.cpName,
-          cp_description: String(v.cpDescription ?? ''),
-          area_code: areaCode,
-          area_name: areaName,
-          role_names: roleNames,
-        }),
+  if (Array.isArray(params.roleIds) && params.roleIds.length > 0) {
+    body.roleIdStr = params.roleIds.map((roleId) => String(roleId)).join(',')
+  }
+
+  const viewRes = await http.post(endpoints.checkPointView.getList, body)
+  const payload = ensureSuccess<
+    | ApiCheckPointView[]
+    | ApiCheckPointView
+    | {
+        items?: ApiCheckPointView[]
+        totalCount?: number
+        page?: number
+        pageSize?: number
+        totalPage?: number
+        hasNextPage?: boolean
+        hasPreviousPage?: boolean
       }
-    })
+  >(viewRes.data).data
+  const paged = normalizePagedData<ApiCheckPointView>(payload)
+  const rows = paged.items
+    .map((view) => normalizeCheckpointView(view, roleOptions))
     .sort((a, b) => a.cp_code.localeCompare(b.cp_code))
+
+  return {
+    ...paged,
+    items: rows,
+  }
 }
 
 export async function fetchCheckpointById(cp_id: number, roleOptions: RoleOption[] = []) {

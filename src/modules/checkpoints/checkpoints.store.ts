@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { toApiPage } from '@/utils/pagination'
 import type {
   CheckpointRow,
   CheckpointStatusFilter,
@@ -11,6 +12,7 @@ import { fetchAreaOptions, fetchCheckpointRows, fetchRoleOptions } from './check
 export const useCheckpointsStore = defineStore('checkpoints', {
   state: () => ({
     rows: [] as CheckpointRow[],
+    totalRecords: 0,
     loading: false,
 
     searchText: '' as string,
@@ -108,7 +110,13 @@ export const useCheckpointsStore = defineStore('checkpoints', {
     async load() {
       this.loading = true
       try {
-        const rows = await fetchCheckpointRows()
+        const result = await fetchCheckpointRows(this.roleOptions, {
+          page: toApiPage(this.first, this.rowsPerPage),
+          pageSize: this.rowsPerPage,
+          areaId: this.filterAreaId,
+          roleIds: this.filterRoleIds,
+        })
+        const rows = result.items
 
         const fallbackAreaOptions = Array.from(
           new Map(
@@ -121,6 +129,7 @@ export const useCheckpointsStore = defineStore('checkpoints', {
           .sort((a, b) => a.label.localeCompare(b.label))
 
         this.rows = rows
+        this.totalRecords = result.totalCount
         if (!this.areaOptionsFetched && !this.areaOptions.length) {
           this.areaOptions = fallbackAreaOptions
         }
@@ -136,10 +145,16 @@ export const useCheckpointsStore = defineStore('checkpoints', {
       this.filterStatus = 'ALL'
       this.filterRoleIds = []
       this.first = 0
+      this.totalRecords = 0
     },
 
     setFirst(first: number) {
       this.first = first
+    },
+
+    setPage(first: number, rowsPerPage: number) {
+      this.first = first
+      this.rowsPerPage = rowsPerPage
     },
   },
 })

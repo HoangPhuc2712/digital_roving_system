@@ -138,7 +138,7 @@ async function openEdit(row: RoleRow) {
 }
 
 async function getAssignedUserCounts(roleIds: number[]) {
-  const users = await fetchUserRows()
+  const users = (await fetchUserRows({ page: 1, pageSize: 100000 })).items
   const counts = new Map<number, number>()
 
   for (const user of users) {
