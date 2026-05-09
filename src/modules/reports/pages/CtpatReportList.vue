@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import Column from 'primevue/column'
 import { useToast } from 'primevue/usetoast'
@@ -21,6 +21,7 @@ const auth = useAuthStore()
 const store = useCtpatReportsStore()
 const exporting = ref(false)
 const { t, locale } = useI18n()
+let dateFilterReloadTimer: ReturnType<typeof setTimeout> | null = null
 
 function translatedRouteName(value: string | null | undefined) {
   const raw = String(value ?? '')
@@ -92,6 +93,23 @@ const { onPage } = usePagination({
   setPage: (first, rows) => store.setPage(first, rows),
 })
 
+watch(
+  () => [store.filterDateFrom, store.filterDateTo],
+  ([from, to]) => {
+    if (dateFilterReloadTimer) clearTimeout(dateFilterReloadTimer)
+
+    const hasSingleDate = (from == null) !== (to == null)
+    if (hasSingleDate) return
+
+    if (from && to && from.getTime() > to.getTime()) return
+
+    dateFilterReloadTimer = setTimeout(async () => {
+      store.setFirst(0)
+      await store.load()
+    }, 250)
+  },
+)
+
 onMounted(async () => {
   await store.load()
 })
@@ -105,6 +123,7 @@ onBeforeRouteLeave(() => {
 })
 
 onBeforeUnmount(() => {
+  if (dateFilterReloadTimer) clearTimeout(dateFilterReloadTimer)
   resetPageState()
 })
 
