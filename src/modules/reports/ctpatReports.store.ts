@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { toApiPage } from '@/utils/pagination'
 import type { CtpatReportRow } from './reports.types'
 import { fetchCtpatReportRows, fetchCtpatRouteFilterOptions } from './reports.api'
 
@@ -27,13 +28,20 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
 
     first: 0,
     rowsPerPage: 25,
-    areaFilterOptions: [] as { label: string; value: string }[],
-    routeFilterOptions: [] as { label: string; value: string; areaName: string }[],
+    totalRecords: 0,
+    areaFilterOptions: [] as { label: string; value: string; areaId?: number }[],
+    routeFilterOptions: [] as {
+      label: string
+      value: string
+      areaName: string
+      routeId?: number
+      areaId?: number
+    }[],
     routeFilterOptionsLoading: false,
   }),
 
   getters: {
-    areaOptions(state): { label: string; value: string }[] {
+    areaOptions(state): { label: string; value: string; areaId?: number }[] {
       if (state.areaFilterOptions.length) return state.areaFilterOptions
 
       const seen = new Set<string>()
@@ -53,7 +61,16 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
       return this.areaOptions
     },
 
-    routeOptions(state): { label: string; value: string; areaName: string; searchText?: string }[] {
+    routeOptions(
+      state,
+    ): {
+      label: string
+      value: string
+      areaName: string
+      routeId?: number
+      areaId?: number
+      searchText?: string
+    }[] {
       if (state.routeFilterOptions.length) {
         return state.routeFilterOptions.slice().sort((a, b) => a.label.localeCompare(b.label))
       }
@@ -111,11 +128,13 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
       this.routeFilterOptionsLoading = true
       try {
         const routeFilters = await fetchCtpatRouteFilterOptions().catch(() => ({
-          areaOptions: [] as { label: string; value: string }[],
+          areaOptions: [] as { label: string; value: string; areaId?: number }[],
           routeOptions: [] as {
             label: string
             value: string
             areaName: string
+            routeId?: number
+            areaId?: number
             searchText?: string
           }[],
         }))
@@ -130,10 +149,26 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
     async load() {
       this.loading = true
       try {
-        this.rows = await fetchCtpatReportRows({
+        const selectedArea = this.areaOptions.find((option) => option.value === this.filterAreaName)
+        const selectedRoute = this.routeOptions.find(
+          (option) =>
+            option.value === this.filterRouteName &&
+            (this.filterAreaName == null || option.areaName === this.filterAreaName),
+        )
+
+        const result = await fetchCtpatReportRows({
           reportAtFrom: this.filterDateFrom,
           reportAtTo: this.filterDateTo,
+          page: toApiPage(this.first, this.rowsPerPage),
+          pageSize: this.rowsPerPage,
+          areaId: selectedArea?.areaId ?? null,
+          routeId: selectedRoute?.routeId ?? null,
+          areaName: this.filterAreaName,
+          routeName: this.filterRouteName,
         })
+
+        this.rows = result.items
+        this.totalRecords = result.totalCount
       } finally {
         this.loading = false
       }
@@ -146,10 +181,16 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
       this.filterDateFrom = startOfToday()
       this.filterDateTo = endOfToday()
       this.first = 0
+      this.totalRecords = 0
     },
 
     setFirst(first: number) {
       this.first = first
+    },
+
+    setPage(first: number, rowsPerPage: number) {
+      this.first = first
+      this.rowsPerPage = rowsPerPage
     },
   },
 })

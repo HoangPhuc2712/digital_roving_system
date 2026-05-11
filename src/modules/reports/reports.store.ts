@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { toApiPage } from '@/utils/pagination'
 import {
   fetchPatrolDetailCheckpointOptions,
   fetchReportAreaOptions,
@@ -23,6 +24,7 @@ function endOfToday() {
 export const useReportsStore = defineStore('reports', {
   state: () => ({
     rows: [] as ReportRow[],
+    totalRecords: 0,
     loading: false,
 
     searchText: '' as string,
@@ -40,9 +42,19 @@ export const useReportsStore = defineStore('reports', {
     rowsPerPage: 25,
 
     areaFilterOptions: [] as { label: string; value: number }[],
-    routeFilterOptions: [] as { label: string; value: string; areaId: number }[],
-    checkPointFilterOptions: [] as { label: string; value: string; searchText?: string }[],
-    guardFilterOptions: [] as { label: string; value: string; searchText?: string }[],
+    routeFilterOptions: [] as { label: string; value: string; areaId: number; routeId?: number }[],
+    checkPointFilterOptions: [] as {
+      label: string
+      value: string
+      cpId?: number
+      searchText?: string
+    }[],
+    guardFilterOptions: [] as {
+      label: string
+      value: string
+      userId?: string
+      searchText?: string
+    }[],
 
     routeFilterOptionsLoading: false,
     checkPointFilterOptionsLoading: false,
@@ -74,13 +86,21 @@ export const useReportsStore = defineStore('reports', {
       return this.areaOptions
     },
 
-    routeOptions(state): { label: string; value: string; areaId: number; searchText?: string }[] {
+    routeOptions(
+      state,
+    ): { label: string; value: string; areaId: number; routeId?: number; searchText?: string }[] {
       if (state.routeFilterOptions.length) {
         return state.routeFilterOptions.slice().sort((a, b) => a.label.localeCompare(b.label))
       }
 
       const seen = new Set<string>()
-      const options: { label: string; value: string; areaId: number; searchText?: string }[] = []
+      const options: {
+        label: string
+        value: string
+        areaId: number
+        routeId?: number
+        searchText?: string
+      }[] = []
 
       for (const r of this.visibleRows) {
         const value = String(r.route_name ?? '').trim()
@@ -95,7 +115,7 @@ export const useReportsStore = defineStore('reports', {
       return options.sort((a, b) => a.label.localeCompare(b.label))
     },
 
-    guardOptions(state): { label: string; value: string; searchText?: string }[] {
+    guardOptions(state): { label: string; value: string; userId?: string; searchText?: string }[] {
       if (state.guardFilterOptions.length) return state.guardFilterOptions
 
       const seen = new Map<string, string>()
@@ -132,7 +152,9 @@ export const useReportsStore = defineStore('reports', {
       return map
     },
 
-    checkPointOptions(state): { label: string; value: string; searchText?: string }[] {
+    checkPointOptions(
+      state,
+    ): { label: string; value: string; cpId?: number; searchText?: string }[] {
       if (state.checkPointFilterOptions.length) return state.checkPointFilterOptions
 
       const seen = new Set<string>()
@@ -198,13 +220,20 @@ export const useReportsStore = defineStore('reports', {
           .trim()
           .toLowerCase()
         if (guardNameQuery) {
-          const reportName = String(r.report_name ?? '').trim()
-          const guardSearchText = String(this.guardSearchTextMap[reportName] ?? reportName)
-            .trim()
-            .toLowerCase()
+          const selectedGuard = this.guardOptions.find(
+            (option) => option.value === this.filterGuardId,
+          )
+          if (selectedGuard?.userId) {
+            if (String(r.created_by ?? '').trim() !== selectedGuard.userId) return false
+          } else {
+            const reportName = String(r.report_name ?? '').trim()
+            const guardSearchText = String(this.guardSearchTextMap[reportName] ?? reportName)
+              .trim()
+              .toLowerCase()
 
-          if (!guardSearchText.includes(guardNameQuery)) {
-            return false
+            if (!guardSearchText.includes(guardNameQuery)) {
+              return false
+            }
           }
         }
 
@@ -233,6 +262,7 @@ export const useReportsStore = defineStore('reports', {
             label: string
             value: string
             areaId: number
+            routeId?: number
             searchText?: string
           }[],
         }))
@@ -284,12 +314,34 @@ export const useReportsStore = defineStore('reports', {
         const prHasProblem =
           effectiveResult === 'OK' ? false : effectiveResult === 'NOT_OK' ? true : null
 
-        this.rows = await fetchReportRows({
+        const selectedRoute = this.routeOptions.find(
+          (option) =>
+            option.value === this.filterRouteName &&
+            (this.filterAreaId == null || option.areaId === this.filterAreaId),
+        )
+        const selectedCheckPoint = this.checkPointOptions.find(
+          (option) => option.value === this.filterCheckPointName,
+        )
+        const selectedGuard = this.guardOptions.find(
+          (option) => option.value === this.filterGuardId,
+        )
+
+        const result = await fetchReportRows({
+          page: toApiPage(this.first, this.rowsPerPage),
+          pageSize: this.rowsPerPage,
           reportAtFrom: from,
           reportAtTo: to,
           prStatus: this.filterIssueStatus,
           prHasProblem,
+          areaId: this.filterAreaId,
+          routeId: selectedRoute?.routeId ?? null,
+          cpId: selectedCheckPoint?.cpId ?? null,
+          cpName: this.filterCheckPointName,
+          reportBy: selectedGuard?.userId ?? this.filterGuardId,
         })
+
+        this.rows = result.items
+        this.totalRecords = result.totalCount
       } finally {
         this.loading = false
       }
@@ -306,10 +358,16 @@ export const useReportsStore = defineStore('reports', {
       this.filterDateFrom = startOfToday()
       this.filterDateTo = endOfToday()
       this.first = 0
+      this.totalRecords = 0
     },
 
     setFirst(first: number) {
       this.first = first
+    },
+
+    setPage(first: number, rowsPerPage: number) {
+      this.first = first
+      this.rowsPerPage = rowsPerPage
     },
 
     deleteLocal(pr_id: number) {

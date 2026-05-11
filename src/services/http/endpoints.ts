@@ -15,7 +15,7 @@ export const endpoints = {
     getOne: (userId: string) => `/userbaseview/getone/${userId}`,
   },
   userView: {
-    getList: '/userview/getlist',
+    getList: '/userview/getqueryresult',
     getOne: (userId: string) => `/userview/getone/${userId}`,
   },
   role: {
@@ -25,7 +25,7 @@ export const endpoints = {
     delete: (roleId: number | string) => `/role/delete/${roleId}`,
   },
   roleView: {
-    getList: '/roleview/getlist',
+    getList: '/roleview/getqueryresult',
     getOne: (roleId: number | string) => `/roleview/getone/${roleId}`,
   },
   area: {
@@ -35,7 +35,7 @@ export const endpoints = {
     getBaseList: '/area/getbaselist',
   },
   areaView: {
-    getList: '/areaview/getlist',
+    getList: '/areaview/getqueryresult',
     getOne: (areaId: number | string) => `/areaview/getone/${areaId}`,
   },
   checkPoint: {
@@ -47,7 +47,7 @@ export const endpoints = {
     getBaseList: '/checkpoint/getbaselist',
   },
   checkPointView: {
-    getList: '/checkpointview/getlist',
+    getList: '/checkpointview/getqueryresult',
     getOne: (cpwId: number | string) => `/checkpointview/getone/${cpwId}`,
   },
   route: {
@@ -56,11 +56,11 @@ export const endpoints = {
     delete: (routeId: number | string) => `/route/delete/${routeId}`,
   },
   routeView: {
-    getList: '/routeview/getlist',
+    getList: '/routeview/getqueryresult',
     getOne: (routeId: number | string) => `/routeview/getone/${routeId}`,
   },
   pointReportView: {
-    getList: '/pointreportview/getlist',
+    getList: '/pointreportview/getqueryresult',
     getOne: (prId: number | string) => `/pointreportview/getone/${prId}`,
   },
   patrolShiftView: {

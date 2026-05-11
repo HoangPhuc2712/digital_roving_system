@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
+import { toApiPage } from '@/utils/pagination'
 import type { AreaOption, RoleOption, RouteRow, RouteStatusFilter } from './routes.types'
-import { fetchAreaOptions, fetchRoleOptions, fetchRouteRows } from './routes.api'
+import { fetchAreaOptions, fetchRoleOptions, fetchRouteRowsPaged } from './routes.api'
 
 export const useRoutesStore = defineStore('routes', {
   state: () => ({
@@ -22,6 +23,7 @@ export const useRoutesStore = defineStore('routes', {
 
     first: 0,
     rowsPerPage: 25,
+    totalRecords: 0,
   }),
 
   getters: {
@@ -72,7 +74,18 @@ export const useRoutesStore = defineStore('routes', {
     async load() {
       this.loading = true
       try {
-        const rows = await fetchRouteRows()
+        const routeStatus =
+          this.filterStatus === 'ACTIVE' ? 0 : this.filterStatus === 'INACTIVE' ? 1 : null
+
+        const result = await fetchRouteRowsPaged([], {
+          page: toApiPage(this.first, this.rowsPerPage),
+          pageSize: this.rowsPerPage,
+          routeKeyword: this.searchText,
+          areaId: this.filterAreaId,
+          roleId: this.filterRoleId,
+          routeStatus,
+        })
+        const rows = result.items
 
         const fallbackAreaOptions = Array.from(
           new Map(
@@ -95,6 +108,7 @@ export const useRoutesStore = defineStore('routes', {
           .sort((a, b) => a.label.localeCompare(b.label))
 
         this.rows = rows
+        this.totalRecords = result.totalCount
         if (!this.areaOptionsFetched && !this.areaOptions.length) {
           this.areaOptions = fallbackAreaOptions
         }
@@ -116,6 +130,11 @@ export const useRoutesStore = defineStore('routes', {
 
     setFirst(first: number) {
       this.first = first
+    },
+
+    setPage(first: number, rowsPerPage: number) {
+      this.first = first
+      this.rowsPerPage = rowsPerPage
     },
   },
 })

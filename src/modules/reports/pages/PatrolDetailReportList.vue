@@ -84,6 +84,7 @@ useResetFirstOnFilterChange(
 const { onPage } = usePagination({
   load: () => (hasInvalidDateFilter.value ? Promise.resolve() : store.load()),
   setFirst: (first) => store.setFirst(first),
+  setPage: (first, rows) => store.setPage(first, rows),
 })
 
 onMounted(async () => {
@@ -108,6 +109,24 @@ watch(
   () => {
     if (!autoLoadEnabled.value) return
     if (!store.filterDateFrom || !store.filterDateTo) return
+    if (hasInvalidDateFilter.value) return
+
+    clearFilterLoadTimer()
+    filterLoadTimer = setTimeout(async () => {
+      await store.load()
+    }, 250)
+  },
+)
+
+watch(
+  () => [
+    store.filterAreaId,
+    store.filterRouteName,
+    store.filterCheckPointName,
+    store.filterGuardName,
+  ],
+  () => {
+    if (!autoLoadEnabled.value) return
     if (hasInvalidDateFilter.value) return
 
     clearFilterLoadTimer()
@@ -223,6 +242,8 @@ function onColumnFilter(payload: { key: string; value: any }) {
       dataKey="row_id"
       :rows="store.rowsPerPage"
       :first="store.first"
+      lazy
+      :totalRecords="hasInvalidDateFilter ? 0 : store.totalRecords"
       :showSearch="false"
       @update:columnFilter="onColumnFilter"
       :beforeFilterOpen="onFilterOpen"
@@ -371,8 +392,12 @@ function onColumnFilter(payload: { key: string; value: any }) {
         sortField="report_name"
         :filterMenu="{
           key: 'guardName',
-          type: 'text',
+          type: 'select',
           value: store.filterGuardName,
+          options: store.guardOptions,
+          filter: true,
+          filterField: 'searchText',
+          filterMatchMode: 'contains',
           placeholder: t('patrolDetailReport.guardName'),
         }"
       />

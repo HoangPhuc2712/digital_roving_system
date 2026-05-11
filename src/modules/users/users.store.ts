@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { toApiPage } from '@/utils/pagination'
 import type { UserRow } from './users.types'
 import { fetchAreaOptions, fetchRoleOptions, fetchUserRows } from './users.api'
 
@@ -8,6 +9,7 @@ let areaOptionsPromise: Promise<{ label: string; value: number }[]> | null = nul
 export const useUsersStore = defineStore('users', {
   state: () => ({
     rows: [] as UserRow[],
+    totalRecords: 0,
     loading: false,
 
     searchText: '' as string,
@@ -66,7 +68,20 @@ export const useUsersStore = defineStore('users', {
     async load() {
       this.loading = true
       try {
-        const rows = await fetchUserRows()
+        const userKeyword = [this.searchText, this.filterUserId]
+          .map((value) => String(value ?? '').trim())
+          .filter(Boolean)
+          .join(' ')
+
+        const result = await fetchUserRows({
+          page: toApiPage(this.first, this.rowsPerPage),
+          pageSize: this.rowsPerPage,
+          userKeyword,
+          userCode: this.filterUserCode,
+          userRoleId: this.filterRoleId,
+          userAreaId: this.filterAreaId,
+        })
+        const rows = result.items
 
         const fallbackUserOptions = Array.from(
           new Map(
@@ -93,6 +108,7 @@ export const useUsersStore = defineStore('users', {
           .sort((a, b) => a.label.localeCompare(b.label))
 
         this.rows = rows
+        this.totalRecords = result.totalCount
         this.userOptions = fallbackUserOptions
         this.userCodeOptions = fallbackUserCodeOptions
       } finally {
@@ -107,6 +123,7 @@ export const useUsersStore = defineStore('users', {
       this.filterRoleId = null
       this.filterAreaId = null
       this.first = 0
+      this.totalRecords = 0
     },
 
     async ensureRoleOptionsLoaded() {
@@ -165,6 +182,11 @@ export const useUsersStore = defineStore('users', {
 
     setFirst(first: number) {
       this.first = first
+    },
+
+    setPage(first: number, rowsPerPage: number) {
+      this.first = first
+      this.rowsPerPage = rowsPerPage
     },
   },
 })

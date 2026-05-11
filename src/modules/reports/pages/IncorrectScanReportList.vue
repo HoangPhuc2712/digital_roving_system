@@ -95,6 +95,7 @@ useResetFirstOnFilterChange(
 const { onPage } = usePagination({
   load: () => (hasInvalidDateFilter.value ? Promise.resolve() : store.load()),
   setFirst: (first) => store.setFirst(first),
+  setPage: (first, rows) => store.setPage(first, rows),
 })
 
 watch(
@@ -186,6 +187,8 @@ async function onExport() {
       dataKey="scql_id"
       :rows="store.rowsPerPage"
       :first="store.first"
+      lazy
+      :totalRecords="hasInvalidDateFilter ? 0 : store.totalRecords"
       :modelSearch="store.searchText"
       :clearDisabled="store.loading"
       @update:modelSearch="store.searchText = $event"

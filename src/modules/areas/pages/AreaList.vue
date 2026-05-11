@@ -84,6 +84,7 @@ useResetFirstOnFilterChange(
 const { onPage } = usePagination({
   load: () => store.load(),
   setFirst: (first) => store.setFirst(first),
+  setPage: (first, rows) => store.setPage(first, rows),
 })
 
 onMounted(async () => {
@@ -366,7 +367,7 @@ function buildAreaPrintItems(row: AreaRow, checkpoints: CheckpointRow[]): Checkp
 async function onPrintAreaQr(row: AreaRow) {
   printingAreaId.value = row.area_id
   try {
-    const checkpoints = await fetchCheckpointRows()
+    const checkpoints = (await fetchCheckpointRows([], { page: 1, pageSize: 100000 })).items
     const items = buildAreaPrintItems(row, checkpoints)
 
     if (!items.length) {
@@ -469,6 +470,8 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
       v-model:selection="selectedAreas"
       :rows="store.rowsPerPage"
       :first="store.first"
+      lazy
+      :totalRecords="store.totalRecords"
       :modelSearch="searchDraft"
       @update:modelSearch="searchDraft = $event"
       @update:columnFilter="onColumnFilter"

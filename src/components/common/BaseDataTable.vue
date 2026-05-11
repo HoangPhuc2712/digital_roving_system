@@ -77,6 +77,8 @@
       :rowsPerPageOptions="rowsPerPageOptions"
       :paginatorTemplate="paginatorTemplate"
       :currentPageReportTemplate="currentPageReportTemplate"
+      :lazy="lazy"
+      :totalRecords="lazy ? totalRecords : undefined"
       :stateStorage="props.stateKey ? props.stateStorage : undefined"
       :stateKey="props.stateKey || undefined"
       sortMode="single"
@@ -182,6 +184,8 @@ const props = withDefaults(
     rows?: number
     first?: number
     rowsPerPageOptions?: number[]
+    lazy?: boolean
+    totalRecords?: number
     paginatorTemplate?: string
     currentPageReportTemplate?: string
     selection?: AnyRow[] | null
@@ -211,6 +215,8 @@ const props = withDefaults(
     rows: 25,
     first: 0,
     rowsPerPageOptions: () => [25, 50, 100],
+    lazy: false,
+    totalRecords: 0,
     paginatorTemplate:
       'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown',
     currentPageReportTemplate: 'Showing {first} to {last} of {totalRecords}',
@@ -235,6 +241,8 @@ const props = withDefaults(
   },
 )
 
+const lazy = computed(() => Boolean(props.lazy))
+const totalRecords = computed(() => Number(props.totalRecords ?? props.value.length ?? 0))
 const scrollable = computed(() => props.scrollable !== false)
 const scrollHeight = computed(() => {
   if (props.scrollHeight) return props.scrollHeight

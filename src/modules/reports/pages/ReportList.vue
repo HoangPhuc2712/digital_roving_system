@@ -147,6 +147,7 @@ useResetFirstOnFilterChange(
 const { onPage } = usePagination({
   load: () => (hasInvalidDateFilter.value ? Promise.resolve() : store.load()),
   setFirst: (first) => store.setFirst(first),
+  setPage: (first, rows) => store.setPage(first, rows),
 })
 
 watch(
@@ -167,6 +168,31 @@ watch(
   (next, prev) => {
     if (suppressDateReload.value) return
     if (next[0] === prev?.[0] && next[1] === prev?.[1]) return
+    store.setFirst(0)
+    if (hasInvalidDateFilter.value) {
+      clearDateReloadTimer()
+      return
+    }
+    scheduleReload()
+  },
+)
+
+watch(
+  () => [
+    store.filterAreaId,
+    store.filterRouteName,
+    store.filterCheckPointName,
+    store.filterGuardId,
+  ],
+  (next, prev) => {
+    if (suppressDateReload.value) return
+    if (
+      next[0] === prev?.[0] &&
+      next[1] === prev?.[1] &&
+      next[2] === prev?.[2] &&
+      next[3] === prev?.[3]
+    )
+      return
     store.setFirst(0)
     if (hasInvalidDateFilter.value) {
       clearDateReloadTimer()
@@ -467,6 +493,8 @@ async function onExport() {
       title=""
       :value="tableRows"
       :loading="store.loading"
+      lazy
+      :totalRecords="hasInvalidDateFilter ? 0 : store.totalRecords"
       dataKey="pr_id"
       :rows="store.rowsPerPage"
       :first="store.first"
@@ -622,8 +650,12 @@ async function onExport() {
         :header="t('reportList.table.guardName')"
         :filterMenu="{
           key: 'guardId',
-          type: 'text',
+          type: 'select',
           value: store.filterGuardId,
+          options: store.guardOptions,
+          filter: true,
+          filterField: 'searchText',
+          filterMatchMode: 'contains',
           placeholder: t('reportList.filters.guardName'),
         }"
       />

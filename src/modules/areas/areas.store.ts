@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
+import { toApiPage } from '@/utils/pagination'
 import type { AreaRow, AreaStatusFilter } from './areas.types'
-import { fetchAreaRows } from './areas.api'
+import { fetchAreaRowsPaged } from './areas.api'
 
 export const useAreasStore = defineStore('areas', {
   state: () => ({
@@ -12,6 +13,7 @@ export const useAreasStore = defineStore('areas', {
 
     first: 0,
     rowsPerPage: 25,
+    totalRecords: 0,
   }),
 
   getters: {
@@ -33,7 +35,12 @@ export const useAreasStore = defineStore('areas', {
     async load() {
       this.loading = true
       try {
-        this.rows = await fetchAreaRows()
+        const result = await fetchAreaRowsPaged({
+          page: toApiPage(this.first, this.rowsPerPage),
+          pageSize: this.rowsPerPage,
+        })
+        this.rows = result.items
+        this.totalRecords = result.totalCount
       } finally {
         this.loading = false
       }
@@ -47,6 +54,11 @@ export const useAreasStore = defineStore('areas', {
 
     setFirst(first: number) {
       this.first = first
+    },
+
+    setPage(first: number, rowsPerPage: number) {
+      this.first = first
+      this.rowsPerPage = rowsPerPage
     },
   },
 })

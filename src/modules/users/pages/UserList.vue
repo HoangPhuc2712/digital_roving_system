@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
@@ -39,6 +39,21 @@ const { t, locale } = useI18n()
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('users.manage'))
 const exporting = ref(false)
+const filterReloadTimer = ref<number | null>(null)
+
+function clearFilterReloadTimer() {
+  if (filterReloadTimer.value != null) {
+    window.clearTimeout(filterReloadTimer.value)
+    filterReloadTimer.value = null
+  }
+}
+
+function scheduleFilterReload() {
+  clearFilterReloadTimer()
+  filterReloadTimer.value = window.setTimeout(async () => {
+    await store.load()
+  }, 250)
+}
 
 const translatedRoleOptions = computed(() =>
   (store.roleOptions ?? []).map((option) => ({
@@ -69,13 +84,32 @@ useResetFirstOnFilterChange(
   () => store.setFirst(0),
 )
 
+watch(
+  () => [
+    store.searchText,
+    store.filterUserId,
+    store.filterUserCode,
+    store.filterRoleId,
+    store.filterAreaId,
+  ],
+  () => {
+    store.setFirst(0)
+    scheduleFilterReload()
+  },
+)
+
 const { onPage } = usePagination({
   load: () => store.load(),
   setFirst: (first) => store.setFirst(first),
+  setPage: (first, rows) => store.setPage(first, rows),
 })
 
 onMounted(async () => {
   await store.load()
+})
+
+onBeforeUnmount(() => {
+  clearFilterReloadTimer()
 })
 
 function statusLabel(s: number) {
@@ -350,6 +384,8 @@ function onViewPatrolPath(row: UserRow) {
       title="Users"
       :value="store.filteredRows"
       :loading="store.loading"
+      lazy
+      :totalRecords="store.totalRecords"
       dataKey="user_id"
       v-model:selection="selectedUsers"
       :rows="store.rowsPerPage"

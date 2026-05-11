@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import type { MenuCategoryOption, RoleRow, RoleStatusFilter } from './roles.types'
-import { fetchMenuCategoryOptions, fetchRoleRows } from './roles.api'
+import { toApiPage } from '@/utils/pagination'
+import { fetchMenuCategoryOptions, fetchRoleRowsPaged } from './roles.api'
 
 export const useRolesStore = defineStore('roles', {
   state: () => ({
@@ -15,6 +16,7 @@ export const useRolesStore = defineStore('roles', {
 
     first: 0,
     rowsPerPage: 25,
+    totalRecords: 0,
   }),
 
   getters: {
@@ -36,7 +38,12 @@ export const useRolesStore = defineStore('roles', {
     async load() {
       this.loading = true
       try {
-        this.rows = await fetchRoleRows()
+        const result = await fetchRoleRowsPaged({
+          page: toApiPage(this.first, this.rowsPerPage),
+          pageSize: this.rowsPerPage,
+        })
+        this.rows = result.items
+        this.totalRecords = result.totalCount
       } finally {
         this.loading = false
       }
@@ -62,6 +69,11 @@ export const useRolesStore = defineStore('roles', {
 
     setFirst(first: number) {
       this.first = first
+    },
+
+    setPage(first: number, rowsPerPage: number) {
+      this.first = first
+      this.rowsPerPage = rowsPerPage
     },
   },
 })
