@@ -387,7 +387,7 @@ async function onExport() {
   exporting.value = true
   try {
     await exportRoutesXlsx({
-      rows: store.filteredRows,
+      rows: await store.getRowsForExport(),
       fileName: `patrol_routes_${new Date().toISOString().slice(0, 10)}.xlsx`,
     })
   } catch (e: any) {

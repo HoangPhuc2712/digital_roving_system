@@ -1,10 +1,83 @@
 import { defineStore } from 'pinia'
-import { toApiPage } from '@/utils/pagination'
+import { fetchAllPagedRows, toApiPage } from '@/utils/pagination'
 import type { UserRow } from './users.types'
 import { fetchAreaOptions, fetchRoleOptions, fetchUserRows } from './users.api'
 
 let roleOptionsPromise: Promise<{ label: string; value: number }[]> | null = null
 let areaOptionsPromise: Promise<{ label: string; value: number }[]> | null = null
+
+function buildUserKeyword(searchText: string, filterUserId: string | null) {
+  return [searchText, filterUserId]
+    .map((value) => String(value ?? '').trim())
+    .filter(Boolean)
+    .join(' ')
+}
+
+function filterUserRows(
+  rows: UserRow[],
+  searchText: string,
+  filterUserId: string | null,
+  filterUserCode: string,
+  filterRoleId: number | null,
+  filterAreaId: number | null,
+) {
+  const q = searchText.trim().toLowerCase()
+
+  return rows.filter((r) => {
+    if (q && (!r._q || !r._q.includes(q))) return false
+
+    const userNameQuery = String(filterUserId ?? '')
+      .trim()
+      .toLowerCase()
+    if (
+      userNameQuery &&
+      !String(r.user_keyword ?? '')
+        .toLowerCase()
+        .includes(userNameQuery)
+    ) {
+      return false
+    }
+
+    if (
+      filterUserCode.trim() &&
+      !String(r.user_code ?? '')
+        .toLowerCase()
+        .includes(filterUserCode.trim().toLowerCase())
+    ) {
+      return false
+    }
+    if (filterRoleId != null && r.user_role_id !== filterRoleId) return false
+    if (filterAreaId != null && r.user_area_id !== filterAreaId) return false
+
+    return true
+  })
+}
+
+function buildFallbackUserOptions(rows: UserRow[]) {
+  return Array.from(
+    new Map(
+      rows
+        .filter((r) => String(r.user_id).trim() && String(r.user_name).trim())
+        .map((r) => [
+          String(r.user_id),
+          {
+            label: String(r.user_name),
+            searchText: String(r.user_keyword ?? '')
+              .toLowerCase()
+              .trim(),
+          },
+        ]),
+    ).entries(),
+  )
+    .map(([value, option]) => ({ value, ...option }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+}
+
+function buildFallbackUserCodeOptions(rows: UserRow[]) {
+  return Array.from(new Set(rows.map((r) => String(r.user_code ?? '').trim()).filter(Boolean)))
+    .map((value) => ({ value, label: value }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+}
 
 export const useUsersStore = defineStore('users', {
   state: () => ({
@@ -31,36 +104,14 @@ export const useUsersStore = defineStore('users', {
 
   getters: {
     filteredRows(state): UserRow[] {
-      const q = state.searchText.trim().toLowerCase()
-
-      return state.rows.filter((r) => {
-        if (q && (!r._q || !r._q.includes(q))) return false
-
-        const userNameQuery = String(state.filterUserId ?? '')
-          .trim()
-          .toLowerCase()
-        if (
-          userNameQuery &&
-          !String(r.user_keyword ?? '')
-            .toLowerCase()
-            .includes(userNameQuery)
-        ) {
-          return false
-        }
-
-        if (
-          state.filterUserCode.trim() &&
-          !String(r.user_code ?? '')
-            .toLowerCase()
-            .includes(state.filterUserCode.trim().toLowerCase())
-        ) {
-          return false
-        }
-        if (state.filterRoleId != null && r.user_role_id !== state.filterRoleId) return false
-        if (state.filterAreaId != null && r.user_area_id !== state.filterAreaId) return false
-
-        return true
-      })
+      return filterUserRows(
+        state.rows,
+        state.searchText,
+        state.filterUserId,
+        state.filterUserCode,
+        state.filterRoleId,
+        state.filterAreaId,
+      )
     },
   },
 
@@ -68,10 +119,7 @@ export const useUsersStore = defineStore('users', {
     async load() {
       this.loading = true
       try {
-        const userKeyword = [this.searchText, this.filterUserId]
-          .map((value) => String(value ?? '').trim())
-          .filter(Boolean)
-          .join(' ')
+        const userKeyword = buildUserKeyword(this.searchText, this.filterUserId)
 
         const result = await fetchUserRows({
           page: toApiPage(this.first, this.rowsPerPage),
@@ -83,37 +131,35 @@ export const useUsersStore = defineStore('users', {
         })
         const rows = result.items
 
-        const fallbackUserOptions = Array.from(
-          new Map(
-            rows
-              .filter((r) => String(r.user_id).trim() && String(r.user_name).trim())
-              .map((r) => [
-                String(r.user_id),
-                {
-                  label: String(r.user_name),
-                  searchText: String(r.user_keyword ?? '')
-                    .toLowerCase()
-                    .trim(),
-                },
-              ]),
-          ).entries(),
-        )
-          .map(([value, option]) => ({ value, ...option }))
-          .sort((a, b) => a.label.localeCompare(b.label))
-
-        const fallbackUserCodeOptions = Array.from(
-          new Set(rows.map((r) => String(r.user_code ?? '').trim()).filter(Boolean)),
-        )
-          .map((value) => ({ value, label: value }))
-          .sort((a, b) => a.label.localeCompare(b.label))
-
         this.rows = rows
         this.totalRecords = result.totalCount
-        this.userOptions = fallbackUserOptions
-        this.userCodeOptions = fallbackUserCodeOptions
+        this.userOptions = buildFallbackUserOptions(rows)
+        this.userCodeOptions = buildFallbackUserCodeOptions(rows)
       } finally {
         this.loading = false
       }
+    },
+
+    async getRowsForExport() {
+      const userKeyword = buildUserKeyword(this.searchText, this.filterUserId)
+      const rows = await fetchAllPagedRows((pageParams) =>
+        fetchUserRows({
+          ...pageParams,
+          userKeyword,
+          userCode: this.filterUserCode,
+          userRoleId: this.filterRoleId,
+          userAreaId: this.filterAreaId,
+        }),
+      )
+
+      return filterUserRows(
+        rows,
+        this.searchText,
+        this.filterUserId,
+        this.filterUserCode,
+        this.filterRoleId,
+        this.filterAreaId,
+      )
     },
 
     clearFilters() {

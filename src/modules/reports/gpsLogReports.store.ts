@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { toApiPage } from '@/utils/pagination'
+import { fetchAllPagedRows, toApiPage } from '@/utils/pagination'
 import {
   fetchGpsLogRows,
   fetchPatrolDetailCheckpointOptions,
@@ -315,6 +315,34 @@ export const useGpsLogReportsStore = defineStore('gpsLogReports', {
         this.totalRecords = result.totalCount
       } finally {
         this.loading = false
+      }
+    },
+
+    async getRowsForExport() {
+      const selectedRoute = this.routeOptions.find(
+        (option) =>
+          option.value === this.filterRouteName &&
+          (this.filterAreaId == null || option.areaId === this.filterAreaId),
+      )
+      const selectedGuard = this.guardOptions.find(
+        (option) => option.value === this.filterGuardName,
+      )
+
+      const rows = await fetchAllPagedRows((pageParams) =>
+        fetchGpsLogRows(this.filterDateFrom, this.filterDateTo, {
+          ...pageParams,
+          areaId: this.filterAreaId,
+          routeId: selectedRoute?.routeId ?? null,
+          reportBy: selectedGuard?.userId ?? this.filterGuardName,
+        }),
+      )
+
+      const currentRows = this.rows
+      this.rows = rows
+      try {
+        return this.filteredRows.slice()
+      } finally {
+        this.rows = currentRows
       }
     },
 

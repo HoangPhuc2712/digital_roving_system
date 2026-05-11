@@ -175,7 +175,7 @@ async function onExport() {
   exporting.value = true
   try {
     await exportCtpatReportXlsx({
-      rows: tableRows.value,
+      rows: hasInvalidDateFilter.value ? [] : await store.getRowsForExport(),
       fileName: `ctpat_reports_${new Date().toISOString().slice(0, 10)}.xlsx`,
     })
   } catch (e: any) {

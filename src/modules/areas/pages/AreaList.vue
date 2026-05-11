@@ -114,7 +114,7 @@ async function onExport() {
   exporting.value = true
   try {
     await exportAreasXlsx({
-      rows: store.filteredRows,
+      rows: await store.getRowsForExport(),
       fileName: `areas_${new Date().toISOString().slice(0, 10)}.xlsx`,
     })
   } catch (e: any) {

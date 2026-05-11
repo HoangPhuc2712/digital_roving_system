@@ -1,7 +1,20 @@
 import { defineStore } from 'pinia'
-import { toApiPage } from '@/utils/pagination'
+import { fetchAllPagedRows, toApiPage } from '@/utils/pagination'
 import type { AreaRow, AreaStatusFilter } from './areas.types'
 import { fetchAreaRowsPaged } from './areas.api'
+
+function filterAreaRows(rows: AreaRow[], searchText: string, filterStatus: AreaStatusFilter) {
+  const q = searchText.trim().toLowerCase()
+
+  return rows.filter((r) => {
+    if (q && (!r._q || !r._q.includes(q))) return false
+
+    if (filterStatus === 'ACTIVE' && r.area_status !== 1) return false
+    if (filterStatus === 'INACTIVE' && r.area_status !== 0) return false
+
+    return true
+  })
+}
 
 export const useAreasStore = defineStore('areas', {
   state: () => ({
@@ -18,16 +31,7 @@ export const useAreasStore = defineStore('areas', {
 
   getters: {
     filteredRows(state): AreaRow[] {
-      const q = state.searchText.trim().toLowerCase()
-
-      return state.rows.filter((r) => {
-        if (q && (!r._q || !r._q.includes(q))) return false
-
-        if (state.filterStatus === 'ACTIVE' && r.area_status !== 1) return false
-        if (state.filterStatus === 'INACTIVE' && r.area_status !== 0) return false
-
-        return true
-      })
+      return filterAreaRows(state.rows, state.searchText, state.filterStatus)
     },
   },
 
@@ -44,6 +48,11 @@ export const useAreasStore = defineStore('areas', {
       } finally {
         this.loading = false
       }
+    },
+
+    async getRowsForExport() {
+      const rows = await fetchAllPagedRows((pageParams) => fetchAreaRowsPaged(pageParams))
+      return filterAreaRows(rows, this.searchText, this.filterStatus)
     },
 
     clearFilters() {

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { toApiPage } from '@/utils/pagination'
+import { fetchAllPagedRows, toApiPage } from '@/utils/pagination'
 import {
   fetchPatrolDetailCheckpointOptions,
   fetchReportAreaOptions,
@@ -344,6 +344,54 @@ export const useReportsStore = defineStore('reports', {
         this.totalRecords = result.totalCount
       } finally {
         this.loading = false
+      }
+    },
+
+    async getRowsForExport() {
+      let from = this.filterDateFrom ? new Date(this.filterDateFrom) : null
+      let to = this.filterDateTo ? new Date(this.filterDateTo) : null
+
+      if (from && to && from.getTime() > to.getTime()) {
+        const tmp = from
+        from = to
+        to = tmp
+      }
+
+      const effectiveResult = this.filterIssueStatus != null ? 'NOT_OK' : this.filterResult
+      const prHasProblem =
+        effectiveResult === 'OK' ? false : effectiveResult === 'NOT_OK' ? true : null
+
+      const selectedRoute = this.routeOptions.find(
+        (option) =>
+          option.value === this.filterRouteName &&
+          (this.filterAreaId == null || option.areaId === this.filterAreaId),
+      )
+      const selectedCheckPoint = this.checkPointOptions.find(
+        (option) => option.value === this.filterCheckPointName,
+      )
+      const selectedGuard = this.guardOptions.find((option) => option.value === this.filterGuardId)
+
+      const rows = await fetchAllPagedRows((pageParams) =>
+        fetchReportRows({
+          ...pageParams,
+          reportAtFrom: from,
+          reportAtTo: to,
+          prStatus: this.filterIssueStatus,
+          prHasProblem,
+          areaId: this.filterAreaId,
+          routeId: selectedRoute?.routeId ?? null,
+          cpId: selectedCheckPoint?.cpId ?? null,
+          cpName: this.filterCheckPointName,
+          reportBy: selectedGuard?.userId ?? this.filterGuardId,
+        }),
+      )
+
+      const currentRows = this.rows
+      this.rows = rows
+      try {
+        return this.filteredRows.slice()
+      } finally {
+        this.rows = currentRows
       }
     },
 

@@ -310,7 +310,7 @@ async function onExport() {
   exporting.value = true
   try {
     await exportRolesXlsx({
-      rows: store.filteredRows,
+      rows: await store.getRowsForExport(),
       fileName: `roles_${new Date().toISOString().slice(0, 10)}.xlsx`,
     })
   } catch (e: any) {

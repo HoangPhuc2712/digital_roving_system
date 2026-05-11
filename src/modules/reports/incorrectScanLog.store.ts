@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { toApiPage } from '@/utils/pagination'
+import { fetchAllPagedRows, toApiPage } from '@/utils/pagination'
 import { fetchIncorrectScanLogRows } from './reports.api'
 import type { IncorrectScanLogRow } from './reports.types'
 
@@ -80,6 +80,33 @@ export const useIncorrectScanLogStore = defineStore('incorrectScanLog', {
         this.totalRecords = result.totalCount
       } finally {
         this.loading = false
+      }
+    },
+
+    async getRowsForExport() {
+      let from = this.filterDateFrom ? new Date(this.filterDateFrom) : null
+      let to = this.filterDateTo ? new Date(this.filterDateTo) : null
+
+      if (from && to && from.getTime() > to.getTime()) {
+        const tmp = from
+        from = to
+        to = tmp
+      }
+
+      const rows = await fetchAllPagedRows((pageParams) =>
+        fetchIncorrectScanLogRows({
+          ...pageParams,
+          createdAtFrom: from,
+          createdAtTo: to,
+        }),
+      )
+
+      const currentRows = this.rows
+      this.rows = rows
+      try {
+        return this.filteredRows.slice()
+      } finally {
+        this.rows = currentRows
       }
     },
 

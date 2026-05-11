@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { toApiPage } from '@/utils/pagination'
+import { fetchAllPagedRows, toApiPage } from '@/utils/pagination'
 import type {
   CheckpointRow,
   CheckpointStatusFilter,
@@ -8,6 +8,47 @@ import type {
   CheckpointRoleFilterValue,
 } from './checkpoints.types'
 import { fetchAreaOptions, fetchCheckpointRows, fetchRoleOptions } from './checkpoints.api'
+
+function filterCheckpointRows(
+  rows: CheckpointRow[],
+  searchText: string,
+  filterAreaId: number | null,
+  filterCheckPointName: string | null,
+  filterStatus: CheckpointStatusFilter,
+  filterRoleIds: CheckpointRoleFilterValue,
+) {
+  const q = searchText.trim().toLowerCase()
+
+  return rows.filter((r) => {
+    if (q && (!r._q || !r._q.includes(q))) return false
+
+    if (filterAreaId != null && r.area_id !== filterAreaId) return false
+    if (filterCheckPointName != null && r.cp_name !== filterCheckPointName) return false
+
+    if (filterStatus === 'ACTIVE' && r.cp_status !== 1) return false
+    if (filterStatus === 'INACTIVE' && r.cp_status !== 0) return false
+
+    if (Array.isArray(filterRoleIds) && filterRoleIds.length > 0) {
+      const roleIds = Array.isArray(r.role_ids) ? r.role_ids : []
+      const hasMatchedRole = filterRoleIds.some((roleId) => roleIds.includes(roleId))
+      if (!hasMatchedRole) return false
+    }
+
+    return true
+  })
+}
+
+function buildFallbackAreaOptions(rows: CheckpointRow[]) {
+  return Array.from(
+    new Map(
+      rows
+        .filter((r) => Number(r.area_id) > 0)
+        .map((r) => [Number(r.area_id), String(r.area_name || r.area_code || r.area_id)]),
+    ).entries(),
+  )
+    .map(([value, label]) => ({ value, label }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+}
 
 export const useCheckpointsStore = defineStore('checkpoints', {
   state: () => ({
@@ -57,26 +98,14 @@ export const useCheckpointsStore = defineStore('checkpoints', {
     },
 
     filteredRows(state): CheckpointRow[] {
-      const q = state.searchText.trim().toLowerCase()
-
-      return state.rows.filter((r) => {
-        if (q && (!r._q || !r._q.includes(q))) return false
-
-        if (state.filterAreaId != null && r.area_id !== state.filterAreaId) return false
-        if (state.filterCheckPointName != null && r.cp_name !== state.filterCheckPointName)
-          return false
-
-        if (state.filterStatus === 'ACTIVE' && r.cp_status !== 1) return false
-        if (state.filterStatus === 'INACTIVE' && r.cp_status !== 0) return false
-
-        if (Array.isArray(state.filterRoleIds) && state.filterRoleIds.length > 0) {
-          const roleIds = Array.isArray(r.role_ids) ? r.role_ids : []
-          const hasMatchedRole = state.filterRoleIds.some((roleId) => roleIds.includes(roleId))
-          if (!hasMatchedRole) return false
-        }
-
-        return true
-      })
+      return filterCheckpointRows(
+        state.rows,
+        state.searchText,
+        state.filterAreaId,
+        state.filterCheckPointName,
+        state.filterStatus,
+        state.filterRoleIds,
+      )
     },
   },
 
@@ -118,24 +147,33 @@ export const useCheckpointsStore = defineStore('checkpoints', {
         })
         const rows = result.items
 
-        const fallbackAreaOptions = Array.from(
-          new Map(
-            rows
-              .filter((r) => Number(r.area_id) > 0)
-              .map((r) => [Number(r.area_id), String(r.area_name || r.area_code || r.area_id)]),
-          ).entries(),
-        )
-          .map(([value, label]) => ({ value, label }))
-          .sort((a, b) => a.label.localeCompare(b.label))
-
         this.rows = rows
         this.totalRecords = result.totalCount
         if (!this.areaOptionsFetched && !this.areaOptions.length) {
-          this.areaOptions = fallbackAreaOptions
+          this.areaOptions = buildFallbackAreaOptions(rows)
         }
       } finally {
         this.loading = false
       }
+    },
+
+    async getRowsForExport() {
+      const rows = await fetchAllPagedRows((pageParams) =>
+        fetchCheckpointRows(this.roleOptions, {
+          ...pageParams,
+          areaId: this.filterAreaId,
+          roleIds: this.filterRoleIds,
+        }),
+      )
+
+      return filterCheckpointRows(
+        rows,
+        this.searchText,
+        this.filterAreaId,
+        this.filterCheckPointName,
+        this.filterStatus,
+        this.filterRoleIds,
+      )
     },
 
     clearFilters() {

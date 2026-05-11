@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { toApiPage } from '@/utils/pagination'
+import { fetchAllPagedRows, toApiPage } from '@/utils/pagination'
 import type { CtpatReportRow } from './reports.types'
 import { fetchCtpatReportRows, fetchCtpatRouteFilterOptions } from './reports.api'
 
@@ -61,9 +61,7 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
       return this.areaOptions
     },
 
-    routeOptions(
-      state,
-    ): {
+    routeOptions(state): {
       label: string
       value: string
       areaName: string
@@ -171,6 +169,35 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
         this.totalRecords = result.totalCount
       } finally {
         this.loading = false
+      }
+    },
+
+    async getRowsForExport() {
+      const selectedArea = this.areaOptions.find((option) => option.value === this.filterAreaName)
+      const selectedRoute = this.routeOptions.find(
+        (option) =>
+          option.value === this.filterRouteName &&
+          (this.filterAreaName == null || option.areaName === this.filterAreaName),
+      )
+
+      const rows = await fetchAllPagedRows((pageParams) =>
+        fetchCtpatReportRows({
+          ...pageParams,
+          reportAtFrom: this.filterDateFrom,
+          reportAtTo: this.filterDateTo,
+          areaId: selectedArea?.areaId ?? null,
+          routeId: selectedRoute?.routeId ?? null,
+          areaName: this.filterAreaName,
+          routeName: this.filterRouteName,
+        }),
+      )
+
+      const currentRows = this.rows
+      this.rows = rows
+      try {
+        return this.filteredRows.slice()
+      } finally {
+        this.rows = currentRows
       }
     },
 

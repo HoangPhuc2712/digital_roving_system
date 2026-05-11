@@ -1,7 +1,57 @@
 import { defineStore } from 'pinia'
-import { toApiPage } from '@/utils/pagination'
+import { fetchAllPagedRows, toApiPage } from '@/utils/pagination'
 import type { AreaOption, RoleOption, RouteRow, RouteStatusFilter } from './routes.types'
 import { fetchAreaOptions, fetchRoleOptions, fetchRouteRowsPaged } from './routes.api'
+
+function toApiRouteStatus(filterStatus: RouteStatusFilter) {
+  return filterStatus === 'ACTIVE' ? 0 : filterStatus === 'INACTIVE' ? 1 : null
+}
+
+function filterRouteRows(
+  rows: RouteRow[],
+  searchText: string,
+  filterAreaId: number | null,
+  filterRoleId: number | null,
+  filterStatus: RouteStatusFilter,
+) {
+  const q = searchText.trim().toLowerCase()
+
+  return rows.filter((r) => {
+    if (q && (!r._q || !r._q.includes(q))) return false
+
+    if (filterAreaId != null && r.area_id !== filterAreaId) return false
+    if (filterRoleId != null && r.role_id !== filterRoleId) return false
+
+    if (filterStatus === 'ACTIVE' && r.route_status !== 1) return false
+    if (filterStatus === 'INACTIVE' && r.route_status !== 0) return false
+
+    return true
+  })
+}
+
+function buildFallbackAreaOptions(rows: RouteRow[]) {
+  return Array.from(
+    new Map(
+      rows
+        .filter((r) => Number(r.area_id) > 0)
+        .map((r) => [Number(r.area_id), String(r.area_name || r.area_code || r.area_id)]),
+    ).entries(),
+  )
+    .map(([value, label]) => ({ value, label }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+}
+
+function buildFallbackRoleOptions(rows: RouteRow[]) {
+  return Array.from(
+    new Map(
+      rows
+        .filter((r) => Number(r.role_id) > 0)
+        .map((r) => [Number(r.role_id), String(r.role_name || r.role_code || r.role_id)]),
+    ).entries(),
+  )
+    .map(([value, label]) => ({ value, label }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+}
 
 export const useRoutesStore = defineStore('routes', {
   state: () => ({
@@ -28,19 +78,13 @@ export const useRoutesStore = defineStore('routes', {
 
   getters: {
     filteredRows(state): RouteRow[] {
-      const q = state.searchText.trim().toLowerCase()
-
-      return state.rows.filter((r) => {
-        if (q && (!r._q || !r._q.includes(q))) return false
-
-        if (state.filterAreaId != null && r.area_id !== state.filterAreaId) return false
-        if (state.filterRoleId != null && r.role_id !== state.filterRoleId) return false
-
-        if (state.filterStatus === 'ACTIVE' && r.route_status !== 1) return false
-        if (state.filterStatus === 'INACTIVE' && r.route_status !== 0) return false
-
-        return true
-      })
+      return filterRouteRows(
+        state.rows,
+        state.searchText,
+        state.filterAreaId,
+        state.filterRoleId,
+        state.filterStatus,
+      )
     },
   },
 
@@ -74,8 +118,7 @@ export const useRoutesStore = defineStore('routes', {
     async load() {
       this.loading = true
       try {
-        const routeStatus =
-          this.filterStatus === 'ACTIVE' ? 0 : this.filterStatus === 'INACTIVE' ? 1 : null
+        const routeStatus = toApiRouteStatus(this.filterStatus)
 
         const result = await fetchRouteRowsPaged([], {
           page: toApiPage(this.first, this.rowsPerPage),
@@ -87,37 +130,38 @@ export const useRoutesStore = defineStore('routes', {
         })
         const rows = result.items
 
-        const fallbackAreaOptions = Array.from(
-          new Map(
-            rows
-              .filter((r) => Number(r.area_id) > 0)
-              .map((r) => [Number(r.area_id), String(r.area_name || r.area_code || r.area_id)]),
-          ).entries(),
-        )
-          .map(([value, label]) => ({ value, label }))
-          .sort((a, b) => a.label.localeCompare(b.label))
-
-        const fallbackRoleOptions = Array.from(
-          new Map(
-            rows
-              .filter((r) => Number(r.role_id) > 0)
-              .map((r) => [Number(r.role_id), String(r.role_name || r.role_code || r.role_id)]),
-          ).entries(),
-        )
-          .map(([value, label]) => ({ value, label }))
-          .sort((a, b) => a.label.localeCompare(b.label))
-
         this.rows = rows
         this.totalRecords = result.totalCount
         if (!this.areaOptionsFetched && !this.areaOptions.length) {
-          this.areaOptions = fallbackAreaOptions
+          this.areaOptions = buildFallbackAreaOptions(rows)
         }
         if (!this.roleOptionsFetched && !this.roleOptions.length) {
-          this.roleOptions = fallbackRoleOptions
+          this.roleOptions = buildFallbackRoleOptions(rows)
         }
       } finally {
         this.loading = false
       }
+    },
+
+    async getRowsForExport() {
+      const routeStatus = toApiRouteStatus(this.filterStatus)
+      const rows = await fetchAllPagedRows((pageParams) =>
+        fetchRouteRowsPaged([], {
+          ...pageParams,
+          routeKeyword: this.searchText,
+          areaId: this.filterAreaId,
+          roleId: this.filterRoleId,
+          routeStatus,
+        }),
+      )
+
+      return filterRouteRows(
+        rows,
+        this.searchText,
+        this.filterAreaId,
+        this.filterRoleId,
+        this.filterStatus,
+      )
     },
 
     clearFilters() {
