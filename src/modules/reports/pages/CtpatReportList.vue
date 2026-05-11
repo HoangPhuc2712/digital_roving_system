@@ -110,6 +110,19 @@ watch(
   },
 )
 
+watch(
+  () => [store.filterAreaName, store.filterRouteName],
+  () => {
+    if (dateFilterReloadTimer) clearTimeout(dateFilterReloadTimer)
+    if (hasInvalidDateFilter.value) return
+
+    dateFilterReloadTimer = setTimeout(async () => {
+      store.setFirst(0)
+      await store.load()
+    }, 250)
+  },
+)
+
 onMounted(async () => {
   await store.load()
 })

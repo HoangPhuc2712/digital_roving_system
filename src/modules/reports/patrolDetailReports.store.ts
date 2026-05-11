@@ -59,9 +59,19 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
 
     areaLabelMap: {} as Record<number, string>,
     areaFilterOptions: [] as { label: string; value: number }[],
-    routeFilterOptions: [] as { label: string; value: string; areaId: number }[],
-    checkPointFilterOptions: [] as { label: string; value: string; searchText?: string }[],
-    guardFilterOptions: [] as { label: string; value: string; searchText?: string }[],
+    routeFilterOptions: [] as { label: string; value: string; areaId: number; routeId?: number }[],
+    checkPointFilterOptions: [] as {
+      label: string
+      value: string
+      cpId?: number
+      searchText?: string
+    }[],
+    guardFilterOptions: [] as {
+      label: string
+      value: string
+      userId?: string
+      searchText?: string
+    }[],
 
     routeFilterOptionsLoading: false,
     checkPointFilterOptionsLoading: false,
@@ -96,13 +106,21 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
       return this.areaOptions
     },
 
-    routeOptions(state): { label: string; value: string; areaId: number; searchText?: string }[] {
+    routeOptions(
+      state,
+    ): { label: string; value: string; areaId: number; routeId?: number; searchText?: string }[] {
       if (state.routeFilterOptions.length) {
         return state.routeFilterOptions.slice().sort((a, b) => a.label.localeCompare(b.label))
       }
 
       const seen = new Set<string>()
-      const options: { label: string; value: string; areaId: number; searchText?: string }[] = []
+      const options: {
+        label: string
+        value: string
+        areaId: number
+        routeId?: number
+        searchText?: string
+      }[] = []
 
       for (const row of this.rows) {
         const value = String(row.route_name ?? '').trim()
@@ -117,7 +135,9 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
       return options.sort((a, b) => a.label.localeCompare(b.label))
     },
 
-    checkPointOptions(state): { label: string; value: string; searchText?: string }[] {
+    checkPointOptions(
+      state,
+    ): { label: string; value: string; cpId?: number; searchText?: string }[] {
       if (state.checkPointFilterOptions.length) return state.checkPointFilterOptions
 
       const seen = new Set<string>()
@@ -137,7 +157,7 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
       return options.sort((a, b) => a.label.localeCompare(b.label))
     },
 
-    guardOptions(state): { label: string; value: string; searchText?: string }[] {
+    guardOptions(state): { label: string; value: string; userId?: string; searchText?: string }[] {
       if (state.guardFilterOptions.length) return state.guardFilterOptions
 
       const seen = new Set<string>()
@@ -194,13 +214,18 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
           .trim()
           .toLowerCase()
         if (guardNameQuery) {
-          const reportName = String(row.report_name ?? '').trim()
-          const guardSearchText = String(this.guardSearchTextMap[reportName] ?? reportName)
-            .trim()
-            .toLowerCase()
+          const selectedGuard = this.guardOptions.find(
+            (option) => option.value === this.filterGuardName,
+          )
+          if (!selectedGuard?.userId) {
+            const reportName = String(row.report_name ?? '').trim()
+            const guardSearchText = String(this.guardSearchTextMap[reportName] ?? reportName)
+              .trim()
+              .toLowerCase()
 
-          if (!guardSearchText.includes(guardNameQuery)) {
-            return false
+            if (!guardSearchText.includes(guardNameQuery)) {
+              return false
+            }
           }
         }
 
@@ -231,6 +256,7 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
             label: string
             value: string
             areaId: number
+            routeId?: number
             searchText?: string
           }[],
         }))
@@ -277,9 +303,21 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
     async load() {
       this.loading = true
       try {
+        const selectedRoute = this.routeOptions.find(
+          (option) =>
+            option.value === this.filterRouteName &&
+            (this.filterAreaId == null || option.areaId === this.filterAreaId),
+        )
+        const selectedGuard = this.guardOptions.find(
+          (option) => option.value === this.filterGuardName,
+        )
+
         const result = await fetchPatrolDetailReportRows(this.filterDateFrom, this.filterDateTo, {
           page: toApiPage(this.first, this.rowsPerPage),
           pageSize: this.rowsPerPage,
+          areaId: this.filterAreaId,
+          routeId: selectedRoute?.routeId ?? null,
+          reportBy: selectedGuard?.userId ?? this.filterGuardName,
         })
 
         this.rows = result.items

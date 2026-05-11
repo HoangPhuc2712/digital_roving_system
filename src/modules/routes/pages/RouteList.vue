@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 
@@ -43,6 +43,7 @@ const { t, locale } = useI18n()
 
 const canManage = computed(() => auth.isAdminUser && auth.canAccess('routes.manage'))
 const exporting = ref(false)
+let filterReloadTimer: ReturnType<typeof setTimeout> | null = null
 
 const translatedRoleOptions = computed(() =>
   (store.roleOptions ?? []).map((option) => ({
@@ -120,6 +121,22 @@ const { onPage } = usePagination({
   load: () => store.load(),
   setFirst: (first) => store.setFirst(first),
   setPage: (first, rows) => store.setPage(first, rows),
+})
+
+watch(
+  () => [store.searchText, store.filterAreaId, store.filterRoleId, store.filterStatus],
+  () => {
+    if (filterReloadTimer) clearTimeout(filterReloadTimer)
+
+    filterReloadTimer = setTimeout(async () => {
+      store.setFirst(0)
+      await store.load()
+    }, 250)
+  },
+)
+
+onBeforeUnmount(() => {
+  if (filterReloadTimer) clearTimeout(filterReloadTimer)
 })
 
 onMounted(async () => {

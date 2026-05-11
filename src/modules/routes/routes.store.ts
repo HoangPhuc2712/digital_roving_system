@@ -74,9 +74,16 @@ export const useRoutesStore = defineStore('routes', {
     async load() {
       this.loading = true
       try {
+        const routeStatus =
+          this.filterStatus === 'ACTIVE' ? 0 : this.filterStatus === 'INACTIVE' ? 1 : null
+
         const result = await fetchRouteRowsPaged([], {
           page: toApiPage(this.first, this.rowsPerPage),
           pageSize: this.rowsPerPage,
+          routeKeyword: this.searchText,
+          areaId: this.filterAreaId,
+          roleId: this.filterRoleId,
+          routeStatus,
         })
         const rows = result.items
 

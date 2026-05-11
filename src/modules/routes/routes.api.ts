@@ -293,12 +293,34 @@ function sortRouteRows(rows: RouteRow[]) {
   })
 }
 
+type FetchRouteRowsParams = ApiPageParams & {
+  routeKeyword?: string | null
+  areaId?: number | null
+  roleId?: number | null
+  routeStatus?: number | null
+}
+
 export async function fetchRouteRowsPaged(
   roleOptions: RoleOption[] = [],
-  params: ApiPageParams = {},
+  params: FetchRouteRowsParams = {},
 ): Promise<ApiPagedResult<RouteRow>> {
   const body: Record<string, any> = {}
   appendPageParams(body, params)
+
+  const routeKeyword = String(params.routeKeyword ?? '').trim()
+  if (routeKeyword) body.routeKeyword = routeKeyword
+
+  if (params.areaId != null && Number.isFinite(Number(params.areaId))) {
+    body.areaId = Number(params.areaId)
+  }
+
+  if (params.roleId != null && Number.isFinite(Number(params.roleId))) {
+    body.roleId = Number(params.roleId)
+  }
+
+  if (params.routeStatus != null && Number.isFinite(Number(params.routeStatus))) {
+    body.routeStatus = Number(params.routeStatus)
+  }
 
   const [checkpointMetaMap, res] = await Promise.all([
     fetchCheckpointMetaMap().catch(

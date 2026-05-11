@@ -178,10 +178,21 @@ watch(
 )
 
 watch(
-  () => [store.filterAreaId, store.filterCheckPointName],
+  () => [
+    store.filterAreaId,
+    store.filterRouteName,
+    store.filterCheckPointName,
+    store.filterGuardId,
+  ],
   (next, prev) => {
     if (suppressDateReload.value) return
-    if (next[0] === prev?.[0] && next[1] === prev?.[1]) return
+    if (
+      next[0] === prev?.[0] &&
+      next[1] === prev?.[1] &&
+      next[2] === prev?.[2] &&
+      next[3] === prev?.[3]
+    )
+      return
     store.setFirst(0)
     if (hasInvalidDateFilter.value) {
       clearDateReloadTimer()
@@ -639,8 +650,12 @@ async function onExport() {
         :header="t('reportList.table.guardName')"
         :filterMenu="{
           key: 'guardId',
-          type: 'text',
+          type: 'select',
           value: store.filterGuardId,
+          options: store.guardOptions,
+          filter: true,
+          filterField: 'searchText',
+          filterMatchMode: 'contains',
           placeholder: t('reportList.filters.guardName'),
         }"
       />

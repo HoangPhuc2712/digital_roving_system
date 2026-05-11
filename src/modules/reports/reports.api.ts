@@ -261,6 +261,10 @@ type ApiPagedResult<T> = {
 type FetchCtpatReportRowsParams = ApiPageParams & {
   reportAtFrom?: Date | null
   reportAtTo?: Date | null
+  areaId?: number | null
+  routeId?: number | null
+  areaName?: string | null
+  routeName?: string | null
 }
 
 const plannedPatrolShiftDayCache = new Map<string, ApiPlannedPatrolShiftView[]>()
@@ -743,7 +747,10 @@ type FetchReportRowsParams = ApiPageParams & {
   prStatus?: number | null
   prHasProblem?: boolean | null
   areaId?: number | null
+  routeId?: number | null
+  cpId?: number | null
   cpName?: string | null
+  reportBy?: string | null
 }
 
 export async function fetchReportRows(
@@ -771,8 +778,19 @@ export async function fetchReportRows(
     body.areaId = Number(params.areaId)
   }
 
+  if (params.routeId != null && Number.isFinite(Number(params.routeId))) {
+    body.routeId = Number(params.routeId)
+  }
+
+  if (params.cpId != null && Number.isFinite(Number(params.cpId))) {
+    body.cpId = Number(params.cpId)
+  }
+
   const cpName = String(params.cpName ?? '').trim()
   if (cpName) body.cpName = cpName
+
+  const reportBy = String(params.reportBy ?? '').trim()
+  if (reportBy) body.reportBy = reportBy
 
   const res = await http.post(endpoints.pointReportView.getList, body)
   const payload = ensureSuccess<
@@ -875,7 +893,13 @@ export async function fetchCtpatAreaOptions(): Promise<{ label: string; value: s
 
 export async function fetchReportRouteFilterOptions(): Promise<{
   areaOptions: { label: string; value: number }[]
-  routeOptions: { label: string; value: string; areaId: number; searchText?: string }[]
+  routeOptions: {
+    label: string
+    value: string
+    areaId: number
+    routeId?: number
+    searchText?: string
+  }[]
 }> {
   const res = await http.post(endpoints.routeView.getList, { page: 1, pageSize: 100000 })
   const list = ensureSuccess<
@@ -886,12 +910,19 @@ export async function fetchReportRouteFilterOptions(): Promise<{
   const areaSeen = new Set<number>()
   const routeSeen = new Set<string>()
   const areaOptions: { label: string; value: number }[] = []
-  const routeOptions: { label: string; value: string; areaId: number; searchText?: string }[] = []
+  const routeOptions: {
+    label: string
+    value: string
+    areaId: number
+    routeId?: number
+    searchText?: string
+  }[] = []
 
   for (const route of items) {
     const areaId = Number(route?.areaId ?? 0)
     const areaCode = String(route?.areaCode ?? '').trim()
     const areaName = String(route?.areaName ?? '').trim()
+    const routeId = Number(route?.routeId ?? 0)
     const routeName = String(route?.routeName ?? '').trim()
 
     if (areaId > 0 && !areaSeen.has(areaId)) {
@@ -912,6 +943,7 @@ export async function fetchReportRouteFilterOptions(): Promise<{
       label: routeName,
       value: routeName,
       areaId,
+      routeId: routeId > 0 ? routeId : undefined,
       searchText: `${routeName}`.toLowerCase(),
     })
   }
@@ -923,8 +955,15 @@ export async function fetchReportRouteFilterOptions(): Promise<{
 }
 
 export async function fetchCtpatRouteFilterOptions(): Promise<{
-  areaOptions: { label: string; value: string }[]
-  routeOptions: { label: string; value: string; areaName: string; searchText?: string }[]
+  areaOptions: { label: string; value: string; areaId?: number }[]
+  routeOptions: {
+    label: string
+    value: string
+    areaName: string
+    routeId?: number
+    areaId?: number
+    searchText?: string
+  }[]
 }> {
   const res = await http.post(endpoints.routeView.getList, { page: 1, pageSize: 100000 })
   const list = ensureSuccess<
@@ -934,11 +973,20 @@ export async function fetchCtpatRouteFilterOptions(): Promise<{
 
   const areaSeen = new Set<string>()
   const routeSeen = new Set<string>()
-  const areaOptions: { label: string; value: string }[] = []
-  const routeOptions: { label: string; value: string; areaName: string; searchText?: string }[] = []
+  const areaOptions: { label: string; value: string; areaId?: number }[] = []
+  const routeOptions: {
+    label: string
+    value: string
+    areaName: string
+    routeId?: number
+    areaId?: number
+    searchText?: string
+  }[] = []
 
   for (const route of items) {
+    const areaId = Number(route?.areaId ?? 0)
     const areaName = String(route?.areaName ?? '').trim()
+    const routeId = Number(route?.routeId ?? 0)
     const routeName = String(route?.routeName ?? '').trim()
 
     if (areaName && !areaSeen.has(areaName)) {
@@ -946,6 +994,7 @@ export async function fetchCtpatRouteFilterOptions(): Promise<{
       areaOptions.push({
         label: areaName,
         value: areaName,
+        areaId: areaId > 0 ? areaId : undefined,
       })
     }
 
@@ -959,6 +1008,8 @@ export async function fetchCtpatRouteFilterOptions(): Promise<{
       label: routeName,
       value: routeName,
       areaName,
+      routeId: routeId > 0 ? routeId : undefined,
+      areaId: areaId > 0 ? areaId : undefined,
       searchText: `${routeName}`.toLowerCase(),
     })
   }
@@ -970,36 +1021,7 @@ export async function fetchCtpatRouteFilterOptions(): Promise<{
 }
 
 export async function fetchReportGuardOptions(): Promise<
-  { label: string; value: string; searchText?: string }[]
-> {
-  const res = await http.post(endpoints.userView.getList, { page: 1, pageSize: 100000 })
-  const list = ensureSuccess<
-    ApiQueryResultData<ApiUserViewOption> | ApiUserViewOption[] | ApiUserViewOption
-  >(res.data).data
-  const items = normalizePagedData<ApiUserViewOption>(list).items
-  const seen = new Set<string>()
-
-  return items
-    .filter((user) => !Boolean(user?.userRoleIsAdmin))
-    .map((user) => ({
-      label: String(user?.userName ?? '').trim(),
-      value: String(user?.userName ?? '').trim(),
-      searchText: String(
-        [user?.userName, user?.userCode, user?.userKeyword].filter(Boolean).join(' '),
-      )
-        .toLowerCase()
-        .trim(),
-    }))
-    .filter((x) => {
-      if (!x.label || !x.value || seen.has(x.value)) return false
-      seen.add(x.value)
-      return true
-    })
-    .sort((a, b) => a.label.localeCompare(b.label))
-}
-
-export async function fetchPatrolDetailGuardOptions(): Promise<
-  { label: string; value: string; searchText?: string }[]
+  { label: string; value: string; userId?: string; searchText?: string }[]
 > {
   const res = await http.post(endpoints.userView.getList, { page: 1, pageSize: 100000 })
   const list = ensureSuccess<
@@ -1011,10 +1033,46 @@ export async function fetchPatrolDetailGuardOptions(): Promise<
   return items
     .filter((user) => !Boolean(user?.userRoleIsAdmin))
     .map((user) => {
-      const value = String(user?.userName ?? '').trim()
+      const userId = String(user?.userId ?? '').trim()
+      const userName = String(user?.userName ?? '').trim()
       return {
-        label: value,
-        value,
+        label: userName,
+        value: userId || userName,
+        userId: userId || undefined,
+        searchText: String(
+          [user?.userName, user?.userCode, user?.userKeyword].filter(Boolean).join(' '),
+        )
+          .toLowerCase()
+          .trim(),
+      }
+    })
+    .filter((x) => {
+      if (!x.label || !x.value || seen.has(x.value)) return false
+      seen.add(x.value)
+      return true
+    })
+    .sort((a, b) => a.label.localeCompare(b.label))
+}
+
+export async function fetchPatrolDetailGuardOptions(): Promise<
+  { label: string; value: string; userId?: string; searchText?: string }[]
+> {
+  const res = await http.post(endpoints.userView.getList, { page: 1, pageSize: 100000 })
+  const list = ensureSuccess<
+    ApiQueryResultData<ApiUserViewOption> | ApiUserViewOption[] | ApiUserViewOption
+  >(res.data).data
+  const items = normalizePagedData<ApiUserViewOption>(list).items
+  const seen = new Set<string>()
+
+  return items
+    .filter((user) => !Boolean(user?.userRoleIsAdmin))
+    .map((user) => {
+      const userId = String(user?.userId ?? '').trim()
+      const userName = String(user?.userName ?? '').trim()
+      return {
+        label: userName,
+        value: userId || userName,
+        userId: userId || undefined,
         searchText: String(
           [user?.userName, user?.userCode, user?.userKeyword].filter(Boolean).join(' '),
         )
@@ -1031,7 +1089,7 @@ export async function fetchPatrolDetailGuardOptions(): Promise<
 }
 
 export async function fetchPatrolDetailCheckpointOptions(): Promise<
-  { label: string; value: string; searchText?: string }[]
+  { label: string; value: string; cpId?: number; searchText?: string }[]
 > {
   const res = await http.post(endpoints.checkPointView.getList, { page: 1, pageSize: 100000 })
   const list = ensureSuccess<
@@ -1049,6 +1107,7 @@ export async function fetchPatrolDetailCheckpointOptions(): Promise<
       return {
         label: value,
         value,
+        cpId: Number(cp?.cpId ?? 0) || undefined,
         searchText: String(value).toLowerCase().trim(),
       }
     })
@@ -1111,6 +1170,20 @@ export async function fetchCtpatReportRows(
   if (params.reportAtTo instanceof Date && Number.isFinite(params.reportAtTo.getTime())) {
     body.reportAtTo = toApiDateTimeZ(params.reportAtTo)
   }
+
+  if (params.areaId != null && Number.isFinite(Number(params.areaId))) {
+    body.areaId = Number(params.areaId)
+  }
+
+  if (params.routeId != null && Number.isFinite(Number(params.routeId))) {
+    body.routeId = Number(params.routeId)
+  }
+
+  const areaName = String(params.areaName ?? '').trim()
+  if (areaName) body.areaName = areaName
+
+  const routeName = String(params.routeName ?? '').trim()
+  if (routeName) body.routeName = routeName
 
   const res = await http.post(endpoints.report.ctpatReport, body)
   const payload = ensureSuccess<
@@ -1314,7 +1387,11 @@ async function fetchPatrolShiftReportViewsByDay(date: Date) {
   return normalizePagedData<ApiPatrolShiftReportView>(payload).items
 }
 
-type FetchPatrolShiftReportRowsParams = ApiPageParams
+type FetchPatrolShiftReportRowsParams = ApiPageParams & {
+  areaId?: number | null
+  routeId?: number | null
+  reportBy?: string | null
+}
 
 export async function fetchPatrolDetailReportRows(
   dateFrom?: Date | null,
@@ -1788,10 +1865,21 @@ async function fetchPlannedPatrolShiftRange(dateFrom: Date, dateTo: Date) {
 async function fetchPatrolShiftReportViewPage(
   dateFrom?: Date | null,
   dateTo?: Date | null,
-  params: ApiPageParams = {},
+  params: FetchPatrolShiftReportRowsParams = {},
 ): Promise<ApiPagedResult<ApiPatrolShiftReportView>> {
-  const body = buildPatrolDetailReportRequestBody(dateFrom, dateTo)
+  const body: Record<string, any> = buildPatrolDetailReportRequestBody(dateFrom, dateTo)
   appendPageParams(body, params)
+
+  if (params.areaId != null && Number.isFinite(Number(params.areaId))) {
+    body.areaId = Number(params.areaId)
+  }
+
+  if (params.routeId != null && Number.isFinite(Number(params.routeId))) {
+    body.routeId = Number(params.routeId)
+  }
+
+  const reportBy = String(params.reportBy ?? '').trim()
+  if (reportBy) body.reportBy = reportBy
 
   const res = await http.post(endpoints.report.patrolDetailReport, body)
   const payload = ensureSuccess<

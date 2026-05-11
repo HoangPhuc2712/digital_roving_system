@@ -118,6 +118,24 @@ watch(
   },
 )
 
+watch(
+  () => [
+    store.filterAreaId,
+    store.filterRouteName,
+    store.filterCheckPointName,
+    store.filterGuardName,
+  ],
+  () => {
+    if (!autoLoadEnabled.value) return
+    if (hasInvalidDateFilter.value) return
+
+    clearFilterLoadTimer()
+    filterLoadTimer = setTimeout(async () => {
+      await store.load()
+    }, 250)
+  },
+)
+
 function clearFilterLoadTimer() {
   if (filterLoadTimer) {
     clearTimeout(filterLoadTimer)
@@ -374,8 +392,12 @@ function onColumnFilter(payload: { key: string; value: any }) {
         sortField="report_name"
         :filterMenu="{
           key: 'guardName',
-          type: 'text',
+          type: 'select',
           value: store.filterGuardName,
+          options: store.guardOptions,
+          filter: true,
+          filterField: 'searchText',
+          filterMatchMode: 'contains',
           placeholder: t('patrolDetailReport.guardName'),
         }"
       />
