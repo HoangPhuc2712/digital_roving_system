@@ -797,11 +797,10 @@ export async function fetchReportRows(
     ApiQueryResultData<ApiPointReportView> | ApiPointReportView[] | ApiPointReportView
   >(res.data).data
   const paged = normalizePagedData<ApiPointReportView>(payload)
-  const rows = paged.items.map(normalizeView).sort((a, b) => (a.report_at < b.report_at ? 1 : -1))
 
   return {
     ...paged,
-    items: rows,
+    items: paged.items.map(normalizeView),
   }
 }
 
