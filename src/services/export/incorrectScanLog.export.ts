@@ -1,5 +1,7 @@
 import ExcelJS from 'exceljs'
 import type { IncorrectScanLogRow } from '@/modules/reports/reports.types'
+import { translateRouteName } from '@/utils/dataI18n'
+import { excelT } from './exportI18n'
 
 function formatDateTime(iso: string) {
   const s = (iso ?? '').trim()
@@ -51,16 +53,44 @@ export async function exportIncorrectScanLogXlsx(params: {
   fileName: string
 }) {
   const wb = new ExcelJS.Workbook()
-  const ws = wb.addWorksheet('Incorrect Scan Log')
+  const ws = wb.addWorksheet(excelT('incorrectScanReportList.title', 'Incorrect Scan Log'))
 
   ws.columns = [
-    { header: 'Route Name', key: 'route_name', width: 28 },
-    { header: 'Start Time', key: 'ps_start_at', width: 24 },
-    { header: 'Finish Time', key: 'ps_end_at', width: 24 },
-    { header: 'Patrol Time', key: 'created_at', width: 24 },
-    { header: 'Incorrect CP Scan', key: 'wrong_scan', width: 26 },
-    { header: 'Correct CP Scan', key: 'correct_scan', width: 26 },
-    { header: 'Guard Name', key: 'created_name', width: 20 },
+    {
+      header: excelT('incorrectScanReportList.routeName', 'Route Name'),
+      key: 'route_name',
+      width: 28,
+    },
+    {
+      header: excelT('incorrectScanReportList.startTime', 'Start Time'),
+      key: 'ps_start_at',
+      width: 24,
+    },
+    {
+      header: excelT('incorrectScanReportList.finishTime', 'Finish Time'),
+      key: 'ps_end_at',
+      width: 24,
+    },
+    {
+      header: excelT('incorrectScanReportList.patrolTime', 'Patrol Time'),
+      key: 'created_at',
+      width: 24,
+    },
+    {
+      header: excelT('incorrectScanReportList.incorrectScanPoint', 'Incorrect CP Scan'),
+      key: 'wrong_scan',
+      width: 26,
+    },
+    {
+      header: excelT('incorrectScanReportList.correctScanPoint', 'Correct CP Scan'),
+      key: 'correct_scan',
+      width: 26,
+    },
+    {
+      header: excelT('incorrectScanReportList.guardName', 'Guard Name'),
+      key: 'created_name',
+      width: 30,
+    },
   ]
 
   for (let c = 1; c <= 7; c++) {
@@ -73,7 +103,9 @@ export async function exportIncorrectScanLogXlsx(params: {
 
   for (const row of params.rows ?? []) {
     const excelRow = ws.addRow({
-      route_name: row.route_name || '-',
+      route_name: row.route_name
+        ? translateRouteName(row.route_name, (key) => excelT(key, row.route_name))
+        : '-',
       ps_start_at: formatDateTime(row.ps_start_at),
       ps_end_at: formatDateTime(row.ps_end_at),
       created_at: formatDateTime(row.created_at),

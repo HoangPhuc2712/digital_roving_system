@@ -1,5 +1,7 @@
 import ExcelJS from 'exceljs'
 import type { RoleRow } from '@/modules/roles/roles.types'
+import { translateMenuCategoryName, translateRoleName } from '@/utils/dataI18n'
+import { excelT } from './exportI18n'
 
 function applyBorder(cell: ExcelJS.Cell) {
   cell.border = {
@@ -26,12 +28,12 @@ async function saveWorkbook(wb: ExcelJS.Workbook, fileName: string) {
 
 export async function exportRolesXlsx(params: { rows: RoleRow[]; fileName: string }) {
   const wb = new ExcelJS.Workbook()
-  const ws = wb.addWorksheet('Roles')
+  const ws = wb.addWorksheet(excelT('breadcrumb.roles', 'Roles'))
 
   ws.columns = [
-    { header: 'Role Code', key: 'role_code', width: 18 },
-    { header: 'Role Name', key: 'role_name', width: 24 },
-    { header: 'Permission', key: 'permissions', width: 40 },
+    { header: excelT('roleList.roleCode', 'Role Code'), key: 'role_code', width: 18 },
+    { header: excelT('roleList.roleName', 'Role Name'), key: 'role_name', width: 24 },
+    { header: excelT('roleList.accessPermission', 'Permission'), key: 'permissions', width: 40 },
   ]
 
   for (let c = 1; c <= 3; c++) {
@@ -44,11 +46,19 @@ export async function exportRolesXlsx(params: { rows: RoleRow[]; fileName: strin
 
   for (const row of params.rows ?? []) {
     const permissionText =
-      Array.isArray(row.menu_names) && row.menu_names.length ? row.menu_names.join(', ') : '-'
+      Array.isArray(row.menu_names) && row.menu_names.length
+        ? row.menu_names
+            .map((name) => translateMenuCategoryName(name, (key) => excelT(key, name)))
+            .join(', ')
+        : Number(row.menu_count ?? 0) > 0
+          ? `${Number(row.menu_count ?? 0)} ${excelT('roleList.accessPermissionNumber', 'access permission(s)')}`
+          : '-'
 
     ws.addRow({
       role_code: row.role_code || '-',
-      role_name: row.role_name || '-',
+      role_name: row.role_name
+        ? translateRoleName(row.role_name, (key) => excelT(key, row.role_name))
+        : '-',
       permissions: permissionText,
     })
   }

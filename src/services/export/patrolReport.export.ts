@@ -1,5 +1,7 @@
 import ExcelJS from 'exceljs'
 import type { ReportImage, ReportNoteGroup, ReportRow } from '@/modules/reports/reports.types'
+import { translateReportNote } from '@/utils/dataI18n'
+import { excelT } from './exportI18n'
 
 function pad2(n: number) {
   return String(n).padStart(2, '0')
@@ -138,7 +140,8 @@ function setPhotoCellValue(cell: ExcelJS.Cell, photoLink: string, linkIndex = 0)
 
 export async function exportPatrolReportXlsx(params: { rows: ReportRow[]; fileName: string }) {
   const wb = new ExcelJS.Workbook()
-  const ws = wb.addWorksheet(sanitizeSheetName('Patrol Abnormal Cases Report'))
+  const reportTitle = excelT('reportList.title', 'Patrol Abnormal Cases Report')
+  const ws = wb.addWorksheet(sanitizeSheetName(reportTitle))
 
   const rows = [...(params.rows ?? [])].sort((a, b) => {
     const ta = new Date(a.report_at || a.scan_at || a.created_at || '').getTime()
@@ -151,27 +154,27 @@ export async function exportPatrolReportXlsx(params: { rows: ReportRow[]; fileNa
     { key: 'area', width: 16 },
     { key: 'checkpoint', width: 24 },
     { key: 'reportDate', width: 24 },
-    { key: 'guardName', width: 20 },
+    { key: 'guardName', width: 30 },
     { key: 'inspectionResult', width: 18 },
     { key: 'noteDetail', width: 28 },
     { key: 'photo', width: 20 },
   ]
 
   ws.mergeCells(1, 1, 1, 7)
-  ws.getCell(1, 1).value = 'Patrol Abnormal Cases Report'
+  ws.getCell(1, 1).value = reportTitle
   ws.getCell(1, 1).font = { bold: true, size: 16, color: { argb: 'FF0F172A' } }
   ws.getCell(1, 1).alignment = { vertical: 'middle', horizontal: 'center' }
   ws.getRow(1).height = 24
 
   const headerRowIdx = 2
   const headers = [
-    'Area',
-    'Check Point',
-    'Report Date',
-    'Guard Name',
-    'Inspection Result',
-    'Note Detail',
-    'Photo',
+    excelT('reportList.filters.area', 'Area'),
+    excelT('reportList.table.checkPoint', 'Check Point'),
+    excelT('reportList.table.reportDate', 'Report Date'),
+    excelT('reportList.table.guardName', 'Guard Name'),
+    excelT('reportList.table.inspectionResult', 'Inspection Result'),
+    excelT('reportForm.detail', 'Note Detail'),
+    excelT('reportForm.photo', 'Photo'),
   ]
 
   for (let i = 0; i < headers.length; i += 1) {
@@ -188,7 +191,10 @@ export async function exportPatrolReportXlsx(params: { rows: ReportRow[]; fileNa
   let rowCursor = headerRowIdx + 1
 
   for (const row of rows) {
-    const blocks = expandNoteBlocks(row)
+    const blocks = expandNoteBlocks(row).map((block) => ({
+      ...block,
+      noteText: translateReportNote(block.noteText, (key) => excelT(key, block.noteText)),
+    }))
     const expandedRowCount = blocks.reduce((sum, block) => {
       return sum + Math.max(1, block.photoLinks.length)
     }, 0)
@@ -202,7 +208,9 @@ export async function exportPatrolReportXlsx(params: { rows: ReportRow[]; fileNa
       String(row.report_at ?? row.scan_at ?? row.created_at ?? ''),
     )
     const guardText = String(row.report_name ?? '').trim() || '—'
-    const resultText = row.pr_has_problem ? 'NOT OK' : 'OK'
+    const resultText = row.pr_has_problem
+      ? excelT('reportList.resultOptions.notOk', 'NOT OK')
+      : excelT('reportList.resultOptions.ok', 'OK')
 
     ws.getCell(startRow, 1).value = areaText
     ws.getCell(startRow, 2).value = checkpointText

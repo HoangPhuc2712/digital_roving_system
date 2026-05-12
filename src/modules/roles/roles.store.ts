@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import type { MenuCategoryOption, RoleRow, RoleStatusFilter } from './roles.types'
 import { fetchAllPagedRows, toApiPage } from '@/utils/pagination'
-import { fetchMenuCategoryOptions, fetchRoleRowsPaged } from './roles.api'
+import { fetchMenuCategoryOptions, fetchRoleById, fetchRoleRowsPaged } from './roles.api'
 
 function filterRoleRows(rows: RoleRow[], searchText: string, filterStatus: RoleStatusFilter) {
   const q = searchText.trim().toLowerCase()
@@ -55,7 +55,26 @@ export const useRolesStore = defineStore('roles', {
 
     async getRowsForExport() {
       const rows = await fetchAllPagedRows((pageParams) => fetchRoleRowsPaged(pageParams))
-      return filterRoleRows(rows, this.searchText, this.filterStatus)
+      const filteredRows = filterRoleRows(rows, this.searchText, this.filterStatus)
+
+      const detailRows = await Promise.all(
+        filteredRows.map(async (row) => {
+          if (Array.isArray(row.menu_names) && row.menu_names.length > 0) return row
+
+          try {
+            const detail = await fetchRoleById(row.role_id)
+            return {
+              ...row,
+              menu_ids: Array.isArray(detail?.menu_ids) ? detail.menu_ids : row.menu_ids,
+              menu_names: Array.isArray(detail?.menu_names) ? detail.menu_names : row.menu_names,
+            }
+          } catch {
+            return row
+          }
+        }),
+      )
+
+      return detailRows
     },
 
     async ensureMenuOptionsLoaded(force = false) {

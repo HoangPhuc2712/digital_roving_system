@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs'
 import type { CheckpointRow } from '@/modules/checkpoints/checkpoints.types'
 import { imageSourceToDataUrl, normalizeImageSource, parseDataImageUrl } from '@/utils/base64'
+import { excelT } from './exportI18n'
 
 function normalizeQr(src: string) {
   return normalizeImageSource(src, { fallbackExt: 'png' })
@@ -95,23 +96,47 @@ export async function exportCheckpointsXlsx(params: {
 }) {
   const includeQrImage = params.includeQrImage ?? true
   const wb = new ExcelJS.Workbook()
-  const ws = wb.addWorksheet('Checkpoints')
+  const ws = wb.addWorksheet(excelT('breadcrumb.checkpoints', 'Checkpoints'))
 
   ws.columns = includeQrImage
     ? [
-        { header: 'Check Point Code', key: 'cp_code', width: 20 },
-        { header: 'Check Point Name', key: 'cp_name', width: 24 },
-        { header: 'QR Image', key: 'cp_qr', width: 14 },
-        { header: 'Area', key: 'area', width: 18 },
-        { header: 'Description', key: 'cp_description', width: 28 },
-        { header: 'Priority', key: 'cp_priority', width: 12 },
+        {
+          header: excelT('checkpointList.checkpointCode', 'Check Point Code'),
+          key: 'cp_code',
+          width: 20,
+        },
+        {
+          header: excelT('checkpointList.checkpointName', 'Check Point Name'),
+          key: 'cp_name',
+          width: 24,
+        },
+        { header: excelT('checkpointList.qrImg', 'QR Image'), key: 'cp_qr', width: 14 },
+        { header: excelT('checkpointList.area', 'Area'), key: 'area', width: 18 },
+        {
+          header: excelT('checkpointList.description', 'Description'),
+          key: 'cp_description',
+          width: 28,
+        },
+        { header: excelT('checkpointList.priority', 'Priority'), key: 'cp_priority', width: 12 },
       ]
     : [
-        { header: 'Check Point Code', key: 'cp_code', width: 20 },
-        { header: 'Check Point Name', key: 'cp_name', width: 24 },
-        { header: 'Area', key: 'area', width: 18 },
-        { header: 'Description', key: 'cp_description', width: 28 },
-        { header: 'Priority', key: 'cp_priority', width: 12 },
+        {
+          header: excelT('checkpointList.checkpointCode', 'Check Point Code'),
+          key: 'cp_code',
+          width: 20,
+        },
+        {
+          header: excelT('checkpointList.checkpointName', 'Check Point Name'),
+          key: 'cp_name',
+          width: 24,
+        },
+        { header: excelT('checkpointList.area', 'Area'), key: 'area', width: 18 },
+        {
+          header: excelT('checkpointList.description', 'Description'),
+          key: 'cp_description',
+          width: 28,
+        },
+        { header: excelT('checkpointList.priority', 'Priority'), key: 'cp_priority', width: 12 },
       ]
 
   const totalColumns = includeQrImage ? 6 : 5
@@ -124,8 +149,21 @@ export async function exportCheckpointsXlsx(params: {
 
   const headerRowIndex = 2
   const headerLabels = includeQrImage
-    ? ['Check Point Code', 'Check Point Name', 'QR Image', 'Area', 'Description', 'Priority']
-    : ['Check Point Code', 'Check Point Name', 'Area', 'Description', 'Priority']
+    ? [
+        excelT('checkpointList.checkpointCode', 'Check Point Code'),
+        excelT('checkpointList.checkpointName', 'Check Point Name'),
+        excelT('checkpointList.qrImg', 'QR Image'),
+        excelT('checkpointList.area', 'Area'),
+        excelT('checkpointList.description', 'Description'),
+        excelT('checkpointList.priority', 'Priority'),
+      ]
+    : [
+        excelT('checkpointList.checkpointCode', 'Check Point Code'),
+        excelT('checkpointList.checkpointName', 'Check Point Name'),
+        excelT('checkpointList.area', 'Area'),
+        excelT('checkpointList.description', 'Description'),
+        excelT('checkpointList.priority', 'Priority'),
+      ]
 
   for (let c = 1; c <= headerLabels.length; c++) {
     const cell = ws.getCell(headerRowIndex, c)

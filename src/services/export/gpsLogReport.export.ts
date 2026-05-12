@@ -1,5 +1,7 @@
 import ExcelJS from 'exceljs'
 import type { GpsLogRow } from '@/modules/reports/reports.types'
+import { translateRouteName } from '@/utils/dataI18n'
+import { excelT } from './exportI18n'
 
 function formatDateTime(iso: string) {
   const s = (iso ?? '').trim()
@@ -22,17 +24,21 @@ function hexToArgb(hex: string) {
 
 export async function exportGpsLogReportXlsx(params: { rows: GpsLogRow[]; fileName: string }) {
   const wb = new ExcelJS.Workbook()
-  const ws = wb.addWorksheet('GPS Log')
+  const ws = wb.addWorksheet(excelT('gpsLogReport.title', 'GPS Log'))
 
   ws.columns = [
-    { header: 'Route Name', key: 'route_name', width: 30 },
-    { header: 'Check Point', key: 'check_point_name', width: 28 },
-    { header: 'Start Time', key: 'start_time', width: 24 },
-    { header: 'Finish Time', key: 'finish_time', width: 24 },
-    { header: 'Patrol Time', key: 'patrol_time', width: 24 },
-    { header: 'Lat', key: 'latitude', width: 18 },
-    { header: 'Long', key: 'longitude', width: 18 },
-    { header: 'Patrol Guard', key: 'report_name', width: 20 },
+    { header: excelT('gpsLogReport.routeName', 'Route Name'), key: 'route_name', width: 30 },
+    {
+      header: excelT('gpsLogReport.checkpointName', 'Check Point'),
+      key: 'check_point_name',
+      width: 28,
+    },
+    { header: excelT('gpsLogReport.startTime', 'Start Time'), key: 'start_time', width: 24 },
+    { header: excelT('gpsLogReport.finishTime', 'Finish Time'), key: 'finish_time', width: 24 },
+    { header: excelT('gpsLogReport.patrolTime', 'Patrol Time'), key: 'patrol_time', width: 24 },
+    { header: excelT('gpsLogReport.lat', 'Lat'), key: 'latitude', width: 18 },
+    { header: excelT('gpsLogReport.long', 'Long'), key: 'longitude', width: 18 },
+    { header: excelT('gpsLogReport.guardName', 'Patrol Guard'), key: 'report_name', width: 30 },
   ]
 
   const headerRow = ws.getRow(1)
@@ -53,7 +59,9 @@ export async function exportGpsLogReportXlsx(params: { rows: GpsLogRow[]; fileNa
 
   for (const row of params.rows ?? []) {
     ws.addRow({
-      route_name: row.route_name || '-',
+      route_name: row.route_name
+        ? translateRouteName(row.route_name, (key) => excelT(key, row.route_name))
+        : '-',
       check_point_name: row.check_point_name || '-',
       start_time: formatDateTime(row.start_time),
       finish_time: formatDateTime(row.finish_time),
