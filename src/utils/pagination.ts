@@ -98,3 +98,29 @@ export function appendPageParams(body: Record<string, any>, params: ApiPageParam
     body.pageSize = Number(params.pageSize)
   }
 }
+
+export async function fetchAllPagedRows<T>(
+  fetchPage: (params: Required<ApiPageParams>) => Promise<ApiPagedResult<T>>,
+  options: { pageSize?: number; maxPages?: number } = {},
+): Promise<T[]> {
+  const pageSize = normalizePageSize(options.pageSize, 1000)
+  const maxPages = Math.max(1, Math.floor(normalizePageSize(options.maxPages, 1000)))
+
+  const firstPage = await fetchPage({ page: 1, pageSize })
+  const rows = [...firstPage.items]
+
+  const totalCount = Number(firstPage.totalCount ?? rows.length)
+  const totalPage = Number(firstPage.totalPage ?? 0)
+  const calculatedTotalPage = pageSize > 0 ? Math.ceil(totalCount / pageSize) : 1
+  const pages = Math.min(
+    maxPages,
+    Math.max(1, Number.isFinite(totalPage) && totalPage > 0 ? totalPage : calculatedTotalPage),
+  )
+
+  for (let page = 2; page <= pages; page += 1) {
+    const result = await fetchPage({ page, pageSize })
+    rows.push(...result.items)
+  }
+
+  return rows
+}

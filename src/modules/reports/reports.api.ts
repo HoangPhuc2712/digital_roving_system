@@ -72,6 +72,7 @@ type ApiPointReportView = {
   realitySeconds?: number
 
   routeId?: number
+  routeCode?: string
   routeName?: string
   rdId?: number
   planSecond?: number
@@ -89,6 +90,13 @@ type ApiPointReportView = {
   psHourTo?: number
   psShift?: string
   rpShiftStr?: string
+  reportTimeFrom?: string
+  reportTimeTo?: string
+  rpLat?: number
+  rpLng?: number
+  rpLong?: number
+  prLat?: number
+  prLong?: number
   reportAt?: string
   reportBy?: string
   reportName?: string
@@ -797,11 +805,10 @@ export async function fetchReportRows(
     ApiQueryResultData<ApiPointReportView> | ApiPointReportView[] | ApiPointReportView
   >(res.data).data
   const paged = normalizePagedData<ApiPointReportView>(payload)
-  const rows = paged.items.map(normalizeView).sort((a, b) => (a.report_at < b.report_at ? 1 : -1))
 
   return {
     ...paged,
-    items: rows,
+    items: paged.items.map(normalizeView),
   }
 }
 
@@ -1190,128 +1197,297 @@ export async function fetchCtpatReportRows(
     ApiQueryResultData<ApiCtpatReportView> | ApiCtpatReportView[] | ApiCtpatReportView
   >(res.data).data
   const paged = normalizePagedData<ApiCtpatReportView>(payload)
-  const rows = paged.items.map(normalizeCtpatView).sort((a, b) => {
-    if (a.start_at !== b.start_at) return a.start_at.localeCompare(b.start_at)
-    if (a.end_at !== b.end_at) return a.end_at.localeCompare(b.end_at)
-    if (a.scan_at !== b.scan_at) return a.scan_at.localeCompare(b.scan_at)
-    return a.pr_id - b.pr_id
-  })
-
   return {
     ...paged,
-    items: rows,
+    items: paged.items.map(normalizeCtpatView),
   }
 }
 
-function normalizePatrolDetailRows(views: ApiPatrolShiftReportView[]): PatrolDetailReportRow[] {
-  const shiftColors = ['#ffeeba', '#bee5eb']
+const PATROL_SHIFT_COLORS = ['#ffeeba', '#bee5eb']
 
-  const sortedViews = [...views].sort((a, b) => {
-    const aStart = String(a.reportTimeFrom ?? '')
-    const bStart = String(b.reportTimeFrom ?? '')
-    if (aStart !== bStart) return aStart.localeCompare(bStart)
+function getMinutesFromDateTime(value: unknown): number | null {
+  const raw = String(value ?? '').trim()
+  if (!raw) return null
 
-    const aEnd = String(a.reportTimeTo ?? '')
-    const bEnd = String(b.reportTimeTo ?? '')
-    if (aEnd !== bEnd) return aEnd.localeCompare(bEnd)
+  const timeMatch = raw.match(/(?:T|\s)(\d{1,2}):(\d{2})/)
+  if (timeMatch) {
+    const hour = Number(timeMatch[1] ?? 0)
+    const minute = Number(timeMatch[2] ?? 0)
+    if (Number.isFinite(hour) && Number.isFinite(minute)) {
+      return (((Math.trunc(hour) % 24) + 24) % 24) * 60 + Math.max(0, Math.min(59, minute))
+    }
+  }
 
-    return Number(a.psId ?? 0) - Number(b.psId ?? 0)
-  })
+  const plainTimeMatch = raw.match(/^(\d{1,2})(?::(\d{2}))?(?::\d{2})?$/)
+  if (plainTimeMatch) {
+    const hour = Number(plainTimeMatch[1] ?? 0)
+    const minuteRaw = plainTimeMatch[2]
+    const minute = minuteRaw == null || minuteRaw === '' ? 0 : Number(minuteRaw)
+    if (Number.isFinite(hour) && Number.isFinite(minute)) {
+      return (((Math.trunc(hour) % 24) + 24) % 24) * 60 + Math.max(0, Math.min(59, minute))
+    }
+  }
 
-  const shiftColorMap = new Map<string, string>()
-  let nextColorIndex = 0
+  const parsed = new Date(raw)
+  if (Number.isFinite(parsed.getTime())) {
+    return parsed.getHours() * 60 + parsed.getMinutes()
+  }
 
-  const rows = sortedViews.flatMap((view) => {
-    const psId = Number(view.psId ?? 0)
-    const routeId = Number(view.routeId ?? 0)
-    const routeCode = String(view.routeCode ?? '')
-    const routeName = String(view.routeName ?? '')
-    const areaId = Number(view.areaId ?? 0)
-    const startTime = String(view.reportTimeFrom ?? '')
-    const finishTime = String(view.reportTimeTo ?? '')
-    const shiftGuardName = String(view.reportName ?? '')
-    const shiftKey = `${psId}|${routeId}|${startTime}|${finishTime}|${shiftGuardName}`
+  return null
+}
 
-    const timeSlotKey = `${startTime}|${finishTime}`
+function resolveShiftColorIndexFromHours(hourFrom: number, hourTo?: number) {
+  const startHour = ((Math.trunc(hourFrom) % 24) + 24) % 24
 
-    if (!shiftColorMap.has(timeSlotKey)) {
-      shiftColorMap.set(timeSlotKey, shiftColors[nextColorIndex % shiftColors.length] ?? '#ffeeba')
-      nextColorIndex += 1
+  if (hourTo != null && Number.isFinite(hourTo)) {
+    const endHour = ((Math.trunc(hourTo) % 24) + 24) % 24
+    const durationHours = ((endHour - startHour + 24) % 24) + 1
+    return Math.floor(startHour / Math.max(1, durationHours))
+  }
+
+  return startHour
+}
+
+function resolveShiftColorIndexFromDateTime(startTime: string, finishTime: string) {
+  const startMinutes = getMinutesFromDateTime(startTime)
+  if (startMinutes == null) return 0
+
+  const finishMinutes = getMinutesFromDateTime(finishTime)
+  if (finishMinutes == null) return Math.floor(startMinutes / 60)
+
+  const durationMinutes = ((finishMinutes - startMinutes + 1440) % 1440) + 1
+  if (durationMinutes <= 0) return Math.floor(startMinutes / 60)
+
+  return Math.floor(startMinutes / Math.max(1, durationMinutes))
+}
+
+function getDateTimeHourIndex(value: unknown): number | null {
+  const raw = String(value ?? '').trim()
+  if (!raw) return null
+
+  const parsed = new Date(raw)
+  if (Number.isFinite(parsed.getTime())) {
+    return Math.floor(parsed.getTime() / 3600000)
+  }
+
+  const minutes = getMinutesFromDateTime(raw)
+  if (minutes == null) return null
+
+  return Math.floor(minutes / 60)
+}
+
+function getPointReportShiftHourIndex(view: ApiPointReportView): number | null {
+  const reportTimeFromIndex = getDateTimeHourIndex(view.reportTimeFrom)
+  if (reportTimeFromIndex != null) return reportTimeFromIndex
+
+  const psYear = Number(view.psYear ?? 0)
+  const psMonth = Number(view.psMonth ?? 0)
+  const psDay = Number(view.psDay ?? 0)
+  const psHourFrom = Number(view.psHourFrom ?? NaN)
+
+  if (
+    Number.isFinite(psYear) &&
+    Number.isFinite(psMonth) &&
+    Number.isFinite(psDay) &&
+    Number.isFinite(psHourFrom) &&
+    psYear > 0 &&
+    psMonth > 0 &&
+    psDay > 0
+  ) {
+    const start = new Date(psYear, psMonth - 1, psDay, Math.trunc(psHourFrom), 0, 0, 0)
+    if (Number.isFinite(start.getTime())) {
+      return Math.floor(start.getTime() / 3600000)
+    }
+  }
+
+  if (Number.isFinite(psHourFrom)) {
+    return ((Math.trunc(psHourFrom) % 24) + 24) % 24
+  }
+
+  return null
+}
+
+function hashStringToNumber(value: string) {
+  let hash = 0
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash * 31 + value.charCodeAt(i)) | 0
+  }
+
+  return Math.abs(hash)
+}
+
+const pointReportShiftColorMap = new Map<string, string>()
+
+function getPatrolShiftColorByIndex(index: number) {
+  return PATROL_SHIFT_COLORS[Math.abs(index) % PATROL_SHIFT_COLORS.length] ?? '#ffeeba'
+}
+
+function getNextPatrolShiftColor(currentColor: string) {
+  const currentIndex = PATROL_SHIFT_COLORS.indexOf(currentColor)
+  if (currentIndex < 0) return getPatrolShiftColorByIndex(0)
+
+  return getPatrolShiftColorByIndex(currentIndex + 1)
+}
+
+function resolvePointReportShiftColor(view: ApiPointReportView) {
+  const shiftKey = buildPointReportShiftKey(view)
+  const mappedColor = pointReportShiftColorMap.get(shiftKey)
+  if (mappedColor) return mappedColor
+
+  const hourIndex = getPointReportShiftHourIndex(view)
+  if (hourIndex != null) return getPatrolShiftColorByIndex(hourIndex)
+
+  const colorIndex = hashStringToNumber(shiftKey)
+  if (colorIndex > 0) return getPatrolShiftColorByIndex(colorIndex)
+
+  const psId = Number(view.psId ?? 0)
+  if (psId > 0) return getPatrolShiftColorByIndex(psId)
+
+  return getPatrolShiftColorByIndex(0)
+}
+
+function applySequentialPointReportShiftColors<
+  T extends { shift_key: string; shift_color: string },
+>(rows: T[]): T[] {
+  let previousShiftKey = ''
+  let previousShiftColor = ''
+
+  return rows.map((row) => {
+    const shiftKey = String(row.shift_key ?? '').trim()
+    const mappedColor = shiftKey ? pointReportShiftColorMap.get(shiftKey) : ''
+    let shiftColor = mappedColor || row.shift_color || getPatrolShiftColorByIndex(0)
+
+    if (previousShiftKey && shiftKey && shiftKey !== previousShiftKey) {
+      if (!mappedColor || mappedColor === previousShiftColor) {
+        shiftColor = getNextPatrolShiftColor(previousShiftColor)
+      }
     }
 
-    const shiftColor = shiftColorMap.get(timeSlotKey) ?? '#ffeeba'
-    const points = Array.isArray(view.pointReports) ? view.pointReports : []
+    if (shiftKey) pointReportShiftColorMap.set(shiftKey, shiftColor)
+    previousShiftKey = shiftKey
+    previousShiftColor = shiftColor
 
-    const sortedPoints = [...points].sort((a, b) => {
-      const aTime = String(a.reportAt ?? '')
-      const bTime = String(b.reportAt ?? '')
-      if (aTime === bTime) return Number(a.prId ?? 0) - Number(b.prId ?? 0)
-      return aTime.localeCompare(bTime)
-    })
-
-    return sortedPoints.map((point, pointIndex) => {
-      const checkPointName = String(point.cpName ?? '')
-      const reportName = String(point.reportName ?? shiftGuardName)
-      const patrolTime = String(point.reportAt ?? '')
-      const prStatus = Number(point.prStatus ?? 0)
-      const prHasProblem = Boolean(point.prHasProblem)
-      const pointTimeProblem = Boolean(point.timeProblem)
-
-      const q = [
-        routeCode,
-        routeName,
-        checkPointName,
-        reportName,
-        startTime,
-        finishTime,
-        patrolTime,
-        String(areaId),
-      ]
-        .join(' ')
-        .toLowerCase()
-
-      return {
-        row_id: `${psId}-${Number(point.prId ?? pointIndex + 1)}-${pointIndex}`,
-        ps_id: psId,
-        area_id: areaId,
-        route_id: routeId,
-        route_code: routeCode,
-        route_name: routeName,
-        check_point_name: checkPointName,
-        start_time: startTime,
-        finish_time: finishTime,
-        patrol_time: patrolTime,
-        report_name: reportName,
-        pr_id: Number(point.prId ?? 0),
-        pr_status: prStatus,
-        pr_has_problem: prHasProblem,
-        point_time_problem: pointTimeProblem,
-        shift_key: shiftKey,
-        shift_color: shiftColor,
-        event_zh: '',
-        event_vi: '',
-        _q: q,
-      }
-    })
+    if (row.shift_color === shiftColor) return row
+    return {
+      ...row,
+      shift_color: shiftColor,
+    }
   })
+}
 
-  return rows.sort((a, b) => {
-    const aStart = String(a.start_time ?? '')
-    const bStart = String(b.start_time ?? '')
-    if (aStart !== bStart) return aStart.localeCompare(bStart)
+function buildPointReportShiftKey(view: ApiPointReportView) {
+  const startTime = String(view.reportTimeFrom ?? '').trim()
+  const finishTime = String(view.reportTimeTo ?? '').trim()
 
-    const aEnd = String(a.finish_time ?? '')
-    const bEnd = String(b.finish_time ?? '')
-    if (aEnd !== bEnd) return aEnd.localeCompare(bEnd)
+  if (startTime || finishTime) {
+    return `time:${startTime}|${finishTime}`
+  }
 
-    const aTime = String(a.patrol_time ?? '')
-    const bTime = String(b.patrol_time ?? '')
-    if (aTime !== bTime) return aTime.localeCompare(bTime)
+  const psYear = Number(view.psYear ?? 0)
+  const psMonth = Number(view.psMonth ?? 0)
+  const psDay = Number(view.psDay ?? 0)
+  const psHourFrom = Number(view.psHourFrom ?? NaN)
+  const psHourTo = Number(view.psHourTo ?? NaN)
 
-    if (a.ps_id !== b.ps_id) return Number(a.ps_id ?? 0) - Number(b.ps_id ?? 0)
-    if (a.pr_id !== b.pr_id) return Number(a.pr_id ?? 0) - Number(b.pr_id ?? 0)
-    return String(a.row_id ?? '').localeCompare(String(b.row_id ?? ''))
-  })
+  if (
+    Number.isFinite(psYear) &&
+    Number.isFinite(psMonth) &&
+    Number.isFinite(psDay) &&
+    Number.isFinite(psHourFrom) &&
+    psYear > 0 &&
+    psMonth > 0 &&
+    psDay > 0
+  ) {
+    return `time:${psYear}-${psMonth}-${psDay}|${Math.trunc(psHourFrom)}-${
+      Number.isFinite(psHourTo) ? Math.trunc(psHourTo) : ''
+    }`
+  }
+
+  const psId = Number(view.psId ?? 0)
+  if (psId > 0) return `ps:${psId}`
+
+  const routeId = Number(view.routeId ?? 0)
+  const reportName = String(view.reportName ?? '').trim()
+
+  return `fallback:${routeId}|${reportName}`
+}
+
+function normalizePatrolDetailRow(view: ApiPointReportView, index = 0): PatrolDetailReportRow {
+  const psId = Number(view.psId ?? 0)
+  const routeId = Number(view.routeId ?? 0)
+  const routeCode = String(view.routeCode ?? '')
+  const routeName = String(view.routeName ?? '')
+  const areaId = Number(view.areaId ?? 0)
+  const checkPointName = String(view.cpName ?? '')
+  const startTime = String(view.reportTimeFrom ?? '')
+  const finishTime = String(view.reportTimeTo ?? '')
+  const patrolTime = String(view.reportAt ?? view.scanAt ?? '')
+  const reportName = String(view.reportName ?? '')
+  const prId = Number(view.prId ?? 0)
+  const prStatus = Number(view.prStatus ?? 0)
+  const prHasProblem = Boolean(view.prHasProblem)
+  const pointTimeProblem = Boolean(view.timeProblem)
+  const shiftKey = buildPointReportShiftKey(view)
+  const shiftColor = resolvePointReportShiftColor(view)
+
+  const q = [
+    routeCode,
+    routeName,
+    checkPointName,
+    reportName,
+    startTime,
+    finishTime,
+    patrolTime,
+    String(areaId),
+  ]
+    .join(' ')
+    .toLowerCase()
+
+  return {
+    row_id: prId > 0 ? `pr-${prId}` : `${psId}-${routeId}-${checkPointName}-${patrolTime}-${index}`,
+    ps_id: psId,
+    area_id: areaId,
+    route_id: routeId,
+    route_code: routeCode,
+    route_name: routeName,
+    check_point_name: checkPointName,
+    start_time: startTime,
+    finish_time: finishTime,
+    patrol_time: patrolTime,
+    report_name: reportName,
+    pr_id: prId,
+    pr_status: prStatus,
+    pr_has_problem: prHasProblem,
+    point_time_problem: pointTimeProblem,
+    shift_key: shiftKey,
+    shift_color: shiftColor,
+    event_zh: '',
+    event_vi: '',
+    _q: q,
+  }
+}
+
+function normalizeGpsLogRow(view: ApiPointReportView, index = 0): GpsLogRow {
+  const base = normalizePatrolDetailRow(view, index)
+  const latitudeRaw = Number(view.rpLat ?? view.prLat ?? NaN)
+  const longitudeRaw = Number(view.rpLng ?? view.rpLong ?? view.prLong ?? NaN)
+  const latitude = Number.isFinite(latitudeRaw) ? latitudeRaw : null
+  const longitude = Number.isFinite(longitudeRaw) ? longitudeRaw : null
+
+  const q = [
+    base._q,
+    latitude == null ? '' : String(latitude),
+    longitude == null ? '' : String(longitude),
+  ]
+    .join(' ')
+    .toLowerCase()
+
+  return {
+    ...base,
+    latitude,
+    longitude,
+    _q: q,
+  }
 }
 
 function isFiniteDate(value: unknown): value is Date {
@@ -1390,7 +1566,58 @@ async function fetchPatrolShiftReportViewsByDay(date: Date) {
 type FetchPatrolShiftReportRowsParams = ApiPageParams & {
   areaId?: number | null
   routeId?: number | null
+  cpId?: number | null
+  cpName?: string | null
   reportBy?: string | null
+}
+
+function buildPointReportPatrolRowsRequestBody(
+  dateFrom?: Date | null,
+  dateTo?: Date | null,
+  params: FetchPatrolShiftReportRowsParams = {},
+) {
+  const body: Record<string, any> = {}
+  appendPageParams(body, params)
+
+  const range = normalizeDateRange(dateFrom, dateTo)
+  if (range) {
+    body.reportAtFrom = toApiDateTimeZ(range.from)
+    body.reportAtTo = toApiDateTimeZ(range.to)
+  }
+
+  if (params.areaId != null && Number.isFinite(Number(params.areaId))) {
+    body.areaId = Number(params.areaId)
+  }
+
+  if (params.routeId != null && Number.isFinite(Number(params.routeId))) {
+    body.routeId = Number(params.routeId)
+  }
+
+  if (params.cpId != null && Number.isFinite(Number(params.cpId))) {
+    body.cpId = Number(params.cpId)
+  }
+
+  const cpName = String(params.cpName ?? '').trim()
+  if (cpName) body.cpName = cpName
+
+  const reportBy = String(params.reportBy ?? '').trim()
+  if (reportBy) body.reportBy = reportBy
+
+  return body
+}
+
+async function fetchPatrolPointReportViewPage(
+  dateFrom?: Date | null,
+  dateTo?: Date | null,
+  params: FetchPatrolShiftReportRowsParams = {},
+): Promise<ApiPagedResult<ApiPointReportView>> {
+  const body = buildPointReportPatrolRowsRequestBody(dateFrom, dateTo, params)
+  const res = await http.post(endpoints.pointReportView.getList, body)
+  const payload = ensureSuccess<
+    ApiQueryResultData<ApiPointReportView> | ApiPointReportView[] | ApiPointReportView
+  >(res.data).data
+
+  return normalizePagedData<ApiPointReportView>(payload)
 }
 
 export async function fetchPatrolDetailReportRows(
@@ -1398,129 +1625,16 @@ export async function fetchPatrolDetailReportRows(
   dateTo?: Date | null,
   params: FetchPatrolShiftReportRowsParams = {},
 ): Promise<ApiPagedResult<PatrolDetailReportRow>> {
-  const paged = await fetchPatrolShiftReportViewPage(dateFrom, dateTo, params)
+  const paged = await fetchPatrolPointReportViewPage(dateFrom, dateTo, params)
+
+  const rows = applySequentialPointReportShiftColors(
+    paged.items.map((item, index) => normalizePatrolDetailRow(item, index)),
+  )
 
   return {
     ...paged,
-    items: normalizePatrolDetailRows(paged.items),
+    items: rows,
   }
-}
-
-function normalizeGpsLogRows(views: ApiPatrolShiftReportView[]): GpsLogRow[] {
-  const shiftColors = ['#ffeeba', '#bee5eb']
-
-  const sortedViews = [...views].sort((a, b) => {
-    const aStart = String(a.reportTimeFrom ?? '')
-    const bStart = String(b.reportTimeFrom ?? '')
-    if (aStart !== bStart) return aStart.localeCompare(bStart)
-
-    const aEnd = String(a.reportTimeTo ?? '')
-    const bEnd = String(b.reportTimeTo ?? '')
-    if (aEnd !== bEnd) return aEnd.localeCompare(bEnd)
-
-    return Number(a.psId ?? 0) - Number(b.psId ?? 0)
-  })
-
-  const shiftColorMap = new Map<string, string>()
-  let nextColorIndex = 0
-
-  const rows = sortedViews.flatMap((view) => {
-    const psId = Number(view.psId ?? 0)
-    const routeId = Number(view.routeId ?? 0)
-    const routeCode = String(view.routeCode ?? '')
-    const routeName = String(view.routeName ?? '')
-    const areaId = Number(view.areaId ?? 0)
-    const startTime = String(view.reportTimeFrom ?? '')
-    const finishTime = String(view.reportTimeTo ?? '')
-    const shiftGuardName = String(view.reportName ?? '')
-    const shiftKey = `${psId}|${routeId}|${startTime}|${finishTime}|${shiftGuardName}`
-
-    const timeSlotKey = `${startTime}|${finishTime}`
-
-    if (!shiftColorMap.has(timeSlotKey)) {
-      shiftColorMap.set(timeSlotKey, shiftColors[nextColorIndex % shiftColors.length] ?? '#ffeeba')
-      nextColorIndex += 1
-    }
-
-    const shiftColor = shiftColorMap.get(timeSlotKey) ?? '#ffeeba'
-    const points = Array.isArray(view.pointReports) ? view.pointReports : []
-
-    const sortedPoints = [...points].sort((a, b) => {
-      const aTime = String(a.reportAt ?? '')
-      const bTime = String(b.reportAt ?? '')
-      if (aTime === bTime) return Number(a.prId ?? 0) - Number(b.prId ?? 0)
-      return aTime.localeCompare(bTime)
-    })
-
-    return sortedPoints.map((point, pointIndex) => {
-      const checkPointName = String(point.cpName ?? '')
-      const reportName = String(point.reportName ?? shiftGuardName)
-      const patrolTime = String(point.reportAt ?? '')
-      const prStatus = Number(point.prStatus ?? 0)
-      const prHasProblem = Boolean(point.prHasProblem)
-      const pointTimeProblem = Boolean(point.timeProblem)
-      const latitudeRaw = Number(point.rpLat ?? NaN)
-      const longitudeRaw = Number(point.rpLng ?? point.rpLong ?? NaN)
-      const latitude = Number.isFinite(latitudeRaw) ? latitudeRaw : null
-      const longitude = Number.isFinite(longitudeRaw) ? longitudeRaw : null
-
-      const q = [
-        routeCode,
-        routeName,
-        checkPointName,
-        reportName,
-        startTime,
-        finishTime,
-        patrolTime,
-        String(areaId),
-        latitude == null ? '' : String(latitude),
-        longitude == null ? '' : String(longitude),
-      ]
-        .join(' ')
-        .toLowerCase()
-
-      return {
-        row_id: `${psId}-${Number(point.prId ?? pointIndex + 1)}-${pointIndex}`,
-        ps_id: psId,
-        area_id: areaId,
-        route_id: routeId,
-        route_code: routeCode,
-        route_name: routeName,
-        check_point_name: checkPointName,
-        start_time: startTime,
-        finish_time: finishTime,
-        patrol_time: patrolTime,
-        latitude,
-        longitude,
-        report_name: reportName,
-        pr_id: Number(point.prId ?? 0),
-        pr_status: prStatus,
-        pr_has_problem: prHasProblem,
-        point_time_problem: pointTimeProblem,
-        shift_key: shiftKey,
-        shift_color: shiftColor,
-        _q: q,
-      }
-    })
-  })
-
-  return rows.sort((a, b) => {
-    const aStart = String(a.start_time ?? '')
-    const bStart = String(b.start_time ?? '')
-    if (aStart !== bStart) return aStart.localeCompare(bStart)
-
-    const aEnd = String(a.finish_time ?? '')
-    const bEnd = String(b.finish_time ?? '')
-    if (aEnd !== bEnd) return aEnd.localeCompare(bEnd)
-
-    const aTime = String(a.patrol_time ?? '')
-    const bTime = String(b.patrol_time ?? '')
-    if (aTime !== bTime) return aTime.localeCompare(bTime)
-
-    if (a.ps_id !== b.ps_id) return Number(a.ps_id ?? 0) - Number(b.ps_id ?? 0)
-    if (a.pr_id !== b.pr_id) return Number(a.pr_id ?? 0) - Number(b.pr_id ?? 0)
-    return String(a.row_id ?? '').localeCompare(String(b.row_id ?? ''))
-  })
 }
 
 export async function fetchGpsLogRows(
@@ -1528,11 +1642,15 @@ export async function fetchGpsLogRows(
   dateTo?: Date | null,
   params: FetchPatrolShiftReportRowsParams = {},
 ): Promise<ApiPagedResult<GpsLogRow>> {
-  const paged = await fetchPatrolShiftReportViewPage(dateFrom, dateTo, params)
+  const paged = await fetchPatrolPointReportViewPage(dateFrom, dateTo, params)
+
+  const rows = applySequentialPointReportShiftColors(
+    paged.items.map((item, index) => normalizeGpsLogRow(item, index)),
+  )
 
   return {
     ...paged,
-    items: normalizeGpsLogRows(paged.items),
+    items: rows,
   }
 }
 

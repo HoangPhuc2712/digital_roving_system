@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { toApiPage } from '@/utils/pagination'
+import { fetchAllPagedRows, toApiPage } from '@/utils/pagination'
 import {
   fetchPatrolDetailCheckpointOptions,
   fetchPatrolDetailGuardOptions,
@@ -23,25 +23,7 @@ function endOfToday() {
 function applyVisibleShiftColors<
   T extends { shift_key: string; shift_color: string; start_time: string; finish_time: string },
 >(rows: T[]): T[] {
-  const shiftColors = ['#ffeeba', '#bee5eb']
-  const shiftColorMap = new Map<string, string>()
-  let nextColorIndex = 0
-
-  return rows.map((row) => {
-    const timeSlotKey = `${String(row.start_time ?? '').trim()}|${String(row.finish_time ?? '').trim()}`
-    const shiftKey = String(row.shift_key ?? '').trim()
-    const colorKey = timeSlotKey || shiftKey
-    if (!colorKey) return row
-
-    if (!shiftColorMap.has(colorKey)) {
-      shiftColorMap.set(colorKey, shiftColors[nextColorIndex % shiftColors.length] ?? '#ffeeba')
-      nextColorIndex += 1
-    }
-
-    const nextShiftColor = shiftColorMap.get(colorKey) ?? '#ffeeba'
-    if (row.shift_color === nextShiftColor) return row
-    return { ...row, shift_color: nextShiftColor }
-  })
+  return rows
 }
 
 export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
@@ -311,12 +293,17 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
         const selectedGuard = this.guardOptions.find(
           (option) => option.value === this.filterGuardName,
         )
+        const selectedCheckPoint = this.checkPointOptions.find(
+          (option) => option.value === this.filterCheckPointName,
+        )
 
         const result = await fetchPatrolDetailReportRows(this.filterDateFrom, this.filterDateTo, {
           page: toApiPage(this.first, this.rowsPerPage),
           pageSize: this.rowsPerPage,
           areaId: this.filterAreaId,
           routeId: selectedRoute?.routeId ?? null,
+          cpId: selectedCheckPoint?.cpId ?? null,
+          cpName: selectedCheckPoint?.cpId ? null : this.filterCheckPointName,
           reportBy: selectedGuard?.userId ?? this.filterGuardName,
         })
 
@@ -324,6 +311,39 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
         this.totalRecords = result.totalCount
       } finally {
         this.loading = false
+      }
+    },
+
+    async getRowsForExport() {
+      const selectedRoute = this.routeOptions.find(
+        (option) =>
+          option.value === this.filterRouteName &&
+          (this.filterAreaId == null || option.areaId === this.filterAreaId),
+      )
+      const selectedGuard = this.guardOptions.find(
+        (option) => option.value === this.filterGuardName,
+      )
+      const selectedCheckPoint = this.checkPointOptions.find(
+        (option) => option.value === this.filterCheckPointName,
+      )
+
+      const rows = await fetchAllPagedRows((pageParams) =>
+        fetchPatrolDetailReportRows(this.filterDateFrom, this.filterDateTo, {
+          ...pageParams,
+          areaId: this.filterAreaId,
+          routeId: selectedRoute?.routeId ?? null,
+          cpId: selectedCheckPoint?.cpId ?? null,
+          cpName: selectedCheckPoint?.cpId ? null : this.filterCheckPointName,
+          reportBy: selectedGuard?.userId ?? this.filterGuardName,
+        }),
+      )
+
+      const currentRows = this.rows
+      this.rows = rows
+      try {
+        return this.filteredRows.slice()
+      } finally {
+        this.rows = currentRows
       }
     },
 

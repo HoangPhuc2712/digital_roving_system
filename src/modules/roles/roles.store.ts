@@ -1,7 +1,20 @@
 import { defineStore } from 'pinia'
 import type { MenuCategoryOption, RoleRow, RoleStatusFilter } from './roles.types'
-import { toApiPage } from '@/utils/pagination'
+import { fetchAllPagedRows, toApiPage } from '@/utils/pagination'
 import { fetchMenuCategoryOptions, fetchRoleRowsPaged } from './roles.api'
+
+function filterRoleRows(rows: RoleRow[], searchText: string, filterStatus: RoleStatusFilter) {
+  const q = searchText.trim().toLowerCase()
+
+  return rows.filter((r) => {
+    if (q && (!r._q || !r._q.includes(q))) return false
+
+    if (filterStatus === 'ACTIVE' && r.role_status !== 1) return false
+    if (filterStatus === 'INACTIVE' && r.role_status !== 0) return false
+
+    return true
+  })
+}
 
 export const useRolesStore = defineStore('roles', {
   state: () => ({
@@ -21,16 +34,7 @@ export const useRolesStore = defineStore('roles', {
 
   getters: {
     filteredRows(state): RoleRow[] {
-      const q = state.searchText.trim().toLowerCase()
-
-      return state.rows.filter((r) => {
-        if (q && (!r._q || !r._q.includes(q))) return false
-
-        if (state.filterStatus === 'ACTIVE' && r.role_status !== 1) return false
-        if (state.filterStatus === 'INACTIVE' && r.role_status !== 0) return false
-
-        return true
-      })
+      return filterRoleRows(state.rows, state.searchText, state.filterStatus)
     },
   },
 
@@ -47,6 +51,11 @@ export const useRolesStore = defineStore('roles', {
       } finally {
         this.loading = false
       }
+    },
+
+    async getRowsForExport() {
+      const rows = await fetchAllPagedRows((pageParams) => fetchRoleRowsPaged(pageParams))
+      return filterRoleRows(rows, this.searchText, this.filterStatus)
     },
 
     async ensureMenuOptionsLoaded(force = false) {

@@ -154,7 +154,7 @@ async function onExport() {
   exporting.value = true
   try {
     await exportIncorrectScanLogXlsx({
-      rows: tableRows.value,
+      rows: hasInvalidDateFilter.value ? [] : await store.getRowsForExport(),
       fileName: `incorrect_scan_log_${new Date().toISOString().slice(0, 10)}.xlsx`,
     })
   } catch (e: any) {
