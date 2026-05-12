@@ -33,7 +33,7 @@ export async function exportPatrolDetailReportXlsx(params: {
     { header: 'Start Time', key: 'start_time', width: 24 },
     { header: 'Finish Time', key: 'finish_time', width: 24 },
     { header: 'Patrol Time', key: 'patrol_time', width: 24 },
-    { header: 'Patrol Guard', key: 'report_name', width: 20 },
+    { header: 'Patrol Guard', key: 'report_name', width: 30 },
     { header: 'Event Information Zh', key: 'event_zh', width: 24 },
     { header: 'Event Information Vi', key: 'event_vi', width: 24 },
   ]
