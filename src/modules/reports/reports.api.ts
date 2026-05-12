@@ -1197,16 +1197,9 @@ export async function fetchCtpatReportRows(
     ApiQueryResultData<ApiCtpatReportView> | ApiCtpatReportView[] | ApiCtpatReportView
   >(res.data).data
   const paged = normalizePagedData<ApiCtpatReportView>(payload)
-  const rows = paged.items.map(normalizeCtpatView).sort((a, b) => {
-    if (a.start_at !== b.start_at) return a.start_at.localeCompare(b.start_at)
-    if (a.end_at !== b.end_at) return a.end_at.localeCompare(b.end_at)
-    if (a.scan_at !== b.scan_at) return a.scan_at.localeCompare(b.scan_at)
-    return a.pr_id - b.pr_id
-  })
-
   return {
     ...paged,
-    items: rows,
+    items: paged.items.map(normalizeCtpatView),
   }
 }
 
