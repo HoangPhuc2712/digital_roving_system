@@ -150,6 +150,32 @@ function formatDateTime(iso: string) {
   )}:${pad2(d.getSeconds())}`
 }
 
+function formatFilterDateTime(value: Date | null) {
+  if (!(value instanceof Date)) return ''
+  const time = value.getTime()
+  if (!Number.isFinite(time)) return ''
+
+  const pad2 = (n: number) => String(n).padStart(2, '0')
+  const hours = value.getHours()
+  const hour12 = hours % 12 || 12
+  const period = hours >= 12 ? 'PM' : 'AM'
+
+  return `${pad2(value.getDate())}/${pad2(value.getMonth() + 1)}/${value.getFullYear()} ${pad2(hour12)}:${pad2(
+    value.getMinutes(),
+  )} ${period}`
+}
+
+const emptyIncorrectScanMessage = computed(() => {
+  const from = formatFilterDateTime(store.filterDateFrom)
+  const to = formatFilterDateTime(store.filterDateTo)
+
+  if (from && to) {
+    return t('incorrectScanReportList.noIncorrectScanInRange', { from, to })
+  }
+
+  return `${t('incorrectScanReportList.noIncorrectScan')}.`
+})
+
 async function onExport() {
   exporting.value = true
   try {
@@ -212,11 +238,7 @@ async function onExport() {
       </template>
       <template #empty>
         <div class="p-4 text-slate-600 flex justify-center">
-          {{
-            hasInvalidDateFilter
-              ? t('common.invalidDateFilter')
-              : `${t('incorrectScanReportList.noIncorrectScan')}.`
-          }}
+          {{ hasInvalidDateFilter ? t('common.invalidDateFilter') : emptyIncorrectScanMessage }}
         </div>
       </template>
 

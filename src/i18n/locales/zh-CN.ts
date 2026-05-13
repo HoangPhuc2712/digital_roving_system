@@ -235,6 +235,7 @@ const zhCN = {
   incorrectScanReportList: {
     title: '错误扫描检查点记录',
     noIncorrectScan: '未找到错误扫描检查点记录',
+    noIncorrectScanInRange: '未找到从 {from} 到 {to} 的错误扫描检查点记录。',
     routeName: '路线名称',
     startTime: '开始时间',
     finishTime: '结束时间',

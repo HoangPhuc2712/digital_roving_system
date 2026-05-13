@@ -236,6 +236,7 @@ const vi = {
   incorrectScanReportList: {
     title: 'Nhật ký quét sai điểm kiểm tra',
     noIncorrectScan: 'Không tìm thấy nhật ký quét sai điểm kiểm tra',
+    noIncorrectScanInRange: 'Không tìm thấy nhật ký quét sai điểm kiểm tra từ {from} đến {to}.',
     routeName: 'Tên lộ trình',
     startTime: 'Thời gian bắt đầu',
     finishTime: 'Thời gian kết thúc',
