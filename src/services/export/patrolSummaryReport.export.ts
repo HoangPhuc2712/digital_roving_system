@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs'
 import type { PatrolSummaryReportRow } from '@/modules/reports/reports.types'
+import { excelT } from './exportI18n'
 
 function hexToArgb(hex: string) {
   const value = String(hex ?? '')
@@ -19,7 +20,8 @@ export async function exportPatrolSummaryReportXlsx(params: {
   chartBase64?: string
 }) {
   const wb = new ExcelJS.Workbook()
-  const ws = wb.addWorksheet('summaryReportOfSecurityPatrol')
+  const reportTitle = excelT('patrolSummaryReportList.title', 'summaryReportOfSecurityPatrol')
+  const ws = wb.addWorksheet(reportTitle)
 
   if (params.chartBase64) {
     const imageId = wb.addImage({
@@ -33,22 +35,22 @@ export async function exportPatrolSummaryReportXlsx(params: {
   const startRow = 21
   ws.mergeCells(startRow, 1, startRow, 10)
   const titleCell = ws.getCell(startRow, 1)
-  titleCell.value = 'summaryReportOfSecurityPatrol'
+  titleCell.value = reportTitle
   titleCell.font = { bold: true, size: 13 }
   titleCell.alignment = { horizontal: 'center', vertical: 'middle' }
 
   const headerRowIndex = startRow + 1
   const headers = [
-    'Patrol Date',
-    'Patrol Area',
-    'Required Number of Patrols',
-    'Actual Patrol Count',
-    'Missed Patrols Count',
-    'Too Short Patrol Count',
-    'Too Long Patrol Count',
-    'Insufficient Number of Patrols',
-    'Shift Problem Count',
-    'Abnormal Rate',
+    excelT('patrolSummaryReportList.patrolDate', 'Patrol Date'),
+    excelT('patrolSummaryReportList.patrolArea', 'Patrol Area'),
+    excelT('patrolSummaryReportList.requiredNumberOfPatrols', 'Required Number of Patrols'),
+    excelT('patrolSummaryReportList.actualPatrolCount', 'Actual Patrol Count'),
+    excelT('patrolSummaryReportList.missedPatrolCount', 'Missed Patrols Count'),
+    excelT('patrolSummaryReportList.tooSlowPatrolCount', 'Too Short Patrol Count'),
+    excelT('patrolSummaryReportList.tooFastPatrolCount', 'Too Long Patrol Count'),
+    excelT('patrolSummaryReportList.insufficientNumberOfPatrol', 'Insufficient Number of Patrols'),
+    excelT('patrolSummaryReportList.shiftProblemCount', 'Shift Problem Count'),
+    excelT('patrolSummaryReportList.abnormalRate', 'Abnormal Rate'),
   ]
 
   ws.columns = [

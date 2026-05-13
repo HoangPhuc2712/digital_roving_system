@@ -85,6 +85,7 @@ const zhTW = {
     to: '到',
     selectStartDate: '選擇開始日期',
     selectEndDate: '選擇結束日期',
+    invalidRange: '篩選時間範圍不正確，請重新選擇',
   },
   patrolDataButtonSwitch: {
     switchPatrolReports: '巡邏報告',
@@ -234,6 +235,7 @@ const zhTW = {
   incorrectScanReportList: {
     title: '錯誤掃描檢查點記錄',
     noIncorrectScan: '找不到錯誤掃描檢查點記錄',
+    noIncorrectScanInRange: '找不到從 {from} 到 {to} 的錯誤掃描檢查點記錄。',
     routeName: '路線名稱',
     startTime: '開始時間',
     finishTime: '結束時間',

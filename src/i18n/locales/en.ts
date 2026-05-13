@@ -85,6 +85,7 @@ const en = {
     to: 'To',
     selectStartDate: 'Select start date',
     selectEndDate: 'Select end date',
+    invalidRange: 'Incorrect Date Range, Please Select again',
   },
   patrolDataButtonSwitch: {
     switchPatrolReports: 'Patrol Reports',
@@ -235,6 +236,7 @@ const en = {
   incorrectScanReportList: {
     title: 'Incorrect Scan Point Log',
     noIncorrectScan: 'No Incorrect Scan Point Log found',
+    noIncorrectScanInRange: 'No Incorrect Scan Point Log found from {from} to {to}.',
     routeName: 'Route Name',
     startTime: 'Start Time',
     finishTime: 'Finish Time',

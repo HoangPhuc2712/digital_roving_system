@@ -1,5 +1,7 @@
 import ExcelJS from 'exceljs'
 import type { PatrolDetailReportRow } from '@/modules/reports/reports.types'
+import { translateRouteName } from '@/utils/dataI18n'
+import { excelT } from './exportI18n'
 
 function formatDateTime(iso: string) {
   const s = (iso ?? '').trim()
@@ -25,17 +27,41 @@ export async function exportPatrolDetailReportXlsx(params: {
   fileName: string
 }) {
   const wb = new ExcelJS.Workbook()
-  const ws = wb.addWorksheet('Patrol Detail Report')
+  const ws = wb.addWorksheet(excelT('patrolDetailReport.title', 'Patrol Detail Report'))
 
   ws.columns = [
-    { header: 'Route Name', key: 'route_name', width: 30 },
-    { header: 'Check Point', key: 'check_point_name', width: 28 },
-    { header: 'Start Time', key: 'start_time', width: 24 },
-    { header: 'Finish Time', key: 'finish_time', width: 24 },
-    { header: 'Patrol Time', key: 'patrol_time', width: 24 },
-    { header: 'Patrol Guard', key: 'report_name', width: 20 },
-    { header: 'Event Information Zh', key: 'event_zh', width: 24 },
-    { header: 'Event Information Vi', key: 'event_vi', width: 24 },
+    { header: excelT('patrolDetailReport.routeName', 'Route Name'), key: 'route_name', width: 30 },
+    {
+      header: excelT('patrolDetailReport.checkpointName', 'Check Point'),
+      key: 'check_point_name',
+      width: 28,
+    },
+    { header: excelT('patrolDetailReport.startTime', 'Start Time'), key: 'start_time', width: 24 },
+    {
+      header: excelT('patrolDetailReport.finishTime', 'Finish Time'),
+      key: 'finish_time',
+      width: 24,
+    },
+    {
+      header: excelT('patrolDetailReport.patrolTime', 'Patrol Time'),
+      key: 'patrol_time',
+      width: 24,
+    },
+    {
+      header: excelT('patrolDetailReport.guardName', 'Patrol Guard'),
+      key: 'report_name',
+      width: 30,
+    },
+    {
+      header: excelT('patrolDetailReport.eventInfoZh', 'Event Information Zh'),
+      key: 'event_zh',
+      width: 24,
+    },
+    {
+      header: excelT('patrolDetailReport.eventInfoVi', 'Event Information Vi'),
+      key: 'event_vi',
+      width: 24,
+    },
   ]
 
   const headerRow = ws.getRow(1)
@@ -56,7 +82,9 @@ export async function exportPatrolDetailReportXlsx(params: {
 
   for (const row of params.rows ?? []) {
     ws.addRow({
-      route_name: row.route_name || '-',
+      route_name: row.route_name
+        ? translateRouteName(row.route_name, (key) => excelT(key, row.route_name))
+        : '-',
       check_point_name: row.check_point_name || '-',
       start_time: formatDateTime(row.start_time),
       finish_time: formatDateTime(row.finish_time),

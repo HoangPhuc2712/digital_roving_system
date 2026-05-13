@@ -1,5 +1,7 @@
 import ExcelJS from 'exceljs'
 import type { UserRow } from '@/modules/users/users.types'
+import { translateRoleName } from '@/utils/dataI18n'
+import { excelT } from './exportI18n'
 
 function applyBorder(cell: ExcelJS.Cell) {
   cell.border = {
@@ -26,13 +28,13 @@ async function saveWorkbook(wb: ExcelJS.Workbook, fileName: string) {
 
 export async function exportUsersXlsx(params: { rows: UserRow[]; fileName: string }) {
   const wb = new ExcelJS.Workbook()
-  const ws = wb.addWorksheet('Users')
+  const ws = wb.addWorksheet(excelT('breadcrumb.users', 'Users'))
 
   ws.columns = [
-    { header: 'Name', key: 'user_name', width: 24 },
-    { header: 'User Code', key: 'user_code', width: 18 },
-    { header: 'Area', key: 'area_name', width: 20 },
-    { header: 'Role', key: 'role_name', width: 20 },
+    { header: excelT('userList.userName', 'Name'), key: 'user_name', width: 30 },
+    { header: excelT('userList.userCode', 'User Code'), key: 'user_code', width: 18 },
+    { header: excelT('userList.area', 'Area'), key: 'area_name', width: 20 },
+    { header: excelT('userList.role', 'Role'), key: 'role_name', width: 20 },
   ]
 
   for (let c = 1; c <= 4; c++) {
@@ -48,7 +50,9 @@ export async function exportUsersXlsx(params: { rows: UserRow[]; fileName: strin
       user_name: row.user_name || '-',
       user_code: row.user_code || '-',
       area_name: row.area_name || '-',
-      role_name: row.role_name || '-',
+      role_name: row.role_name
+        ? translateRoleName(row.role_name, (key) => excelT(key, row.role_name))
+        : '-',
     })
   }
 

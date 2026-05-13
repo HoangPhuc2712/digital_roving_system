@@ -1,5 +1,7 @@
 import ExcelJS from 'exceljs'
 import type { RouteRow } from '@/modules/routes/routes.types'
+import { translateRoleName, translateRouteName } from '@/utils/dataI18n'
+import { excelT } from './exportI18n'
 
 function applyBorder(cell: ExcelJS.Cell) {
   cell.border = {
@@ -40,17 +42,17 @@ async function saveWorkbook(wb: ExcelJS.Workbook, fileName: string) {
 
 export async function exportRoutesXlsx(params: { rows: RouteRow[]; fileName: string }) {
   const wb = new ExcelJS.Workbook()
-  const ws = wb.addWorksheet('Patrol Routes')
+  const ws = wb.addWorksheet(excelT('breadcrumb.routes', 'Patrol Routes'))
 
   ws.columns = [
-    { header: 'Route Code', key: 'route_code', width: 18 },
-    { header: 'Route Name', key: 'route_name', width: 20 },
-    { header: 'Area', key: 'area_name', width: 20 },
-    { header: 'Role', key: 'role_name', width: 20 },
-    { header: 'Priority', key: 'route_priority', width: 12 },
-    { header: 'Minimum Time', key: 'route_min_minute', width: 16 },
-    { header: 'Maximum Time', key: 'route_max_minute', width: 16 },
-    { header: 'Route Detail', key: 'route_detail', width: 32 },
+    { header: excelT('routeList.routeCode', 'Route Code'), key: 'route_code', width: 18 },
+    { header: excelT('routeList.routeName', 'Route Name'), key: 'route_name', width: 20 },
+    { header: excelT('routeList.area', 'Area'), key: 'area_name', width: 20 },
+    { header: excelT('routeList.role', 'Role'), key: 'role_name', width: 20 },
+    { header: excelT('routeList.priority', 'Priority'), key: 'route_priority', width: 12 },
+    { header: excelT('routeList.minMinute', 'Minimum Time'), key: 'route_min_minute', width: 16 },
+    { header: excelT('routeList.maxMinute', 'Maximum Time'), key: 'route_max_minute', width: 16 },
+    { header: excelT('routeList.routeDetail', 'Route Detail'), key: 'route_detail', width: 32 },
   ]
 
   for (let c = 1; c <= 8; c++) {
@@ -64,9 +66,13 @@ export async function exportRoutesXlsx(params: { rows: RouteRow[]; fileName: str
   for (const row of params.rows ?? []) {
     ws.addRow({
       route_code: row.route_code || '-',
-      route_name: row.route_name || '-',
+      route_name: row.route_name
+        ? translateRouteName(row.route_name, (key) => excelT(key, row.route_name))
+        : '-',
       area_name: row.area_name || '-',
-      role_name: row.role_name || row.role_code || '-',
+      role_name: row.role_name
+        ? translateRoleName(row.role_name, (key) => excelT(key, row.role_name))
+        : row.role_code || '-',
       route_priority: Number(row.route_priority ?? 0),
       route_max_minute: formatMinuteClock(row.route_max_minute),
       route_min_minute: formatMinuteClock(row.route_min_minute),

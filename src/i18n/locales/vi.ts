@@ -85,6 +85,7 @@ const vi = {
     to: 'Đến',
     selectStartDate: 'Chọn ngày bắt đầu',
     selectEndDate: 'Chọn ngày kết thúc',
+    invalidRange: 'Khoảng thời gian không đúng, vui lòng chọn lại',
   },
   patrolDataButtonSwitch: {
     switchPatrolReports: 'Báo cáo tuần tra',
@@ -235,6 +236,7 @@ const vi = {
   incorrectScanReportList: {
     title: 'Nhật ký quét sai điểm kiểm tra',
     noIncorrectScan: 'Không tìm thấy nhật ký quét sai điểm kiểm tra',
+    noIncorrectScanInRange: 'Không tìm thấy nhật ký quét sai điểm kiểm tra từ {from} đến {to}.',
     routeName: 'Tên lộ trình',
     startTime: 'Thời gian bắt đầu',
     finishTime: 'Thời gian kết thúc',

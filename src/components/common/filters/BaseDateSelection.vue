@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import DatePicker from 'primevue/datepicker'
+import Message from 'primevue/message'
 import BaseButton from '../buttons/BaseButton.vue'
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 type SingleDateValue = Date | null
@@ -24,6 +25,7 @@ const props = withDefaults(
     showTime?: boolean
     disabled?: boolean
     appendTo?: string
+    emitOnSelect?: boolean
   }>(),
   {
     wrapperClass: 'flex flex-wrap gap-3 items-end',
@@ -31,6 +33,7 @@ const props = withDefaults(
     showTime: true,
     disabled: false,
     appendTo: undefined,
+    emitOnSelect: true,
   },
 )
 
@@ -52,6 +55,64 @@ const fromInputHandler = ref<EventListener | null>(null)
 const toInputHandler = ref<EventListener | null>(null)
 const fromTimeWheelCleanup = ref<(() => void) | null>(null)
 const toTimeWheelCleanup = ref<(() => void) | null>(null)
+const showInvalidDateRangeMessage = ref(false)
+const invalidDateRangeShakeKey = ref(0)
+
+function isDateRangeInvalid(dateFrom: SingleDateValue, dateTo: SingleDateValue) {
+  if (!(dateFrom instanceof Date) || !(dateTo instanceof Date)) return false
+
+  const fromTime = dateFrom.getTime()
+  const toTime = dateTo.getTime()
+
+  return Number.isFinite(fromTime) && Number.isFinite(toTime) && fromTime > toTime
+}
+
+const hasInvalidDateRange = computed(() =>
+  isDateRangeInvalid(draftDateFrom.value, draftDateTo.value),
+)
+const shouldShowInvalidDateRangeMessage = computed(
+  () => showInvalidDateRangeMessage.value && hasInvalidDateRange.value,
+)
+
+function emitDraftRangeIfValid() {
+  if (hasInvalidDateRange.value) return false
+
+  showInvalidDateRangeMessage.value = false
+  emit('update:modelDateFrom', draftDateFrom.value)
+  emit('update:modelDateTo', draftDateTo.value)
+  return true
+}
+
+function getCurrentInputRawValue(kind: 'from' | 'to') {
+  const cachedRawValue = getRawInputValue(kind).trim()
+  const currentInputValue = getPickerInputElement(kind)?.value ?? ''
+
+  return cachedRawValue || currentInputValue
+}
+
+function syncCurrentInputsToDraft() {
+  applyParsedInputToDraft('from', getCurrentInputRawValue('from'))
+  applyParsedInputToDraft('to', getCurrentInputRawValue('to'))
+}
+
+function showInvalidDateRangeIfNeeded() {
+  syncCurrentInputsToDraft()
+
+  if (!hasInvalidDateRange.value) {
+    showInvalidDateRangeMessage.value = false
+    return false
+  }
+
+  showInvalidDateRangeMessage.value = true
+  invalidDateRangeShakeKey.value += 1
+  return true
+}
+
+watch(hasInvalidDateRange, (value) => {
+  if (!value) {
+    showInvalidDateRangeMessage.value = false
+  }
+})
 
 watch(
   () => props.modelDateFrom,
@@ -460,35 +521,48 @@ function onUpdateDateFrom(value: DatePickerValue) {
   const normalized = normalizeDateValue(value)
   draftDateFrom.value = normalized
   rawInputFrom.value = ''
-  emit('update:modelDateFrom', normalized)
+
+  if (!hasInvalidDateRange.value) {
+    showInvalidDateRangeMessage.value = false
+  }
+
+  if (props.emitOnSelect) {
+    emitDraftRangeIfValid()
+  }
 }
 
 function onUpdateDateTo(value: DatePickerValue) {
   const normalized = normalizeDateValue(value)
   draftDateTo.value = normalized
   rawInputTo.value = ''
-  emit('update:modelDateTo', normalized)
+
+  if (!hasInvalidDateRange.value) {
+    showInvalidDateRangeMessage.value = false
+  }
+
+  if (props.emitOnSelect) {
+    emitDraftRangeIfValid()
+  }
 }
 
 async function onApply(kind: 'from' | 'to') {
-  const input = getPickerInputElement(kind)
-  const cachedRawValue = getRawInputValue(kind).trim()
-  const currentInputValue = input?.value ?? ''
-  const rawValue = cachedRawValue || currentInputValue
+  applyParsedInputToDraft(kind, getCurrentInputRawValue(kind))
 
-  const parsed = applyParsedInputToDraft(kind, rawValue)
-  emitDraftValue(kind, parsed)
+  const isInvalid = showInvalidDateRangeIfNeeded()
 
   await nextTick()
   hidePickerOverlay(kind)
+
+  if (isInvalid) return
+
+  emitDraftRangeIfValid()
 }
 
 function onToday(kind: 'from' | 'to', todayCallback: (event: Event) => void, event: Event) {
   todayCallback(event)
 
   nextTick(() => {
-    const currentDraft = getDraftValue(kind)
-    emitDraftValue(kind, currentDraft)
+    emitDraftRangeIfValid()
   })
 }
 
@@ -518,6 +592,7 @@ function closeOpenPickerPanels() {
 defineExpose({
   isAnyPickerPanelOpen,
   closeOpenPickerPanels,
+  showInvalidDateRangeIfNeeded,
 })
 
 onBeforeUnmount(() => {
@@ -616,5 +691,36 @@ onBeforeUnmount(() => {
         </DatePicker>
       </div>
     </div>
+
+    <div
+      v-if="shouldShowInvalidDateRangeMessage"
+      :key="invalidDateRangeShakeKey"
+      class="date-range-invalid-message col-span-full w-full min-w-0 xl:basis-full"
+    >
+      <Message severity="error" size="small" variant="simple">
+        {{ t('dateFilter.invalidRange') }}
+      </Message>
+    </div>
   </div>
 </template>
+
+<style scoped>
+.date-range-invalid-message {
+  animation: date-range-invalid-shake 180ms ease-in-out 0s 2;
+}
+
+@keyframes date-range-invalid-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-4px);
+  }
+
+  75% {
+    transform: translateX(4px);
+  }
+}
+</style>

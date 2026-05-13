@@ -103,8 +103,8 @@ export async function fetchAllPagedRows<T>(
   fetchPage: (params: Required<ApiPageParams>) => Promise<ApiPagedResult<T>>,
   options: { pageSize?: number; maxPages?: number } = {},
 ): Promise<T[]> {
-  const pageSize = normalizePageSize(options.pageSize, 1000)
-  const maxPages = Math.max(1, Math.floor(normalizePageSize(options.maxPages, 1000)))
+  const pageSize = normalizePageSize(options.pageSize, 20000)
+  const maxPages = Math.max(1, Math.floor(normalizePageSize(options.maxPages, 20000)))
 
   const firstPage = await fetchPage({ page: 1, pageSize })
   const rows = [...firstPage.items]

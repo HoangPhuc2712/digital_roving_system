@@ -106,6 +106,7 @@ async function onClear() {
           :modelDateTo="store.filterDateTo"
           wrapperClass="grid grid-cols-1 gap-3 items-end md:grid-cols-2 xl:flex xl:flex-wrap xl:items-end"
           inputWidthClass="w-full min-w-0 xl:w-[280px] xl:flex-none"
+          :emitOnSelect="false"
           @update:modelDateFrom="store.filterDateFrom = $event"
           @update:modelDateTo="store.filterDateTo = $event"
         />

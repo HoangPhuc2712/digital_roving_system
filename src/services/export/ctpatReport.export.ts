@@ -1,5 +1,7 @@
 import ExcelJS from 'exceljs'
 import type { CtpatReportRow } from '@/modules/reports/reports.types'
+import { translateRouteName } from '@/utils/dataI18n'
+import { excelT } from './exportI18n'
 
 function formatDateTime(iso: string) {
   const s = (iso ?? '').trim()
@@ -14,16 +16,20 @@ function formatDateTime(iso: string) {
 
 export async function exportCtpatReportXlsx(params: { rows: CtpatReportRow[]; fileName: string }) {
   const wb = new ExcelJS.Workbook()
-  const ws = wb.addWorksheet('C-TPAT Report')
+  const ws = wb.addWorksheet(excelT('ctpatReportList.title', 'C-TPAT Report'))
 
   ws.columns = [
-    { header: 'Patrol Routes', key: 'route_name', width: 30 },
-    { header: 'Check Points', key: 'check_point_name', width: 36 },
-    { header: 'Start Time', key: 'start_at', width: 24 },
-    { header: 'Finish Time', key: 'end_at', width: 24 },
-    { header: 'Patrol Time', key: 'scan_at', width: 24 },
-    { header: 'Guard Name', key: 'report_name', width: 22 },
-    { header: 'Route Order', key: 'cp_priority', width: 14 },
+    { header: excelT('ctpatReportList.routeName', 'Patrol Routes'), key: 'route_name', width: 30 },
+    {
+      header: excelT('ctpatReportList.checkpointName', 'Check Points'),
+      key: 'check_point_name',
+      width: 36,
+    },
+    { header: excelT('ctpatReportList.startTime', 'Start Time'), key: 'start_at', width: 24 },
+    { header: excelT('ctpatReportList.finishTime', 'Finish Time'), key: 'end_at', width: 24 },
+    { header: excelT('ctpatReportList.patrolTime', 'Patrol Time'), key: 'scan_at', width: 24 },
+    { header: excelT('ctpatReportList.guardName', 'Guard Name'), key: 'report_name', width: 30 },
+    { header: excelT('ctpatReportList.routeOrder', 'Route Order'), key: 'cp_priority', width: 14 },
   ]
 
   const headerRow = ws.getRow(1)
@@ -44,7 +50,9 @@ export async function exportCtpatReportXlsx(params: { rows: CtpatReportRow[]; fi
 
   for (const row of params.rows ?? []) {
     ws.addRow({
-      route_name: row.route_name || '-',
+      route_name: row.route_name
+        ? translateRouteName(row.route_name, (key) => excelT(key, row.route_name))
+        : '-',
       check_point_name: row.check_point_name || '-',
       start_at: formatDateTime(row.start_at),
       end_at: formatDateTime(row.end_at),

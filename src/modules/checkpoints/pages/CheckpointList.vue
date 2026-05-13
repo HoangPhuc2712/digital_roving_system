@@ -546,7 +546,7 @@ async function onExport() {
     const areaCode = lockedAreaCode.value || 'Area'
     await exportCheckpointsXlsx({
       rows: await store.getRowsForExport(),
-      title: `${areaCode} Checkpoints`,
+      title: `${areaCode} ${t('breadcrumb.checkpoints')}`,
       fileName: `${areaCode}_checkpoints_${new Date().toISOString().slice(0, 10)}.xlsx`,
       includeQrImage: canManage.value,
     })

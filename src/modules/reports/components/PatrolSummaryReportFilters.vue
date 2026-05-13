@@ -22,6 +22,7 @@ const emit = defineEmits<{
     :modelDateFrom="props.modelDateFrom"
     :modelDateTo="props.modelDateTo"
     :clearDisabled="props.loading"
+    :dateEmitOnSelect="false"
     @update:modelDateFrom="emit('update:modelDateFrom', $event)"
     @update:modelDateTo="emit('update:modelDateTo', $event)"
     @clear="emit('clear')"

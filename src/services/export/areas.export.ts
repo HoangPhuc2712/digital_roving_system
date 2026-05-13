@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs'
 import type { AreaRow } from '@/modules/areas/areas.types'
+import { excelT } from './exportI18n'
 
 function applyBorder(cell: ExcelJS.Cell) {
   cell.border = {
@@ -26,12 +27,16 @@ async function saveWorkbook(wb: ExcelJS.Workbook, fileName: string) {
 
 export async function exportAreasXlsx(params: { rows: AreaRow[]; fileName: string }) {
   const wb = new ExcelJS.Workbook()
-  const ws = wb.addWorksheet('Areas')
+  const ws = wb.addWorksheet(excelT('breadcrumb.areas', 'Areas'))
 
   ws.columns = [
-    { header: 'Area Code', key: 'area_code', width: 18 },
-    { header: 'Area Name', key: 'area_name', width: 24 },
-    { header: 'Area Check Points', key: 'checkpoint_count', width: 18 },
+    { header: excelT('areaList.areaCode', 'Area Code'), key: 'area_code', width: 18 },
+    { header: excelT('areaList.areaName', 'Area Name'), key: 'area_name', width: 24 },
+    {
+      header: excelT('areaList.areaCheckPoints', 'Area Check Points'),
+      key: 'checkpoint_count',
+      width: 18,
+    },
   ]
 
   for (let c = 1; c <= 3; c++) {
