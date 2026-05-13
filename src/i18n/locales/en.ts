@@ -85,6 +85,7 @@ const en = {
     to: 'To',
     selectStartDate: 'Select start date',
     selectEndDate: 'Select end date',
+    invalidRange: 'Incorrect Date Range, Please Select again',
   },
   patrolDataButtonSwitch: {
     switchPatrolReports: 'Patrol Reports',

@@ -445,6 +445,13 @@ const FilterMenuControl = defineComponent({
     }
 
     function applyChanges() {
+      if (
+        filterProps.config.type === 'date-range' &&
+        dateSelectionRef.value?.showInvalidDateRangeIfNeeded?.()
+      ) {
+        return
+      }
+
       filterQuery.value = ''
       filterEmit('update:modelValue', cloneFilterValue(localValue.value))
       nextTick(() => {
@@ -629,10 +636,20 @@ const FilterMenuControl = defineComponent({
               inputWidthClass: 'w-full',
               showTime: filterProps.config.showTime ?? true,
               appendTo: 'self',
-              'onUpdate:modelDateFrom': (value: Date | null) =>
-                updateDraft({ from: value ?? null, to: toValue }),
-              'onUpdate:modelDateTo': (value: Date | null) =>
-                updateDraft({ from: fromValue, to: value ?? null }),
+              'onUpdate:modelDateFrom': (value: Date | null) => {
+                const currentDraft =
+                  localValue.value && typeof localValue.value === 'object'
+                    ? localValue.value
+                    : { from: null, to: null }
+                updateDraft({ from: value ?? null, to: currentDraft.to ?? null })
+              },
+              'onUpdate:modelDateTo': (value: Date | null) => {
+                const currentDraft =
+                  localValue.value && typeof localValue.value === 'object'
+                    ? localValue.value
+                    : { from: null, to: null }
+                updateDraft({ from: currentDraft.from ?? null, to: value ?? null })
+              },
             }),
             renderFooter(),
           ],

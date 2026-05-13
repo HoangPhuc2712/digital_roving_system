@@ -33,6 +33,7 @@ const props = withDefaults(
     clearDisabled?: boolean
     searchWidthClass?: string
     dateInputWidthClass?: string
+    dateEmitOnSelect?: boolean
   }>(),
   {
     dropdowns: () => [],
@@ -45,6 +46,7 @@ const props = withDefaults(
     clearDisabled: false,
     searchWidthClass: 'w-full xl:w-[320px]',
     dateInputWidthClass: 'w-full min-w-0 xl:w-[280px] xl:flex-none',
+    dateEmitOnSelect: true,
   },
 )
 
@@ -143,6 +145,7 @@ const showInlineClearWithSingleDropdown = computed(() => {
         :modelDateTo="props.modelDateTo ?? null"
         wrapperClass="grid grid-cols-1 gap-3 items-end sm:grid-cols-2"
         inputWidthClass="w-full min-w-0"
+        :emitOnSelect="props.dateEmitOnSelect"
         @update:modelDateFrom="emit('update:modelDateFrom', $event)"
         @update:modelDateTo="emit('update:modelDateTo', $event)"
       />
@@ -183,6 +186,7 @@ const showInlineClearWithSingleDropdown = computed(() => {
             :modelDateTo="props.modelDateTo ?? null"
             wrapperClass="grid grid-cols-2 gap-3 items-end xl:flex xl:flex-wrap xl:items-end"
             :inputWidthClass="props.dateInputWidthClass"
+            :emitOnSelect="props.dateEmitOnSelect"
             @update:modelDateFrom="emit('update:modelDateFrom', $event)"
             @update:modelDateTo="emit('update:modelDateTo', $event)"
           />

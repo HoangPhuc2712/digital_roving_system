@@ -85,6 +85,7 @@ const vi = {
     to: 'Đến',
     selectStartDate: 'Chọn ngày bắt đầu',
     selectEndDate: 'Chọn ngày kết thúc',
+    invalidRange: 'Khoảng thời gian không đúng, vui lòng chọn lại',
   },
   patrolDataButtonSwitch: {
     switchPatrolReports: 'Báo cáo tuần tra',

@@ -85,6 +85,7 @@ const zhCN = {
     to: '到',
     selectStartDate: '选择开始日期',
     selectEndDate: '选择结束日期',
+    invalidRange: '筛选时间范围不正确，请重新选择',
   },
   patrolDataButtonSwitch: {
     switchPatrolReports: '巡逻报告',
