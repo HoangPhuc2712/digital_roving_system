@@ -11,6 +11,10 @@ export type CheckpointPrintItem = {
 
 export type CheckpointQrLayout = '1x2' | '2x2' | '3x2'
 
+export type PrintCheckpointQrSheetsOptions = {
+  cpPerPage?: boolean
+}
+
 type CardOrientation = 'standard' | 'rotated'
 
 const DEFAULT_CHECKPOINT_QR_LAYOUT: CheckpointQrLayout = '3x2'
@@ -730,6 +734,7 @@ async function createPdf(
   items: CheckpointPrintItem[],
   singleMode: boolean,
   layout: CheckpointQrLayout = DEFAULT_CHECKPOINT_QR_LAYOUT,
+  cpPerPage = false,
 ) {
   const pdf = await PDFDocument.create()
   const metrics = getLayoutMetrics(layout)
@@ -745,6 +750,22 @@ async function createPdf(
       width: metrics.cardWidth,
       height: metrics.cardHeight,
     })
+  } else if (cpPerPage) {
+    for (const item of items) {
+      const page = pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT])
+      const cardBytes = await renderCheckpointCard(item, metrics)
+      const cardImage = await pdf.embedPng(cardBytes)
+
+      for (let i = 0; i < metrics.itemsPerPage; i += 1) {
+        const position = getGridPosition(i, metrics)
+        page.drawImage(cardImage, {
+          x: position.x,
+          y: position.y,
+          width: metrics.cardWidth,
+          height: metrics.cardHeight,
+        })
+      }
+    }
   } else {
     const pages = chunkItems(items, metrics.itemsPerPage)
     for (const itemsInPage of pages) {
@@ -782,6 +803,7 @@ export async function printCheckpointQrSheets(
   items: CheckpointPrintItem[],
   title = 'Checkpoint Qr Codes',
   layout: CheckpointQrLayout = DEFAULT_CHECKPOINT_QR_LAYOUT,
+  options: PrintCheckpointQrSheetsOptions = {},
 ) {
   const normalizedItems = (items ?? [])
     .map((item) => ({
@@ -792,7 +814,7 @@ export async function printCheckpointQrSheets(
 
   if (!normalizedItems.length) throw new Error('QR_IMAGE_NOT_FOUND')
 
-  const bytes = await createPdf(normalizedItems, false, layout)
+  const bytes = await createPdf(normalizedItems, false, layout, Boolean(options.cpPerPage))
   downloadPdf(bytes, title)
 }
 

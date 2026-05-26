@@ -402,6 +402,7 @@ const zhCN = {
     checkpointName: '检查点',
     area: '区域',
     qrImg: 'QR 图片',
+    cpPerPage: '每页一个检查点',
     exportPdf: '导出 PDF',
     error: {
       printLoadFailed: '加载打印选项失败',

@@ -3,6 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import Dialog from 'primevue/dialog'
 import MultiSelect from 'primevue/multiselect'
 import Select from 'primevue/select'
+import Checkbox from 'primevue/checkbox'
 import Column from 'primevue/column'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
@@ -58,6 +59,7 @@ const checkpoints = ref<CheckpointRow[]>([])
 const roleOptions = ref<RoleOption[]>([])
 const initialized = ref(false)
 const selectedLayout = ref<CheckpointQrLayout>(DEFAULT_CHECKPOINT_QR_LAYOUT)
+const cpPerPage = ref(false)
 
 const visibleProxy = computed({
   get: () => props.visible,
@@ -195,6 +197,7 @@ async function onPrint() {
       buildPrintItems(previewRows.value),
       'Check Point Qr Codes',
       selectedLayout.value,
+      { cpPerPage: cpPerPage.value },
     )
   } catch (e: any) {
     const msg = String(e?.message ?? '')
@@ -225,7 +228,7 @@ async function onPrint() {
     <div class="flex max-h-[78vh] flex-col gap-4 overflow-hidden">
       <div class="shrink-0 space-y-4 bg-white">
         <div
-          class="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_220px_auto] md:items-end"
+          class="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(260px,360px)_auto] md:items-end"
         >
           <div class="space-y-2">
             <label class="block text-sm font-medium text-slate-700">{{
@@ -267,16 +270,30 @@ async function onPrint() {
             <label class="block text-sm font-medium text-slate-700">{{
               t('common.selectLayout')
             }}</label>
-            <Select
-              v-model="selectedLayout"
-              :options="layoutOptions"
-              optionLabel="label"
-              optionValue="value"
-              size="small"
-              class="w-full"
-              :placeholder="t('common.selectLayout')"
-              :disabled="loading"
-            />
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Select
+                v-model="selectedLayout"
+                :options="layoutOptions"
+                optionLabel="label"
+                optionValue="value"
+                size="small"
+                class="w-full sm:flex-1"
+                :placeholder="t('common.selectLayout')"
+                :disabled="loading"
+              />
+
+              <div class="flex min-h-[32px] items-center gap-2 whitespace-nowrap">
+                <Checkbox
+                  v-model="cpPerPage"
+                  inputId="area-cp-per-page"
+                  binary
+                  :disabled="loading"
+                />
+                <label for="area-cp-per-page" class="text-sm text-slate-700">
+                  {{ t('areaPrintOptionsDialog.cpPerPage') }}
+                </label>
+              </div>
+            </div>
           </div>
 
           <div class="flex md:justify-end">

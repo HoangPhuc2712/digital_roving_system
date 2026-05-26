@@ -403,6 +403,7 @@ const en = {
     checkpointName: 'Check Point',
     area: 'Area',
     qrImg: 'Qr Image',
+    cpPerPage: 'CP per Pages',
     exportPdf: 'Export PDF',
     error: {
       printLoadFailed: 'Failed to load print options',
