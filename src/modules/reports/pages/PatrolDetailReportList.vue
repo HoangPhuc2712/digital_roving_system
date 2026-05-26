@@ -71,7 +71,7 @@ const reportSwitchButtons = computed(() => [
 useResetFirstOnFilterChange(
   () => [
     store.searchText,
-    store.filterAreaId,
+    store.filterAreaName,
     store.filterRouteName,
     store.filterCheckPointName,
     store.filterGuardName,
@@ -120,7 +120,7 @@ watch(
 
 watch(
   () => [
-    store.filterAreaId,
+    store.filterAreaName,
     store.filterRouteName,
     store.filterCheckPointName,
     store.filterGuardName,
@@ -151,8 +151,8 @@ onBeforeUnmount(() => {
   resetPageState()
 })
 
-function areaLabel(areaId: number) {
-  return store.areaOptions.find((option) => option.value === areaId)?.label || `Area ${areaId}`
+function areaLabel(areaName: string) {
+  return store.areaOptions.find((option) => option.value === areaName)?.label || areaName
 }
 
 function formatDateTime(iso: string) {
@@ -209,7 +209,7 @@ async function onExport() {
 function onColumnFilter(payload: { key: string; value: any }) {
   if (payload.key === 'routeName') {
     const value = payload.value && typeof payload.value === 'object' ? payload.value : {}
-    store.filterAreaId = value.primaryValue ?? null
+    store.filterAreaName = value.primaryValue ?? null
     store.filterRouteName = value.secondaryValue ?? null
   }
   if (payload.key === 'checkPointName') store.filterCheckPointName = payload.value ?? null
@@ -282,7 +282,7 @@ function onColumnFilter(payload: { key: string; value: any }) {
         :filterMenu="{
           key: 'areaId',
           type: 'select',
-          value: store.filterAreaId,
+          value: store.filterAreaName,
           options: store.areaOptions,
         }"
       >
@@ -300,7 +300,7 @@ function onColumnFilter(payload: { key: string; value: any }) {
           key: 'routeName',
           type: 'dual-select',
           value: {
-            primaryValue: store.filterAreaId,
+            primaryValue: store.filterAreaName,
             secondaryValue: store.filterRouteName,
           },
           options: store.routeAreaOptions,
@@ -313,7 +313,7 @@ function onColumnFilter(payload: { key: string; value: any }) {
           secondaryOptionValue: 'value',
           secondaryPlaceholder: t('patrolDetailReport.routeName'),
           secondaryFilter: true,
-          secondaryParentField: 'areaId',
+          secondaryParentField: 'areaName',
           secondaryFilterField: 'searchText',
         }"
       >
