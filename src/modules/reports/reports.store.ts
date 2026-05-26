@@ -218,24 +218,21 @@ export const useReportsStore = defineStore('reports', {
           if (!r.pr_has_problem) return false
           if (r.pr_status !== this.filterIssueStatus) return false
         }
-        const guardNameQuery = String(this.filterGuardId ?? '')
-          .trim()
-          .toLowerCase()
-        if (guardNameQuery) {
+        const guardFilterValue = String(this.filterGuardId ?? '').trim()
+        if (guardFilterValue) {
           const selectedGuard = this.guardOptions.find(
             (option) => option.value === this.filterGuardId,
           )
-          if (selectedGuard?.userId) {
-            if (String(r.created_by ?? '').trim() !== selectedGuard.userId) return false
-          } else {
-            const reportName = String(r.report_name ?? '').trim()
-            const guardSearchText = String(this.guardSearchTextMap[reportName] ?? reportName)
-              .trim()
-              .toLowerCase()
+          const guardNameQuery = String(selectedGuard?.label ?? guardFilterValue)
+            .trim()
+            .toLowerCase()
+          const reportName = String(r.report_name ?? '').trim()
+          const guardSearchText = String(this.guardSearchTextMap[reportName] ?? reportName)
+            .trim()
+            .toLowerCase()
 
-            if (!guardSearchText.includes(guardNameQuery)) {
-              return false
-            }
+          if (!guardSearchText.includes(guardNameQuery)) {
+            return false
           }
         }
 

@@ -330,7 +330,8 @@ function toggleReports() {
                     :class="
                       subItemClass(
                         isActivePath('/patrol-detail-reports') ||
-                          isActivePath('/patrol-summary-reports'),
+                          isActivePath('/patrol-summary-reports') ||
+                          isActivePath('/routes-chart-reports'),
                       )
                     "
                     @click="

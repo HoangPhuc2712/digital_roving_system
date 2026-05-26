@@ -760,6 +760,7 @@ type FetchReportRowsParams = ApiPageParams & {
   cpId?: number | null
   cpName?: string | null
   reportBy?: string | null
+  reportName?: string | null
 }
 
 export async function fetchReportRows(
@@ -803,6 +804,9 @@ export async function fetchReportRows(
 
   const reportBy = String(params.reportBy ?? '').trim()
   if (reportBy) body.reportBy = reportBy
+
+  const reportName = String(params.reportName ?? '').trim()
+  if (reportName) body.reportName = reportName
 
   const res = await http.post(endpoints.pointReportView.getList, body)
   const payload = ensureSuccess<
