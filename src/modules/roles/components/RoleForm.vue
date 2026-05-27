@@ -260,7 +260,7 @@ function submit() {
           }}</label>
           <MultiSelect
             v-model="form.mc_ids"
-            class="w-full"
+            class="app-multiselect-compact app-multiselect-compact-chips w-full min-w-0"
             :class="{ 'p-invalid': permissionsError }"
             :options="resolvedMenuOptions"
             optionLabel="label"

@@ -98,7 +98,16 @@
       />
 
       <template #empty>
-        <slot name="empty">
+        <div
+          v-if="props.fillEmptyHeight"
+          class="app-datatable-empty-message text-center text-slate-500"
+          :style="emptyMessageStyle"
+        >
+          <slot name="empty">
+            {{ t('common.noData') }}
+          </slot>
+        </div>
+        <slot v-else name="empty">
           <div class="py-6 text-center text-slate-500">{{ t('common.noData') }}</div>
         </slot>
       </template>
@@ -205,6 +214,7 @@ const props = withDefaults(
     scrollMinHeight?: string
     scrollMaxHeight?: string
     scrollViewportOffset?: string
+    fillEmptyHeight?: boolean
     beforeFilterOpen?: (payload: { key: string }) => void | Promise<void>
     skeletonRows?: number
   }>(),
@@ -237,6 +247,7 @@ const props = withDefaults(
     scrollMinHeight: '320px',
     scrollMaxHeight: '600px',
     scrollViewportOffset: '290px',
+    fillEmptyHeight: false,
     skeletonRows: 8,
   },
 )
@@ -248,6 +259,14 @@ const scrollHeight = computed(() => {
   if (props.scrollHeight) return props.scrollHeight
 
   return `clamp(${props.scrollMinHeight}, calc(100vh - ${props.scrollViewportOffset}), ${props.scrollMaxHeight})`
+})
+
+const emptyMessageStyle = computed(() => {
+  if (!props.fillEmptyHeight || !scrollable.value) return undefined
+
+  return {
+    minHeight: `calc(${scrollHeight.value} - 48px)`,
+  }
 })
 
 const emit = defineEmits<{
@@ -807,10 +826,7 @@ function transformNode(node: VNode): VNode {
   const filterMenu = currentProps.filterMenu as ColumnFilterMenuConfig | undefined
   delete currentProps.filterMenu
 
-  const sortable =
-    currentProps.sortDisabled === true
-      ? false
-      : Boolean(currentProps.field || currentProps.sortField)
+  const sortable = false
 
   const vnodeProps: Record<string, any> = {
     ...currentProps,
@@ -1211,6 +1227,13 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.app-datatable-empty-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 1rem;
+}
+
 :deep(.app-filter-select .p-select-filter),
 :deep(.app-filter-multiselect .p-multiselect-filter) {
   font-size: 0.875rem;

@@ -255,7 +255,7 @@ function submit() {
           <template v-else>
             <MultiSelect
               v-model="form.role_ids"
-              class="w-full"
+              class="app-multiselect-compact w-full min-w-0"
               :class="{ 'p-invalid': roleError }"
               :options="roleOptions"
               optionLabel="label"

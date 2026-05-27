@@ -223,14 +223,15 @@ async function onPrint() {
     v-model:visible="visibleProxy"
     modal
     :header="t('areaPrintOptionsDialog.title')"
-    :style="{ width: '1100px', maxWidth: '96vw' }"
+    :style="{ width: '1120px', maxWidth: '96vw' }"
+    :contentStyle="{ width: '100%', height: 'clamp(520px, 70vh, 660px)' }"
   >
-    <div class="flex max-h-[78vh] flex-col gap-4 overflow-hidden">
+    <div class="flex h-full w-full flex-col gap-4 overflow-hidden">
       <div class="shrink-0 space-y-4 bg-white">
         <div
           class="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(260px,360px)_auto] md:items-end"
         >
-          <div class="space-y-2">
+          <div class="min-w-0 space-y-2">
             <label class="block text-sm font-medium text-slate-700">{{
               t('areaPrintOptionsDialog.areaFilter')
             }}</label>
@@ -243,13 +244,13 @@ async function onPrint() {
               filter
               display="chip"
               :placeholder="t('areaPrintOptionsDialog.selectArea')"
-              class="w-full"
+              class="app-multiselect-compact app-multiselect-compact-chips w-full min-w-0"
               :disabled="loading"
               :maxSelectedLabels="2"
             />
           </div>
 
-          <div class="space-y-2">
+          <div class="min-w-0 space-y-2">
             <label class="block text-sm font-medium text-slate-700">{{
               t('areaPrintOptionsDialog.roleFilter')
             }}</label>
@@ -260,13 +261,12 @@ async function onPrint() {
               size="small"
               optionValue="value"
               :placeholder="t('areaPrintOptionsDialog.selectRole')"
-              showClear
-              class="w-full"
+              class="w-full min-w-0"
               :disabled="loading"
             />
           </div>
 
-          <div class="space-y-2">
+          <div class="min-w-0 space-y-2">
             <label class="block text-sm font-medium text-slate-700">{{
               t('common.selectLayout')
             }}</label>
@@ -299,6 +299,7 @@ async function onPrint() {
           <div class="flex md:justify-end">
             <BaseButton
               :label="t('common.clearFilters')"
+              icon="pi pi-filter-slash"
               size="small"
               severity="secondary"
               outlined
@@ -316,9 +317,15 @@ async function onPrint() {
           :loading="loading"
           dataKey="cp_id"
           :paginator="false"
+          :class="[
+            'area-print-preview-table h-full',
+            { 'area-print-preview-table--empty': previewRows.length === 0 },
+          ]"
+          scrollHeight="540px"
+          :fillEmptyHeight="true"
         >
           <template #empty>
-            <div class="py-10 text-center text-slate-500">
+            <div class="text-center text-slate-500">
               {{
                 hasAppliedFilter
                   ? t('areaPrintOptionsDialog.noCheckpointFound')
@@ -327,21 +334,13 @@ async function onPrint() {
             </div>
           </template>
 
-          <Column
-            :header="t('areaPrintOptionsDialog.checkpointPriority')"
-            style="min-width: 8rem"
-            sortField="cp_priority"
-          >
+          <Column :header="t('areaPrintOptionsDialog.checkpointPriority')" style="min-width: 8rem">
             <template #body="{ data }">
               <div class="text-left">{{ data.cp_priority }}</div>
             </template>
           </Column>
 
-          <Column
-            :header="t('areaPrintOptionsDialog.checkpointName')"
-            style="min-width: 16rem"
-            sortField="cp_name"
-          >
+          <Column :header="t('areaPrintOptionsDialog.checkpointName')" style="min-width: 16rem">
             <template #body="{ data }">
               <div class="flex flex-col">
                 <div class="text-slate-800 font-medium">{{ data.cp_name || '-' }}</div>
@@ -350,11 +349,7 @@ async function onPrint() {
             </template>
           </Column>
 
-          <Column
-            :header="t('areaPrintOptionsDialog.area')"
-            style="min-width: 10rem"
-            sortField="area_label"
-          >
+          <Column :header="t('areaPrintOptionsDialog.area')" style="min-width: 10rem">
             <template #body="{ data }">
               <div class="text-slate-800">{{ data.area_label || '-' }}</div>
             </template>
@@ -401,3 +396,9 @@ async function onPrint() {
     </template>
   </Dialog>
 </template>
+
+<style scoped>
+.area-print-preview-table--empty :deep(.p-datatable-table-container) {
+  overflow: hidden !important;
+}
+</style>
