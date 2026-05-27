@@ -88,7 +88,7 @@ const vi = {
     invalidRange: 'Khoảng thời gian không đúng, vui lòng chọn lại',
   },
   tutorialPage: {
-    title: 'Internal Patrol Guideline',
+    title: 'Hướng dẫn hệ thống tuần tra nội bộ',
     websiteReportSop: 'SOP Báo cáo Website Tuần tra Nội bộ',
     applicationSop: 'SOP Ứng dụng Tuần tra Nội bộ',
     downloadText: 'Nhấn vào đây để tải file',
