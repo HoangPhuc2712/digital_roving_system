@@ -87,6 +87,12 @@ const en = {
     selectEndDate: 'Select end date',
     invalidRange: 'Incorrect Date Range, Please Select again',
   },
+  tutorialPage: {
+    title: 'Internal Patrol Guideline',
+    websiteReportSop: 'Internal Patrol Website Report SOP',
+    applicationSop: 'Internal Patrol Application SOP',
+    downloadText: 'Click here to download file',
+  },
   patrolDataButtonSwitch: {
     switchPatrolReports: 'Patrol Reports',
     switchIncorrectScanReports: 'Incorrect Scan Log',

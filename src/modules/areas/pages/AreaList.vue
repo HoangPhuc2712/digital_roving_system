@@ -504,6 +504,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
             v-if="canManage"
             icon="pi pi-file-pdf"
             :label="t('areaList.checkpointExportPdf')"
+            iconClass="text-rose-600"
             size="small"
             severity="secondary"
             outlined
@@ -512,6 +513,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
           <BaseIconButton
             icon="pi pi-file-excel"
             :label="t('common.export')"
+            iconClass="text-emerald-600"
             size="small"
             severity="secondary"
             outlined

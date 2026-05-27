@@ -85,7 +85,7 @@ const reportSwitchButtons = computed(() => [
     ? [
         {
           label: t('patrolDataButtonSwitch.switchIncorrectScanReports'),
-          icon: 'pi pi-file',
+          icon: 'pi pi-exclamation-triangle',
           size: 'small',
           severity: 'secondary' as const,
           outlined: true,
@@ -107,7 +107,7 @@ const reportSwitchButtons = computed(() => [
     : []),
   {
     label: t('patrolDataButtonSwitch.switchCtpatReport'),
-    icon: 'pi pi-file',
+    icon: 'pi pi-shield',
     size: 'small',
     severity: 'secondary' as const,
     outlined: true,
@@ -510,6 +510,7 @@ async function onExport() {
           <BaseIconButton
             icon="pi pi-file-excel"
             :label="t('common.export')"
+            iconClass="text-emerald-600"
             size="small"
             severity="secondary"
             outlined

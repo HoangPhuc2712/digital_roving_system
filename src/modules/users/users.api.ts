@@ -146,9 +146,9 @@ export async function fetchUserRows(
 
   const userKeyword = String(params.userKeyword ?? '').trim()
   const userCode = String(params.userCode ?? '').trim()
+  const effectiveUserKeyword = [userKeyword, userCode].filter(Boolean).join(' ')
 
-  if (userKeyword) body.userKeyword = userKeyword
-  if (userCode) body.userCode = userCode
+  if (effectiveUserKeyword) body.userKeyword = effectiveUserKeyword
 
   if (params.userRoleId != null && Number.isFinite(Number(params.userRoleId))) {
     body.userRoleId = Number(params.userRoleId)

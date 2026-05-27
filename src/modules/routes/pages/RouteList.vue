@@ -494,6 +494,7 @@ async function handleSubmit(payload: RouteFormSubmitPayload) {
         <BaseIconButton
           icon="pi pi-file-excel"
           :label="t('common.export')"
+          iconClass="text-emerald-600"
           size="small"
           severity="secondary"
           outlined

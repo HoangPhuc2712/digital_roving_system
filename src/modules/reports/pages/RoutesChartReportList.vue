@@ -112,7 +112,8 @@ async function onClear() {
         />
       </template>
       <template #end>
-        <BaseButton
+        <BaseIconButton
+          icon="pi pi-filter-slash"
           :label="t('common.clearFilters')"
           size="small"
           severity="secondary"

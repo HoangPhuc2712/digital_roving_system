@@ -87,6 +87,12 @@ const zhTW = {
     selectEndDate: '選擇結束日期',
     invalidRange: '篩選時間範圍不正確，請重新選擇',
   },
+  tutorialPage: {
+    title: 'Internal Patrol Guideline',
+    websiteReportSop: '內部巡邏網站報表 SOP',
+    applicationSop: '內部巡邏應用程式 SOP',
+    downloadText: '點擊此處下載檔案',
+  },
   patrolDataButtonSwitch: {
     switchPatrolReports: '巡邏報告',
     switchIncorrectScanReports: '錯誤掃描記錄',
