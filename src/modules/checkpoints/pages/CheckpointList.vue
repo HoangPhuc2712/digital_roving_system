@@ -610,6 +610,7 @@ async function onExport() {
           <BaseIconButton
             icon="pi pi-file-excel"
             :label="t('common.export')"
+            iconClass="text-emerald-600"
             size="small"
             severity="secondary"
             outlined
@@ -632,6 +633,7 @@ async function onExport() {
         field="cp_code"
         :header="t('checkpointList.checkpointCode')"
         style="min-width: 12rem"
+        sortDisabled
       />
       <Column
         field="cp_name"
@@ -647,6 +649,7 @@ async function onExport() {
           filterMatchMode: 'contains',
           placeholder: t('checkpointList.checkpointName'),
         }"
+        sortDisabled
       />
 
       <Column
@@ -673,7 +676,7 @@ async function onExport() {
       <Column
         :header="t('checkpointList.area')"
         style="min-width: 8rem"
-        sortField="area_code"
+        sortDisabled
         :filterMenu="{
           key: 'areaId',
           type: 'select',
@@ -694,6 +697,7 @@ async function onExport() {
         field="cp_description"
         :header="t('checkpointList.description')"
         style="min-width: 18rem"
+        sortDisabled
       />
 
       <Column
@@ -706,6 +710,7 @@ async function onExport() {
           options: translatedRoleOptions,
           placeholder: 'Select role',
         }"
+        sortDisabled
       >
         <template #body="{ data }">
           <div class="text-slate-800">
@@ -717,12 +722,17 @@ async function onExport() {
           </div>
         </template>
       </Column>
-      <Column field="cp_priority" :header="t('checkpointList.priority')" style="min-width: 8rem" />
+      <Column
+        field="cp_priority"
+        :header="t('checkpointList.priority')"
+        style="min-width: 8rem"
+        sortDisabled
+      />
 
       <Column
         :header="t('checkpointList.status')"
         style="min-width: 10rem"
-        sortField="cp_status"
+        sortDisabled
         :filterMenu="{
           key: 'status',
           type: 'select',

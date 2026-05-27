@@ -60,3 +60,56 @@ body,
 .p-dialog-close-button:focus {
   outline: none !important;
 }
+
+/* Compact MultiSelect layout for form/filter inputs. Prevent selected chips from stretching the input width. */
+.app-multiselect-compact.p-multiselect,
+.app-multiselect-compact-chips.p-multiselect {
+  min-width: 0 !important;
+  width: 100%;
+}
+
+.app-multiselect-compact .p-multiselect-label-container,
+.app-multiselect-compact-chips .p-multiselect-label-container {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.app-multiselect-compact .p-multiselect-label,
+.app-multiselect-compact-chips .p-multiselect-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-multiselect-compact-chips .p-multiselect-label {
+  display: flex !important;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: nowrap !important;
+  max-height: 2rem;
+}
+
+.app-multiselect-compact-chips .p-chip,
+.app-multiselect-compact-chips .p-multiselect-token,
+.app-multiselect-compact-chips .p-multiselect-chip {
+  min-width: 0;
+  max-width: 100%;
+  flex: 0 1 auto;
+  margin: 0;
+}
+
+.app-multiselect-compact-chips .p-chip-label,
+.app-multiselect-compact-chips .p-multiselect-token-label,
+.app-multiselect-compact-chips .p-multiselect-chip-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-multiselect-compact-chips .p-chip-remove-icon,
+.app-multiselect-compact-chips .p-multiselect-token-icon,
+.app-multiselect-compact-chips .p-multiselect-chip-remove-icon {
+  flex: 0 0 auto;
+}

@@ -556,7 +556,7 @@ function submit() {
             <label class="block text-sm text-slate-600 mb-1">{{ t('routeForm.addCp') }}</label>
             <MultiSelect
               v-model="form.selected_cp_ids"
-              class="w-full"
+              class="app-multiselect-compact app-multiselect-compact-chips w-full min-w-0"
               :class="{ 'p-invalid': addScanPointError }"
               :options="groupedAvailableScanPointOptions"
               optionLabel="label"

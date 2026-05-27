@@ -2,9 +2,8 @@ import { defineStore } from 'pinia'
 import { fetchAllPagedRows, toApiPage } from '@/utils/pagination'
 import {
   fetchPatrolDetailCheckpointOptions,
-  fetchReportAreaOptions,
   fetchReportGuardOptions,
-  fetchReportRouteFilterOptions,
+  fetchPointReportRouteFilterOptions,
   fetchReportRows,
 } from './reports.api'
 import type { ReportRow, ResultFilter } from './reports.types'
@@ -29,7 +28,7 @@ export const useReportsStore = defineStore('reports', {
 
     searchText: '' as string,
 
-    filterAreaId: null as number | null,
+    filterAreaName: null as string | null,
     filterRouteName: null as string | null,
     filterResult: 'ALL' as ResultFilter,
     filterIssueStatus: null as number | null,
@@ -41,8 +40,13 @@ export const useReportsStore = defineStore('reports', {
     first: 0,
     rowsPerPage: 25,
 
-    areaFilterOptions: [] as { label: string; value: number }[],
-    routeFilterOptions: [] as { label: string; value: string; areaId: number; routeId?: number }[],
+    areaFilterOptions: [] as { label: string; value: string }[],
+    routeFilterOptions: [] as {
+      label: string
+      value: string
+      areaName: string
+      routeId?: number
+    }[],
     checkPointFilterOptions: [] as {
       label: string
       value: string
@@ -66,29 +70,27 @@ export const useReportsStore = defineStore('reports', {
       return state.rows
     },
 
-    areaOptions(state): { label: string; value: number }[] {
+    areaOptions(state): { label: string; value: string }[] {
       if (state.areaFilterOptions.length) return state.areaFilterOptions
 
-      const seen = new Map<number, string>()
+      const seen = new Set<string>()
+      const options: { label: string; value: string }[] = []
       for (const r of this.visibleRows) {
-        if (!r.area_id) continue
-        if (!seen.has(r.area_id)) {
-          const label = `${r.area_code} - ${r.area_name}`.trim()
-          seen.set(r.area_id, label)
-        }
+        const value = String(r.area_name ?? '').trim()
+        if (!value || seen.has(value)) continue
+        seen.add(value)
+        options.push({ value, label: value })
       }
-      return [...seen.entries()]
-        .map(([value, label]) => ({ value, label }))
-        .sort((a, b) => a.label.localeCompare(b.label))
+      return options.sort((a, b) => a.label.localeCompare(b.label))
     },
 
-    routeAreaOptions(): { label: string; value: number }[] {
+    routeAreaOptions(): { label: string; value: string }[] {
       return this.areaOptions
     },
 
     routeOptions(
       state,
-    ): { label: string; value: string; areaId: number; routeId?: number; searchText?: string }[] {
+    ): { label: string; value: string; areaName: string; routeId?: number; searchText?: string }[] {
       if (state.routeFilterOptions.length) {
         return state.routeFilterOptions.slice().sort((a, b) => a.label.localeCompare(b.label))
       }
@@ -97,19 +99,19 @@ export const useReportsStore = defineStore('reports', {
       const options: {
         label: string
         value: string
-        areaId: number
+        areaName: string
         routeId?: number
         searchText?: string
       }[] = []
 
       for (const r of this.visibleRows) {
         const value = String(r.route_name ?? '').trim()
-        const areaId = Number(r.area_id ?? 0)
+        const areaName = String(r.area_name ?? '').trim()
         if (!value) continue
-        const key = `${areaId}::${value}`
+        const key = `${areaName}::${value}`
         if (seen.has(key)) continue
         seen.add(key)
-        options.push({ label: value, value, areaId, searchText: value.toLowerCase() })
+        options.push({ label: value, value, areaName, searchText: value.toLowerCase() })
       }
 
       return options.sort((a, b) => a.label.localeCompare(b.label))
@@ -206,7 +208,7 @@ export const useReportsStore = defineStore('reports', {
           if (!haystack.includes(q)) return false
         }
 
-        if (this.filterAreaId != null && r.area_id !== this.filterAreaId) return false
+        if (this.filterAreaName != null && r.area_name !== this.filterAreaName) return false
         if (this.filterRouteName != null && r.route_name !== this.filterRouteName) return false
         if (this.filterResult === 'OK' && r.pr_has_problem !== false) return false
         if (this.filterResult === 'NOT_OK' && r.pr_has_problem !== true) return false
@@ -216,24 +218,21 @@ export const useReportsStore = defineStore('reports', {
           if (!r.pr_has_problem) return false
           if (r.pr_status !== this.filterIssueStatus) return false
         }
-        const guardNameQuery = String(this.filterGuardId ?? '')
-          .trim()
-          .toLowerCase()
-        if (guardNameQuery) {
+        const guardFilterValue = String(this.filterGuardId ?? '').trim()
+        if (guardFilterValue) {
           const selectedGuard = this.guardOptions.find(
             (option) => option.value === this.filterGuardId,
           )
-          if (selectedGuard?.userId) {
-            if (String(r.created_by ?? '').trim() !== selectedGuard.userId) return false
-          } else {
-            const reportName = String(r.report_name ?? '').trim()
-            const guardSearchText = String(this.guardSearchTextMap[reportName] ?? reportName)
-              .trim()
-              .toLowerCase()
+          const guardNameQuery = String(selectedGuard?.label ?? guardFilterValue)
+            .trim()
+            .toLowerCase()
+          const reportName = String(r.report_name ?? '').trim()
+          const guardSearchText = String(this.guardSearchTextMap[reportName] ?? reportName)
+            .trim()
+            .toLowerCase()
 
-            if (!guardSearchText.includes(guardNameQuery)) {
-              return false
-            }
+          if (!guardSearchText.includes(guardNameQuery)) {
+            return false
           }
         }
 
@@ -256,12 +255,12 @@ export const useReportsStore = defineStore('reports', {
 
       this.routeFilterOptionsLoading = true
       try {
-        const routeFilters = await fetchReportRouteFilterOptions().catch(async () => ({
-          areaOptions: await fetchReportAreaOptions().catch(() => []),
+        const routeFilters = await fetchPointReportRouteFilterOptions().catch(() => ({
+          areaOptions: [] as { label: string; value: string }[],
           routeOptions: [] as {
             label: string
             value: string
-            areaId: number
+            areaName: string
             routeId?: number
             searchText?: string
           }[],
@@ -317,7 +316,7 @@ export const useReportsStore = defineStore('reports', {
         const selectedRoute = this.routeOptions.find(
           (option) =>
             option.value === this.filterRouteName &&
-            (this.filterAreaId == null || option.areaId === this.filterAreaId),
+            (this.filterAreaName == null || option.areaName === this.filterAreaName),
         )
         const selectedCheckPoint = this.checkPointOptions.find(
           (option) => option.value === this.filterCheckPointName,
@@ -333,7 +332,7 @@ export const useReportsStore = defineStore('reports', {
           reportAtTo: to,
           prStatus: this.filterIssueStatus,
           prHasProblem,
-          areaId: this.filterAreaId,
+          areaName: this.filterAreaName,
           routeId: selectedRoute?.routeId ?? null,
           cpId: selectedCheckPoint?.cpId ?? null,
           cpName: this.filterCheckPointName,
@@ -364,7 +363,7 @@ export const useReportsStore = defineStore('reports', {
       const selectedRoute = this.routeOptions.find(
         (option) =>
           option.value === this.filterRouteName &&
-          (this.filterAreaId == null || option.areaId === this.filterAreaId),
+          (this.filterAreaName == null || option.areaName === this.filterAreaName),
       )
       const selectedCheckPoint = this.checkPointOptions.find(
         (option) => option.value === this.filterCheckPointName,
@@ -378,7 +377,7 @@ export const useReportsStore = defineStore('reports', {
           reportAtTo: to,
           prStatus: this.filterIssueStatus,
           prHasProblem,
-          areaId: this.filterAreaId,
+          areaName: this.filterAreaName,
           routeId: selectedRoute?.routeId ?? null,
           cpId: selectedCheckPoint?.cpId ?? null,
           cpName: this.filterCheckPointName,
@@ -397,7 +396,7 @@ export const useReportsStore = defineStore('reports', {
 
     clearFilters() {
       this.searchText = ''
-      this.filterAreaId = null
+      this.filterAreaName = null
       this.filterRouteName = null
       this.filterResult = 'ALL'
       this.filterIssueStatus = null

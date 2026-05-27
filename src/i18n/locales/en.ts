@@ -87,6 +87,12 @@ const en = {
     selectEndDate: 'Select end date',
     invalidRange: 'Incorrect Date Range, Please Select again',
   },
+  tutorialPage: {
+    title: 'Internal Patrol Guideline',
+    websiteReportSop: 'Internal Patrol Website Report SOP',
+    applicationSop: 'Internal Patrol Application SOP',
+    downloadText: 'Click here to download file',
+  },
   patrolDataButtonSwitch: {
     switchPatrolReports: 'Patrol Reports',
     switchIncorrectScanReports: 'Incorrect Scan Log',
@@ -403,6 +409,7 @@ const en = {
     checkpointName: 'Check Point',
     area: 'Area',
     qrImg: 'Qr Image',
+    cpPerPage: 'CP per Pages',
     exportPdf: 'Export PDF',
     error: {
       printLoadFailed: 'Failed to load print options',

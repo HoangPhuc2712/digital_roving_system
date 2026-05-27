@@ -54,7 +54,7 @@ const reportSwitchButtons = computed(() => [
     ? [
         {
           label: t('patrolDataButtonSwitch.switchIncorrectScanReports'),
-          icon: 'pi pi-file',
+          icon: 'pi pi-exclamation-triangle',
           size: 'small',
           severity: 'secondary' as const,
           outlined: true,
@@ -76,7 +76,7 @@ const reportSwitchButtons = computed(() => [
     : []),
   {
     label: t('patrolDataButtonSwitch.switchCtpatReport'),
-    icon: 'pi pi-file',
+    icon: 'pi pi-shield',
     size: 'small',
     severity: 'secondary' as const,
     outlined: true,
@@ -87,7 +87,7 @@ const reportSwitchButtons = computed(() => [
 useResetFirstOnFilterChange(
   () => [
     store.searchText,
-    store.filterAreaId,
+    store.filterAreaName,
     store.filterRouteName,
     store.filterCheckPointName,
     store.filterGuardName,
@@ -130,7 +130,7 @@ watch(
 
 watch(
   () => [
-    store.filterAreaId,
+    store.filterAreaName,
     store.filterRouteName,
     store.filterCheckPointName,
     store.filterGuardName,
@@ -219,7 +219,7 @@ async function onExport() {
 function onColumnFilter(payload: { key: string; value: any }) {
   if (payload.key === 'routeName') {
     const value = payload.value && typeof payload.value === 'object' ? payload.value : {}
-    store.filterAreaId = value.primaryValue ?? null
+    store.filterAreaName = value.primaryValue ?? null
     store.filterRouteName = value.secondaryValue ?? null
   }
   if (payload.key === 'checkPointName') store.filterCheckPointName = payload.value ?? null
@@ -265,6 +265,7 @@ function onColumnFilter(payload: { key: string; value: any }) {
           <BaseIconButton
             icon="pi pi-file-excel"
             :label="t('common.export')"
+            iconClass="text-emerald-600"
             size="small"
             severity="secondary"
             outlined
@@ -292,7 +293,7 @@ function onColumnFilter(payload: { key: string; value: any }) {
           key: 'routeName',
           type: 'dual-select',
           value: {
-            primaryValue: store.filterAreaId,
+            primaryValue: store.filterAreaName,
             secondaryValue: store.filterRouteName,
           },
           options: store.routeAreaOptions,
@@ -305,7 +306,7 @@ function onColumnFilter(payload: { key: string; value: any }) {
           secondaryOptionValue: 'value',
           secondaryPlaceholder: t('gpsLogReport.routeName'),
           secondaryFilter: true,
-          secondaryParentField: 'areaId',
+          secondaryParentField: 'areaName',
           secondaryFilterField: 'searchText',
         }"
       >

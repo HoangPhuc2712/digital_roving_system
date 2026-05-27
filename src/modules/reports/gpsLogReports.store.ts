@@ -4,7 +4,7 @@ import {
   fetchGpsLogRows,
   fetchPatrolDetailCheckpointOptions,
   fetchPatrolDetailGuardOptions,
-  fetchReportRouteFilterOptions,
+  fetchPointReportRouteFilterOptions,
 } from './reports.api'
 import type { GpsLogRow } from './reports.types'
 
@@ -32,15 +32,20 @@ export const useGpsLogReportsStore = defineStore('gpsLogReports', {
     loading: false,
 
     searchText: '' as string,
-    filterAreaId: null as number | null,
+    filterAreaName: null as string | null,
     filterRouteName: null as string | null,
     filterCheckPointName: null as string | null,
     filterGuardName: null as string | null,
     filterDateFrom: startOfToday() as Date | null,
     filterDateTo: endOfToday() as Date | null,
 
-    areaFilterOptions: [] as { label: string; value: number }[],
-    routeFilterOptions: [] as { label: string; value: string; areaId: number; routeId?: number }[],
+    areaFilterOptions: [] as { label: string; value: string }[],
+    routeFilterOptions: [] as {
+      label: string
+      value: string
+      areaName: string
+      routeId?: number
+    }[],
     checkPointFilterOptions: [] as {
       label: string
       value: string
@@ -64,32 +69,29 @@ export const useGpsLogReportsStore = defineStore('gpsLogReports', {
   }),
 
   getters: {
-    areaOptions(state): { label: string; value: number }[] {
+    areaOptions(state): { label: string; value: string }[] {
       if (state.areaFilterOptions.length) return state.areaFilterOptions
 
-      const seen = new Set<number>()
-      const options: { label: string; value: number }[] = []
+      const seen = new Set<string>()
+      const options: { label: string; value: string }[] = []
 
       for (const row of this.rows) {
-        const value = Number(row.area_id ?? 0)
+        const value = String(row.area_name ?? '').trim()
         if (!value || seen.has(value)) continue
         seen.add(value)
-        options.push({
-          value,
-          label: `Area ${value}`,
-        })
+        options.push({ value, label: value })
       }
 
       return options.sort((a, b) => a.label.localeCompare(b.label))
     },
 
-    routeAreaOptions(): { label: string; value: number }[] {
+    routeAreaOptions(): { label: string; value: string }[] {
       return this.areaOptions
     },
 
     routeOptions(
       state,
-    ): { label: string; value: string; areaId: number; routeId?: number; searchText?: string }[] {
+    ): { label: string; value: string; areaName: string; routeId?: number; searchText?: string }[] {
       if (state.routeFilterOptions.length) {
         return state.routeFilterOptions.slice().sort((a, b) => a.label.localeCompare(b.label))
       }
@@ -98,19 +100,19 @@ export const useGpsLogReportsStore = defineStore('gpsLogReports', {
       const options: {
         label: string
         value: string
-        areaId: number
+        areaName: string
         routeId?: number
         searchText?: string
       }[] = []
 
       for (const row of this.rows) {
         const value = String(row.route_name ?? '').trim()
-        const areaId = Number(row.area_id ?? 0)
+        const areaName = String(row.area_name ?? '').trim()
         if (!value) continue
-        const key = `${areaId}::${value}`
+        const key = `${areaName}::${value}`
         if (seen.has(key)) continue
         seen.add(key)
-        options.push({ label: value, value, areaId, searchText: value.toLowerCase() })
+        options.push({ label: value, value, areaName, searchText: value.toLowerCase() })
       }
 
       return options.sort((a, b) => a.label.localeCompare(b.label))
@@ -186,7 +188,7 @@ export const useGpsLogReportsStore = defineStore('gpsLogReports', {
 
       const visibleRows = this.rows.filter((row) => {
         if (q && !row._q.includes(q)) return false
-        if (this.filterAreaId != null && row.area_id !== this.filterAreaId) return false
+        if (this.filterAreaName != null && row.area_name !== this.filterAreaName) return false
         if (this.filterRouteName != null && row.route_name !== this.filterRouteName) return false
         if (this.filterCheckPointName != null && row.check_point_name !== this.filterCheckPointName)
           return false
@@ -231,12 +233,12 @@ export const useGpsLogReportsStore = defineStore('gpsLogReports', {
 
       this.routeFilterOptionsLoading = true
       try {
-        const routeFilters = await fetchReportRouteFilterOptions().catch(() => ({
-          areaOptions: [] as { label: string; value: number }[],
+        const routeFilters = await fetchPointReportRouteFilterOptions().catch(() => ({
+          areaOptions: [] as { label: string; value: string }[],
           routeOptions: [] as {
             label: string
             value: string
-            areaId: number
+            areaName: string
             routeId?: number
             searchText?: string
           }[],
@@ -279,7 +281,7 @@ export const useGpsLogReportsStore = defineStore('gpsLogReports', {
         const selectedRoute = this.routeOptions.find(
           (option) =>
             option.value === this.filterRouteName &&
-            (this.filterAreaId == null || option.areaId === this.filterAreaId),
+            (this.filterAreaName == null || option.areaName === this.filterAreaName),
         )
         const selectedGuard = this.guardOptions.find(
           (option) => option.value === this.filterGuardName,
@@ -291,7 +293,7 @@ export const useGpsLogReportsStore = defineStore('gpsLogReports', {
         const result = await fetchGpsLogRows(this.filterDateFrom, this.filterDateTo, {
           page: toApiPage(this.first, this.rowsPerPage),
           pageSize: this.rowsPerPage,
-          areaId: this.filterAreaId,
+          areaName: this.filterAreaName,
           routeId: selectedRoute?.routeId ?? null,
           cpId: selectedCheckPoint?.cpId ?? null,
           cpName: selectedCheckPoint?.cpId ? null : this.filterCheckPointName,
@@ -309,7 +311,7 @@ export const useGpsLogReportsStore = defineStore('gpsLogReports', {
       const selectedRoute = this.routeOptions.find(
         (option) =>
           option.value === this.filterRouteName &&
-          (this.filterAreaId == null || option.areaId === this.filterAreaId),
+          (this.filterAreaName == null || option.areaName === this.filterAreaName),
       )
       const selectedGuard = this.guardOptions.find(
         (option) => option.value === this.filterGuardName,
@@ -321,7 +323,7 @@ export const useGpsLogReportsStore = defineStore('gpsLogReports', {
       const rows = await fetchAllPagedRows((pageParams) =>
         fetchGpsLogRows(this.filterDateFrom, this.filterDateTo, {
           ...pageParams,
-          areaId: this.filterAreaId,
+          areaName: this.filterAreaName,
           routeId: selectedRoute?.routeId ?? null,
           cpId: selectedCheckPoint?.cpId ?? null,
           cpName: selectedCheckPoint?.cpId ? null : this.filterCheckPointName,
@@ -340,7 +342,7 @@ export const useGpsLogReportsStore = defineStore('gpsLogReports', {
 
     clearFilters() {
       this.searchText = ''
-      this.filterAreaId = null
+      this.filterAreaName = null
       this.filterRouteName = null
       this.filterCheckPointName = null
       this.filterGuardName = null

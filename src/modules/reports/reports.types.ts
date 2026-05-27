@@ -93,6 +93,7 @@ export type PatrolDetailReportRow = {
   row_id: string
   ps_id: number
   area_id: number
+  area_name: string
   route_id: number
   route_code: string
   route_name: string
@@ -117,6 +118,7 @@ export type GpsLogRow = {
   row_id: string
   ps_id: number
   area_id: number
+  area_name: string
   route_id: number
   route_code: string
   route_name: string

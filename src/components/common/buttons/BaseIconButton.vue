@@ -13,6 +13,7 @@
     :plain="plain"
     :loading="loading"
     :disabled="disabled"
+    :pt="buttonPt"
     @click="$emit('click', $event)"
   />
 
@@ -47,6 +48,7 @@ const props = withDefaults(
   defineProps<{
     label?: string
     icon?: string
+    iconClass?: string
     imageSrc?: string
     imageAlt?: string
     imageClass?: string
@@ -85,6 +87,20 @@ const resolvedImageAlt = computed(() => {
 
 const imageClassName = computed(() => props.imageClass)
 const contentClassName = computed(() => props.contentClass)
+
+const iconClassName = computed(() => {
+  return [props.icon, props.iconClass].filter(Boolean).join(' ')
+})
+
+const buttonPt = computed(() => {
+  if (!props.iconClass) return undefined
+
+  return {
+    icon: {
+      class: props.iconClass,
+    },
+  }
+})
 
 defineEmits<{
   (e: 'click', ev: MouseEvent): void

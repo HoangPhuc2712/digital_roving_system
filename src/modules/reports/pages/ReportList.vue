@@ -85,7 +85,7 @@ const reportSwitchButtons = computed(() => [
     ? [
         {
           label: t('patrolDataButtonSwitch.switchIncorrectScanReports'),
-          icon: 'pi pi-file',
+          icon: 'pi pi-exclamation-triangle',
           size: 'small',
           severity: 'secondary' as const,
           outlined: true,
@@ -107,7 +107,7 @@ const reportSwitchButtons = computed(() => [
     : []),
   {
     label: t('patrolDataButtonSwitch.switchCtpatReport'),
-    icon: 'pi pi-file',
+    icon: 'pi pi-shield',
     size: 'small',
     severity: 'secondary' as const,
     outlined: true,
@@ -134,7 +134,7 @@ function scheduleReload() {
 useResetFirstOnFilterChange(
   () => [
     store.searchText,
-    store.filterAreaId,
+    store.filterAreaName,
     store.filterRouteName,
     store.filterIssueStatus,
     store.filterResult,
@@ -179,7 +179,7 @@ watch(
 
 watch(
   () => [
-    store.filterAreaId,
+    store.filterAreaName,
     store.filterRouteName,
     store.filterCheckPointName,
     store.filterGuardId,
@@ -211,7 +211,7 @@ function handleBeforeUnload() {
 function persistReloadState() {
   const payload = {
     searchText: store.searchText ?? '',
-    filterAreaId: store.filterAreaId ?? null,
+    filterAreaName: store.filterAreaName ?? null,
     filterRouteName: store.filterRouteName ?? null,
     filterIssueStatus: store.filterIssueStatus ?? null,
     filterResult: store.filterResult ?? 'ALL',
@@ -232,7 +232,7 @@ function restoreReloadState() {
   try {
     const payload = JSON.parse(raw) as {
       searchText?: string
-      filterAreaId?: number | null
+      filterAreaName?: string | null
       filterRouteName?: string | null
       filterIssueStatus?: number | null
       filterResult?: ResultFilter
@@ -244,7 +244,7 @@ function restoreReloadState() {
     }
 
     store.searchText = payload.searchText ?? ''
-    store.filterAreaId = payload.filterAreaId ?? null
+    store.filterAreaName = payload.filterAreaName ?? null
     store.filterRouteName = payload.filterRouteName ?? null
     store.filterIssueStatus = payload.filterIssueStatus ?? null
     store.filterResult = payload.filterResult ?? 'ALL'
@@ -281,7 +281,7 @@ function applyRouteFilters() {
 
   if (fromDashboard) {
     store.searchText = ''
-    store.filterAreaId = null
+    store.filterAreaName = null
     store.filterRouteName = null
     store.filterGuardId = ''
     store.filterDateFrom = null
@@ -380,7 +380,7 @@ async function onFilterOpen(payload: { key: string }) {
 function onColumnFilter(payload: { key: string; value: any }) {
   if (payload.key === 'routeName') {
     const value = payload.value && typeof payload.value === 'object' ? payload.value : {}
-    store.filterAreaId = value.primaryValue ?? null
+    store.filterAreaName = value.primaryValue ?? null
     store.filterRouteName = value.secondaryValue ?? null
   }
   if (payload.key === 'checkPointName') store.filterCheckPointName = payload.value ?? null
@@ -510,6 +510,7 @@ async function onExport() {
           <BaseIconButton
             icon="pi pi-file-excel"
             :label="t('common.export')"
+            iconClass="text-emerald-600"
             size="small"
             severity="secondary"
             outlined
@@ -535,7 +536,7 @@ async function onExport() {
           key: 'routeName',
           type: 'dual-select',
           value: {
-            primaryValue: store.filterAreaId,
+            primaryValue: store.filterAreaName,
             secondaryValue: store.filterRouteName,
           },
           options: store.routeAreaOptions,
@@ -548,7 +549,7 @@ async function onExport() {
           secondaryOptionValue: 'value',
           secondaryPlaceholder: t('reportList.table.routeName'),
           secondaryFilter: true,
-          secondaryParentField: 'areaId',
+          secondaryParentField: 'areaName',
           secondaryFilterField: 'searchText',
         }"
       >

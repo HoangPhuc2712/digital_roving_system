@@ -87,6 +87,12 @@ const vi = {
     selectEndDate: 'Chọn ngày kết thúc',
     invalidRange: 'Khoảng thời gian không đúng, vui lòng chọn lại',
   },
+  tutorialPage: {
+    title: 'Internal Patrol Guideline',
+    websiteReportSop: 'SOP Báo cáo Website Tuần tra Nội bộ',
+    applicationSop: 'SOP Ứng dụng Tuần tra Nội bộ',
+    downloadText: 'Nhấn vào đây để tải file',
+  },
   patrolDataButtonSwitch: {
     switchPatrolReports: 'Báo cáo tuần tra',
     switchIncorrectScanReports: 'Nhật ký quét sai',
@@ -403,6 +409,7 @@ const vi = {
     checkpointName: 'Điểm kiểm tra',
     area: 'Khu vực',
     qrImg: 'Hình QR',
+    cpPerPage: 'Mỗi điểm kiểm tra một trang',
     exportPdf: 'Xuất PDF',
     error: {
       printLoadFailed: 'Tải tùy chọn in thất bại',

@@ -87,6 +87,12 @@ const zhCN = {
     selectEndDate: '选择结束日期',
     invalidRange: '筛选时间范围不正确，请重新选择',
   },
+  tutorialPage: {
+    title: 'Internal Patrol Guideline',
+    websiteReportSop: '内部巡逻网站报表 SOP',
+    applicationSop: '内部巡逻应用程序 SOP',
+    downloadText: '点击此处下载文件',
+  },
   patrolDataButtonSwitch: {
     switchPatrolReports: '巡逻报告',
     switchIncorrectScanReports: '错误扫描记录',
@@ -402,6 +408,7 @@ const zhCN = {
     checkpointName: '检查点',
     area: '区域',
     qrImg: 'QR 图片',
+    cpPerPage: '每页一个检查点',
     exportPdf: '导出 PDF',
     error: {
       printLoadFailed: '加载打印选项失败',

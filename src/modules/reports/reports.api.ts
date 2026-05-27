@@ -755,10 +755,12 @@ type FetchReportRowsParams = ApiPageParams & {
   prStatus?: number | null
   prHasProblem?: boolean | null
   areaId?: number | null
+  areaName?: string | null
   routeId?: number | null
   cpId?: number | null
   cpName?: string | null
   reportBy?: string | null
+  reportName?: string | null
 }
 
 export async function fetchReportRows(
@@ -786,6 +788,9 @@ export async function fetchReportRows(
     body.areaId = Number(params.areaId)
   }
 
+  const areaName = String(params.areaName ?? '').trim()
+  if (areaName) body.areaName = areaName
+
   if (params.routeId != null && Number.isFinite(Number(params.routeId))) {
     body.routeId = Number(params.routeId)
   }
@@ -799,6 +804,9 @@ export async function fetchReportRows(
 
   const reportBy = String(params.reportBy ?? '').trim()
   if (reportBy) body.reportBy = reportBy
+
+  const reportName = String(params.reportName ?? '').trim()
+  if (reportName) body.reportName = reportName
 
   const res = await http.post(endpoints.pointReportView.getList, body)
   const payload = ensureSuccess<
@@ -958,6 +966,27 @@ export async function fetchReportRouteFilterOptions(): Promise<{
   return {
     areaOptions: areaOptions.sort((a, b) => a.label.localeCompare(b.label)),
     routeOptions: routeOptions.sort((a, b) => a.label.localeCompare(b.label)),
+  }
+}
+
+export async function fetchPointReportRouteFilterOptions(): Promise<{
+  areaOptions: { label: string; value: string }[]
+  routeOptions: {
+    label: string
+    value: string
+    areaName: string
+    routeId?: number
+    areaId?: number
+    searchText?: string
+  }[]
+}> {
+  const routeFilters = await fetchCtpatRouteFilterOptions()
+  return {
+    areaOptions: routeFilters.areaOptions.map((option) => ({
+      label: option.label,
+      value: option.value,
+    })),
+    routeOptions: routeFilters.routeOptions,
   }
 }
 
@@ -1182,12 +1211,12 @@ export async function fetchCtpatReportRows(
     body.areaId = Number(params.areaId)
   }
 
+  const areaName = String(params.areaName ?? '').trim()
+  if (areaName) body.areaName = areaName
+
   if (params.routeId != null && Number.isFinite(Number(params.routeId))) {
     body.routeId = Number(params.routeId)
   }
-
-  const areaName = String(params.areaName ?? '').trim()
-  if (areaName) body.areaName = areaName
 
   const routeName = String(params.routeName ?? '').trim()
   if (routeName) body.routeName = routeName
@@ -1418,6 +1447,7 @@ function normalizePatrolDetailRow(view: ApiPointReportView, index = 0): PatrolDe
   const routeCode = String(view.routeCode ?? '')
   const routeName = String(view.routeName ?? '')
   const areaId = Number(view.areaId ?? 0)
+  const areaName = String(view.areaName ?? '')
   const checkPointName = String(view.cpName ?? '')
   const startTime = String(view.reportTimeFrom ?? '')
   const finishTime = String(view.reportTimeTo ?? '')
@@ -1439,6 +1469,7 @@ function normalizePatrolDetailRow(view: ApiPointReportView, index = 0): PatrolDe
     finishTime,
     patrolTime,
     String(areaId),
+    areaName,
   ]
     .join(' ')
     .toLowerCase()
@@ -1447,6 +1478,7 @@ function normalizePatrolDetailRow(view: ApiPointReportView, index = 0): PatrolDe
     row_id: prId > 0 ? `pr-${prId}` : `${psId}-${routeId}-${checkPointName}-${patrolTime}-${index}`,
     ps_id: psId,
     area_id: areaId,
+    area_name: areaName,
     route_id: routeId,
     route_code: routeCode,
     route_name: routeName,
@@ -1565,6 +1597,7 @@ async function fetchPatrolShiftReportViewsByDay(date: Date) {
 
 type FetchPatrolShiftReportRowsParams = ApiPageParams & {
   areaId?: number | null
+  areaName?: string | null
   routeId?: number | null
   cpId?: number | null
   cpName?: string | null
@@ -1588,6 +1621,9 @@ function buildPointReportPatrolRowsRequestBody(
   if (params.areaId != null && Number.isFinite(Number(params.areaId))) {
     body.areaId = Number(params.areaId)
   }
+
+  const areaName = String(params.areaName ?? '').trim()
+  if (areaName) body.areaName = areaName
 
   if (params.routeId != null && Number.isFinite(Number(params.routeId))) {
     body.routeId = Number(params.routeId)

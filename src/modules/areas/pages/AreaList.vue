@@ -504,6 +504,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
             v-if="canManage"
             icon="pi pi-file-pdf"
             :label="t('areaList.checkpointExportPdf')"
+            iconClass="text-rose-600"
             size="small"
             severity="secondary"
             outlined
@@ -512,6 +513,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
           <BaseIconButton
             icon="pi pi-file-excel"
             :label="t('common.export')"
+            iconClass="text-emerald-600"
             size="small"
             severity="secondary"
             outlined
@@ -530,10 +532,10 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
         sortDisabled
       />
 
-      <Column field="area_code" :header="t('areaList.areaCode')" />
-      <Column field="area_name" :header="t('areaList.areaName')" />
+      <Column field="area_code" :header="t('areaList.areaCode')" sortDisabled />
+      <Column field="area_name" :header="t('areaList.areaName')" sortDisabled />
 
-      <Column :header="t('areaList.areaCheckPoints')">
+      <Column :header="t('areaList.areaCheckPoints')" sortDisabled>
         <template #body="{ data }">
           <BaseButton
             :label="`${t('common.view')} (${data.total_checkpoints ?? 0})`"
@@ -544,7 +546,7 @@ async function handleAreaFormSubmit(payload: { submit: (actor_id: string) => Pro
         </template>
       </Column>
 
-      <Column :header="t('areaList.status')" sortField="area_status">
+      <Column :header="t('areaList.status')" sortDisabled>
         <template #body="{ data }">
           <Tag
             :value="statusLabel(data.area_status)"
