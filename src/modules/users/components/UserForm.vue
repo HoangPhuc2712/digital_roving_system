@@ -121,7 +121,8 @@ watch(
     form.user_code = m.user_code ?? ''
     form.user_role_id = Number(m.user_role_id ?? 0)
     form.user_area_id = Number(m.user_area_id ?? 0)
-    form.user_password = ''
+    form.user_password =
+      props.mode === 'edit' ? String(m.user_code ?? '') : String(m.user_password ?? '')
   },
   { immediate: true },
 )

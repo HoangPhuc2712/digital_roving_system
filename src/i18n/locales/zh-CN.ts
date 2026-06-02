@@ -88,7 +88,7 @@ const zhCN = {
     invalidRange: '筛选时间范围不正确，请重新选择',
   },
   tutorialPage: {
-    title: 'Internal Patrol Guideline',
+    title: '内部巡逻系统指南',
     websiteReportSop: '内部巡逻网站报表 SOP',
     applicationSop: '内部巡逻应用程序 SOP',
     downloadText: '点击此处下载文件',

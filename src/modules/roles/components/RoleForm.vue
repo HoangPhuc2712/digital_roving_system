@@ -270,6 +270,7 @@ function submit() {
             display="chip"
             :loading="Boolean(menuOptionsLoading)"
             @show="emit('permission-dropdown-show')"
+            :maxSelectedLabels="2"
           />
           <BaseMessage
             style="margin: 8px 0px"
