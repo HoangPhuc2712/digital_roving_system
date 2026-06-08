@@ -13,13 +13,27 @@
     </div>
     <div class="relative w-full max-w-md">
       <form class="w-full p-6 rounded-2xl shadow bg-white" @submit.prevent="onLogin">
+        <div class="mb-6 flex items-start justify-between gap-3">
+          <div class="flex min-w-0 items-center gap-3">
+            <img
+              src="/src/styles/logo/JiaHsinLogo.png"
+              alt="Jia Hsin"
+              class="h-10 w-10 shrink-0 object-contain"
+            />
+            <div class="min-w-0 leading-tight">
+              <p class="truncate text-sm font-bold text-[#0b5ca8]">佳新責任有限公司</p>
+              <p class="truncate text-xs font-bold uppercase text-[#0b5ca8]">
+                CÔNG TY TNHH JIA HSIN
+              </p>
+            </div>
+          </div>
+
+          <AppLanguageSwitcher class="shrink-0" />
+        </div>
+
         <h1 class="text-2xl text-gray-700 font-semibold mb-1 flex justify-center">
           {{ t('login.title') }}
         </h1>
-
-        <div class="flex justify-end mt-[10px]">
-          <AppLanguageSwitcher />
-        </div>
 
         <div class="space-y-4 mt-6">
           <BaseInput
