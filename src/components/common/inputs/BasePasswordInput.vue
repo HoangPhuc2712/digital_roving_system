@@ -10,8 +10,9 @@
         :disabled="disabled"
         :size="size"
         class="w-full"
-        inputClass="w-full"
+        :inputClass="passwordInputClass"
         :class="{ 'p-invalid': hasErrorComputed }"
+        :invalid="hasErrorComputed"
       />
       <label :for="inputId">{{ label }}</label>
     </FloatLabel>
@@ -67,4 +68,6 @@ const model = computed({
 const inputId = computed(() => props.id ?? `password-${Math.random().toString(36).slice(2, 9)}`)
 
 const hasErrorComputed = computed(() => props.hasError ?? false)
+
+const passwordInputClass = computed(() => ['w-full', { 'p-invalid': hasErrorComputed.value }])
 </script>
