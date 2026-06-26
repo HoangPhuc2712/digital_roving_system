@@ -10,7 +10,6 @@ import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import BaseButtonGroup from '@/components/common/buttons/BaseButtonGroup.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import { useIncorrectScanLogStore } from '@/modules/reports/incorrectScanLog.store'
-import { exportIncorrectScanLogXlsx } from '@/services/export/incorrectScanLog.export'
 import { useResetFirstOnFilterChange } from '@/composables/useFilters'
 import { usePagination } from '@/composables/usePagination'
 import { translateRouteName } from '@/utils/dataI18n'
@@ -179,6 +178,8 @@ const emptyIncorrectScanMessage = computed(() => {
 async function onExport() {
   exporting.value = true
   try {
+    const { exportIncorrectScanLogXlsx } = await import('@/services/export/incorrectScanLog.export')
+
     await exportIncorrectScanLogXlsx({
       rows: hasInvalidDateFilter.value ? [] : await store.getRowsForExport(),
       fileName: `incorrect_scan_log_${new Date().toISOString().slice(0, 10)}.xlsx`,

@@ -11,7 +11,6 @@ import BaseButtonGroup from '@/components/common/buttons/BaseButtonGroup.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import { usePatrolDetailReportsStore } from '@/modules/reports/patrolDetailReports.store'
 import { parseReportMailDateRange } from '@/modules/reports/reportMailLink'
-import { exportPatrolDetailReportXlsx } from '@/services/export/patrolDetailReport.export'
 import { useResetFirstOnFilterChange } from '@/composables/useFilters'
 import { usePagination } from '@/composables/usePagination'
 import { translateRouteName } from '@/utils/dataI18n'
@@ -190,6 +189,8 @@ function shiftCellStyle(hex: string): CSSProperties {
 async function onExport() {
   exporting.value = true
   try {
+    const { exportPatrolDetailReportXlsx } = await import('@/services/export/patrolDetailReport.export')
+
     await exportPatrolDetailReportXlsx({
       rows: hasInvalidDateFilter.value ? [] : await store.getRowsForExport(),
       fileName: `patrol_detail_reports_${new Date().toISOString().slice(0, 10)}.xlsx`,

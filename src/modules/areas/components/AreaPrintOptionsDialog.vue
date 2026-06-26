@@ -14,10 +14,9 @@ import type { CheckpointRow, RoleOption } from '@/modules/checkpoints/checkpoint
 import { fetchCheckpointRows, fetchRoleOptions } from '@/modules/checkpoints/checkpoints.api'
 import {
   DEFAULT_CHECKPOINT_QR_LAYOUT,
-  printCheckpointQrSheets,
   type CheckpointPrintItem,
   type CheckpointQrLayout,
-} from '@/services/print/checkpoints.print'
+} from '@/services/print/checkpointsPrint.types'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import QrPreview from '@/modules/checkpoints/components/QrPreview.vue'
 import { normalizeImageSource } from '@/utils/base64'
@@ -193,6 +192,8 @@ async function onPrint() {
 
   printing.value = true
   try {
+    const { printCheckpointQrSheets } = await import('@/services/print/checkpoints.print')
+
     await printCheckpointQrSheets(
       buildPrintItems(previewRows.value),
       'Check Point Qr Codes',

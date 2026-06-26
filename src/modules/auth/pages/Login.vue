@@ -2,17 +2,20 @@
   <div
     class="relative min-h-screen flex items-center justify-center overflow-hidden bg-slate-950 p-4"
   >
-    <div class="pointer-events-none absolute inset-0 z-0 overflow-hidden bg-slate-950">
+    <div class="pointer-events-none absolute inset-0 z-0 overflow-hidden bg-white">
       <DotLottieVue
         class="login-lottie-background opacity-85"
         autoplay
         loop
-        src="/lottie/login-background-1.lottie"
+        src="/lottie/login-background-7.lottie"
       />
-      <div class="absolute inset-0 bg-slate-950/25"></div>
+      <div class="absolute inset-0 bg-slate-950/5"></div>
     </div>
     <div class="relative w-full max-w-md">
-      <form class="w-full p-6 rounded-2xl shadow bg-white" @submit.prevent="onLogin">
+      <form
+        class="w-full p-6 rounded-2xl shadow bg-white border border-slate-200"
+        @submit.prevent="onLogin"
+      >
         <div class="mb-6 flex items-start justify-between gap-3">
           <div class="flex min-w-0 items-center gap-3">
             <img
@@ -126,9 +129,9 @@ async function onLogin() {
   left: 50%;
   top: 50%;
   display: block;
-  width: 100vw;
-  height: 38.26vw;
-  min-height: 360px;
+  width: 100%;
+  /* height: 38.26vw; */
+  /* min-height: 360px; */
   transform: translate(-50%, -50%);
 }
 </style>

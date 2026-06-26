@@ -1,4 +1,5 @@
-import ExcelJS from 'exceljs'
+import type ExcelJS from 'exceljs'
+import { createExcelWorkbook } from './excelWorkbook'
 import type { PatrolSummaryReportRow } from '@/modules/reports/reports.types'
 import { excelT } from './exportI18n'
 
@@ -19,7 +20,7 @@ export async function exportPatrolSummaryReportXlsx(params: {
   fileName: string
   chartBase64?: string
 }) {
-  const wb = new ExcelJS.Workbook()
+  const wb = await createExcelWorkbook()
   const reportTitle = excelT('patrolSummaryReportList.title', 'summaryReportOfSecurityPatrol')
   const ws = wb.addWorksheet(reportTitle)
 

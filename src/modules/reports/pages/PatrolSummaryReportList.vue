@@ -23,7 +23,6 @@ import type {
   PatrolSummaryShiftProblemDetailRow,
   PatrolSummaryTimeProblemDetailRow,
 } from '@/modules/reports/reports.types'
-import { exportPatrolSummaryReportXlsx } from '@/services/export/patrolSummaryReport.export'
 
 type PatrolSummaryChartExpose = {
   getBase64Image: () => string
@@ -255,7 +254,9 @@ async function onClear() {
 async function onExport() {
   exporting.value = true
   try {
+    const { exportPatrolSummaryReportXlsx } = await import('@/services/export/patrolSummaryReport.export')
     const chartBase64 = chartCardRef.value?.getBase64Image() || ''
+
     await exportPatrolSummaryReportXlsx({
       rows: store.rows,
       fileName: `patrol_summary_reports_${new Date().toISOString().slice(0, 10)}.xlsx`,

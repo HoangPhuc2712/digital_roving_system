@@ -15,8 +15,8 @@ function goDashboard() {
 <template>
   <div class="min-h-[70vh] flex items-center justify-center p-6">
     <div class="w-full max-w-xl rounded-2xl p-6 flex flex-col items-center">
-      <div class="text-5xl font-semibold text-slate-800">404</div>
-      <div class="mt-2 text-lg text-slate-600">{{ t('restricted.status404Detail') }}.</div>
+      <!-- <div class="text-5xl font-semibold text-slate-800">404</div>
+      <div class="mt-2 text-lg text-slate-600">{{ t('restricted.status404Detail') }}.</div> -->
       <DotLottieVue
         class="login-lottie-background"
         autoplay
@@ -40,6 +40,6 @@ function goDashboard() {
 .login-lottie-background {
   margin-top: 2rem;
   display: block;
-  width: 50vw;
+  width: 60vw;
 }
 </style>

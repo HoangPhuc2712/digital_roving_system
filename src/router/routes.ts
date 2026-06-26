@@ -31,7 +31,7 @@ export const routes = [
         component: () => import('@/modules/tutorial/pages/TutorialPage.vue'),
       },
       {
-        path: '403',
+        path: '401',
         name: 'forbidden',
         component: () => import('@/components/common/BaseEmptyState.vue'),
       },

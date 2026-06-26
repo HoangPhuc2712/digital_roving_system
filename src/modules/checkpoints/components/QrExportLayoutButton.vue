@@ -9,10 +9,9 @@ import { useI18n } from 'vue-i18n'
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import {
   DEFAULT_CHECKPOINT_QR_LAYOUT,
-  printSingleCheckpointQr,
   type CheckpointPrintItem,
   type CheckpointQrLayout,
-} from '@/services/print/checkpoints.print'
+} from '@/services/print/checkpointsPrint.types'
 
 type Severity = 'secondary' | 'success' | 'info' | 'warn' | 'help' | 'danger' | 'contrast'
 
@@ -72,6 +71,8 @@ async function onExport() {
 
   exporting.value = true
   try {
+    const { printSingleCheckpointQr } = await import('@/services/print/checkpoints.print')
+
     await printSingleCheckpointQr(props.item, selectedLayout.value)
     closeOverlay()
   } catch (e: any) {

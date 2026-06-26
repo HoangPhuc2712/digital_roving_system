@@ -1,4 +1,5 @@
-import ExcelJS from 'exceljs'
+import type ExcelJS from 'exceljs'
+import { createExcelWorkbook } from './excelWorkbook'
 import type { CtpatReportRow } from '@/modules/reports/reports.types'
 import { translateRouteName } from '@/utils/dataI18n'
 import { excelT } from './exportI18n'
@@ -15,7 +16,7 @@ function formatDateTime(iso: string) {
 }
 
 export async function exportCtpatReportXlsx(params: { rows: CtpatReportRow[]; fileName: string }) {
-  const wb = new ExcelJS.Workbook()
+  const wb = await createExcelWorkbook()
   const ws = wb.addWorksheet(excelT('ctpatReportList.title', 'C-TPAT Report'))
 
   ws.columns = [

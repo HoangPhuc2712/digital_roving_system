@@ -18,7 +18,6 @@ import {
   deleteRouteMock,
   fetchRouteById,
 } from '@/modules/routes/routes.api'
-import { exportRoutesXlsx } from '@/services/export/routes.export'
 
 import {
   useDebouncedSearchDraft,
@@ -386,6 +385,8 @@ function clearAll() {
 async function onExport() {
   exporting.value = true
   try {
+    const { exportRoutesXlsx } = await import('@/services/export/routes.export')
+
     await exportRoutesXlsx({
       rows: await store.getRowsForExport(),
       fileName: `patrol_routes_${new Date().toISOString().slice(0, 10)}.xlsx`,

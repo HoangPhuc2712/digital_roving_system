@@ -1,23 +1,13 @@
 import { PDFDocument } from 'pdf-lib'
 import { dataUrlToBytes, imageSourceToDataUrl, normalizeImageSource } from '@/utils/base64'
-
-export type CheckpointPrintItem = {
-  areaLabel: string
-  cpName: string
-  cpCode: string
-  cpPriority: number | string
-  qrSrc: string
-}
-
-export type CheckpointQrLayout = '1x2' | '2x2' | '3x2'
-
-export type PrintCheckpointQrSheetsOptions = {
-  cpPerPage?: boolean
-}
+import {
+  DEFAULT_CHECKPOINT_QR_LAYOUT,
+  type CheckpointPrintItem,
+  type CheckpointQrLayout,
+  type PrintCheckpointQrSheetsOptions,
+} from './checkpointsPrint.types'
 
 type CardOrientation = 'standard' | 'rotated'
-
-const DEFAULT_CHECKPOINT_QR_LAYOUT: CheckpointQrLayout = '3x2'
 
 const LAYOUT_DIMENSIONS: Record<CheckpointQrLayout, { rows: number; columns: number }> = {
   '1x2': { rows: 2, columns: 1 },

@@ -13,10 +13,7 @@ import type { AreaRow } from '@/modules/areas/areas.types'
 import { deleteAreaMock, fetchAreaById } from '@/modules/areas/areas.api'
 import { fetchCheckpointRows } from '@/modules/checkpoints/checkpoints.api'
 import type { CheckpointRow } from '@/modules/checkpoints/checkpoints.types'
-import {
-  printCheckpointQrSheets,
-  type CheckpointPrintItem,
-} from '@/services/print/checkpoints.print'
+import type { CheckpointPrintItem } from '@/services/print/checkpointsPrint.types'
 
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import BaseDataTable from '@/components/common/BaseDataTable.vue'
@@ -28,7 +25,6 @@ import AreaForm, {
 import BaseButton from '@/components/common/buttons/BaseButton.vue'
 import BaseConfirmDelete from '@/components/common/BaseConfirmDelete.vue'
 import AreaPrintOptionsDialog from '@/modules/areas/components/AreaPrintOptionsDialog.vue'
-import { exportAreasXlsx } from '@/services/export/areas.export'
 import {
   useDebouncedSearchDraft,
   useResetFirstOnFilterChange,
@@ -113,6 +109,8 @@ function clearAll() {
 async function onExport() {
   exporting.value = true
   try {
+    const { exportAreasXlsx } = await import('@/services/export/areas.export')
+
     await exportAreasXlsx({
       rows: await store.getRowsForExport(),
       fileName: `areas_${new Date().toISOString().slice(0, 10)}.xlsx`,
@@ -379,6 +377,8 @@ async function onPrintAreaQr(row: AreaRow) {
       })
       return
     }
+
+    const { printCheckpointQrSheets } = await import('@/services/print/checkpoints.print')
 
     await printCheckpointQrSheets(items, `${row.area_code || row.area_name} Qr Codes`)
   } catch (e: any) {

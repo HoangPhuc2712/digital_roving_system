@@ -14,7 +14,6 @@ import { useAuthStore } from '@/stores/auth.store'
 import type { RoleRow } from '@/modules/roles/roles.types'
 import { deleteRole, fetchRoleById } from '@/modules/roles/roles.api'
 import { fetchUserRows } from '@/modules/users/users.api'
-import { exportRolesXlsx } from '@/services/export/roles.export'
 import { translateMenuCategoryName, translateRoleName } from '@/utils/dataI18n'
 
 import {
@@ -309,6 +308,8 @@ function clearAll() {
 async function onExport() {
   exporting.value = true
   try {
+    const { exportRolesXlsx } = await import('@/services/export/roles.export')
+
     await exportRolesXlsx({
       rows: await store.getRowsForExport(),
       fileName: `roles_${new Date().toISOString().slice(0, 10)}.xlsx`,

@@ -751,7 +751,7 @@ const en = {
   restricted: {
     status404: '404 NOT FOUND',
     status404Detail: `This page doesn't seem to exist`,
-    accessRestricted: 'Access Restricted',
+    accessRestricted: '401 Access Restricted',
     accessRestrictedDetail: 'You do not have permission to access this page.',
     serverMaintenance: 'Server Maintenance',
     serverMaintenanceDetail: 'The server is currently under maintenance. Please try again later.',

@@ -1,4 +1,5 @@
-import ExcelJS from 'exceljs'
+import type ExcelJS from 'exceljs'
+import { createExcelWorkbook } from './excelWorkbook'
 import type { RoleRow } from '@/modules/roles/roles.types'
 import { translateMenuCategoryName, translateRoleName } from '@/utils/dataI18n'
 import { excelT } from './exportI18n'
@@ -27,7 +28,7 @@ async function saveWorkbook(wb: ExcelJS.Workbook, fileName: string) {
 }
 
 export async function exportRolesXlsx(params: { rows: RoleRow[]; fileName: string }) {
-  const wb = new ExcelJS.Workbook()
+  const wb = await createExcelWorkbook()
   const ws = wb.addWorksheet(excelT('breadcrumb.roles', 'Roles'))
 
   ws.columns = [

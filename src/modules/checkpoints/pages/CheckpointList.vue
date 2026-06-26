@@ -2,7 +2,6 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { useRoute } from 'vue-router'
-import { exportCheckpointsXlsx } from '@/services/export/checkpoints.export'
 import { normalizeImageSource } from '@/utils/base64'
 import { useI18n } from 'vue-i18n'
 import { translateRoleNames, translateRoleName } from '@/utils/dataI18n'
@@ -543,7 +542,9 @@ function normalizeQr(src: string) {
 async function onExport() {
   exporting.value = true
   try {
+    const { exportCheckpointsXlsx } = await import('@/services/export/checkpoints.export')
     const areaCode = lockedAreaCode.value || 'Area'
+
     await exportCheckpointsXlsx({
       rows: await store.getRowsForExport(),
       title: `${areaCode} ${t('breadcrumb.checkpoints')}`,

@@ -1,4 +1,5 @@
-import ExcelJS from 'exceljs'
+import type ExcelJS from 'exceljs'
+import { createExcelWorkbook } from './excelWorkbook'
 import type { AreaRow } from '@/modules/areas/areas.types'
 import { excelT } from './exportI18n'
 
@@ -26,7 +27,7 @@ async function saveWorkbook(wb: ExcelJS.Workbook, fileName: string) {
 }
 
 export async function exportAreasXlsx(params: { rows: AreaRow[]; fileName: string }) {
-  const wb = new ExcelJS.Workbook()
+  const wb = await createExcelWorkbook()
   const ws = wb.addWorksheet(excelT('breadcrumb.areas', 'Areas'))
 
   ws.columns = [
