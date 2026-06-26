@@ -21,7 +21,6 @@ import UserForm, {
   type UserFormSubmitPayload,
 } from '../components/UserForm.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
-import { exportUsersXlsx } from '@/services/export/users.export'
 import {
   useDebouncedSearchDraft,
   useResetFirstOnFilterChange,
@@ -297,6 +296,8 @@ function clearAll() {
 async function onExport() {
   exporting.value = true
   try {
+    const { exportUsersXlsx } = await import('@/services/export/users.export')
+
     await exportUsersXlsx({
       rows: await store.getRowsForExport(),
       fileName: `users_${new Date().toISOString().slice(0, 10)}.xlsx`,

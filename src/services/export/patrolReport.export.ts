@@ -1,4 +1,5 @@
-import ExcelJS from 'exceljs'
+import type ExcelJS from 'exceljs'
+import { createExcelWorkbook } from './excelWorkbook'
 import type { ReportImage, ReportNoteGroup, ReportRow } from '@/modules/reports/reports.types'
 import { translateReportNote } from '@/utils/dataI18n'
 import { excelT } from './exportI18n'
@@ -139,7 +140,7 @@ function setPhotoCellValue(cell: ExcelJS.Cell, photoLink: string, linkIndex = 0)
 }
 
 export async function exportPatrolReportXlsx(params: { rows: ReportRow[]; fileName: string }) {
-  const wb = new ExcelJS.Workbook()
+  const wb = await createExcelWorkbook()
   const reportTitle = excelT('reportList.title', 'Patrol Abnormal Cases Report')
   const ws = wb.addWorksheet(sanitizeSheetName(reportTitle))
 

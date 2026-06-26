@@ -1,4 +1,5 @@
-import ExcelJS from 'exceljs'
+import type ExcelJS from 'exceljs'
+import { createExcelWorkbook } from './excelWorkbook'
 import type { GpsLogRow } from '@/modules/reports/reports.types'
 import { translateRouteName } from '@/utils/dataI18n'
 import { excelT } from './exportI18n'
@@ -23,7 +24,7 @@ function hexToArgb(hex: string) {
 }
 
 export async function exportGpsLogReportXlsx(params: { rows: GpsLogRow[]; fileName: string }) {
-  const wb = new ExcelJS.Workbook()
+  const wb = await createExcelWorkbook()
   const ws = wb.addWorksheet(excelT('gpsLogReport.title', 'GPS Log'))
 
   ws.columns = [

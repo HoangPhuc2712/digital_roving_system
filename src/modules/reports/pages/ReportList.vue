@@ -18,7 +18,6 @@ import ReportForm, {
   type ReportFormMode,
   type ReportFormModel,
 } from '@/modules/reports/components/ReportForm.vue'
-import { exportPatrolReportXlsx } from '@/services/export/patrolReport.export'
 import { changeReportStatus, fetchReportRowById } from '@/modules/reports/reports.api'
 import { useResetFirstOnFilterChange } from '@/composables/useFilters'
 import { usePagination } from '@/composables/usePagination'
@@ -464,6 +463,8 @@ async function handleSubmitStatus(payload: { pr_id: number; pr_status: number })
 async function onExport() {
   exporting.value = true
   try {
+    const { exportPatrolReportXlsx } = await import('@/services/export/patrolReport.export')
+
     await exportPatrolReportXlsx({
       rows: hasInvalidDateFilter.value ? [] : await store.getRowsForExport(),
       fileName: `patrol_reports_${new Date().toISOString().slice(0, 10)}.xlsx`,

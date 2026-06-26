@@ -1,69 +1,81 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { routes } from './routes'
 import { useAuthStore } from '@/stores/auth.store'
-import { useAreasStore } from '@/modules/areas/areas.store'
-import { useCheckpointsStore } from '@/modules/checkpoints/checkpoints.store'
-import { useCtpatReportsStore } from '@/modules/reports/ctpatReports.store'
-import { useGpsLogReportsStore } from '@/modules/reports/gpsLogReports.store'
-import { useIncorrectScanLogStore } from '@/modules/reports/incorrectScanLog.store'
-import { usePatrolDetailReportsStore } from '@/modules/reports/patrolDetailReports.store'
-import { usePatrolSummaryReportsStore } from '@/modules/reports/patrolSummaryReports.store'
-import { useRoutesChartReportsStore } from '@/modules/reports/routesChartReports.store'
-import { useReportsStore } from '@/modules/reports/reports.store'
-import { useRolesStore } from '@/modules/roles/roles.store'
-import { useRoutesStore } from '@/modules/routes/routes.store'
-import { useUsersStore } from '@/modules/users/users.store'
 
 export const router = createRouter({
   history: createWebHashHistory(),
   routes,
 })
 
-function clearPageFiltersByRouteName(routeName: string | symbol | null | undefined) {
+async function clearPageFiltersByRouteName(routeName: string | symbol | null | undefined) {
   switch (routeName) {
-    case 'areas':
+    case 'areas': {
+      const { useAreasStore } = await import('@/modules/areas/areas.store')
       useAreasStore().clearFilters()
       break
-    case 'checkpoints':
+    }
+    case 'checkpoints': {
+      const { useCheckpointsStore } = await import('@/modules/checkpoints/checkpoints.store')
       useCheckpointsStore().clearFilters()
       break
-    case 'reports':
+    }
+    case 'reports': {
+      const { useReportsStore } = await import('@/modules/reports/reports.store')
       useReportsStore().clearFilters()
       break
-    case 'ctpat-reports':
+    }
+    case 'ctpat-reports': {
+      const { useCtpatReportsStore } = await import('@/modules/reports/ctpatReports.store')
       useCtpatReportsStore().clearFilters()
       break
-    case 'incorrect-scan-reports':
+    }
+    case 'incorrect-scan-reports': {
+      const { useIncorrectScanLogStore } = await import('@/modules/reports/incorrectScanLog.store')
       useIncorrectScanLogStore().clearFilters()
       break
-    case 'gps-log-reports':
+    }
+    case 'gps-log-reports': {
+      const { useGpsLogReportsStore } = await import('@/modules/reports/gpsLogReports.store')
       useGpsLogReportsStore().clearFilters()
       break
-    case 'patrol-detail-reports':
+    }
+    case 'patrol-detail-reports': {
+      const { usePatrolDetailReportsStore } = await import('@/modules/reports/patrolDetailReports.store')
       usePatrolDetailReportsStore().clearFilters()
       break
-    case 'patrol-summary-reports':
+    }
+    case 'patrol-summary-reports': {
+      const { usePatrolSummaryReportsStore } = await import('@/modules/reports/patrolSummaryReports.store')
       usePatrolSummaryReportsStore().clearFilters()
       break
-    case 'routes-chart-reports':
+    }
+    case 'routes-chart-reports': {
+      const { useRoutesChartReportsStore } = await import('@/modules/reports/routesChartReports.store')
       useRoutesChartReportsStore().clearFilters()
       break
-    case 'roles':
+    }
+    case 'roles': {
+      const { useRolesStore } = await import('@/modules/roles/roles.store')
       useRolesStore().clearFilters()
       break
-    case 'routes':
+    }
+    case 'routes': {
+      const { useRoutesStore } = await import('@/modules/routes/routes.store')
       useRoutesStore().clearFilters()
       break
-    case 'users':
+    }
+    case 'users': {
+      const { useUsersStore } = await import('@/modules/users/users.store')
       useUsersStore().clearFilters()
       break
+    }
     default:
       break
   }
 }
 
 router.beforeEach(async (to) => {
-  clearPageFiltersByRouteName(to.name)
+  await clearPageFiltersByRouteName(to.name)
 
   const auth = useAuthStore()
   if (!auth.token) auth.restoreSession()

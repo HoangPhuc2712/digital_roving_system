@@ -10,7 +10,6 @@ import BaseDataTable from '@/components/common/BaseDataTable.vue'
 import BaseButtonGroup from '@/components/common/buttons/BaseButtonGroup.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import { useCtpatReportsStore } from '@/modules/reports/ctpatReports.store'
-import { exportCtpatReportXlsx } from '@/services/export/ctpatReport.export'
 import { useResetFirstOnFilterChange } from '@/composables/useFilters'
 import { usePagination } from '@/composables/usePagination'
 import { translateRouteName } from '@/utils/dataI18n'
@@ -174,6 +173,8 @@ function resetPageState() {
 async function onExport() {
   exporting.value = true
   try {
+    const { exportCtpatReportXlsx } = await import('@/services/export/ctpatReport.export')
+
     await exportCtpatReportXlsx({
       rows: hasInvalidDateFilter.value ? [] : await store.getRowsForExport(),
       fileName: `ctpat_reports_${new Date().toISOString().slice(0, 10)}.xlsx`,

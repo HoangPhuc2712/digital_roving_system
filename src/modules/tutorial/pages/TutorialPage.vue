@@ -7,12 +7,12 @@ const guidelineFiles = [
   {
     key: 'website-report-sop',
     titleKey: 'tutorialPage.websiteReportSop',
-    href: '/docs/internal-patrol-website.pptx',
+    href: '/docs/internal-patrol-website.pdf',
   },
   {
     key: 'application-sop',
     titleKey: 'tutorialPage.applicationSop',
-    href: '/docs/internal-patrol-app.pptx',
+    href: '/docs/internal-patrol-app.pdf',
   },
 ]
 </script>

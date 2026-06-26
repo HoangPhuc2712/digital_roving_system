@@ -1,4 +1,5 @@
-import ExcelJS from 'exceljs'
+import type ExcelJS from 'exceljs'
+import { createExcelWorkbook } from './excelWorkbook'
 import type { PatrolDetailReportRow } from '@/modules/reports/reports.types'
 import { translateRouteName } from '@/utils/dataI18n'
 import { excelT } from './exportI18n'
@@ -26,7 +27,7 @@ export async function exportPatrolDetailReportXlsx(params: {
   rows: PatrolDetailReportRow[]
   fileName: string
 }) {
-  const wb = new ExcelJS.Workbook()
+  const wb = await createExcelWorkbook()
   const ws = wb.addWorksheet(excelT('patrolDetailReport.title', 'Patrol Detail Report'))
 
   ws.columns = [

@@ -1,4 +1,5 @@
-import ExcelJS from 'exceljs'
+import type ExcelJS from 'exceljs'
+import { createExcelWorkbook } from './excelWorkbook'
 import type { CheckpointRow } from '@/modules/checkpoints/checkpoints.types'
 import { imageSourceToDataUrl, normalizeImageSource, parseDataImageUrl } from '@/utils/base64'
 import { excelT } from './exportI18n'
@@ -95,7 +96,7 @@ export async function exportCheckpointsXlsx(params: {
   includeQrImage?: boolean
 }) {
   const includeQrImage = params.includeQrImage ?? true
-  const wb = new ExcelJS.Workbook()
+  const wb = await createExcelWorkbook()
   const ws = wb.addWorksheet(excelT('breadcrumb.checkpoints', 'Checkpoints'))
 
   ws.columns = includeQrImage

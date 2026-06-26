@@ -1,4 +1,5 @@
-import ExcelJS from 'exceljs'
+import type ExcelJS from 'exceljs'
+import { createExcelWorkbook } from './excelWorkbook'
 import type { UserRow } from '@/modules/users/users.types'
 import { translateRoleName } from '@/utils/dataI18n'
 import { excelT } from './exportI18n'
@@ -27,7 +28,7 @@ async function saveWorkbook(wb: ExcelJS.Workbook, fileName: string) {
 }
 
 export async function exportUsersXlsx(params: { rows: UserRow[]; fileName: string }) {
-  const wb = new ExcelJS.Workbook()
+  const wb = await createExcelWorkbook()
   const ws = wb.addWorksheet(excelT('breadcrumb.users', 'Users'))
 
   ws.columns = [

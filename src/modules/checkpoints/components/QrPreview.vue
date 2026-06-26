@@ -4,7 +4,7 @@ import Dialog from 'primevue/dialog'
 import { useI18n } from 'vue-i18n'
 
 import { useAuthStore } from '@/stores/auth.store'
-import type { CheckpointPrintItem } from '@/services/print/checkpoints.print'
+import type { CheckpointPrintItem } from '@/services/print/checkpointsPrint.types'
 import { normalizeImageSource } from '@/utils/base64'
 import QrExportLayoutButton from '@/modules/checkpoints/components/QrExportLayoutButton.vue'
 

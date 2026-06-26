@@ -11,7 +11,6 @@ import BaseButtonGroup from '@/components/common/buttons/BaseButtonGroup.vue'
 import BaseIconButton from '@/components/common/buttons/BaseIconButton.vue'
 import { useAuthStore } from '@/stores/auth.store'
 import { useGpsLogReportsStore } from '@/modules/reports/gpsLogReports.store'
-import { exportGpsLogReportXlsx } from '@/services/export/gpsLogReport.export'
 import { useResetFirstOnFilterChange } from '@/composables/useFilters'
 import { usePagination } from '@/composables/usePagination'
 import { translateRouteName } from '@/utils/dataI18n'
@@ -200,6 +199,8 @@ function formatCoordinate(value: number | null) {
 async function onExport() {
   exporting.value = true
   try {
+    const { exportGpsLogReportXlsx } = await import('@/services/export/gpsLogReport.export')
+
     await exportGpsLogReportXlsx({
       rows: hasInvalidDateFilter.value ? [] : await store.getRowsForExport(),
       fileName: `gps_log_${new Date().toISOString().slice(0, 10)}.xlsx`,
