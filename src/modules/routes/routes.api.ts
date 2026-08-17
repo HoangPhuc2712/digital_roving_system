@@ -124,7 +124,7 @@ async function fetchCheckpointViewListCached(): Promise<ApiCheckPointView[]> {
   if (checkpointViewListPromise) return checkpointViewListPromise
 
   checkpointViewListPromise = http
-    .post(endpoints.checkPointView.getList, { page: 1, pageSize: 100000 })
+    .post(endpoints.checkPointView.getList, {})
     .then((res) => {
       const env = ensureSuccess<
         ApiCheckPointView[] | ApiCheckPointView | { items?: ApiCheckPointView[] }
@@ -228,7 +228,7 @@ export function sumSeconds(details: RouteDetailModel[]) {
 }
 
 export async function fetchAreaOptions(): Promise<AreaOption[]> {
-  const res = await http.post(endpoints.areaView.getList, { page: 1, pageSize: 100000 })
+  const res = await http.post(endpoints.areaView.getList, {})
   const env = ensureSuccess<ApiAreaView[] | ApiAreaView | { items?: ApiAreaView[] }>(res.data)
   const list = normalizePagedData<ApiAreaView>(env.data).items
 

@@ -104,14 +104,8 @@ export const useUsersStore = defineStore('users', {
 
   getters: {
     filteredRows(state): UserRow[] {
-      return filterUserRows(
-        state.rows,
-        state.searchText,
-        state.filterUserId,
-        state.filterUserCode,
-        state.filterRoleId,
-        state.filterAreaId,
-      )
+      // Server-side filtering is authoritative for the paginated table.
+      return state.rows
     },
   },
 

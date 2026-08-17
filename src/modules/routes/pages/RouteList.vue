@@ -373,11 +373,20 @@ function onColumnFilter(payload: { key: string; value: any }) {
 }
 
 function clearAll() {
+  const hadActiveFilters = Boolean(
+    store.searchText.trim() ||
+      store.filterAreaId != null ||
+      store.filterRoleId != null ||
+      store.filterStatus !== 'ALL',
+  )
+
   resetFiltersWithSearchDraft({
     clear: () => store.clearFilters(),
     searchDraft,
     afterClear: () => {
       selectedRoutes.value = null
+      // If filters changed, the filter watcher reloads once. Otherwise force the default request.
+      if (!hadActiveFilters) void store.load()
     },
   })
 }

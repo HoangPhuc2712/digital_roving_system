@@ -2,6 +2,8 @@
   <div
     ref="tableRootRef"
     class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+    :class="{ 'app-datatable-card--fixed': fixedHeightEnabled }"
+    :style="fixedHeightStyle"
   >
     <div v-if="hasActionRow" class="border-b border-slate-200 bg-white px-3 py-3">
       <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
@@ -86,8 +88,8 @@
       showGridlines
       responsiveLayout="scroll"
       :scrollable="scrollable"
-      :scrollHeight="scrollable ? scrollHeight : undefined"
-      class="app-datatable"
+      :scrollHeight="scrollable ? resolvedScrollHeight : undefined"
+      :class="['app-datatable', { 'app-datatable--fixed': fixedHeightEnabled }]"
       @page="onPage"
       @sort="onSort"
     >
@@ -215,6 +217,9 @@ const props = withDefaults(
     scrollMaxHeight?: string
     scrollViewportOffset?: string
     fillEmptyHeight?: boolean
+    fixedHeight?: boolean
+    fixedMinHeight?: string
+    fixedHeightValue?: string
     beforeFilterOpen?: (payload: { key: string }) => void | Promise<void>
     skeletonRows?: number
   }>(),
@@ -248,6 +253,9 @@ const props = withDefaults(
     scrollMaxHeight: '600px',
     scrollViewportOffset: '290px',
     fillEmptyHeight: false,
+    fixedHeight: true,
+    fixedMinHeight: '30vh',
+    fixedHeightValue: '80vh',
     skeletonRows: 8,
   },
 )
@@ -255,8 +263,18 @@ const props = withDefaults(
 const lazy = computed(() => Boolean(props.lazy))
 const totalRecords = computed(() => Number(props.totalRecords ?? props.value.length ?? 0))
 const scrollable = computed(() => props.scrollable !== false)
-const scrollHeight = computed(() => {
+const fixedHeightEnabled = computed(() => Boolean(props.fixedHeight) && scrollable.value)
+const fixedHeightStyle = computed(() => {
+  if (!fixedHeightEnabled.value) return undefined
+
+  return {
+    minHeight: props.fixedMinHeight,
+    height: props.fixedHeightValue,
+  }
+})
+const resolvedScrollHeight = computed(() => {
   if (props.scrollHeight) return props.scrollHeight
+  if (fixedHeightEnabled.value) return 'flex'
 
   return `clamp(${props.scrollMinHeight}, calc(100vh - ${props.scrollViewportOffset}), ${props.scrollMaxHeight})`
 })
@@ -264,8 +282,12 @@ const scrollHeight = computed(() => {
 const emptyMessageStyle = computed(() => {
   if (!props.fillEmptyHeight || !scrollable.value) return undefined
 
+  if (fixedHeightEnabled.value && !props.scrollHeight) {
+    return { minHeight: '100%' }
+  }
+
   return {
-    minHeight: `calc(${scrollHeight.value} - 48px)`,
+    minHeight: `calc(${resolvedScrollHeight.value} - 48px)`,
   }
 })
 
@@ -392,9 +414,16 @@ const skeletonRowCount = computed(() => {
 const skeletonContainerStyle = computed(() => {
   if (!scrollable.value) return undefined
 
+  if (fixedHeightEnabled.value && !props.scrollHeight) {
+    return {
+      flex: '1 1 auto',
+      minHeight: '0',
+    }
+  }
+
   return {
-    maxHeight: scrollHeight.value,
-    minHeight: scrollHeight.value,
+    maxHeight: resolvedScrollHeight.value,
+    minHeight: resolvedScrollHeight.value,
   }
 })
 
@@ -1245,5 +1274,31 @@ onBeforeUnmount(() => {
 :deep(.app-filter-select .p-select-filter-container),
 :deep(.app-filter-multiselect .p-multiselect-filter-container) {
   margin-bottom: 0.5rem;
+}
+
+.app-datatable-card--fixed {
+  display: flex;
+  flex-direction: column;
+}
+
+.app-datatable-skeleton {
+  min-height: 0;
+}
+
+:deep(.app-datatable--fixed.p-datatable) {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+:deep(.app-datatable--fixed .p-datatable-table-container) {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+:deep(.app-datatable--fixed .p-paginator) {
+  flex: 0 0 auto;
 }
 </style>

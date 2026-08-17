@@ -78,13 +78,8 @@ export const useRoutesStore = defineStore('routes', {
 
   getters: {
     filteredRows(state): RouteRow[] {
-      return filterRouteRows(
-        state.rows,
-        state.searchText,
-        state.filterAreaId,
-        state.filterRoleId,
-        state.filterStatus,
-      )
+      // Server-side filtering is authoritative for the paginated table.
+      return state.rows
     },
   },
 

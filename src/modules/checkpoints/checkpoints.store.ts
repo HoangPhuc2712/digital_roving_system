@@ -9,6 +9,11 @@ import type {
 } from './checkpoints.types'
 import { fetchAreaOptions, fetchCheckpointRows, fetchRoleOptions } from './checkpoints.api'
 
+function toApiCheckpointStatus(filterStatus: CheckpointStatusFilter) {
+  return filterStatus === 'ACTIVE' ? 0 : filterStatus === 'INACTIVE' ? 1 : null
+}
+
+
 function filterCheckpointRows(
   rows: CheckpointRow[],
   searchText: string,
@@ -98,14 +103,8 @@ export const useCheckpointsStore = defineStore('checkpoints', {
     },
 
     filteredRows(state): CheckpointRow[] {
-      return filterCheckpointRows(
-        state.rows,
-        state.searchText,
-        state.filterAreaId,
-        state.filterCheckPointName,
-        state.filterStatus,
-        state.filterRoleIds,
-      )
+      // Server-side filtering is authoritative for the paginated table.
+      return state.rows
     },
   },
 
@@ -142,6 +141,9 @@ export const useCheckpointsStore = defineStore('checkpoints', {
         const result = await fetchCheckpointRows(this.roleOptions, {
           page: toApiPage(this.first, this.rowsPerPage),
           pageSize: this.rowsPerPage,
+          cpKeyword: this.searchText,
+          cpName: this.filterCheckPointName,
+          cpStatus: toApiCheckpointStatus(this.filterStatus),
           areaId: this.filterAreaId,
           roleIds: this.filterRoleIds,
         })
@@ -161,6 +163,9 @@ export const useCheckpointsStore = defineStore('checkpoints', {
       const rows = await fetchAllPagedRows((pageParams) =>
         fetchCheckpointRows(this.roleOptions, {
           ...pageParams,
+          cpKeyword: this.searchText,
+          cpName: this.filterCheckPointName,
+          cpStatus: toApiCheckpointStatus(this.filterStatus),
           areaId: this.filterAreaId,
           roleIds: this.filterRoleIds,
         }),

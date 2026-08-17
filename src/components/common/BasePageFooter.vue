@@ -3,63 +3,29 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const COPYRIGHT_START_YEAR = 2026
-const copyrightYearRange = computed(() => {
-  const currentYear = new Date().getFullYear()
-
-  return `${COPYRIGHT_START_YEAR}-${currentYear}`
-})
-const JHV_LINK = 'https://www.jiahsin.com.vn/'
-const SHM_LINK = 'http://www.shimmer.com.vn/'
-const PORTAL_LINK = 'https://portal.jiahsin.com.vn/portal/'
-const APP_VERSION = '1.1.0'
-const { t } = useI18n()
+const COPYRIGHT_CURRENT_YEAR = computed(() => `${new Date().getFullYear()}`)
+const copyrightYearRange = computed(() => `${COPYRIGHT_START_YEAR} - ${new Date().getFullYear()}`)
 </script>
 
 <template>
-  <footer
-    class="shrink-0 border-t border-slate-200 bg-white px-3 py-3 text-[13px] text-slate-500 sm:px-4"
+  <div
+    class="mt-3 flex flex-row px-4 py-2 border-t justify-between items-center border-slate-200 pt-3 text-[13px] text-slate-500"
   >
-    <div class="flex items-start gap-2 leading-relaxed text-slate-500">
-      <i class="pi pi-exclamation-circle mt-0.5 text-[8px] text-slate-400" />
-      <p class="text-xs italic">
-        {{ t('footer.detail') }}
-      </p>
-    </div>
-
-    <div
-      class="mt-3 flex flex-col gap-2 border-t border-slate-200 pt-3 text-[13px] text-slate-500 sm:flex-row sm:items-center sm:justify-between"
-    >
-      <div class="flex flex-wrap items-center gap-1">
-        <span>Internal Patrol System ©{{ copyrightYearRange }}</span>
-        <a
-          :href="JHV_LINK"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
-        >
-          JHV
-        </a>
-        <span>|</span>
-        <a
-          :href="SHM_LINK"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
-        >
-          SHM
-        </a>
-        <span>|</span>
-        <a
-          :href="PORTAL_LINK"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
-        >
-          Portal
-        </a>
+    <div class="flex items-start justify-between gap-3">
+      <div class="flex min-w-0 items-center gap-3">
+        <img
+          src="/src/styles/logo/JiaHsinLogo.png  "
+          alt="Jia Hsin"
+          class="h-12 w-12 shrink-0 object-contain"
+        />
+        <div class="min-w-0 leading-tight">
+          <p class="truncate text-md font-bold text-[#0b5ca8]">佳新責任有限公司</p>
+          <p class="truncate text-sm font-bold uppercase text-[#0b5ca8]">CÔNG TY TNHH JIA HSIN</p>
+        </div>
       </div>
-
-      <div class="text-right text-slate-500">{{ t('footer.version') }} {{ APP_VERSION }}</div>
     </div>
-  </footer>
+    <div>
+      <span>Internal Patrol System • © {{ COPYRIGHT_CURRENT_YEAR }} By App Team</span>
+    </div>
+  </div>
 </template>

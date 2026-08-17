@@ -89,11 +89,13 @@ watch(
         <BasePageHeader @open-menu="handleToggleSidebar" />
       </header>
 
-      <main class="flex-1 p-4">
+      <main class="flex-1 px-4 py-2">
         <router-view />
       </main>
 
-      <BasePageFooter class="mt-auto" />
+      <footer class="sticky bottom-0 z-30 shrink-0 bg-slate-50">
+        <BasePageFooter />
+      </footer>
     </div>
   </div>
 </template>

@@ -300,7 +300,7 @@ export async function fetchRoleOptions() {
 type ApiAreaViewOption = { areaId?: number; areaCode?: string; areaName?: string }
 
 export async function fetchAreaOptions() {
-  const res = await http.post(endpoints.areaView.getList, { page: 1, pageSize: 100000 })
+  const res = await http.post(endpoints.areaView.getList, {})
   const list = ensureSuccess<
     ApiAreaViewOption[] | ApiAreaViewOption | { items?: ApiAreaViewOption[] }
   >(res.data).data

@@ -284,11 +284,21 @@ async function onBeforeFilterOptionsOpen(payload: { key: string }) {
 }
 
 function clearAll() {
+  const hadActiveFilters = Boolean(
+    store.searchText.trim() ||
+      store.filterUserId ||
+      store.filterUserCode.trim() ||
+      store.filterRoleId != null ||
+      store.filterAreaId != null,
+  )
+
   resetFiltersWithSearchDraft({
     clear: () => store.clearFilters(),
     searchDraft,
     afterClear: () => {
       selectedUsers.value = null
+      // If filters changed, the filter watcher reloads once. Otherwise force the default request.
+      if (!hadActiveFilters) void store.load()
     },
   })
 }
