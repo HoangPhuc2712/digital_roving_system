@@ -26,6 +26,11 @@ const isPopoverOpen = ref(false)
 const isPinnedOpen = ref(false)
 
 const userName = computed(() => String(auth.user?.user_name ?? '').trim() || '—')
+const userCode = computed(() => String(auth.user?.user_code).trim())
+const roleName = computed(() => String(auth.user?.role?.role_name ?? '').trim())
+const userSubtitle = computed(
+  () => [userCode.value, roleName.value].filter(Boolean).join(' - ') || '-',
+)
 const userAvatarLabel = computed(() => {
   const normalized = userName.value.trim()
   if (!normalized || normalized === '—') return 'U'
@@ -37,6 +42,10 @@ const userAvatarLabel = computed(() => {
   return firstChar.toLocaleUpperCase()
 })
 
+const avatarStyle = computed(() => ({
+  backgroundColor: auth.avatarColor || '#2563EB',
+  color: '#ffffff',
+}))
 let hoverLeaveTimer: number | null = null
 
 function clearHoverLeaveTimer() {
@@ -174,7 +183,7 @@ onBeforeUnmount(() => {
       <div class="relative shrink-0">
         <div
           ref="triggerRef"
-          class="flex items-center select-none cursor-pointer"
+          class="flex min-w-[220px] items-center gap-3 rounded-full border border-slate-200 bg-white pl-2 pr-3 py-1 text-left shadow-sm transition hover:bg-slate-50 hover:cursor-pointer"
           @mouseenter="onTriggerMouseEnter"
           @mouseleave="onTriggerMouseLeave"
           @click="togglePinnedPopover"
@@ -182,10 +191,15 @@ onBeforeUnmount(() => {
           <Avatar
             :label="userAvatarLabel"
             shape="circle"
-            size="normal"
-            class="bg-slate-100 text-slate-700 border border-slate-200"
+            :style="avatarStyle"
+            class="shrink-0 !font-semibold !text-sm"
             aria-label="User menu"
           />
+          <span class="min-w-0 flex-1 leading-tight">
+            <span class="block truncate text-sm font-semibold text-slate-800">{{ userName }}</span>
+            <span class="block truncate text-xs text-slate-500">{{ userSubtitle }}</span>
+          </span>
+          <i class="pi pi-chevron-down shrink-0 !text-[12px] text-slate-500" />
         </div>
 
         <div

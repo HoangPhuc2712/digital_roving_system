@@ -157,6 +157,8 @@ onBeforeUnmount(() => {
         :label="currentLanguageLabel"
         :imageSrc="currentLanguage.flagSrc"
         imageAlt="Current language"
+        trailingIcon="pi pi-chevron-down"
+        trailingIconClass="ml-auto !text-[10px] text-slate-500"
         imageClass="h-4 w-4 shrink-0 rounded-[2px]"
         severity="secondary"
         outlined

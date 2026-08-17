@@ -3,6 +3,7 @@
     v-if="!imageSrc"
     :label="label"
     :icon="icon"
+    :type="type"
     :aria-label="resolvedAriaLabel"
     :severity="severity"
     :size="size"
@@ -14,11 +15,12 @@
     :loading="loading"
     :disabled="disabled"
     :pt="buttonPt"
-    @click="$emit('click', $event)"
+    @click="handleClick"
   />
 
   <Button
     v-else
+    :type="type"
     :aria-label="resolvedAriaLabel"
     :severity="severity"
     :size="size"
@@ -29,11 +31,12 @@
     :plain="plain"
     :loading="loading"
     :disabled="disabled"
-    @click="$emit('click', $event)"
+    @click="handleClick"
   >
     <span :class="contentClassName">
       <img :src="imageSrc" :alt="resolvedImageAlt" :class="imageClassName" />
-      <span v-if="label" class="p-button-label">{{ label }}</span>
+      <span v-if="label" :class="labelClassName">{{ label }}</span>
+      <i v-if="trailingIcon" :class="trailingIconClassName" aria-hidden="true"></i>
     </span>
   </Button>
 </template>
@@ -52,8 +55,12 @@ const props = withDefaults(
     imageSrc?: string
     imageAlt?: string
     imageClass?: string
+    trailingIcon?: string
+    trailingIconClass?: string
     contentClass?: string
+    labelClass?: string
     ariaLabel?: string
+    type?: 'button' | 'submit' | 'reset'
     severity?: Severity
     size?: string
     raised?: boolean
@@ -87,22 +94,54 @@ const resolvedImageAlt = computed(() => {
 
 const imageClassName = computed(() => props.imageClass)
 const contentClassName = computed(() => props.contentClass)
+const labelClassName = computed(() =>
+  ['p-button-label', props.labelClass].filter(Boolean).join(' '),
+)
+const trailingIconClassName = computed(() =>
+  [props.trailingIcon, props.trailingIconClass].filter(Boolean).join(' '),
+)
 
 const iconClassName = computed(() => {
   return [props.icon, props.iconClass].filter(Boolean).join(' ')
 })
 
 const buttonPt = computed(() => {
-  if (!props.iconClass) return undefined
+  const iconClass = iconClassName.value
+  const labelClass = props.labelClass
+
+  if (!iconClass && !labelClass) return undefined
 
   return {
-    icon: {
-      class: props.iconClass,
-    },
+    ...(iconClass
+      ? {
+          icon: {
+            class: iconClass,
+          },
+        }
+      : {}),
+    ...(labelClass
+      ? {
+          label: {
+            class: labelClass,
+          },
+        }
+      : {}),
   }
 })
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'click', ev: MouseEvent): void
 }>()
+
+function handleClick(event: MouseEvent) {
+  if (event.currentTarget instanceof HTMLElement) {
+    event.currentTarget.blur()
+  }
+
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur()
+  }
+
+  emit('click', event)
+}
 </script>

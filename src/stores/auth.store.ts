@@ -15,6 +15,8 @@ type SessionExpiredHandler = (message: string) => void | Promise<void>
 const AUTH_SESSION_STORAGE_KEY = 'auth_session'
 const ACCESS_TOKEN_LIFETIME_MS = 60 * 60 * 1000
 const SESSION_EXPIRED_MESSAGE = 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại'
+const AVATAR_COLOR_STORAGE_KEY = 'internal_patrol_avatar_color'
+const AVATAR_COLOR_PALETTE = ['#2563EB', '#059669', '#DC2626', '#7C3AED', '#EA580C', '#0891B2']
 
 let sessionExpiryTimer: ReturnType<typeof setTimeout> | null = null
 let sessionExpiredHandler: SessionExpiredHandler | null = null
@@ -47,6 +49,27 @@ function isExpired(expiresAt?: string | null) {
   return expiryTime > 0 && expiryTime <= Date.now()
 }
 
+function getRandomAvatarColor() {
+  return AVATAR_COLOR_PALETTE[Math.floor(Math.random() * AVATAR_COLOR_PALETTE.length)] ?? '#2563EB'
+}
+
+function readAvatarColor() {
+  try {
+    const stored = sessionStorage.getItem(AVATAR_COLOR_STORAGE_KEY) || ''
+    return AVATAR_COLOR_PALETTE.includes(stored) ? stored : ''
+  } catch {
+    return ''
+  }
+}
+
+function saveAvatarColor(color: string) {
+  try {
+    sessionStorage.setItem(AVATAR_COLOR_STORAGE_KEY, color)
+  } catch {
+    // Keep the in-memory color if browser storage is unavailable.
+  }
+}
+
 function resolveTokenExpiresAt(expiresAt?: string | null) {
   const expiryTime = getExpiryTime(expiresAt)
   if (expiryTime > 0) return new Date(expiryTime).toISOString()
@@ -60,6 +83,7 @@ export const useAuthStore = defineStore('auth', {
     tokenType: 'Bearer' as string,
     tokenExpiresAt: '' as string,
     user: null as AuthUser | null,
+    avatarColor: '' as string,
     permissions: new Set<PermissionKey>(),
     loading: false,
     sessionSyncedOnce: false,
@@ -117,6 +141,14 @@ export const useAuthStore = defineStore('auth', {
       const allow = this.user.role?.role_allow_view ?? ''
       localStorage.setItem('role_allow_view', allow)
       localStorage.setItem('allow_views', JSON.stringify(this.user.allow_views ?? []))
+    },
+
+    setAvatarColor(fresh = false) {
+      const color = fresh
+        ? getRandomAvatarColor()
+        : this.avatarColor || readAvatarColor() || getRandomAvatarColor()
+      this.avatarColor = color
+      saveAvatarColor(color)
     },
 
     setSession(payload: { user: AuthUser; tokens?: AuthTokens; token?: string }) {
