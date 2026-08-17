@@ -396,7 +396,7 @@ onMounted(async () => {
       >
         <div class="text-md font-semibold text-white/85">{{ card.displayName || card.name }}</div>
 
-        <div class="mt-2 text-3xl font-semibold text-white">
+        <div class="text-3xl font-semibold text-white">
           <span v-if="store.loading">—</span>
           <span v-else>{{ getAnimatedCardTotal(card) }}</span>
         </div>
@@ -405,7 +405,7 @@ onMounted(async () => {
       </button>
     </div>
 
-    <div v-if="canSeeReportDashboardSummary" class="mt-20 flex flex-col gap-3">
+    <div v-if="canSeeReportDashboardSummary" class="flex flex-col gap-3">
       <div class="text-xl font-semibold text-slate-800">
         {{ t('dashboard.issueStatusSummary') }}
       </div>
@@ -435,7 +435,7 @@ onMounted(async () => {
       </div>
     </div>
 
-    <div v-if="canSeeDashboardCharts" class="mt-20 grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div v-if="canSeeDashboardCharts" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <div class="rounded-2xl border border-slate-200 bg-white p-4">
         <div class="text-base font-semibold text-slate-800">
           {{ t('dashboard.totalUsersByRole') }}

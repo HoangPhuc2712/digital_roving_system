@@ -144,13 +144,13 @@ export async function exportPatrolReportXlsx(params: { rows: ReportRow[]; fileNa
   const reportTitle = excelT('reportList.title', 'Patrol Abnormal Cases Report')
   const ws = wb.addWorksheet(sanitizeSheetName(reportTitle))
 
-  const rows = [...(params.rows ?? [])].sort((a, b) => {
-    const ta = new Date(a.report_at || a.scan_at || a.created_at || '').getTime()
-    const tb = new Date(b.report_at || b.scan_at || b.created_at || '').getTime()
-    if (ta !== tb) return ta - tb
-    return String(a.cp_name ?? '').localeCompare(String(b.cp_name ?? ''))
-  })
-
+  // const rows = [...(params.rows ?? [])].sort((a, b) => {
+  //   const ta = new Date(a.report_at || a.scan_at || a.created_at || '').getTime()
+  //   const tb = new Date(b.report_at || b.scan_at || b.created_at || '').getTime()
+  //   if (ta !== tb) return ta - tb
+  //   return String(a.cp_name ?? '').localeCompare(String(b.cp_name ?? ''))
+  // })
+  const rows = [...(params.rows ?? [])]
   ws.columns = [
     { key: 'area', width: 16 },
     { key: 'checkpoint', width: 24 },
