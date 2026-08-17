@@ -177,53 +177,9 @@ export const usePatrolDetailReportsStore = defineStore('patrolDetailReports', {
     },
 
     filteredRows(): PatrolDetailReportRow[] {
-      const q = this.searchText.trim().toLowerCase()
-      let fromTime = this.filterDateFrom ? this.filterDateFrom.getTime() : null
-      let toTime = this.filterDateTo ? this.filterDateTo.getTime() : null
+      // Keep shift coloring, but let the API own filtering/pagination.
+      return applyVisibleShiftColors(this.rows)
 
-      if (fromTime != null && toTime != null && fromTime > toTime) {
-        const tmp = fromTime
-        fromTime = toTime
-        toTime = tmp
-      }
-
-      const visibleRows = this.rows.filter((row) => {
-        if (q && !row._q.includes(q)) return false
-        if (this.filterAreaName != null && row.area_name !== this.filterAreaName) return false
-        if (this.filterRouteName != null && row.route_name !== this.filterRouteName) return false
-        if (this.filterCheckPointName != null && row.check_point_name !== this.filterCheckPointName)
-          return false
-
-        const guardNameQuery = String(this.filterGuardName ?? '')
-          .trim()
-          .toLowerCase()
-        if (guardNameQuery) {
-          const selectedGuard = this.guardOptions.find(
-            (option) => option.value === this.filterGuardName,
-          )
-          if (!selectedGuard?.userId) {
-            const reportName = String(row.report_name ?? '').trim()
-            const guardSearchText = String(this.guardSearchTextMap[reportName] ?? reportName)
-              .trim()
-              .toLowerCase()
-
-            if (!guardSearchText.includes(guardNameQuery)) {
-              return false
-            }
-          }
-        }
-
-        if (fromTime != null || toTime != null) {
-          const t = new Date(row.patrol_time || row.start_time || row.finish_time).getTime()
-          if (!Number.isFinite(t)) return false
-          if (fromTime != null && t < fromTime) return false
-          if (toTime != null && t > toTime) return false
-        }
-
-        return true
-      })
-
-      return applyVisibleShiftColors(visibleRows)
     },
   },
 

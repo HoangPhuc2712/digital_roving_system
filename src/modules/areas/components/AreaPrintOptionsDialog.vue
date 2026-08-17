@@ -149,7 +149,7 @@ async function ensureLoaded() {
   try {
     const roles = await fetchRoleOptions().catch(() => [])
     roleOptions.value = roles
-    checkpoints.value = (await fetchCheckpointRows(roles, { page: 1, pageSize: 100000 })).items
+    checkpoints.value = (await fetchCheckpointRows(roles)).items
     initialized.value = true
   } catch (e: any) {
     toast.add({
@@ -313,6 +313,7 @@ async function onPrint() {
 
       <div class="min-h-0 flex-1 overflow-auto rounded-lg border border-slate-200 bg-white p-3">
         <BaseDataTable
+          :fixedHeight="false"
           title=""
           :value="previewRows"
           :loading="loading"

@@ -135,6 +135,9 @@ function applyLockedAreaFilter() {
   store.filterAreaId = lockedAreaId.value
 }
 
+// Apply route-scoped Area before the initial API load so stale store rows are never re-filtered first.
+applyLockedAreaFilter()
+
 const { searchDraft } = useDebouncedSearchDraft({
   source: () => store.searchText,
   commit: (value) => {
@@ -155,8 +158,15 @@ useResetFirstOnFilterChange(
 )
 
 watch(
-  () => [store.filterAreaId, JSON.stringify(store.filterRoleIds), lockedAreaId.value],
+  () => [
+    store.searchText,
+    store.filterAreaId,
+    store.filterCheckPointName,
+    store.filterStatus,
+    JSON.stringify(store.filterRoleIds),
+  ],
   () => {
+    // One server request refreshes the table after a filter value is committed.
     store.setFirst(0)
     scheduleFilterReload()
   },
@@ -172,13 +182,11 @@ const { onPage } = usePagination({
   setPage: (first, rows) => store.setPage(first, rows),
 })
 
-watch(
-  lockedAreaId,
-  () => {
-    applyLockedAreaFilter()
-  },
-  { immediate: true },
-)
+watch(lockedAreaId, () => {
+  // Route changes update Area once; the filter watcher above performs the API reload.
+  applyLockedAreaFilter()
+  store.setFirst(0)
+})
 
 onMounted(async () => {
   applyLockedAreaFilter()
@@ -204,6 +212,14 @@ function onColumnFilter(payload: { key: string; value: any }) {
 }
 
 function clearAll() {
+  const hadActiveFilters = Boolean(
+    store.searchText.trim() ||
+      store.filterCheckPointName != null ||
+      store.filterStatus !== 'ALL' ||
+      store.filterRoleIds.length > 0 ||
+      (lockedAreaId.value == null && store.filterAreaId != null),
+  )
+
   resetFiltersWithSearchDraft({
     clear: () => {
       store.searchText = ''
@@ -214,6 +230,10 @@ function clearAll() {
       store.setFirst(0)
     },
     searchDraft,
+    afterClear: () => {
+      // If filters changed, the filter watcher reloads once. Otherwise force the default request.
+      if (!hadActiveFilters) void store.load()
+    },
   })
 }
 

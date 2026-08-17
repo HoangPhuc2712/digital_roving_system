@@ -49,6 +49,7 @@ const tableRows = computed(() =>
     :contentStyle="{ padding: '1rem 1rem 1.25rem' }"
   >
     <BaseDataTable
+      :fixedHeight="false"
       :showSearch="false"
       :key="`missed-patrol-report-list-table-${locale}`"
       title=""

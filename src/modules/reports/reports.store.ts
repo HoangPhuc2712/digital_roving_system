@@ -179,72 +179,9 @@ export const useReportsStore = defineStore('reports', {
     },
 
     filteredRows(): ReportRow[] {
-      const q = this.searchText.trim().toLowerCase()
-      let fromTime = this.filterDateFrom ? this.filterDateFrom.getTime() : null
-      let toTime = this.filterDateTo ? this.filterDateTo.getTime() : null
+      // API filtering/pagination is authoritative; avoid re-filtering the current page locally.
+      return this.visibleRows.slice()
 
-      if (fromTime != null && toTime != null && fromTime > toTime) {
-        const tmp = fromTime
-        fromTime = toTime
-        toTime = tmp
-      }
-
-      return this.visibleRows.filter((r) => {
-        if (q) {
-          const haystack = (
-            r._q ||
-            [
-              r.area_code,
-              r.area_name,
-              r.route_name,
-              r.cp_code,
-              r.cp_name,
-              r.cp_description,
-              r.report_name,
-              r.pr_note,
-            ].join(' ')
-          ).toLowerCase()
-
-          if (!haystack.includes(q)) return false
-        }
-
-        if (this.filterAreaName != null && r.area_name !== this.filterAreaName) return false
-        if (this.filterRouteName != null && r.route_name !== this.filterRouteName) return false
-        if (this.filterResult === 'OK' && r.pr_has_problem !== false) return false
-        if (this.filterResult === 'NOT_OK' && r.pr_has_problem !== true) return false
-        if (this.filterCheckPointName != null && r.cp_name !== this.filterCheckPointName)
-          return false
-        if (this.filterIssueStatus != null) {
-          if (!r.pr_has_problem) return false
-          if (r.pr_status !== this.filterIssueStatus) return false
-        }
-        const guardFilterValue = String(this.filterGuardId ?? '').trim()
-        if (guardFilterValue) {
-          const selectedGuard = this.guardOptions.find(
-            (option) => option.value === this.filterGuardId,
-          )
-          const guardNameQuery = String(selectedGuard?.label ?? guardFilterValue)
-            .trim()
-            .toLowerCase()
-          const reportName = String(r.report_name ?? '').trim()
-          const guardSearchText = String(this.guardSearchTextMap[reportName] ?? reportName)
-            .trim()
-            .toLowerCase()
-
-          if (!guardSearchText.includes(guardNameQuery)) {
-            return false
-          }
-        }
-
-        if (fromTime != null || toTime != null) {
-          const t = new Date(r.report_at || r.scan_at || r.created_at).getTime()
-          if (!Number.isFinite(t)) return false
-          if (fromTime != null && t < fromTime) return false
-          if (toTime != null && t > toTime) return false
-        }
-
-        return true
-      })
     },
   },
 

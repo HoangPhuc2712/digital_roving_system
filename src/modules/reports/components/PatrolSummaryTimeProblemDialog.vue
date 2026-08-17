@@ -43,6 +43,7 @@ const standardHeader = computed(
     :contentStyle="{ padding: '1rem 1rem 1.25rem' }"
   >
     <BaseDataTable
+      :fixedHeight="false"
       title=""
       :showSearch="false"
       :value="props.rows"

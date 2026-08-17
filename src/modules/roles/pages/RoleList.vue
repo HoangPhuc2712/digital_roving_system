@@ -137,7 +137,7 @@ async function openEdit(row: RoleRow) {
 }
 
 async function getAssignedUserCounts(roleIds: number[]) {
-  const users = (await fetchUserRows({ page: 1, pageSize: 100000 })).items
+  const users = (await fetchUserRows()).items
   const counts = new Map<number, number>()
 
   for (const user of users) {
@@ -301,6 +301,8 @@ function clearAll() {
     searchDraft,
     afterClear: () => {
       selectedRoles.value = null
+      // Reload with the page's default request even when no filter value changed.
+      void store.load()
     },
   })
 }

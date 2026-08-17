@@ -103,6 +103,10 @@ function clearAll() {
   resetFiltersWithSearchDraft({
     clear: () => store.clearFilters(),
     searchDraft,
+    afterClear: () => {
+      // Reload with the page's default request even when no filter value changed.
+      void store.load()
+    },
   })
 }
 
@@ -365,7 +369,7 @@ function buildAreaPrintItems(row: AreaRow, checkpoints: CheckpointRow[]): Checkp
 async function onPrintAreaQr(row: AreaRow) {
   printingAreaId.value = row.area_id
   try {
-    const checkpoints = (await fetchCheckpointRows([], { page: 1, pageSize: 100000 })).items
+    const checkpoints = (await fetchCheckpointRows([])).items
     const items = buildAreaPrintItems(row, checkpoints)
 
     if (!items.length) {

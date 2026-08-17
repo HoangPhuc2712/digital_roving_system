@@ -133,6 +133,9 @@ export async function fetchRoleOptions(): Promise<RoleOption[]> {
 }
 
 type FetchCheckpointRowsParams = ApiPageParams & {
+  cpKeyword?: string | null
+  cpName?: string | null
+  cpStatus?: number | null
   areaId?: number | null
   roleIds?: number[] | null
 }
@@ -184,6 +187,16 @@ export async function fetchCheckpointRows(
 ): Promise<ApiPagedResult<CheckpointRow>> {
   const body: Record<string, any> = {}
   appendPageParams(body, params)
+
+  const cpKeyword = String(params.cpKeyword ?? '').trim()
+  if (cpKeyword) body.cpKeyword = cpKeyword
+
+  const cpName = String(params.cpName ?? '').trim()
+  if (cpName) body.cpName = cpName
+
+  if (params.cpStatus != null && Number.isFinite(Number(params.cpStatus))) {
+    body.cpStatus = Number(params.cpStatus)
+  }
 
   if (params.areaId != null && Number.isFinite(Number(params.areaId))) {
     body.areaId = Number(params.areaId)

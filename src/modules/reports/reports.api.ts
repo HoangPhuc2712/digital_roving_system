@@ -916,7 +916,7 @@ export async function fetchReportRouteFilterOptions(): Promise<{
     searchText?: string
   }[]
 }> {
-  const res = await http.post(endpoints.routeView.getList, { page: 1, pageSize: 100000 })
+  const res = await http.post(endpoints.routeView.getList, {})
   const list = ensureSuccess<
     ApiQueryResultData<ApiRouteFilterView> | ApiRouteFilterView[] | ApiRouteFilterView
   >(res.data).data
@@ -1001,7 +1001,7 @@ export async function fetchCtpatRouteFilterOptions(): Promise<{
     searchText?: string
   }[]
 }> {
-  const res = await http.post(endpoints.routeView.getList, { page: 1, pageSize: 100000 })
+  const res = await http.post(endpoints.routeView.getList, {})
   const list = ensureSuccess<
     ApiQueryResultData<ApiRouteFilterView> | ApiRouteFilterView[] | ApiRouteFilterView
   >(res.data).data
@@ -1059,7 +1059,7 @@ export async function fetchCtpatRouteFilterOptions(): Promise<{
 export async function fetchReportGuardOptions(): Promise<
   { label: string; value: string; userId?: string; searchText?: string }[]
 > {
-  const res = await http.post(endpoints.userView.getList, { page: 1, pageSize: 100000 })
+  const res = await http.post(endpoints.userView.getList, {})
   const list = ensureSuccess<
     ApiQueryResultData<ApiUserViewOption> | ApiUserViewOption[] | ApiUserViewOption
   >(res.data).data
@@ -1093,7 +1093,7 @@ export async function fetchReportGuardOptions(): Promise<
 export async function fetchPatrolDetailGuardOptions(): Promise<
   { label: string; value: string; userId?: string; searchText?: string }[]
 > {
-  const res = await http.post(endpoints.userView.getList, { page: 1, pageSize: 100000 })
+  const res = await http.post(endpoints.userView.getList, {})
   const list = ensureSuccess<
     ApiQueryResultData<ApiUserViewOption> | ApiUserViewOption[] | ApiUserViewOption
   >(res.data).data
@@ -1127,7 +1127,7 @@ export async function fetchPatrolDetailGuardOptions(): Promise<
 export async function fetchPatrolDetailCheckpointOptions(): Promise<
   { label: string; value: string; cpId?: number; searchText?: string }[]
 > {
-  const res = await http.post(endpoints.checkPointView.getList, { page: 1, pageSize: 100000 })
+  const res = await http.post(endpoints.checkPointView.getList, {})
   const list = ensureSuccess<
     | ApiQueryResultData<ApiCheckpointViewOption>
     | ApiCheckpointViewOption[]

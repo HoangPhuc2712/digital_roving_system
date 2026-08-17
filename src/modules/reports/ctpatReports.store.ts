@@ -90,31 +90,9 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
     },
 
     filteredRows(): CtpatReportRow[] {
-      const q = this.searchText.trim().toLowerCase()
-      let fromTime = this.filterDateFrom ? this.filterDateFrom.getTime() : null
-      let toTime = this.filterDateTo ? this.filterDateTo.getTime() : null
+      // API filtering/pagination is authoritative; avoid filtering the current page twice.
+      return this.rows.slice()
 
-      if (fromTime != null && toTime != null && fromTime > toTime) {
-        const tmp = fromTime
-        fromTime = toTime
-        toTime = tmp
-      }
-
-      return this.rows.filter((row) => {
-        if (q && !row._q.includes(q)) return false
-
-        if (this.filterAreaName != null && row.area_name !== this.filterAreaName) return false
-        if (this.filterRouteName != null && row.route_name !== this.filterRouteName) return false
-
-        if (fromTime != null || toTime != null) {
-          const t = new Date(row.scan_at || row.start_at || row.end_at).getTime()
-          if (!Number.isFinite(t)) return false
-          if (fromTime != null && t < fromTime) return false
-          if (toTime != null && t > toTime) return false
-        }
-
-        return true
-      })
     },
   },
 
