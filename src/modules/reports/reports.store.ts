@@ -40,7 +40,7 @@ export const useReportsStore = defineStore('reports', {
     first: 0,
     rowsPerPage: 25,
 
-    areaFilterOptions: [] as { label: string; value: string }[],
+    areaFilterOptions: [] as { label: string; value: string; areaId?: number }[],
     routeFilterOptions: [] as {
       label: string
       value: string
@@ -187,13 +187,12 @@ export const useReportsStore = defineStore('reports', {
 
   actions: {
     async ensureRouteFilterOptionsLoaded() {
-      if (this.areaFilterOptions.length && this.routeFilterOptions.length) return
       if (this.routeFilterOptionsLoading) return
 
       this.routeFilterOptionsLoading = true
       try {
-        const routeFilters = await fetchPointReportRouteFilterOptions().catch(() => ({
-          areaOptions: [] as { label: string; value: string }[],
+        const routeFilters = await fetchPointReportRouteFilterOptions(this.filterAreaName).catch(() => ({
+          areaOptions: [] as { label: string; value: string; areaId?: number }[],
           routeOptions: [] as {
             label: string
             value: string
@@ -203,27 +202,30 @@ export const useReportsStore = defineStore('reports', {
           }[],
         }))
 
-        if (!this.areaFilterOptions.length) this.areaFilterOptions = routeFilters.areaOptions
-        if (!this.routeFilterOptions.length) this.routeFilterOptions = routeFilters.routeOptions
+        this.areaFilterOptions = routeFilters.areaOptions
+        this.routeFilterOptions = routeFilters.routeOptions
       } finally {
         this.routeFilterOptionsLoading = false
       }
     },
 
     async ensureCheckPointFilterOptionsLoaded() {
-      if (this.checkPointFilterOptions.length) return
       if (this.checkPointFilterOptionsLoading) return
 
       this.checkPointFilterOptionsLoading = true
       try {
-        this.checkPointFilterOptions = await fetchPatrolDetailCheckpointOptions().catch(() => [])
+        const selectedArea = this.areaFilterOptions.find(
+          (option) => option.value === this.filterAreaName,
+        )
+        this.checkPointFilterOptions = await fetchPatrolDetailCheckpointOptions({
+          areaId: selectedArea?.areaId ?? null,
+        }).catch(() => [])
       } finally {
         this.checkPointFilterOptionsLoading = false
       }
     },
 
     async ensureGuardFilterOptionsLoaded() {
-      if (this.guardFilterOptions.length) return
       if (this.guardFilterOptionsLoading) return
 
       this.guardFilterOptionsLoading = true

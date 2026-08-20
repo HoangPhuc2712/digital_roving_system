@@ -52,6 +52,12 @@ const translatedRoleOptions = computed(() =>
 )
 
 const routeFilterAreaOptions = computed(() => {
+  if ((store.areaOptions ?? []).length) {
+    return store.areaOptions
+      .slice()
+      .sort((a, b) => String(a.label).localeCompare(String(b.label)))
+  }
+
   const map = new Map<number, string>()
   for (const row of store.rows) {
     const id = Number(row.area_id ?? 0)
@@ -363,6 +369,7 @@ function confirmDeleteSelected() {
 }
 
 async function onFilterOpen(payload: { key: string }) {
+  if (payload.key === 'areaId') await store.ensureAreaOptionsLoaded()
   if (payload.key === 'roleId') await store.ensureRoleOptionsLoaded()
 }
 

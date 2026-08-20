@@ -7,7 +7,12 @@ import type {
   RoleOption,
   CheckpointRoleFilterValue,
 } from './checkpoints.types'
-import { fetchAreaOptions, fetchCheckpointRows, fetchRoleOptions } from './checkpoints.api'
+import {
+  fetchAreaOptions,
+  fetchCheckpointFilterOptions,
+  fetchCheckpointRows,
+  fetchRoleOptions,
+} from './checkpoints.api'
 
 function toApiCheckpointStatus(filterStatus: CheckpointStatusFilter) {
   return filterStatus === 'ACTIVE' ? 0 : filterStatus === 'INACTIVE' ? 1 : null
@@ -69,6 +74,8 @@ export const useCheckpointsStore = defineStore('checkpoints', {
 
     areaOptions: [] as AreaOption[],
     roleOptions: [] as RoleOption[],
+    checkpointFilterOptions: [] as { label: string; value: string; searchText?: string }[],
+    checkpointFilterOptionsFetched: false,
 
     areaOptionsLoading: false,
     roleOptionsLoading: false,
@@ -81,6 +88,10 @@ export const useCheckpointsStore = defineStore('checkpoints', {
 
   getters: {
     checkPointNameOptions(state): { label: string; value: string; searchText?: string }[] {
+      if (state.checkpointFilterOptionsFetched) {
+        return state.checkpointFilterOptions
+      }
+
       const seen = new Set<string>()
       const options: { label: string; value: string; searchText?: string }[] = []
 
@@ -110,12 +121,12 @@ export const useCheckpointsStore = defineStore('checkpoints', {
 
   actions: {
     async ensureAreaOptionsLoaded() {
-      if (this.areaOptionsLoading || this.areaOptionsFetched) return
+      if (this.areaOptionsLoading) return
 
       this.areaOptionsLoading = true
       try {
         const areas = await fetchAreaOptions().catch(() => [])
-        if (areas.length) this.areaOptions = areas
+        this.areaOptions = areas
         this.areaOptionsFetched = true
       } finally {
         this.areaOptionsLoading = false
@@ -123,16 +134,24 @@ export const useCheckpointsStore = defineStore('checkpoints', {
     },
 
     async ensureRoleOptionsLoaded() {
-      if (this.roleOptionsLoading || this.roleOptionsFetched) return
+      if (this.roleOptionsLoading) return
 
       this.roleOptionsLoading = true
       try {
         const roles = await fetchRoleOptions().catch(() => [])
-        if (roles.length) this.roleOptions = roles
+        this.roleOptions = roles
         this.roleOptionsFetched = true
       } finally {
         this.roleOptionsLoading = false
       }
+    },
+
+    async refreshCheckpointFilterOptions() {
+      this.checkpointFilterOptions = await fetchCheckpointFilterOptions({
+        areaId: this.filterAreaId,
+        roleIds: this.filterRoleIds,
+      }).catch(() => [])
+      this.checkpointFilterOptionsFetched = true
     },
 
     async load() {

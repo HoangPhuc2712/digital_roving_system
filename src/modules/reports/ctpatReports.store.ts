@@ -98,12 +98,11 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
 
   actions: {
     async ensureRouteFilterOptionsLoaded() {
-      if (this.areaFilterOptions.length && this.routeFilterOptions.length) return
       if (this.routeFilterOptionsLoading) return
 
       this.routeFilterOptionsLoading = true
       try {
-        const routeFilters = await fetchCtpatRouteFilterOptions().catch(() => ({
+        const routeFilters = await fetchCtpatRouteFilterOptions(this.filterAreaName).catch(() => ({
           areaOptions: [] as { label: string; value: string; areaId?: number }[],
           routeOptions: [] as {
             label: string
@@ -115,8 +114,8 @@ export const useCtpatReportsStore = defineStore('ctpatReports', {
           }[],
         }))
 
-        if (!this.areaFilterOptions.length) this.areaFilterOptions = routeFilters.areaOptions
-        if (!this.routeFilterOptions.length) this.routeFilterOptions = routeFilters.routeOptions
+        this.areaFilterOptions = routeFilters.areaOptions
+        this.routeFilterOptions = routeFilters.routeOptions
       } finally {
         this.routeFilterOptionsLoading = false
       }

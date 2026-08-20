@@ -285,8 +285,9 @@ export async function deleteUserMock(payload: { user_id: string; actor_id: strin
 }
 
 export async function fetchRoleOptions() {
-  const res = await http.post(endpoints.role.getBaseList, {})
-  const list = ensureSuccess<ApiRoleBase[]>(res.data).data ?? []
+  const res = await http.post(endpoints.role.getList, {})
+  const payload = ensureSuccess<ApiRoleBase[] | ApiRoleBase | { items?: ApiRoleBase[] }>(res.data).data
+  const list = normalizePagedData<ApiRoleBase>(payload).items
 
   return list
     .map((r) => ({
@@ -300,7 +301,7 @@ export async function fetchRoleOptions() {
 type ApiAreaViewOption = { areaId?: number; areaCode?: string; areaName?: string }
 
 export async function fetchAreaOptions() {
-  const res = await http.post(endpoints.areaView.getList, {})
+  const res = await http.post(endpoints.area.getList, {})
   const list = ensureSuccess<
     ApiAreaViewOption[] | ApiAreaViewOption | { items?: ApiAreaViewOption[] }
   >(res.data).data

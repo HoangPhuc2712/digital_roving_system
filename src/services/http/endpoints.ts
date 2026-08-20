@@ -19,6 +19,7 @@ export const endpoints = {
     getOne: (userId: string) => `/userview/getone/${userId}`,
   },
   role: {
+    getList: '/role/getlist',
     getBaseList: '/role/getbaselist',
     create: '/role/create',
     update: (roleId: number | string) => `/role/update/${roleId}`,
@@ -29,6 +30,7 @@ export const endpoints = {
     getOne: (roleId: number | string) => `/roleview/getone/${roleId}`,
   },
   area: {
+    getList: '/area/getlist',
     create: '/area/create',
     update: (areaId: number | string) => `/area/update/${areaId}`,
     delete: (areaId: number | string) => `/area/delete/${areaId}`,
@@ -51,6 +53,7 @@ export const endpoints = {
     getOne: (cpwId: number | string) => `/checkpointview/getone/${cpwId}`,
   },
   route: {
+    getList: '/route/getlist',
     create: '/route/create',
     update: (routeId: number | string) => `/route/update/${routeId}`,
     delete: (routeId: number | string) => `/route/delete/${routeId}`,

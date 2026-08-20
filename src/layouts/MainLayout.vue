@@ -77,23 +77,24 @@ watch(
 </script>
 
 <template>
-  <div class="min-h-screen flex bg-slate-50">
+  <!-- Keep the viewport fixed so only the page content scrolls; header/footer stay outside the scroll area. -->
+  <div class="flex h-screen overflow-hidden bg-slate-50">
     <AppSidebar
       v-model:mobileOpen="sidebarOpen"
       :desktop-open="desktopSidebarOpen"
       :class="['shrink-0', disableSidebarTransition ? '!transition-none lg:!transition-none' : '']"
     />
 
-    <div class="flex-1 min-w-0 flex flex-col min-h-screen">
-      <header class="sticky top-0 z-30 shrink-0 bg-slate-50">
+    <div class="flex h-screen min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <header class="z-30 shrink-0 bg-slate-50">
         <BasePageHeader @open-menu="handleToggleSidebar" />
       </header>
 
-      <main class="flex-1 px-4 py-2">
+      <main class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-1">
         <router-view />
       </main>
 
-      <footer class="sticky bottom-0 z-30 shrink-0 bg-slate-50">
+      <footer class="z-30 shrink-0 bg-slate-50">
         <BasePageFooter />
       </footer>
     </div>

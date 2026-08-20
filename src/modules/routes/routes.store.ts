@@ -85,12 +85,12 @@ export const useRoutesStore = defineStore('routes', {
 
   actions: {
     async ensureAreaOptionsLoaded() {
-      if (this.areaOptionsLoading || this.areaOptionsFetched) return
+      if (this.areaOptionsLoading) return
 
       this.areaOptionsLoading = true
       try {
         const areas = await fetchAreaOptions().catch(() => [])
-        if (areas.length) this.areaOptions = areas
+        this.areaOptions = areas
         this.areaOptionsFetched = true
       } finally {
         this.areaOptionsLoading = false
@@ -98,12 +98,12 @@ export const useRoutesStore = defineStore('routes', {
     },
 
     async ensureRoleOptionsLoaded() {
-      if (this.roleOptionsLoading || this.roleOptionsFetched) return
+      if (this.roleOptionsLoading) return
 
       this.roleOptionsLoading = true
       try {
         const roles = await fetchRoleOptions().catch(() => [])
-        if (roles.length) this.roleOptions = roles
+        this.roleOptions = roles
         this.roleOptionsFetched = true
       } finally {
         this.roleOptionsLoading = false

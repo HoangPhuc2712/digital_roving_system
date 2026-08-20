@@ -199,6 +199,7 @@ onBeforeUnmount(() => {
 })
 
 async function onFilterOpen(payload: { key: string }) {
+  if (payload.key === 'checkPointName') await store.refreshCheckpointFilterOptions()
   if (payload.key === 'areaId') await store.ensureAreaOptionsLoaded()
   if (payload.key === 'roleIds') await store.ensureRoleOptionsLoaded()
 }

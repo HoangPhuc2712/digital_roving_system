@@ -228,7 +228,7 @@ export function sumSeconds(details: RouteDetailModel[]) {
 }
 
 export async function fetchAreaOptions(): Promise<AreaOption[]> {
-  const res = await http.post(endpoints.areaView.getList, {})
+  const res = await http.post(endpoints.area.getList, {})
   const env = ensureSuccess<ApiAreaView[] | ApiAreaView | { items?: ApiAreaView[] }>(res.data)
   const list = normalizePagedData<ApiAreaView>(env.data).items
 
@@ -242,9 +242,9 @@ export async function fetchAreaOptions(): Promise<AreaOption[]> {
 }
 
 export async function fetchRoleOptions(): Promise<RoleOption[]> {
-  const res = await http.post(endpoints.role.getBaseList, {})
-  const env = ensureSuccess<ApiRoleBase[]>(res.data)
-  const list = env.data ?? []
+  const res = await http.post(endpoints.role.getList, {})
+  const env = ensureSuccess<ApiRoleBase[] | ApiRoleBase | { items?: ApiRoleBase[] }>(res.data)
+  const list = normalizePagedData<ApiRoleBase>(env.data).items
 
   return list
     .map((r) => ({

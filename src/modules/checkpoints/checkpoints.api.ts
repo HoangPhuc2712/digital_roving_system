@@ -27,7 +27,9 @@ type ApiCheckPointView = {
   areaId: number
   areaCode?: string
   areaName?: string
+
   roleIdStr?: string
+  roleName?: string
   roleNames?: string[]
   roleNameStr?: string
 }
@@ -82,22 +84,31 @@ function buildRoleNames(roleIds: number[], roleOptions: RoleOption[]) {
 }
 
 function extractRoleNames(
-  view: Pick<ApiCheckPointView, 'roleNames' | 'roleNameStr' | 'roleIdStr'>,
+  view: Pick<ApiCheckPointView, 'roleNames' | 'roleName' | 'roleNameStr' | 'roleIdStr'>,
   roleOptions: RoleOption[],
 ) {
   if (Array.isArray(view.roleNames) && view.roleNames.length > 0) {
     return view.roleNames.map((name) => String(name ?? '').trim()).filter(Boolean)
   }
 
+  const roleName = String(view.roleName ?? '').trim()
+  if (roleName) {
+    return roleName
+      .split(/[;,|]+/)
+      .map((name) => name.trim())
+      .filter(Boolean)
+  }
+
   const roleNameStr = String(view.roleNameStr ?? '').trim()
   if (roleNameStr) {
     return roleNameStr
       .split(/[;,|]+/)
-      .map((name) => String(name ?? '').trim())
+      .map((name) => name.trim())
       .filter(Boolean)
   }
 
   const roleIds = parseRoleIds(view.roleIdStr)
+
   if (roleOptions.length > 0) {
     return buildRoleNames(roleIds, roleOptions)
   }
@@ -106,9 +117,9 @@ function extractRoleNames(
 }
 
 export async function fetchAreaOptions(): Promise<AreaOption[]> {
-  const res = await http.post(endpoints.area.getBaseList, {})
-  const env = ensureSuccess<any[]>(res.data)
-  const list = env.data ?? []
+  const res = await http.post(endpoints.area.getList, {})
+  const payload = ensureSuccess<any[] | any | { items?: any[] }>(res.data).data
+  const list = normalizePagedData<any>(payload).items
 
   return list
     .map((a: any) => ({
@@ -120,8 +131,11 @@ export async function fetchAreaOptions(): Promise<AreaOption[]> {
 }
 
 export async function fetchRoleOptions(): Promise<RoleOption[]> {
-  const res = await http.post(endpoints.role.getBaseList, {})
-  const list = ensureSuccess<ApiRoleBase[]>(res.data).data ?? []
+  const res = await http.post(endpoints.role.getList, {})
+  const payload = ensureSuccess<ApiRoleBase[] | ApiRoleBase | { items?: ApiRoleBase[] }>(
+    res.data,
+  ).data
+  const list = normalizePagedData<ApiRoleBase>(payload).items
 
   return list
     .map((r) => ({
@@ -129,6 +143,48 @@ export async function fetchRoleOptions(): Promise<RoleOption[]> {
       label: String(r.roleName ?? r.roleCode ?? r.roleId),
     }))
     .filter((x) => x.value > 0)
+    .sort((a, b) => a.label.localeCompare(b.label))
+}
+
+export async function fetchCheckpointFilterOptions(
+  params: {
+    areaId?: number | null
+    roleIds?: number[] | null
+  } = {},
+): Promise<{ label: string; value: string; searchText?: string }[]> {
+  const body: Record<string, any> = {}
+
+  // Column-filter getlist requests stay unpaged, but preserve active Area/Role context.
+  if (params.areaId != null && Number.isFinite(Number(params.areaId))) {
+    body.areaId = Number(params.areaId)
+  }
+  if (Array.isArray(params.roleIds) && params.roleIds.length > 0) {
+    body.roleIdStr = params.roleIds.map((roleId) => String(roleId)).join(',')
+  }
+
+  const res = await http.post(endpoints.checkPoint.getList, body)
+  const payload = ensureSuccess<
+    ApiCheckPointView[] | ApiCheckPointView | { items?: ApiCheckPointView[] }
+  >(res.data).data
+  const items = normalizePagedData<ApiCheckPointView>(payload).items
+  const seen = new Set<string>()
+
+  return items
+    .map((cp) => {
+      const value = String(cp?.cpName ?? '').trim()
+      return {
+        label: value,
+        value,
+        searchText: String([cp?.cpName, cp?.cpCode, cp?.cpKeyword].filter(Boolean).join(' '))
+          .toLowerCase()
+          .trim(),
+      }
+    })
+    .filter((option) => {
+      if (!option.value || seen.has(option.value)) return false
+      seen.add(option.value)
+      return true
+    })
     .sort((a, b) => a.label.localeCompare(b.label))
 }
 

@@ -167,9 +167,6 @@ export const useUsersStore = defineStore('users', {
     },
 
     async ensureRoleOptionsLoaded() {
-      if (this.roleOptionsLoaded && this.roleOptions.length) {
-        return
-      }
       if (roleOptionsPromise) {
         await roleOptionsPromise
         return
@@ -194,9 +191,6 @@ export const useUsersStore = defineStore('users', {
     },
 
     async ensureAreaOptionsLoaded() {
-      if (this.areaOptionsLoaded && this.areaOptions.length) {
-        return
-      }
       if (areaOptionsPromise) {
         await areaOptionsPromise
         return

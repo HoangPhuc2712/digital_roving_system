@@ -283,6 +283,9 @@ type ApiAreaBase = {
   areaId?: number
   areaCode?: string
   areaName?: string
+  id?: number
+  code?: string
+  name?: string
 }
 
 type ApiCheckpointBase = {
@@ -303,6 +306,9 @@ type ApiCheckpointViewOption = {
   areaCode?: string
   areaName?: string
   roleIdStr?: string
+  id?: number
+  code?: string
+  name?: string
 }
 
 type ApiUserViewOption = {
@@ -311,6 +317,11 @@ type ApiUserViewOption = {
   userCode?: string
   userKeyword?: string
   userRoleIsAdmin?: boolean
+  id?: string
+  name?: string
+  code?: string
+  roleIsAdmin?: boolean
+  isAdmin?: boolean
 }
 
 type ApiRouteFilterView = {
@@ -320,6 +331,9 @@ type ApiRouteFilterView = {
   areaId?: number
   areaCode?: string
   areaName?: string
+  id?: number
+  code?: string
+  name?: string
 }
 
 function ensureSuccess<T>(payload: any): ApiEnvelope<T> {
@@ -906,6 +920,36 @@ export async function fetchCtpatAreaOptions(): Promise<{ label: string; value: s
     .sort((a, b) => a.label.localeCompare(b.label))
 }
 
+async function fetchColumnFilterAreaOptions(): Promise<
+  { label: string; value: string; areaId?: number }[]
+> {
+  const res = await http.post(endpoints.area.getList, {})
+  const payload = ensureSuccess<
+    ApiQueryResultData<ApiAreaBase> | ApiAreaBase[] | ApiAreaBase
+  >(res.data).data
+  const items = normalizePagedData<ApiAreaBase>(payload).items
+  const seen = new Set<string>()
+
+  return items
+    .map((area) => {
+      const areaId = Number(area?.areaId ?? area?.id ?? 0)
+      const areaCode = String(area?.areaCode ?? area?.code ?? '').trim()
+      const areaName = String(area?.areaName ?? area?.name ?? '').trim()
+      const value = areaName || areaCode || (areaId > 0 ? String(areaId) : '')
+      return {
+        label: value,
+        value,
+        areaId: areaId > 0 ? areaId : undefined,
+      }
+    })
+    .filter((option) => {
+      if (!option.value || seen.has(option.value)) return false
+      seen.add(option.value)
+      return true
+    })
+    .sort((a, b) => a.label.localeCompare(b.label))
+}
+
 export async function fetchReportRouteFilterOptions(): Promise<{
   areaOptions: { label: string; value: number }[]
   routeOptions: {
@@ -916,15 +960,20 @@ export async function fetchReportRouteFilterOptions(): Promise<{
     searchText?: string
   }[]
 }> {
-  const res = await http.post(endpoints.routeView.getList, {})
-  const list = ensureSuccess<
+  const areaOptionsRaw = await fetchColumnFilterAreaOptions()
+  const areaNameById = new Map(
+    areaOptionsRaw
+      .filter((option) => Number(option.areaId ?? 0) > 0)
+      .map((option) => [Number(option.areaId), option.label]),
+  )
+
+  const res = await http.post(endpoints.route.getList, {})
+  const payload = ensureSuccess<
     ApiQueryResultData<ApiRouteFilterView> | ApiRouteFilterView[] | ApiRouteFilterView
   >(res.data).data
-  const items = normalizePagedData<ApiRouteFilterView>(list).items
+  const items = normalizePagedData<ApiRouteFilterView>(payload).items
 
-  const areaSeen = new Set<number>()
   const routeSeen = new Set<string>()
-  const areaOptions: { label: string; value: number }[] = []
   const routeOptions: {
     label: string
     value: string
@@ -935,19 +984,8 @@ export async function fetchReportRouteFilterOptions(): Promise<{
 
   for (const route of items) {
     const areaId = Number(route?.areaId ?? 0)
-    const areaCode = String(route?.areaCode ?? '').trim()
-    const areaName = String(route?.areaName ?? '').trim()
-    const routeId = Number(route?.routeId ?? 0)
-    const routeName = String(route?.routeName ?? '').trim()
-
-    if (areaId > 0 && !areaSeen.has(areaId)) {
-      areaSeen.add(areaId)
-      areaOptions.push({
-        label: areaName || areaCode || String(areaId),
-        value: areaId,
-      })
-    }
-
+    const routeId = Number(route?.routeId ?? route?.id ?? 0)
+    const routeName = String(route?.routeName ?? route?.name ?? route?.routeCode ?? route?.code ?? '').trim()
     if (!routeName) continue
 
     const routeKey = `${areaId}::${routeName}`
@@ -959,38 +997,29 @@ export async function fetchReportRouteFilterOptions(): Promise<{
       value: routeName,
       areaId,
       routeId: routeId > 0 ? routeId : undefined,
-      searchText: `${routeName}`.toLowerCase(),
+      searchText: routeName.toLowerCase(),
     })
   }
 
   return {
-    areaOptions: areaOptions.sort((a, b) => a.label.localeCompare(b.label)),
-    routeOptions: routeOptions.sort((a, b) => a.label.localeCompare(b.label)),
+    areaOptions: areaOptionsRaw
+      .filter((option) => Number(option.areaId ?? 0) > 0)
+      .map((option) => ({
+        label: option.label,
+        value: Number(option.areaId),
+      })),
+    routeOptions: routeOptions
+      .map((option) => ({
+        ...option,
+        label: option.label || areaNameById.get(option.areaId) || option.value,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label)),
   }
 }
 
-export async function fetchPointReportRouteFilterOptions(): Promise<{
-  areaOptions: { label: string; value: string }[]
-  routeOptions: {
-    label: string
-    value: string
-    areaName: string
-    routeId?: number
-    areaId?: number
-    searchText?: string
-  }[]
-}> {
-  const routeFilters = await fetchCtpatRouteFilterOptions()
-  return {
-    areaOptions: routeFilters.areaOptions.map((option) => ({
-      label: option.label,
-      value: option.value,
-    })),
-    routeOptions: routeFilters.routeOptions,
-  }
-}
-
-export async function fetchCtpatRouteFilterOptions(): Promise<{
+export async function fetchPointReportRouteFilterOptions(
+  areaName: string | null = null,
+): Promise<{
   areaOptions: { label: string; value: string; areaId?: number }[]
   routeOptions: {
     label: string
@@ -1001,15 +1030,44 @@ export async function fetchCtpatRouteFilterOptions(): Promise<{
     searchText?: string
   }[]
 }> {
-  const res = await http.post(endpoints.routeView.getList, {})
-  const list = ensureSuccess<
+  const routeFilters = await fetchCtpatRouteFilterOptions(areaName)
+  return {
+    areaOptions: routeFilters.areaOptions,
+    routeOptions: routeFilters.routeOptions,
+  }
+}
+
+export async function fetchCtpatRouteFilterOptions(
+  areaName: string | null = null,
+): Promise<{
+  areaOptions: { label: string; value: string; areaId?: number }[]
+  routeOptions: {
+    label: string
+    value: string
+    areaName: string
+    routeId?: number
+    areaId?: number
+    searchText?: string
+  }[]
+}> {
+  // Route column filters always refresh Area + Route from unpaged /getlist endpoints.
+  const areaOptions = await fetchColumnFilterAreaOptions()
+  const selectedArea = areaOptions.find((option) => option.value === String(areaName ?? '').trim())
+  const routeBody: Record<string, any> = {}
+  if (selectedArea?.areaId != null) routeBody.areaId = selectedArea.areaId
+
+  const res = await http.post(endpoints.route.getList, routeBody)
+  const payload = ensureSuccess<
     ApiQueryResultData<ApiRouteFilterView> | ApiRouteFilterView[] | ApiRouteFilterView
   >(res.data).data
-  const items = normalizePagedData<ApiRouteFilterView>(list).items
+  const items = normalizePagedData<ApiRouteFilterView>(payload).items
 
-  const areaSeen = new Set<string>()
+  const areaNameById = new Map(
+    areaOptions
+      .filter((option) => Number(option.areaId ?? 0) > 0)
+      .map((option) => [Number(option.areaId), option.value]),
+  )
   const routeSeen = new Set<string>()
-  const areaOptions: { label: string; value: string; areaId?: number }[] = []
   const routeOptions: {
     label: string
     value: string
@@ -1021,135 +1079,129 @@ export async function fetchCtpatRouteFilterOptions(): Promise<{
 
   for (const route of items) {
     const areaId = Number(route?.areaId ?? 0)
-    const areaName = String(route?.areaName ?? '').trim()
-    const routeId = Number(route?.routeId ?? 0)
-    const routeName = String(route?.routeName ?? '').trim()
-
-    if (areaName && !areaSeen.has(areaName)) {
-      areaSeen.add(areaName)
-      areaOptions.push({
-        label: areaName,
-        value: areaName,
-        areaId: areaId > 0 ? areaId : undefined,
-      })
-    }
-
+    const resolvedAreaName =
+      String(route?.areaName ?? '').trim() || areaNameById.get(areaId) || ''
+    const routeId = Number(route?.routeId ?? route?.id ?? 0)
+    const routeName = String(route?.routeName ?? route?.name ?? route?.routeCode ?? route?.code ?? '').trim()
     if (!routeName) continue
 
-    const routeKey = `${areaName}::${routeName}`
+    const routeKey = `${resolvedAreaName}::${routeName}`
     if (routeSeen.has(routeKey)) continue
     routeSeen.add(routeKey)
 
     routeOptions.push({
       label: routeName,
       value: routeName,
-      areaName,
+      areaName: resolvedAreaName,
       routeId: routeId > 0 ? routeId : undefined,
       areaId: areaId > 0 ? areaId : undefined,
-      searchText: `${routeName}`.toLowerCase(),
+      searchText: routeName.toLowerCase(),
     })
   }
 
   return {
-    areaOptions: areaOptions.sort((a, b) => a.label.localeCompare(b.label)),
+    areaOptions,
     routeOptions: routeOptions.sort((a, b) => a.label.localeCompare(b.label)),
   }
+}
+
+function normalizeUserFilterOptions(
+  items: ApiUserViewOption[],
+): { label: string; value: string; userId?: string; searchText?: string }[] {
+  const seen = new Set<string>()
+
+  return items
+    .filter(
+      (user) =>
+        !Boolean(user?.userRoleIsAdmin ?? user?.roleIsAdmin ?? user?.isAdmin ?? false),
+    )
+    .map((user) => {
+      const userId = String(user?.userId ?? user?.id ?? '').trim()
+      const userName = String(user?.userName ?? user?.name ?? '').trim()
+      const userCode = String(user?.userCode ?? user?.code ?? '').trim()
+      return {
+        label: userName || userCode,
+        value: userId || userName || userCode,
+        userId: userId || undefined,
+        searchText: String(
+          [userName, userCode, user?.userKeyword].filter(Boolean).join(' '),
+        )
+          .toLowerCase()
+          .trim(),
+      }
+    })
+    .filter((option) => {
+      if (!option.label || !option.value || seen.has(option.value)) return false
+      seen.add(option.value)
+      return true
+    })
+    .sort((a, b) => a.label.localeCompare(b.label))
 }
 
 export async function fetchReportGuardOptions(): Promise<
   { label: string; value: string; userId?: string; searchText?: string }[]
 > {
-  const res = await http.post(endpoints.userView.getList, {})
-  const list = ensureSuccess<
+  const res = await http.post(endpoints.user.getList, {})
+  const payload = ensureSuccess<
     ApiQueryResultData<ApiUserViewOption> | ApiUserViewOption[] | ApiUserViewOption
   >(res.data).data
-  const items = normalizePagedData<ApiUserViewOption>(list).items
-  const seen = new Set<string>()
-
-  return items
-    .filter((user) => !Boolean(user?.userRoleIsAdmin))
-    .map((user) => {
-      const userId = String(user?.userId ?? '').trim()
-      const userName = String(user?.userName ?? '').trim()
-      return {
-        label: userName,
-        value: userId || userName,
-        userId: userId || undefined,
-        searchText: String(
-          [user?.userName, user?.userCode, user?.userKeyword].filter(Boolean).join(' '),
-        )
-          .toLowerCase()
-          .trim(),
-      }
-    })
-    .filter((x) => {
-      if (!x.label || !x.value || seen.has(x.value)) return false
-      seen.add(x.value)
-      return true
-    })
-    .sort((a, b) => a.label.localeCompare(b.label))
+  return normalizeUserFilterOptions(normalizePagedData<ApiUserViewOption>(payload).items)
 }
 
 export async function fetchPatrolDetailGuardOptions(): Promise<
   { label: string; value: string; userId?: string; searchText?: string }[]
 > {
-  const res = await http.post(endpoints.userView.getList, {})
-  const list = ensureSuccess<
+  const res = await http.post(endpoints.user.getList, {})
+  const payload = ensureSuccess<
     ApiQueryResultData<ApiUserViewOption> | ApiUserViewOption[] | ApiUserViewOption
   >(res.data).data
-  const items = normalizePagedData<ApiUserViewOption>(list).items
-  const seen = new Set<string>()
-
-  return items
-    .filter((user) => !Boolean(user?.userRoleIsAdmin))
-    .map((user) => {
-      const userId = String(user?.userId ?? '').trim()
-      const userName = String(user?.userName ?? '').trim()
-      return {
-        label: userName,
-        value: userId || userName,
-        userId: userId || undefined,
-        searchText: String(
-          [user?.userName, user?.userCode, user?.userKeyword].filter(Boolean).join(' '),
-        )
-          .toLowerCase()
-          .trim(),
-      }
-    })
-    .filter((x) => {
-      if (!x.label || seen.has(x.value)) return false
-      seen.add(x.value)
-      return true
-    })
-    .sort((a, b) => a.label.localeCompare(b.label))
+  return normalizeUserFilterOptions(normalizePagedData<ApiUserViewOption>(payload).items)
 }
 
-export async function fetchPatrolDetailCheckpointOptions(): Promise<
-  { label: string; value: string; cpId?: number; searchText?: string }[]
-> {
-  const res = await http.post(endpoints.checkPointView.getList, {})
-  const list = ensureSuccess<
+export async function fetchPatrolDetailCheckpointOptions(
+  params: { areaId?: number | null; roleIds?: number[] | null } = {},
+): Promise<{ label: string; value: string; cpId?: number; searchText?: string }[]> {
+  const body: Record<string, any> = {}
+
+  // Checkpoint filter requests stay unpaged. Add active Area/Role context only when present.
+  if (params.areaId != null && Number.isFinite(Number(params.areaId))) {
+    body.areaId = Number(params.areaId)
+  }
+  if (Array.isArray(params.roleIds) && params.roleIds.length > 0) {
+    body.roleIdStr = params.roleIds.map((roleId) => String(roleId)).join(',')
+  }
+
+  const res = await http.post(endpoints.checkPoint.getList, body)
+  const payload = ensureSuccess<
     | ApiQueryResultData<ApiCheckpointViewOption>
     | ApiCheckpointViewOption[]
     | ApiCheckpointViewOption
   >(res.data).data
-  const items = normalizePagedData<ApiCheckpointViewOption>(list).items
+  const items = normalizePagedData<ApiCheckpointViewOption>(payload).items
   const seen = new Set<string>()
 
   return items
-    .filter((cp) => parseRoleIds(cp?.roleIdStr).includes(SECURITY_ROLE_ID))
+    .filter((cp) => {
+      const roleIds = parseRoleIds(cp?.roleIdStr)
+      return roleIds.length === 0 || roleIds.includes(SECURITY_ROLE_ID)
+    })
     .map((cp) => {
-      const value = String(cp?.cpName ?? '').trim()
+      const cpId = Number(cp?.cpId ?? cp?.id ?? 0)
+      const cpName = String(cp?.cpName ?? cp?.name ?? '').trim()
+      const cpCode = String(cp?.cpCode ?? cp?.code ?? '').trim()
+      const value = cpName || cpCode
       return {
         label: value,
         value,
-        cpId: Number(cp?.cpId ?? 0) || undefined,
-        searchText: String(value).toLowerCase().trim(),
+        cpId: cpId > 0 ? cpId : undefined,
+        searchText: String([cpName, cpCode, cp?.cpKeyword].filter(Boolean).join(' '))
+          .toLowerCase()
+          .trim(),
       }
     })
-    .filter((x) => {
-      if (!x.value || seen.has(x.value)) return false
-      seen.add(x.value)
+    .filter((option) => {
+      if (!option.value || seen.has(option.value)) return false
+      seen.add(option.value)
       return true
     })
     .sort((a, b) => a.label.localeCompare(b.label))
