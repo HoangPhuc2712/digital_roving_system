@@ -834,6 +834,59 @@ export async function fetchReportRows(
   }
 }
 
+export async function fetchReportRowsForExport(
+  params: Omit<FetchReportRowsParams, 'page' | 'pageSize'> = {},
+): Promise<ReportRow[]> {
+  const body: Record<string, any> = {}
+
+  if (params.reportAtFrom instanceof Date && Number.isFinite(params.reportAtFrom.getTime())) {
+    body.reportAtFrom = toApiDateTimeZ(params.reportAtFrom)
+  }
+
+  if (params.reportAtTo instanceof Date && Number.isFinite(params.reportAtTo.getTime())) {
+    body.reportAtTo = toApiDateTimeZ(params.reportAtTo)
+  }
+
+  if (params.prStatus != null && Number.isFinite(Number(params.prStatus))) {
+    body.prStatus = Number(params.prStatus)
+    body.prHasProblem = true
+  } else if (typeof params.prHasProblem === 'boolean') {
+    body.prHasProblem = params.prHasProblem
+  }
+
+  if (params.areaId != null && Number.isFinite(Number(params.areaId))) {
+    body.areaId = Number(params.areaId)
+  }
+
+  const areaName = String(params.areaName ?? '').trim()
+  if (areaName) body.areaName = areaName
+
+  if (params.routeId != null && Number.isFinite(Number(params.routeId))) {
+    body.routeId = Number(params.routeId)
+  }
+
+  if (params.cpId != null && Number.isFinite(Number(params.cpId))) {
+    body.cpId = Number(params.cpId)
+  }
+
+  const cpName = String(params.cpName ?? '').trim()
+  if (cpName) body.cpName = cpName
+
+  const reportBy = String(params.reportBy ?? '').trim()
+  if (reportBy) body.reportBy = reportBy
+
+  const reportName = String(params.reportName ?? '').trim()
+  if (reportName) body.reportName = reportName
+
+  // Export uses the non-paginated endpoint and preserves the backend response order.
+  const res = await http.post(endpoints.pointReportView.getAll, body)
+  const payload = ensureSuccess<
+    ApiQueryResultData<ApiPointReportView> | ApiPointReportView[] | ApiPointReportView
+  >(res.data).data
+
+  return normalizePagedData<ApiPointReportView>(payload).items.map(normalizeView)
+}
+
 export async function fetchReportRowById(pr_id: number): Promise<ReportRow | null> {
   try {
     const res = await http.get(endpoints.pointReportView.getOne(pr_id))

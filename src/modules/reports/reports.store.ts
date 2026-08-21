@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
-import { fetchAllPagedRows, toApiPage } from '@/utils/pagination'
+import { toApiPage } from '@/utils/pagination'
 import {
   fetchPatrolDetailCheckpointOptions,
   fetchReportGuardOptions,
   fetchPointReportRouteFilterOptions,
   fetchReportRows,
+  fetchReportRowsForExport,
 } from './reports.api'
 import type { ReportRow, ResultFilter } from './reports.types'
 
@@ -309,28 +310,18 @@ export const useReportsStore = defineStore('reports', {
       )
       const selectedGuard = this.guardOptions.find((option) => option.value === this.filterGuardId)
 
-      const rows = await fetchAllPagedRows((pageParams) =>
-        fetchReportRows({
-          ...pageParams,
-          reportAtFrom: from,
-          reportAtTo: to,
-          prStatus: this.filterIssueStatus,
-          prHasProblem,
-          areaName: this.filterAreaName,
-          routeId: selectedRoute?.routeId ?? null,
-          cpId: selectedCheckPoint?.cpId ?? null,
-          cpName: this.filterCheckPointName,
-          reportBy: selectedGuard?.userId ?? this.filterGuardId,
-        }),
-      )
-
-      const currentRows = this.rows
-      this.rows = rows
-      try {
-        return this.filteredRows.slice()
-      } finally {
-        this.rows = currentRows
-      }
+      // Export uses /pointreportview/getlist once, without page/pageSize, and keeps backend order.
+      return fetchReportRowsForExport({
+        reportAtFrom: from,
+        reportAtTo: to,
+        prStatus: this.filterIssueStatus,
+        prHasProblem,
+        areaName: this.filterAreaName,
+        routeId: selectedRoute?.routeId ?? null,
+        cpId: selectedCheckPoint?.cpId ?? null,
+        cpName: this.filterCheckPointName,
+        reportBy: selectedGuard?.userId ?? this.filterGuardId,
+      })
     },
 
     clearFilters() {

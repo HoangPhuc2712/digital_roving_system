@@ -64,6 +64,7 @@ export const endpoints = {
   },
   pointReportView: {
     getList: '/pointreportview/getqueryresult',
+    getAll: '/pointreportview/getlist',
     getOne: (prId: number | string) => `/pointreportview/getone/${prId}`,
   },
   patrolShiftView: {
