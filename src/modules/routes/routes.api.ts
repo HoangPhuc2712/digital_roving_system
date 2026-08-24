@@ -88,13 +88,6 @@ function apiStatusToUi(status?: number) {
   return status === 0 ? 1 : 0
 }
 
-function parseRoleIds(roleIdStr?: string) {
-  return String(roleIdStr ?? '')
-    .split(/[;,|\s]+/)
-    .map((x) => Number(x.trim()))
-    .filter((x) => Number.isFinite(x) && x > 0)
-}
-
 function resolveRoleLabel(
   roleId: number,
   roleCode: string,
@@ -116,32 +109,22 @@ function toMinutes(value?: number, fallbackSeconds?: number) {
   return 0
 }
 
-let checkpointViewListCache: ApiCheckPointView[] | null = null
-let checkpointViewListPromise: Promise<ApiCheckPointView[]> | null = null
+async function fetchCheckpointListByRouteScope(roleId: number): Promise<ApiCheckPointView[]> {
+  // Route checkpoint data is loaded lazily only when a route detail/edit flow needs it.
+  const body: Record<string, string> = {}
+  // if (Number(areaId) > 0) body.areaId = Number(areaId)
+  if (Number(roleId) > 0) body.roleIdStr = String(roleId)
 
-async function fetchCheckpointViewListCached(): Promise<ApiCheckPointView[]> {
-  if (checkpointViewListCache) return checkpointViewListCache
-  if (checkpointViewListPromise) return checkpointViewListPromise
+  const res = await http.post(endpoints.checkPoint.getList, body)
+  const env = ensureSuccess<
+    ApiCheckPointView[] | ApiCheckPointView | { items?: ApiCheckPointView[] }
+  >(res.data)
 
-  checkpointViewListPromise = http
-    .post(endpoints.checkPointView.getList, {})
-    .then((res) => {
-      const env = ensureSuccess<
-        ApiCheckPointView[] | ApiCheckPointView | { items?: ApiCheckPointView[] }
-      >(res.data)
-      const list = normalizePagedData<ApiCheckPointView>(env.data).items
-      checkpointViewListCache = list
-      return list
-    })
-    .finally(() => {
-      checkpointViewListPromise = null
-    })
-
-  return checkpointViewListPromise
+  return normalizePagedData<ApiCheckPointView>(env.data).items
 }
 
-async function fetchCheckpointMetaMap() {
-  const list = await fetchCheckpointViewListCached()
+async function fetchCheckpointMetaMap(roleId: number) {
+  const list = await fetchCheckpointListByRouteScope(roleId)
 
   const map = new Map<number, { cp_priority?: number; cp_qr: string }>()
   for (const cp of list) {
@@ -259,15 +242,11 @@ export async function fetchScanPointsByArea(
   areaId: number,
   roleId?: number | null,
 ): Promise<ScanPointOption[]> {
-  if (!roleId) return []
+  if (!areaId || !roleId) return []
 
-  const list = await fetchCheckpointViewListCached()
+  const list = await fetchCheckpointListByRouteScope(Number(roleId))
 
   return list
-    .filter((cp) => {
-      const ids = parseRoleIds(cp.roleIdStr)
-      return ids.includes(Number(roleId))
-    })
     .map((cp) => ({
       value: Number(cp.cpId ?? 0),
       cpCode: String(cp.cpCode ?? ''),
@@ -322,19 +301,14 @@ export async function fetchRouteRowsPaged(
     body.routeStatus = Number(params.routeStatus)
   }
 
-  const [checkpointMetaMap, res] = await Promise.all([
-    fetchCheckpointMetaMap().catch(
-      () => new Map<number, { cp_priority?: number; cp_qr: string }>(),
-    ),
-    http.post(endpoints.routeView.getList, body),
-  ])
-
+  // RouteList must not preload all checkpoints. Load only route rows here.
+  const res = await http.post(endpoints.routeView.getList, body)
   const payload = ensureSuccess<any>(res.data).data
   const paged = normalizePagedData<ApiRouteView>(payload)
 
   return {
     ...paged,
-    items: sortRouteRows(paged.items.map((v) => mapRouteView(v, roleOptions, checkpointMetaMap))),
+    items: sortRouteRows(paged.items.map((v) => mapRouteView(v, roleOptions))),
   }
 }
 
@@ -344,14 +318,14 @@ export async function fetchRouteRows(roleOptions: RoleOption[] = []): Promise<Ro
 }
 
 export async function fetchRouteById(routeId: number, roleOptions: RoleOption[] = []) {
-  const [checkpointMetaMap, res] = await Promise.all([
-    fetchCheckpointMetaMap().catch(
-      () => new Map<number, { cp_priority?: number; cp_qr: string }>(),
-    ),
-    http.get(endpoints.routeView.getOne(routeId)),
-  ])
-
+  const res = await http.get(endpoints.routeView.getOne(routeId))
   const data = ensureSuccess<ApiRouteView>(res.data).data
+
+  // Detail needs checkpoint QR metadata, so fetch only checkpoints matching this route's Area + Role.
+  const checkpointMetaMap = await fetchCheckpointMetaMap(Number(data.roleId ?? 0)).catch(
+    () => new Map<number, { cp_priority?: number; cp_qr: string }>(),
+  )
+
   const row = mapRouteView(data, roleOptions, checkpointMetaMap)
 
   return {
